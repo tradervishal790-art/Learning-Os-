@@ -4,7 +4,7 @@ import { Search, Play, AlertCircle, CheckCircle, Volume2, ThumbsUp, ThumbsDown, 
 import type { Video, VideoWatchData, WatchHistoryEntry, EngagementSession, FeedbackValue } from './types';
 import { withComputedSignal } from './engagementScoring';
 import { upsertEngagementSession } from './engagementStore';
-import DeepNotes from './DeepNotes';  // <-- ADD THIS IMPORT
+import Notes from './Notes';  // <-- ADD THIS IMPORT
 
 declare global {
   interface Window {
@@ -337,7 +337,7 @@ export default function VideoIntel() {
           >
             ← Back to Video
           </button>
-          <DeepNotes videoTitle={selectedVideo.title} />
+          <Notes videoTitle={selectedVideo.title}/>
         </div>
       ) : (
         // MAIN VIDEO VIEW

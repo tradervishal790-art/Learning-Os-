@@ -1,6 +1,7 @@
 /// <reference types="vite/client" />
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+
 interface DeepNotesData {
   topic: string;
   summary: string;
@@ -157,7 +158,7 @@ Return ONLY this JSON structure:
 
   const data = await response.json();
   const finishReason = data?.candidates?.[0]?.finishReason;
-  
+
   if (finishReason === 'MAX_TOKENS') {
     throw new Error('Response too long — try simpler topic');
   }
@@ -169,7 +170,7 @@ Return ONLY this JSON structure:
   return { topic, ...parsed };
 }
 
-export default function DeepNotes({ videoTitle, videoDescription }: { videoTitle?: string; videoDescription?: string }) {
+export default function Notes({ videoTitle, videoDescription }: { videoTitle?: string; videoDescription?: string }) {
   const [topic, setTopic] = useState(videoTitle || '');
   const [notes, setNotes] = useState<DeepNotesData | null>(null);
   const [loading, setLoading] = useState(false);
