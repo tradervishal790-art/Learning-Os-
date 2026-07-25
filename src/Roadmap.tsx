@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { roadmapData, getRoadmapProgress } from './roadmapData';
+import { getRoadmapData, getRoadmapProgress } from './roadmapData';
 import type { Topic } from './types';
 
 const statusConfig: Record<Topic['status'], { label: string; color: string; bg: string; border: string; text: string; icon: string }> = {
@@ -20,8 +20,9 @@ export default function Roadmap() {
   const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null);
   const [showWhy, setShowWhy] = useState(false);
 
+  const roadmap = getRoadmapData();
   const { total: totalTopics, completed: completedTopics, learning: learningTopics, percent: progressPercent } =
-    getRoadmapProgress(roadmapData);
+    getRoadmapProgress(roadmap);
 
   return (
     <div className="p-8 max-w-6xl mx-auto">
@@ -34,6 +35,7 @@ export default function Roadmap() {
         <p className="text-white/60 text-lg">AI-generated path tailored to your mind, not just your goal.</p>
       </motion.div>
 
+     
       {/* Top stats */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.5 }} className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <div className="p-4 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md">
@@ -50,7 +52,7 @@ export default function Roadmap() {
         </div>
         <div className="p-4 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md">
           <div className="text-xs text-white/40 uppercase tracking-wider mb-1">Est. Time</div>
-          <div className="text-2xl font-bold text-white">{roadmapData.estimatedTime}</div>
+          <div className="text-2xl font-bold text-white">{roadmap.estimatedTime}</div>
         </div>
       </motion.div>
 
@@ -73,21 +75,21 @@ export default function Roadmap() {
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-2xl">🎯</div>
             <div>
-              <h2 className="text-xl font-bold text-white">{roadmapData.title}</h2>
-              <p className="text-sm text-white/50">{roadmapData.description}</p>
+             <h2 className="text-xl font-bold text-white">{roadmap.title}</h2>
+              <p className="text-sm text-white/50">{roadmap.description}</p> 
             </div>
           </div>
           <span className="text-xs px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/30 text-purple-300">
-            {roadmapData.difficulty}
+           {roadmap.difficulty} 
           </span>
         </div>
       </motion.div>
 
       {/* Topic list */}
       <div className="space-y-3">
-        {roadmapData.children?.map((topic, i) => {
+        {roadmap.children?.map((topic, i) => {
           const status = statusConfig[topic.status];
-          const isLast = i === (roadmapData.children?.length ?? 0) - 1;
+          const isLast = i === (roadmap.children?.length ?? 0) - 1;
           return (
             // `relative` is required here so the connecting-line div (position: absolute)
             // below anchors to this card instead of the nearest ancestor with layout.

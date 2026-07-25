@@ -9,7 +9,7 @@ import type { UserOnboardingData } from './types';
 type Page = 'landing' | 'onboarding' | 'dashboard';
 
 const ONBOARDING_STORAGE_KEY = 'learning_os_onboarding_data';
-
+const GENERATED_ROADMAP_STORAGE_KEY = 'learning_os_generated_roadmap';
 const wordAnimation = {
   hidden: { opacity: 0, y: 20 },
   visible: (i: number) => ({
@@ -60,12 +60,27 @@ function App() {
   const [userData, setUserData] = useState<UserOnboardingData | null>(loadSavedOnboardingData);
   const [showDemo, setShowDemo] = useState(false);
 
-  const handleOnboardingComplete = (data: UserOnboardingData) => {
+  const handleOnboardingComplete = async (data: UserOnboardingData) => {
     setUserData(data);
     localStorage.setItem(ONBOARDING_STORAGE_KEY, JSON.stringify(data));
+
+    try {
+      const res = await fetch('/api/generate-roadmap', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      const result = await res.json();
+      if (res.ok && result.roadmap) {
+        localStorage.setItem(GENERATED_ROADMAP_STORAGE_KEY, JSON.stringify(result.roadmap));
+      }
+    } catch {
+      // If generation fails, Roadmap.tsx falls back to its default empty state —
+      // don't block the user from reaching the dashboard.
+    }
+
     setPage('dashboard');
   };
-
   if (page === 'onboarding') {
     return <Onboarding3D onComplete={handleOnboardingComplete} />;
   }

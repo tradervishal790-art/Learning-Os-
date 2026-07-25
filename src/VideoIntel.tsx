@@ -1,10 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Play, AlertCircle, CheckCircle, Volume2, ThumbsUp, ThumbsDown, SkipForward } from 'lucide-react';
-import type { Video, VideoWatchData, WatchHistoryEntry, EngagementSession, FeedbackValue } from './types';
+import type { Video, VideoWatchData, WatchHistoryEntry, EngagementSession, FeedbackValue, Topic } from './types';
 import { withComputedSignal } from './engagementScoring';
 import { upsertEngagementSession } from './engagementStore';
-import Notes from './Notes';  // <-- ADD THIS IMPORT
+import Notes from './Notes';
 
 declare global {
   interface Window {
@@ -15,6 +15,75 @@ declare global {
 
 const WATCH_HISTORY_STORAGE_KEY = 'video_watch_history';
 const SEEK_FORWARD_THRESHOLD_SECONDS = 3;
+const GENERATED_ROADMAP_STORAGE_KEY = 'learning_os_generated_roadmap';
+
+// Below this watch percentage, we don't treat the session as meaningful
+// engagement with a topic at all — no status change happens.
+const LOCKED_TO_LEARNING_THRESHOLD = 70;
+// Above this, a topic already in progress is considered strongly engaged
+// enough to mark as completed.
+const LEARNING_TO_COMPLETED_THRESHOLD = 85;
+
+/**
+ * Simple, rule-based (no AI call) match between a watched video's title
+ * and a roadmap topic's `topicKeywords`, updating locked/learning topics
+ * in the saved roadmap based on watch percentage.
+ */
+function updateRoadmapFromWatch(videoTitle: string, watchPercentage: number) {
+  if (watchPercentage < LOCKED_TO_LEARNING_THRESHOLD) return;
+
+  try {
+    const saved = localStorage.getItem(GENERATED_ROADMAP_STORAGE_KEY);
+    if (!saved) return;
+    const roadmap = JSON.parse(saved) as Topic;
+    if (!roadmap?.children?.length) return;
+
+    const normalizedTitle = videoTitle.toLowerCase();
+    let changed = false;
+
+    const updatedChildren = roadmap.children.map((topic) => {
+      if (topic.status !== 'locked' && topic.status !== 'learning') return topic;
+
+      const keywords = topic.topicKeywords ?? [];
+      if (keywords.length === 0) return topic;
+
+      const isMatch = keywords.some((kw) => normalizedTitle.includes(kw.toLowerCase()));
+      if (!isMatch) return topic;
+
+      if (topic.status === 'locked') {
+        changed = true;
+        return { ...topic, status: 'learning' as const };
+      }
+
+      if (topic.status === 'learning' && watchPercentage >= LEARNING_TO_COMPLETED_THRESHOLD) {
+        changed = true;
+        return { ...topic, status: 'completed' as const };
+      }
+
+      return topic;
+    });
+
+    if (changed) {
+      const updatedRoadmap: Topic = { ...roadmap, children: updatedChildren };
+      localStorage.setItem(GENERATED_ROADMAP_STORAGE_KEY, JSON.stringify(updatedRoadmap));
+    }
+  } catch {
+    // Corrupted roadmap data in storage — skip silently, don't break video tracking.
+  }
+}
+interface TeacherProfile {
+  pace: number;
+  theory_vs_practical: number;
+  structure: number;
+  depth: number;
+  language_complexity: number;
+  storytelling: number;
+  repetition: number;
+  prerequisite_assumed: number;
+  primary_style: string;
+  ideal_for: string;
+  avoid_for: string;
+}
 
 function createEmptySession(video: Video): EngagementSession {
   return {
@@ -45,7 +114,7 @@ export default function VideoIntel() {
   const [watchHistory, setWatchHistory] = useState<WatchHistoryEntry[]>([]);
   const [errorMessage, setErrorMessage] = useState('');
   const [showTranscript, setShowTranscript] = useState(false);
-  const [showDeepNotes, setShowDeepNotes] = useState(false);  // <-- ADD THIS
+  const [showDeepNotes, setShowDeepNotes] = useState(false);
   const [feedbackGiven, setFeedbackGiven] = useState<FeedbackValue>(null);
   const [watchStats, setWatchStats] = useState({
     watchedDuration: 0,
@@ -55,6 +124,11 @@ export default function VideoIntel() {
     rewindCount: 0,
     playbackSpeed: 1,
   });
+
+  // AI Analysis (transcript + Gemini teacher-profile) state
+  const [teacherProfile, setTeacherProfile] = useState<TeacherProfile | null>(null);
+  const [transcriptLoading, setTranscriptLoading] = useState(false);
+  const [transcriptError, setTranscriptError] = useState('');
 
   const playerRef = useRef<any>(null);
   const watchDataRef = useRef<VideoWatchData>({
@@ -230,7 +304,7 @@ export default function VideoIntel() {
     setSelectedVideo(videos[nextIndex]);
   };
 
-  const saveWatchData = (data: VideoWatchData) => {
+ const saveWatchData = (data: VideoWatchData) => {
     const engagementPenalty = Math.max(0, data.pauseCount * 5);
     const aiScore = Math.round(Math.max(0, data.watchPercentage - engagementPenalty));
 
@@ -246,6 +320,33 @@ export default function VideoIntel() {
       localStorage.setItem(WATCH_HISTORY_STORAGE_KEY, JSON.stringify(updated));
       return updated;
     });
+
+    updateRoadmapFromWatch(data.title, data.watchPercentage);
+  };
+  
+
+  const analyzeVideoTranscript = async (videoId: string) => {
+    setTranscriptLoading(true);
+    setTranscriptError('');
+    setTeacherProfile(null);
+
+    try {
+      const res = await fetch('/api/analyze-video', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ videoId }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Analysis failed');
+      }
+      setTeacherProfile(data.profile);
+    } catch (err: any) {
+      setTranscriptError(err.message || 'Transcript analysis fail hui');
+    } finally {
+      setTranscriptLoading(false);
+    }
   };
 
   const searchVideos = async () => {
@@ -328,7 +429,6 @@ export default function VideoIntel() {
         </motion.div>
       )}
 
-      {/* CONDITIONAL RENDERING: Show DeepNotes if showDeepNotes, else show main video view */}
       {showDeepNotes && selectedVideo ? (
         <div className="p-4 md:p-8">
           <button
@@ -337,10 +437,9 @@ export default function VideoIntel() {
           >
             ← Back to Video
           </button>
-          <Notes videoTitle={selectedVideo.title}/>
+          <Notes videoTitle={selectedVideo.title} />
         </div>
       ) : (
-        // MAIN VIDEO VIEW
         <div className="p-4 md:p-8">
           <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
             <h1 className="text-4xl font-bold mb-2">📺 Video Intelligence</h1>
@@ -539,19 +638,24 @@ export default function VideoIntel() {
                       </div>
                     </div>
 
-                    {/* TWO BUTTONS: Deep Notes + Transcript */}
+                    {/* TWO BUTTONS: Deep Notes + AI Analysis */}
                     <div className="grid grid-cols-2 gap-3">
                       <button
                         onClick={() => setShowDeepNotes(true)}
-                                          className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold transition"
+                        className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold transition"
                       >
                         📚 Deep Notes
                       </button>
                       <button
-                        onClick={() => setShowTranscript(!showTranscript)}
+                        onClick={() => {
+                          setShowTranscript(!showTranscript);
+                          if (!showTranscript && !teacherProfile && selectedVideo) {
+                            analyzeVideoTranscript(selectedVideo.id);
+                          }
+                        }}
                         className="px-4 py-2.5 bg-cyan-600 hover:bg-cyan-700 rounded-lg font-semibold transition flex items-center justify-center gap-2"
                       >
-                        <Volume2 className="w-4 h-4" /> Transcript
+                        <Volume2 className="w-4 h-4" /> AI Analysis
                       </button>
                     </div>
 
@@ -561,9 +665,34 @@ export default function VideoIntel() {
                           initial={{ opacity: 0, height: 0 }}
                           animate={{ opacity: 1, height: 'auto' }}
                           exit={{ opacity: 0, height: 0 }}
-                          className="mt-4 bg-black/30 rounded-lg p-4 text-sm text-white/70"
+                          className="mt-4 bg-black/30 rounded-lg p-4 text-sm text-white/70 space-y-3"
                         >
-                          Transcript feature — Claude API integration pending
+                          {transcriptLoading && <p>🔍 Transcript fetch ho raha hai aur Gemini analyze kar raha hai...</p>}
+                          {transcriptError && <p className="text-red-400">❌ {transcriptError}</p>}
+                          {teacherProfile && !transcriptLoading && (
+                            <div className="space-y-2">
+                              <h4 className="text-white font-semibold text-sm">🎯 Teaching Style Profile</h4>
+                              <div className="grid grid-cols-2 gap-2 text-xs">
+                                <div>Pace: {teacherProfile.pace}/10</div>
+                                <div>Practical: {teacherProfile.theory_vs_practical}/10</div>
+                                <div>Structure: {teacherProfile.structure}/10</div>
+                                <div>Depth: {teacherProfile.depth}/10</div>
+                                <div>Language: {teacherProfile.language_complexity}/10</div>
+                                <div>Storytelling: {teacherProfile.storytelling}/10</div>
+                                <div>Repetition: {teacherProfile.repetition}/10</div>
+                                <div>Prerequisite: {teacherProfile.prerequisite_assumed}/10</div>
+                              </div>
+                              <p className="text-white/60 mt-2">
+                                <span className="text-purple-300">Style:</span> {teacherProfile.primary_style}
+                              </p>
+                              <p className="text-white/60">
+                                <span className="text-green-300">Ideal for:</span> {teacherProfile.ideal_for}
+                              </p>
+                              <p className="text-white/60">
+                                <span className="text-red-300">Avoid for:</span> {teacherProfile.avoid_for}
+                              </p>
+                            </div>
+                          )}
                         </motion.div>
                       )}
                     </AnimatePresence>

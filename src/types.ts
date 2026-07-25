@@ -32,7 +32,10 @@ export interface Topic {
     risk: string;
   };
   children?: Topic[];
+  /** Short lowercase keywords/phrases used to match this topic against watched video titles. */
+  topicKeywords?: string[];
 }
+
 
 // ---------- Revision / Spaced Repetition ----------
 export type RevisionStatus = 'due-today' | 'upcoming' | 'overdue' | 'mastered';
@@ -119,3 +122,22 @@ export type DashboardPageId =
   | 'videos'
   | 'mentor'
   | 'progress';
+  // ---------- Learning Style Profile ----------
+export interface LearningProfile {
+  pace: number;
+  theoryVsPractical: number;
+  structureNeed: number;
+  depth: number;
+  languageComplexity: number;
+  storytelling: number;
+  repetitionNeed: number;
+  priorKnowledgeComfort: number;
+  reliabilityScore: number;
+  selfReportedHonesty: 'honest' | 'partially_honest' | 'gamed' | 'declined';
+  completedAt: string;
+}
+export type QuizAnswerValue = 'A' | 'B' | 'C' | 'D';
+export interface QuizAnswer {
+  questionId: string;
+  value: QuizAnswerValue;
+}

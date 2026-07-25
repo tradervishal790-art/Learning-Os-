@@ -1,0 +1,44 @@
+{
+  "lKpp2UT8rlc": {
+    "pace": 3,
+    "theory_vs_practical": 5,
+    "structure": 2,
+    "depth": 2,
+    "language_complexity": 2,
+    "storytelling": 8,
+    "repetition": 8,
+    "prerequisite_assumed": 1,
+    "primary_style": "verbal",
+    "ideal_for": "Un students ke liye jo padhai mein motivation, emotional connect, aur bilkul basic se shuruaat chahte hain. Jo log dosto ke sath milkar aur mazaak-masti ke sath dheere-dheere seekhna pasand karte hain.",
+    "avoid_for": "Un self-motivated aur advanced learners ke liye jo kam samay mein zyada content chahte hain aur bina kisi distraction, promotion, ya faltu ki baaton ke seedhe point-to-point padhna pasand karte hain."
+  },
+  "MrQ5dvvNuVs": {
+    "pace": 6,
+    "theory_vs_practical": 8,
+    "structure": 6,
+    "depth": 5,
+    "language_complexity": 2,
+    "storytelling": 9,
+    "repetition": 7,
+    "prerequisite_assumed": 2,
+    "primary_style": "example-driven",
+    "ideal_for": "Un students ke liye jo chemistry ko bina rate, real-life examples, visual demonstrations aur high-energy content ke sath basic se samajhna chahte hain. Boards aur school exams ke liye conceptual clarity paane ke liye ye best hai.",
+    "avoid_for": "Un serious aur distraction-free padhne wale learners ke liye jo bohot formal environment pasand karte hain aur jinhe casual talking, jokes, aur teacher ke interactive conversational style se pareshani hoti hai."
+  },
+  "wLE1BT_wDo4": {
+    "pace": 4,
+    "theory_vs_practical": 6,
+    "structure": 8,
+    "depth": 3,
+    "language_complexity": 2,
+    "storytelling": 7,
+    "repetition": 9,
+    "prerequisite_assumed": 2,
+    "primary_style": "example-driven",
+    "ideal_for": "Board exam aspirants and beginners who want to build concepts from absolute scratch. Best for students who prefer a highly engaging, friendly, and interactive environment with lots of repetition to ensure retention.",
+    "avoid_for": "Advanced, fast-paced learners or competitive exam aspirants who find highly repetitive explanations tedious and prefer dense, mathematically rigorous, and direct lectures without casual conversational breaks."
+  },
+  "nn-1UU_1PX8": {
+    "error": "\nCould not retrieve a transcript for the video https://www.youtube.com/watch?v=nn-1UU_1PX8! This is most likely caused by:\n\nSubtitles are disabled for this video\n\nIf you are sure that the described cause is not responsible for this error and that a transcript should be retrievable, please create an issue at https://github.com/jdepoix/youtube-transcript-api/issues. Please add which version of youtube_transcript_api you are using and provide the information needed to replicate the error. Also make sure that there are no open issues which already describe your problem!"
+  }
+}

@@ -124,12 +124,13 @@ export default function Mentor() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Watch history se context nikaal lo
+  // Watch history se context nikaal lo — used internally to give Gemini
+  // relevant context, NOT shown in the UI (keeps the header clean).
   useEffect(() => {
     try {
       const history = JSON.parse(localStorage.getItem('video_watch_history') || '[]');
       if (history.length > 0) {
-        setContextTopic(history[0].title || 'your current topic');
+        setContextTopic(history[0].title || '');
       }
     } catch {}
   }, []);
@@ -164,9 +165,7 @@ export default function Mentor() {
     <div className="min-h-screen bg-[#030303] text-white flex flex-col p-4 md:p-8">
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
         <h1 className="text-4xl font-bold mb-2">🤖 AI Mentor</h1>
-        <p className="text-white/60">
-          {contextTopic ? `Context: ${contextTopic}` : 'Ask anything, get structured guidance'}
-        </p>
+        <p className="text-white/60">Ask anything, get structured guidance</p>
       </motion.div>
 
       {/* Chat area */}
