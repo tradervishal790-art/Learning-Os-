@@ -58,6 +58,7 @@ export interface Video {
   title: string;
   thumbnail: string;
   channel: string;
+  channelId: string; // unique teacher identity — used as teacherId by PlaylistBuilder
   views: string;
   duration: string;
 }
@@ -90,6 +91,8 @@ export interface EngagementSession {
   id: string; // session id (unique per watch session, not per video)
   videoId: string;
   userId: string; // TODO: replace 'guest' with real auth uid once Firebase Auth is wired in
+  teacherId?: string; // video's channelId — used by PlaylistBuilder for teacher-affinity scoring
+  conceptId?: string; // matched roadmap Topic.id — used by PlaylistBuilder for concept-based rerank
   totalDuration: number;
   watchedSeconds: number;
   watchPercentage: number;

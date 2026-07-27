@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getRoadmapData, getRoadmapProgress } from './roadmapData';
-import type { Topic } from './types';
+import type { Topic, Video } from './types';
+import { buildCandidatePoolForConcept } from './conceptVideoPool';
+import { selectPlaylistForConcept, analyzedVideoToVideo, getLastTeacherForConcept } from './PlaylistBuilder';
+import { getLearningProfile } from './learningProfileStore';
 
 const statusConfig: Record<Topic['status'], { label: string; color: string; bg: string; border: string; text: string; icon: string }> = {
   mastered: { label: 'Mastered', color: 'from-green-500 to-emerald-500', bg: 'bg-green-500/10', border: 'border-green-500/30', text: 'text-green-300', icon: '⭐' },
@@ -16,13 +19,64 @@ const difficultyConfig: Record<Topic['difficulty'], string> = {
   Advanced: 'text-red-300',
 };
 
-export default function Roadmap() {
+interface RoadmapProps {
+  /** Called with the ranked primary + 2 fallback videos, so the parent can
+   *  switch to the Video Intelligence page and preload them into the player. */
+  onLaunchPlaylist: (payload: { primary: Video; fallbacks: Video[] }) => void;
+}
+
+export default function Roadmap({ onLaunchPlaylist }: RoadmapProps) {
   const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null);
   const [showWhy, setShowWhy] = useState(false);
+  const [playlistLoading, setPlaylistLoading] = useState(false);
+  const [playlistError, setPlaylistError] = useState('');
 
   const roadmap = getRoadmapData();
   const { total: totalTopics, completed: completedTopics, learning: learningTopics, percent: progressPercent } =
     getRoadmapProgress(roadmap);
+
+  const openTopic = (topic: Topic) => {
+    setSelectedTopic(topic);
+    setShowWhy(false);
+    setPlaylistError('');
+  };
+
+  const handleWatchAICurated = async () => {
+    if (!selectedTopic) return;
+
+    const learnerProfile = getLearningProfile();
+    if (!learnerProfile) {
+      setPlaylistError('Pehle Dashboard se Learning Style Quiz complete karo — tabhi videos tumhare liye personalize honge.');
+      return;
+    }
+
+    setPlaylistError('');
+    setPlaylistLoading(true);
+    try {
+      const candidates = await buildCandidatePoolForConcept(selectedTopic);
+      if (candidates.length === 0) {
+        setPlaylistError('Is topic ke liye abhi koi achhi video nahi mili. Thodi der baad try karo.');
+        return;
+      }
+
+      const currentTeacherId = getLastTeacherForConcept(selectedTopic.id);
+      const result = selectPlaylistForConcept(candidates, learnerProfile, currentTeacherId);
+      if (!result) {
+        setPlaylistError('Playlist ban nahi payi, dobara try karo.');
+        return;
+      }
+
+      onLaunchPlaylist({
+        primary: analyzedVideoToVideo(result.primary),
+        fallbacks: result.fallbacks.map(analyzedVideoToVideo),
+      });
+      setSelectedTopic(null);
+    } catch (err: any) {
+      setPlaylistError(err.message || 'Kuch gadbad ho gayi, console check karo.');
+    } finally {
+      setPlaylistLoading(false);
+    }
+  };
 
   return (
     <div className="p-8 max-w-6xl mx-auto">
@@ -98,10 +152,7 @@ export default function Roadmap() {
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.4 + i * 0.08, duration: 0.4 }}
-              onClick={() => {
-                setSelectedTopic(topic);
-                setShowWhy(false);
-              }}
+              onClick={() => openTopic(topic)}
               disabled={topic.status === 'locked'}
               className={`relative w-full p-5 rounded-2xl border ${status.border} ${status.bg} backdrop-blur-md text-left transition-all ${
                 topic.status === 'locked' ? 'opacity-50 cursor-not-allowed' : 'hover:scale-[1.01] cursor-pointer'
@@ -202,12 +253,19 @@ export default function Roadmap() {
                     </div>
                     <div className="p-4 rounded-xl bg-white/5 border border-white/10">
                       <h3 className="text-sm font-semibold text-white mb-2">🎯 Next steps</h3>
-                      <ul className="space-y-2 text-sm text-white/60">
-                        <li>• Watch AI-curated videos (5 best, ranked for you)</li>
+                      <ul className="space-y-2 text-sm text-white/60 mb-3">
                         <li>• Generate AI study notes</li>
                         <li>• Take adaptive quiz</li>
                         <li>• Build a mini-project</li>
                       </ul>
+                      <button
+                        onClick={handleWatchAICurated}
+                        disabled={playlistLoading}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white text-sm font-semibold transition"
+                      >
+                        {playlistLoading ? '🔍 Best videos dhundh rahe hain...' : '🎬 Watch AI-curated videos'}
+                      </button>
+                      {playlistError && <p className="text-xs text-red-400 mt-2">{playlistError}</p>}
                     </div>
                   </div>
                 ) : (

@@ -71,6 +71,36 @@ function updateRoadmapFromWatch(videoTitle: string, watchPercentage: number) {
     // Corrupted roadmap data in storage — skip silently, don't break video tracking.
   }
 }
+
+/**
+ * Read-only lookup: given a watched video's title, find which roadmap
+ * Topic.id it matches (via the same topicKeywords used by
+ * updateRoadmapFromWatch), regardless of that topic's current status.
+ * Used to stamp EngagementSession.conceptId so PlaylistBuilder can do
+ * concept-based reranking. Returns undefined if no roadmap or no match —
+ * never throws, never mutates storage.
+ */
+function findMatchingTopicId(videoTitle: string): string | undefined {
+  try {
+    const saved = localStorage.getItem(GENERATED_ROADMAP_STORAGE_KEY);
+    if (!saved) return undefined;
+    const roadmap = JSON.parse(saved) as Topic;
+    if (!roadmap?.children?.length) return undefined;
+
+    const normalizedTitle = videoTitle.toLowerCase();
+    for (const topic of roadmap.children) {
+      const keywords = topic.topicKeywords ?? [];
+      if (keywords.length === 0) continue;
+      if (keywords.some((kw) => normalizedTitle.includes(kw.toLowerCase()))) {
+        return topic.id;
+      }
+    }
+  } catch {
+    // Corrupted roadmap data — no concept match, not fatal.
+  }
+  return undefined;
+}
+
 interface TeacherProfile {
   pace: number;
   theory_vs_practical: number;
@@ -90,6 +120,8 @@ function createEmptySession(video: Video): EngagementSession {
     id: `${video.id}-${Date.now()}`,
     videoId: video.id,
     userId: 'guest',
+    teacherId: video.channelId,
+    conceptId: findMatchingTopicId(video.title),
     totalDuration: 0,
     watchedSeconds: 0,
     watchPercentage: 0,
@@ -104,7 +136,14 @@ function createEmptySession(video: Video): EngagementSession {
   };
 }
 
-export default function VideoIntel() {
+interface VideoIntelProps {
+  /** Ranked primary + fallback videos handed off from Roadmap's "Watch AI-curated videos"
+   *  button (via PlaylistBuilder). When present, auto-loads primary into the player and
+   *  populates the left-panel list with primary + fallbacks. */
+  initialPlaylist?: { primary: Video; fallbacks: Video[] } | null;
+}
+
+export default function VideoIntel({ initialPlaylist }: VideoIntelProps = {}) {
   const API_KEY = import.meta.env.VITE_YOUTUBE_API_KEY;
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -173,6 +212,17 @@ export default function VideoIntel() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedVideo]);
+
+  // Preload a ranked playlist handed off from Roadmap ("Watch AI-curated videos").
+  // Keyed on the primary video's id so a fresh handoff (even for the same topic
+  // revisited later) re-triggers, but re-renders of the parent don't loop this.
+  useEffect(() => {
+    if (!initialPlaylist?.primary) return;
+    finalizeAndSaveSession();
+    setVideos([initialPlaylist.primary, ...initialPlaylist.fallbacks]);
+    setSelectedVideo(initialPlaylist.primary);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialPlaylist?.primary.id]);
 
   const finalizeAndSaveSession = () => {
     if (!sessionRef.current) return;
@@ -386,6 +436,7 @@ export default function VideoIntel() {
             title: item.snippet.title,
             thumbnail: item.snippet.thumbnails?.medium?.url ?? item.snippet.thumbnails?.default?.url,
             channel: item.snippet.channelTitle,
+            channelId: item.snippet.channelId,
             views: '—',
             duration: '—',
           })
