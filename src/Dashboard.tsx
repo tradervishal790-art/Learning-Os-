@@ -10,12 +10,14 @@ import { revisionData, getRevisionStats } from './revisionData';
 import { getLearningProfile, saveLearningProfile } from './learningProfileStore';
 import { buildCandidatePoolForConcept } from './conceptVideoPool';
 import { selectPlaylistForConcept, analyzedVideoToVideo } from './PlaylistBuilder';
+import { useTheme } from './ThemeContext';
 import type { DashboardPageId, PageConfig, UserOnboardingData, LearningProfile, Video, Topic } from './types';
 import Mentor from './Mentor';
 import Notes from './Notes';
 
 interface DashboardProps {
   userData: UserOnboardingData | null;
+  onUpdateUserData: (data: UserOnboardingData) => void;
 }
 
 const sidebarItems: { id: DashboardPageId; label: string; icon: string }[] = [
@@ -23,25 +25,38 @@ const sidebarItems: { id: DashboardPageId; label: string; icon: string }[] = [
   { id: 'roadmap', label: 'Roadmap', icon: '🗺️' },
   { id: 'revision', label: 'Revision', icon: '🔄' },
   { id: 'notes', label: 'AI Notes', icon: '📝' },
-  { id: 'videos', label: 'Video Intel', icon: '🎥' },
+  { id: 'videos', label: 'Videos', icon: '🎥' },
   { id: 'mentor', label: 'AI Mentor', icon: '🤖' },
   { id: 'progress', label: 'Progress', icon: '📊' },
 ];
 
+const roleOptions = ['student', 'developer', 'researcher', 'business', 'exam', 'creator'];
+const goalOptions = ['job', 'skill', 'research', 'startup', 'curiosity', 'mastery', 'teaching'];
+const languageOptions = ['hindi', 'english', 'hinglish', 'any'];
+const hoursOptions = [5, 10, 20, 40];
+const deadlineOptions = [
+  { id: 'none', label: 'None' },
+  { id: '1m', label: '1M' },
+  { id: '3m', label: '3M' },
+  { id: '6m', label: '6M' },
+  { id: '1y', label: '1Y' },
+];
+
 const pageConfigs: Partial<Record<DashboardPageId, PageConfig>> = {
   progress: {
-    title: 'Progress Analytics',
-    description: 'Track your learning speed, retention, and concept mastery.',
+    title: 'Progress',
+    description: 'Track your speed, retention, and mastery.',
     icon: '📊',
     status: 'beta',
     features: [
-      'Learning time tracking', 'Concept mastery heatmap', 'Retention rate analysis',
-      'Completion percentages', 'Consistency streaks', 'Weak area identification',
+      'Time tracking', 'Mastery heatmap', 'Retention rate',
+      'Completion %', 'Streaks', 'Weak areas',
     ],
   },
 };
 
 const ACTIVE_DAYS_STORAGE_KEY = 'learning_os_active_days';
+const TOPIC_TIMING_STORAGE_KEY = 'learning_os_topic_timing';
 
 function trackAndComputeStreak(): number {
   const todayKey = new Date().toISOString().slice(0, 10);
@@ -68,22 +83,39 @@ function trackAndComputeStreak(): number {
   return streak;
 }
 
-export default function Dashboard({ userData }: DashboardProps) {
+export default function Dashboard({ userData, onUpdateUserData }: DashboardProps) {
+  const { theme, toggleTheme } = useTheme();
   const [activePage, setActivePage] = useState<DashboardPageId>('dashboard');
   const [streak, setStreak] = useState(0);
   const [showLearningQuiz, setShowLearningQuiz] = useState(false);
   const [learningProfile, setLearningProfile] = useState<LearningProfile | null>(getLearningProfile);
   const [preloadedPlaylist, setPreloadedPlaylist] = useState<{ primary: Video; fallbacks: Video[] } | null>(null);
 
+  // === Settings panel state ===
+  const [showSettings, setShowSettings] = useState(false);
+  const [settingsName, setSettingsName] = useState(userData?.name ?? '');
+  const [settingsRole, setSettingsRole] = useState(userData?.role ?? '');
+  const [settingsGoal, setSettingsGoal] = useState(userData?.goal ?? '');
+  const [settingsLanguage, setSettingsLanguage] = useState(userData?.language ?? '');
+
   // === Custom Playlist Modal State ===
   const [showCustomPlaylist, setShowCustomPlaylist] = useState(false);
   const [customTopic, setCustomTopic] = useState('');
+  const [customHours, setCustomHours] = useState(0);
+  const [customDeadline, setCustomDeadline] = useState('');
   const [customLoading, setCustomLoading] = useState(false);
   const [customError, setCustomError] = useState('');
 
   useEffect(() => {
     setStreak(trackAndComputeStreak());
   }, []);
+
+  useEffect(() => {
+    setSettingsName(userData?.name ?? '');
+    setSettingsRole(userData?.role ?? '');
+    setSettingsGoal(userData?.goal ?? '');
+    setSettingsLanguage(userData?.language ?? '');
+  }, [userData]);
 
   const handleQuizComplete = (profile: LearningProfile) => {
     setLearningProfile(profile);
@@ -96,22 +128,43 @@ export default function Dashboard({ userData }: DashboardProps) {
     setActivePage('videos');
   };
 
+  const handleSaveSettings = () => {
+    if (!settingsName.trim()) return;
+    onUpdateUserData({
+      name: settingsName.trim(),
+      role: settingsRole,
+      goal: settingsGoal,
+      language: settingsLanguage,
+    });
+    setShowSettings(false);
+  };
+
   // === Custom Topic Playlist Generator ===
   const handleCustomPlaylist = async () => {
     const trimmed = customTopic.trim();
     if (!trimmed) {
-      setCustomError('Koi topic toh daal yaar!');
+      setCustomError('Topic daalo pehle');
       return;
     }
 
     const profile = getLearningProfile();
     if (!profile) {
-      setCustomError('Pehle Dashboard se Learning Style Quiz complete karo — tabhi videos personalize hongi.');
+      setCustomError('Pehle Learning Style Quiz complete karo.');
       return;
     }
 
     setCustomError('');
     setCustomLoading(true);
+
+    // Save the timing choice for this topic — not yet used by the ranking
+    // engine, kept for the Revision/Roadmap engines to read later.
+    if (customHours || customDeadline) {
+      try {
+        localStorage.setItem(TOPIC_TIMING_STORAGE_KEY, JSON.stringify({ topic: trimmed, hours: customHours, deadline: customDeadline }));
+      } catch {
+        // non-fatal
+      }
+    }
 
     // Build ad-hoc Topic object — sidha concept pool builder mein pass hoga
     const adhocTopic: Topic = {
@@ -128,7 +181,7 @@ export default function Dashboard({ userData }: DashboardProps) {
     try {
       const candidates = await buildCandidatePoolForConcept(adhocTopic);
       if (candidates.length === 0) {
-        setCustomError('Is topic ke liye koi video nahi mili. Try different words!');
+        setCustomError('Koi video nahi mili. Alag words try karo.');
         return;
       }
 
@@ -144,8 +197,10 @@ export default function Dashboard({ userData }: DashboardProps) {
       });
       setShowCustomPlaylist(false);
       setCustomTopic('');
+      setCustomHours(0);
+      setCustomDeadline('');
     } catch (err: any) {
-      setCustomError(err.message || 'Kuch gadbad ho gayi. Console check karo.');
+      setCustomError(err.message || 'Kuch gadbad ho gayi.');
     } finally {
       setCustomLoading(false);
     }
@@ -155,7 +210,7 @@ export default function Dashboard({ userData }: DashboardProps) {
     return <LearningQuiz onComplete={handleQuizComplete} />;
   }
 
-  const displayName = 'Vishal';
+  const displayName = userData?.name?.trim() || 'Learner';
   const currentTopic = getCurrentTopic(getRoadmapData());
   const revisionStats = getRevisionStats(revisionData);
 
@@ -167,35 +222,34 @@ export default function Dashboard({ userData }: DashboardProps) {
   };
 
   const statsCards = [
-    { title: 'Current Mission', value: 'Understand Systems', subtitle: 'Not just information', icon: '🧠', gradient: 'from-purple-500/20 to-pink-500/20', border: 'border-purple-500/30', onClick: () => setActivePage('roadmap') },
-    { title: "Today's Goal", value: currentTopic ? currentTopic.title : 'Pick a topic to start', subtitle: currentTopic ? `${currentTopic.estimatedTime} • ${currentTopic.difficulty}` : 'Open the roadmap', icon: '🎯', gradient: 'from-blue-500/20 to-cyan-500/20', border: 'border-blue-500/30', onClick: () => setActivePage('roadmap') },
-    { title: 'Revision Due', value: `${revisionStats.dueToday} concepts`, subtitle: revisionStats.overdue > 0 ? `${revisionStats.overdue} overdue` : 'All caught up', icon: '🔄', gradient: 'from-orange-500/20 to-red-500/20', border: 'border-orange-500/30', onClick: () => setActivePage('revision') },
-    { title: 'Learning Streak', value: `${streak} ${streak === 1 ? 'day' : 'days'}`, subtitle: streak > 0 ? '🔥 Keep going!' : 'Start today!', icon: '⚡', gradient: 'from-yellow-500/20 to-orange-500/20', border: 'border-yellow-500/30', onClick: () => setActivePage('progress') },
+    { title: 'Goal', value: currentTopic ? currentTopic.title : 'Pick a topic', subtitle: currentTopic ? `${currentTopic.estimatedTime} • ${currentTopic.difficulty}` : 'Open roadmap', icon: '🎯', onClick: () => setActivePage('roadmap') },
+    { title: 'Revision', value: `${revisionStats.dueToday} due`, subtitle: revisionStats.overdue > 0 ? `${revisionStats.overdue} overdue` : 'Caught up', icon: '🔄', onClick: () => setActivePage('revision') },
+    { title: 'Streak', value: `${streak} ${streak === 1 ? 'day' : 'days'}`, subtitle: streak > 0 ? 'Keep going' : 'Start today', icon: '⚡', onClick: () => setActivePage('progress') },
   ];
 
   const config = pageConfigs[activePage];
 
   return (
-    <div className="min-h-screen bg-[#030303] flex">
+    <div className="min-h-screen bg-white dark:bg-black flex text-black dark:text-white">
       {/* Sidebar */}
-      <motion.aside initial={{ x: -100, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ duration: 0.6 }} className="w-64 border-r border-white/5 p-6 flex flex-col">
+      <motion.aside initial={{ x: -100, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ duration: 0.6 }} className="w-64 border-r border-gray-200 dark:border-white/10 p-6 flex flex-col">
         <div className="mb-10">
-          <h1 className="text-xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Learning OS</h1>
-          <p className="text-xs text-white/40 mt-1">v1.0 • Beta</p>
+          <h1 className="text-xl font-bold bg-gradient-to-r from-purple-500 via-pink-500 to-orange-400 bg-clip-text text-transparent">Learning OS</h1>
+          <p className="text-xs text-gray-400 dark:text-white/40 mt-1">v1.0 • Beta</p>
         </div>
         <nav className="space-y-1 flex-1">
           {sidebarItems.map((item, i) => (
-            <motion.button key={item.id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 + i * 0.05, duration: 0.4 }} onClick={() => setActivePage(item.id)} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${activePage === item.id ? 'bg-white/10 text-white' : 'text-white/50 hover:text-white hover:bg-white/5'}`}>
+            <motion.button key={item.id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 + i * 0.05, duration: 0.4 }} onClick={() => setActivePage(item.id)} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${activePage === item.id ? 'bg-black text-white dark:bg-white dark:text-black' : 'text-gray-500 dark:text-white/50 hover:text-black dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5'}`}>
               <span className="text-lg">{item.icon}</span>{item.label}
             </motion.button>
           ))}
         </nav>
-        <div className="mt-auto pt-6 border-t border-white/5">
+        <div className="mt-auto pt-6 border-t border-gray-200 dark:border-white/10">
           <div className="flex items-center gap-3 px-2">
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-sm font-bold">{displayName.charAt(0)}</div>
+            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400 flex items-center justify-center text-sm font-bold text-white">{displayName.charAt(0).toUpperCase()}</div>
             <div className="flex-1 min-w-0">
-              <div className="text-sm font-medium text-white truncate">{displayName}</div>
-              <div className="text-xs text-white/40 truncate">{userData?.role ? userData.role : 'Pro Learner'}</div>
+              <div className="text-sm font-medium bg-gradient-to-r from-purple-500 via-pink-500 to-orange-400 bg-clip-text text-transparent truncate">{displayName}</div>
+              <div className="text-xs text-gray-400 dark:text-white/40 truncate">{userData?.role ? userData.role : 'Learner'}</div>
             </div>
           </div>
         </div>
@@ -204,51 +258,50 @@ export default function Dashboard({ userData }: DashboardProps) {
       {/* Main content */}
       <div className="flex-1 overflow-auto">
         {/* Top bar */}
-        <motion.div initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.6 }} className="border-b border-white/5 px-8 py-6 flex justify-between items-center">
+        <motion.div initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.6 }} className="border-b border-gray-200 dark:border-white/10 px-8 py-6 flex justify-between items-center">
           <div>
-            <h2 className="text-2xl font-bold text-white">{getGreeting()}, <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">{displayName}</span></h2>
-            <p className="text-sm text-white/50 mt-1">Mission: <span className="text-white/80">Understand Systems. Not Information.</span></p>
+            <h2 className="text-2xl font-bold">{getGreeting()}, <span className="bg-gradient-to-r from-purple-500 via-pink-500 to-orange-400 bg-clip-text text-transparent">{displayName}</span></h2>
           </div>
-          <button onClick={() => console.log('TODO: open settings panel')} className="px-4 py-2 rounded-full bg-white/5 border border-white/10 text-white text-sm hover:bg-white/10 transition">⚙️ Settings</button>
+          <button onClick={() => setShowSettings(true)} className="px-4 py-2 rounded-full border border-gray-300 dark:border-white/10 text-sm hover:bg-gray-100 dark:hover:bg-white/10 transition">⚙️ Settings</button>
         </motion.div>
 
         {/* Dashboard home */}
         {activePage === 'dashboard' && (
           <div className="p-8 space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {statsCards.map((card, i) => (
-                <motion.button key={card.title} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 + i * 0.1, duration: 0.5 }} whileHover={{ y: -4 }} onClick={card.onClick} className={`text-left p-5 rounded-2xl border ${card.border} bg-gradient-to-br ${card.gradient} backdrop-blur-md cursor-pointer transition-shadow hover:shadow-lg`}>
+                <motion.button key={card.title} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 + i * 0.1, duration: 0.5 }} onClick={card.onClick} className="text-left p-5 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors">
                   <div className="flex justify-between items-start mb-3">
                     <span className="text-2xl">{card.icon}</span>
-                    <span className="text-[10px] uppercase tracking-wider text-white/40">{card.title}</span>
+                    <span className="text-[10px] uppercase tracking-wider text-gray-400 dark:text-white/40">{card.title}</span>
                   </div>
-                  <div className="text-xl font-bold text-white mb-1 line-clamp-1">{card.value}</div>
-                  <div className="text-xs text-white/50">{card.subtitle}</div>
+                  <div className="text-xl font-bold mb-1 line-clamp-1">{card.value}</div>
+                  <div className="text-xs text-gray-400 dark:text-white/50">{card.subtitle}</div>
                 </motion.button>
               ))}
             </div>
 
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7, duration: 0.5 }} className="p-6 rounded-2xl border border-purple-500/20 bg-gradient-to-br from-purple-500/5 to-pink-500/5 backdrop-blur-md flex items-center gap-4 flex-wrap">
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5, duration: 0.5 }} className="p-6 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 flex items-center gap-4 flex-wrap">
               <div className="text-3xl">💡</div>
               <div className="flex-1 min-w-[200px]">
-                <div className="text-xs uppercase tracking-wider text-purple-300 mb-1">AI Suggestion</div>
-                <p className="text-white/80 text-sm leading-relaxed">Based on your learning style, you grasp concepts 40% faster with visual examples. Try watching the "React Visual Guide" next.</p>
+                <div className="text-xs uppercase tracking-wider text-gray-400 dark:text-white/40 mb-1">Suggestion</div>
+                <p className="text-sm">Try: React Visual Guide</p>
               </div>
               <div className="flex flex-col sm:flex-row gap-2">
-                <button onClick={() => setShowCustomPlaylist(true)} className="px-4 py-2 rounded-full bg-white/10 border border-white/10 text-white text-sm font-medium hover:bg-white/20 transition whitespace-nowrap">
-                  ✨ Any Topic Playlist
+                <button onClick={() => setShowCustomPlaylist(true)} className="px-4 py-2 rounded-full border border-gray-300 dark:border-white/10 text-sm font-medium hover:bg-gray-100 dark:hover:bg-white/10 transition whitespace-nowrap">
+                  Custom
                 </button>
-                <button onClick={() => setActivePage('videos')} className="px-4 py-2 rounded-full bg-purple-500 text-white text-sm font-medium hover:bg-purple-600 transition whitespace-nowrap">
-                  Watch Now
+                <button onClick={() => setActivePage('videos')} className="px-4 py-2 rounded-full bg-black text-white dark:bg-white dark:text-black text-sm font-medium hover:opacity-80 transition whitespace-nowrap">
+                  Watch
                 </button>
               </div>
             </motion.div>
 
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.9, duration: 0.5 }} className="p-6 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md">
-              <h3 className="text-white font-semibold mb-1">{learningProfile ? 'Your Learning Style' : 'Discover Your Learning Style'}</h3>
-              <p className="text-xs text-white/40 mb-4">{learningProfile ? 'Based on your learning-style assessment' : 'Take a short quiz so recommendations match how you actually learn'}</p>
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7, duration: 0.5 }} className="p-6 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5">
+              <h3 className="font-semibold mb-1">{learningProfile ? 'Learning Style' : 'Find Your Style'}</h3>
+              <p className="text-xs text-gray-400 dark:text-white/40 mb-4">{learningProfile ? 'From your assessment' : 'Short quiz for better matches'}</p>
               {learningProfile && (
-                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-white/60 mb-4">
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-500 dark:text-white/60 mb-4">
                   <div>Pace: {learningProfile.pace}/10</div>
                   <div>Practical: {learningProfile.theoryVsPractical}/10</div>
                   <div>Structure: {learningProfile.structureNeed}/10</div>
@@ -259,8 +312,8 @@ export default function Dashboard({ userData }: DashboardProps) {
                   <div>Reliability: {learningProfile.reliabilityScore}%</div>
                 </div>
               )}
-              <button onClick={() => setShowLearningQuiz(true)} className="w-full py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm font-medium hover:bg-white/10 transition">
-                {learningProfile ? 'Retake Quiz →' : '🧠 Take Learning Style Quiz →'}
+              <button onClick={() => setShowLearningQuiz(true)} className="w-full py-2.5 rounded-xl border border-gray-300 dark:border-white/10 text-sm font-medium hover:bg-gray-100 dark:hover:bg-white/10 transition">
+                {learningProfile ? 'Retake quiz →' : 'Take quiz →'}
               </button>
             </motion.div>
           </div>
@@ -275,6 +328,122 @@ export default function Dashboard({ userData }: DashboardProps) {
         {config && <PagePlaceholder title={config.title} description={config.description} icon={config.icon} features={config.features} status={config.status} />}
       </div>
 
+      {/* === Settings Modal === */}
+      <AnimatePresence>
+        {showSettings && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setShowSettings(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-white/10 rounded-3xl max-w-md w-full max-h-[85vh] overflow-auto text-black dark:text-white"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-6 border-b border-gray-200 dark:border-white/5 flex items-center justify-between">
+                <h2 className="text-xl font-bold">Settings</h2>
+                <button
+                  onClick={() => setShowSettings(false)}
+                  className="w-8 h-8 rounded-full border border-gray-200 dark:border-white/10 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-white/10 transition"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="p-6 space-y-6">
+                {/* Theme toggle */}
+                <div className="flex items-center justify-between p-4 rounded-2xl border border-gray-200 dark:border-white/10">
+                  <span className="text-sm font-medium">Theme</span>
+                  <button
+                    onClick={toggleTheme}
+                    className={`relative w-14 h-8 rounded-full transition-colors ${theme === 'light' ? 'bg-black' : 'bg-gray-300'}`}
+                  >
+                    <span
+                      className={`absolute top-1 w-6 h-6 rounded-full bg-white transition-transform ${theme === 'light' ? 'translate-x-7' : 'translate-x-1'}`}
+                    />
+                  </button>
+                </div>
+
+                {/* Name */}
+                <div>
+                  <label className="block text-xs uppercase tracking-wider text-gray-400 dark:text-white/40 mb-2">Name</label>
+                  <input
+                    type="text"
+                    value={settingsName}
+                    onChange={(e) => setSettingsName(e.target.value)}
+                    className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-2.5 focus:outline-none focus:border-purple-500/50"
+                  />
+                </div>
+
+                {/* Role */}
+                <div>
+                  <label className="block text-xs uppercase tracking-wider text-gray-400 dark:text-white/40 mb-2">Role</label>
+                  <div className="flex flex-wrap gap-2">
+                    {roleOptions.map((r) => (
+                      <button
+                        key={r}
+                        onClick={() => setSettingsRole(r)}
+                        className={`px-3 py-1.5 rounded-full text-xs border transition ${settingsRole === r ? 'bg-black text-white dark:bg-white dark:text-black border-transparent' : 'border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10'}`}
+                      >
+                        {r}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Goal */}
+                <div>
+                  <label className="block text-xs uppercase tracking-wider text-gray-400 dark:text-white/40 mb-2">Goal</label>
+                  <div className="flex flex-wrap gap-2">
+                    {goalOptions.map((g) => (
+                      <button
+                        key={g}
+                        onClick={() => setSettingsGoal(g)}
+                        className={`px-3 py-1.5 rounded-full text-xs border transition ${settingsGoal === g ? 'bg-black text-white dark:bg-white dark:text-black border-transparent' : 'border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10'}`}
+                      >
+                        {g}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Language */}
+                <div>
+                  <label className="block text-xs uppercase tracking-wider text-gray-400 dark:text-white/40 mb-2">Language</label>
+                  <div className="flex flex-wrap gap-2">
+                    {languageOptions.map((l) => (
+                      <button
+                        key={l}
+                        onClick={() => setSettingsLanguage(l)}
+                        className={`px-3 py-1.5 rounded-full text-xs border transition ${settingsLanguage === l ? 'bg-black text-white dark:bg-white dark:text-black border-transparent' : 'border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10'}`}
+                      >
+                        {l}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-6 pt-0">
+                <button
+                  onClick={handleSaveSettings}
+                  disabled={!settingsName.trim()}
+                  className="w-full px-6 py-3 rounded-full bg-black text-white dark:bg-white dark:text-black font-semibold text-sm disabled:opacity-40 transition"
+                >
+                  Save
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* === Custom Playlist Modal === */}
       <AnimatePresence>
         {showCustomPlaylist && (
@@ -282,37 +451,34 @@ export default function Dashboard({ userData }: DashboardProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
             onClick={() => !customLoading && setShowCustomPlaylist(false)}
           >
             <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
+              initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              transition={{ duration: 0.3 }}
-              className="bg-[#0a0a0a] border border-white/10 rounded-3xl max-w-xl w-full"
+              exit={{ scale: 0.95, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-white/10 rounded-3xl max-w-xl w-full text-black dark:text-white"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
-              <div className="p-6 border-b border-white/5 flex items-center justify-between">
-                <div>
-                  <h2 className="text-2xl font-bold text-white">✨ Custom Playlist</h2>
-                  <p className="text-sm text-white/50 mt-1">Any topic — AI curated videos just for you</p>
-                </div>
+              <div className="p-6 border-b border-gray-200 dark:border-white/5 flex items-center justify-between">
+                <h2 className="text-xl font-bold">Custom Playlist</h2>
                 <button
                   onClick={() => setShowCustomPlaylist(false)}
                   disabled={customLoading}
-                  className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/60 hover:text-white transition disabled:opacity-30 flex-shrink-0"
+                  className="w-8 h-8 rounded-full border border-gray-200 dark:border-white/10 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-white/10 transition disabled:opacity-30 flex-shrink-0"
                 >
                   ✕
                 </button>
               </div>
 
               {/* Body */}
-              <div className="p-6 space-y-4">
+              <div className="p-6 space-y-5">
                 <div>
-                  <label className="block text-xs uppercase tracking-wider text-white/60 mb-2">
-                    What do you want to learn?
+                  <label className="block text-xs uppercase tracking-wider text-gray-400 dark:text-white/40 mb-2">
+                    Topic
                   </label>
                   <input
                     type="text"
@@ -322,21 +488,53 @@ export default function Dashboard({ userData }: DashboardProps) {
                       setCustomError('');
                     }}
                     onKeyDown={(e) => e.key === 'Enter' && !customLoading && handleCustomPlaylist()}
-                    placeholder="e.g., Django basics, Calculus integrals, UX design..."
+                    placeholder="e.g., Django basics"
                     autoFocus
                     disabled={customLoading}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 placeholder-white/40 focus:outline-none focus:border-purple-500/50 disabled:opacity-50"
+                    className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-purple-500/50 disabled:opacity-50"
                   />
                 </div>
 
+                <div>
+                  <label className="block text-xs uppercase tracking-wider text-gray-400 dark:text-white/40 mb-2">Hours / week</label>
+                  <div className="flex gap-2">
+                    {hoursOptions.map((h) => (
+                      <button
+                        key={h}
+                        onClick={() => setCustomHours(h)}
+                        disabled={customLoading}
+                        className={`flex-1 py-2 rounded-lg text-sm border transition ${customHours === h ? 'bg-black text-white dark:bg-white dark:text-black border-transparent' : 'border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10'}`}
+                      >
+                        {h}h
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs uppercase tracking-wider text-gray-400 dark:text-white/40 mb-2">Deadline</label>
+                  <div className="flex gap-2">
+                    {deadlineOptions.map((d) => (
+                      <button
+                        key={d.id}
+                        onClick={() => setCustomDeadline(d.id)}
+                        disabled={customLoading}
+                        className={`flex-1 py-2 rounded-lg text-sm border transition ${customDeadline === d.id ? 'bg-black text-white dark:bg-white dark:text-black border-transparent' : 'border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10'}`}
+                      >
+                        {d.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 {customError && (
-                  <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-sm">
-                    ⚠️ {customError}
+                  <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-500 dark:text-red-300 text-sm">
+                    {customError}
                   </div>
                 )}
 
                 <div className="flex flex-wrap gap-2">
-                  <span className="text-xs text-white/40 mr-1 self-center">Quick:</span>
+                  <span className="text-xs text-gray-400 dark:text-white/40 mr-1 self-center">Quick:</span>
                   {['React Hooks', 'Python Basics', 'Calculus', 'SQL', 'CSS Grid', 'Data Structures'].map((s) => (
                     <button
                       key={s}
@@ -345,7 +543,7 @@ export default function Dashboard({ userData }: DashboardProps) {
                         setCustomError('');
                       }}
                       disabled={customLoading}
-                      className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-xs hover:bg-white/10 transition disabled:opacity-50"
+                      className="px-3 py-1 border border-gray-200 dark:border-white/10 rounded-full text-xs hover:bg-gray-100 dark:hover:bg-white/10 transition disabled:opacity-50"
                     >
                       {s}
                     </button>
@@ -353,21 +551,21 @@ export default function Dashboard({ userData }: DashboardProps) {
                 </div>
 
                 {customLoading && (
-                  <div className="p-4 rounded-xl bg-purple-500/10 border border-purple-500/20 text-sm text-purple-200">
+                  <div className="p-4 rounded-xl border border-gray-200 dark:border-white/10 text-sm">
                     <div className="flex items-center gap-3">
                       <div className="flex gap-1">
-                        <span className="w-2 h-2 bg-purple-300 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                        <span className="w-2 h-2 bg-purple-300 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                        <span className="w-2 h-2 bg-purple-300 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                        <span className="w-2 h-2 bg-gray-400 dark:bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                        <span className="w-2 h-2 bg-gray-400 dark:bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                        <span className="w-2 h-2 bg-gray-400 dark:bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                       </div>
-                      <span>YouTube + Gemini se best videos dhundh raha hoon...</span>
+                      <span>Dhundh raha hoon...</span>
                     </div>
                   </div>
                 )}
 
                 {!learningProfile && !customLoading && (
-                  <p className="text-xs text-yellow-300">
-                    ⚠️ Personalization ke liye pehle Learning Style Quiz complete karo
+                  <p className="text-xs text-yellow-600 dark:text-yellow-300">
+                    Pehle quiz complete karo for better matches
                   </p>
                 )}
               </div>
@@ -377,9 +575,9 @@ export default function Dashboard({ userData }: DashboardProps) {
                 <button
                   onClick={handleCustomPlaylist}
                   disabled={customLoading || !customTopic.trim()}
-                  className="w-full px-6 py-3 rounded-full bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold transition"
+                  className="w-full px-6 py-3 rounded-full bg-black text-white dark:bg-white dark:text-black disabled:opacity-40 font-semibold transition"
                 >
-                  {customLoading ? 'Generating...' : '🚀 Generate Playlist'}
+                  {customLoading ? 'Generating...' : 'Generate'}
                 </button>
               </div>
             </motion.div>

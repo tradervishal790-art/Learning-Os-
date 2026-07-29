@@ -14,10 +14,10 @@ interface CardOption {
 }
 
 const stepTitles = [
-  { title: 'Who are you?', subtitle: 'Tell us about yourself' },
-  { title: "What's your goal?", subtitle: 'What do you want to achieve?' },
-  { title: 'Preferred language', subtitle: "We'll personalize content for you" },
-  { title: 'Time & Deadline', subtitle: 'How much time can you give?' },
+  { title: 'Who are you?', subtitle: 'Pick one' },
+  { title: 'Your goal?', subtitle: 'Pick one' },
+  { title: 'Language', subtitle: 'Pick one' },
+  { title: 'Your name', subtitle: 'Type it' },
 ];
 
 // Helper: random starting positions (off-screen sides) for the card entrance animation
@@ -61,23 +61,13 @@ const languages: CardOption[] = [
   { id: 'any', label: 'No Preference', flag: '🌍' },
 ];
 
-const hoursOptions = [5, 10, 20, 40];
-const deadlines: { id: string; label: string }[] = [
-  { id: 'none', label: 'No Deadline' },
-  { id: '1m', label: '1 Month' },
-  { id: '3m', label: '3 Months' },
-  { id: '6m', label: '6 Months' },
-  { id: '1y', label: '1 Year' },
-];
-
 export default function Onboarding3D({ onComplete }: Onboarding3DProps) {
   const [step, setStep] = useState(0);
   const [data, setData] = useState<UserOnboardingData>({
     role: '',
     goal: '',
     language: '',
-    hours: 0,
-    deadline: '',
+    name: '',
   });
 
   const next = () => {
@@ -96,65 +86,26 @@ export default function Onboarding3D({ onComplete }: Onboarding3DProps) {
     if (step === 0) return data.role !== '';
     if (step === 1) return data.goal !== '';
     if (step === 2) return data.language !== '';
-    if (step === 3) return data.hours > 0 && data.deadline !== '';
+    if (step === 3) return data.name.trim() !== '';
     return false;
   };
 
   const renderCards = () => {
     if (step === 3) {
       return (
-        <div className="space-y-10">
-          <div>
-            <h3 className="text-white/70 text-sm uppercase tracking-wider mb-4">Weekly Hours</h3>
-            <div className="grid grid-cols-4 gap-3">
-              {hoursOptions.map((h, i) => {
-                const start = getStartPosition(i, hoursOptions.length);
-                return (
-                  <motion.button
-                    key={`hour-${h}`}
-                    initial={{ x: start.x, y: start.y, opacity: 0, rotate: -45 }}
-                    animate={{ x: 0, y: 0, opacity: 1, rotate: 0 }}
-                    transition={{ delay: i * 0.1, duration: 0.7, type: 'spring', stiffness: 80 }}
-                    onClick={() => setData({ ...data, hours: h })}
-                    className={`py-4 rounded-xl border font-semibold transition-all duration-300 ${
-                      data.hours === h
-                        ? 'bg-purple-500/20 border-purple-500/50 text-white scale-105'
-                        : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10'
-                    }`}
-                    style={data.hours === h ? { boxShadow: '0 0 30px rgba(139, 92, 246, 0.4)' } : {}}
-                  >
-                    {h}h
-                  </motion.button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div>
-            <h3 className="text-white/70 text-sm uppercase tracking-wider mb-4">Deadline</h3>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-              {deadlines.map((d, i) => {
-                const start = getStartPosition(i, deadlines.length);
-                return (
-                  <motion.button
-                    key={`deadline-${d.id}`}
-                    initial={{ x: start.x, y: start.y, opacity: 0, rotate: 45 }}
-                    animate={{ x: 0, y: 0, opacity: 1, rotate: 0 }}
-                    transition={{ delay: 0.4 + i * 0.1, duration: 0.7, type: 'spring', stiffness: 80 }}
-                    onClick={() => setData({ ...data, deadline: d.id })}
-                    className={`py-4 rounded-xl border text-sm font-medium transition-all duration-300 ${
-                      data.deadline === d.id
-                        ? 'bg-purple-500/20 border-purple-500/50 text-white scale-105'
-                        : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10'
-                    }`}
-                    style={data.deadline === d.id ? { boxShadow: '0 0 30px rgba(139, 92, 246, 0.4)' } : {}}
-                  >
-                    {d.label}
-                  </motion.button>
-                );
-              })}
-            </div>
-          </div>
+        <div className="max-w-sm mx-auto">
+          <motion.input
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            type="text"
+            value={data.name}
+            onChange={(e) => setData({ ...data, name: e.target.value })}
+            onKeyDown={(e) => e.key === 'Enter' && canProceed() && next()}
+            placeholder="Naam likho"
+            autoFocus
+            className="w-full text-center bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-xl text-white placeholder-white/30 focus:outline-none focus:border-purple-500/50"
+          />
         </div>
       );
     }
@@ -225,7 +176,7 @@ export default function Onboarding3D({ onComplete }: Onboarding3DProps) {
               Step {step + 1} of {stepTitles.length}
             </span>
             <span className="text-xs text-white/40">
-              {Math.round(((step + 1) / stepTitles.length) * 100)}% Complete
+              {Math.round(((step + 1) / stepTitles.length) * 100)}%
             </span>
           </div>
           <div className="h-1 bg-white/5 rounded-full overflow-hidden">
@@ -282,7 +233,7 @@ export default function Onboarding3D({ onComplete }: Onboarding3DProps) {
             }`}
             style={canProceed() ? { boxShadow: '0 0 30px rgba(139, 92, 246, 0.4)' } : {}}
           >
-            {step === stepTitles.length - 1 ? 'Generate Blueprint →' : 'Continue →'}
+            {step === stepTitles.length - 1 ? 'Start →' : 'Continue →'}
           </motion.button>
         </div>
       </div>

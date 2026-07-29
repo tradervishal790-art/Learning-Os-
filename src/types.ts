@@ -10,9 +10,17 @@ export interface UserOnboardingData {
   role: string;
   goal: string;
   language: string;
+  name: string;
+}
+
+// ---------- Playlist timing (moved out of onboarding, asked at playlist-creation time) ----------
+export interface PlaylistTiming {
   hours: number;
   deadline: string;
 }
+
+// ---------- Theme ----------
+export type ThemeMode = 'dark' | 'light';
 
 // ---------- Roadmap / Topics ----------
 export type TopicStatus = 'mastered' | 'completed' | 'learning' | 'locked';
@@ -106,7 +114,7 @@ export interface EngagementSession {
   sessionTimestamp: string; // ISO string — when this session started
 }
 
-// ---------- Placeholder pages (AI Notes, AI Mentor, Progress) ----------
+// ---------- Placeholder pages (Notes, Mentor, Progress) ----------
 export type PageStatus = 'coming-soon' | 'beta' | 'active';
 
 export interface PageConfig {
