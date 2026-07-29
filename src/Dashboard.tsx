@@ -86,6 +86,7 @@ function trackAndComputeStreak(): number {
 export default function Dashboard({ userData, onUpdateUserData }: DashboardProps) {
   const { theme, toggleTheme } = useTheme();
   const [activePage, setActivePage] = useState<DashboardPageId>('dashboard');
+  const [showSidebar, setShowSidebar] = useState(false);
   const [streak, setStreak] = useState(0);
   const [showLearningQuiz, setShowLearningQuiz] = useState(false);
   const [learningProfile, setLearningProfile] = useState<LearningProfile | null>(getLearningProfile);
@@ -229,45 +230,78 @@ export default function Dashboard({ userData, onUpdateUserData }: DashboardProps
 
   const config = pageConfigs[activePage];
 
-  return (
-    <div className="min-h-screen bg-white dark:bg-black flex text-black dark:text-white">
-      {/* Sidebar */}
-      <motion.aside initial={{ x: -100, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ duration: 0.6 }} className="w-64 border-r border-gray-200 dark:border-white/10 p-6 flex flex-col">
-        <div className="mb-10">
+  const SidebarContent = (
+    <>
+      <div className="mb-10 flex items-center justify-between">
+        <div>
           <h1 className="text-xl font-bold bg-gradient-to-r from-purple-500 via-pink-500 to-orange-400 bg-clip-text text-transparent">Learning OS</h1>
           <p className="text-xs text-gray-400 dark:text-white/40 mt-1">v1.0 • Beta</p>
         </div>
-        <nav className="space-y-1 flex-1">
-          {sidebarItems.map((item, i) => (
-            <motion.button key={item.id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 + i * 0.05, duration: 0.4 }} onClick={() => setActivePage(item.id)} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${activePage === item.id ? 'bg-black text-white dark:bg-white dark:text-black' : 'text-gray-500 dark:text-white/50 hover:text-black dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5'}`}>
-              <span className="text-lg">{item.icon}</span>{item.label}
-            </motion.button>
-          ))}
-        </nav>
-        <div className="mt-auto pt-6 border-t border-gray-200 dark:border-white/10">
-          <div className="flex items-center gap-3 px-2">
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400 flex items-center justify-center text-sm font-bold text-white">{displayName.charAt(0).toUpperCase()}</div>
-            <div className="flex-1 min-w-0">
-              <div className="text-sm font-medium bg-gradient-to-r from-purple-500 via-pink-500 to-orange-400 bg-clip-text text-transparent truncate">{displayName}</div>
-              <div className="text-xs text-gray-400 dark:text-white/40 truncate">{userData?.role ? userData.role : 'Learner'}</div>
-            </div>
+        <button onClick={() => setShowSidebar(false)} className="md:hidden w-8 h-8 rounded-full border border-gray-200 dark:border-white/10 flex items-center justify-center">✕</button>
+      </div>
+      <nav className="space-y-1 flex-1">
+        {sidebarItems.map((item, i) => (
+          <motion.button key={item.id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 + i * 0.05, duration: 0.4 }} onClick={() => { setActivePage(item.id); setShowSidebar(false); }} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${activePage === item.id ? 'bg-black text-white dark:bg-white dark:text-black' : 'text-gray-500 dark:text-white/50 hover:text-black dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5'}`}>
+            <span className="text-lg">{item.icon}</span>{item.label}
+          </motion.button>
+        ))}
+      </nav>
+      <div className="mt-auto pt-6 border-t border-gray-200 dark:border-white/10">
+        <div className="flex items-center gap-3 px-2">
+          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400 flex items-center justify-center text-sm font-bold text-white flex-shrink-0">{displayName.charAt(0).toUpperCase()}</div>
+          <div className="flex-1 min-w-0">
+            <div className="text-sm font-medium bg-gradient-to-r from-purple-500 via-pink-500 to-orange-400 bg-clip-text text-transparent truncate">{displayName}</div>
+            <div className="text-xs text-gray-400 dark:text-white/40 truncate">{userData?.role ? userData.role : 'Learner'}</div>
           </div>
         </div>
-      </motion.aside>
+      </div>
+    </>
+  );
+
+  return (
+    <div className="min-h-screen bg-white dark:bg-black flex text-black dark:text-white">
+      {/* Sidebar — desktop: static, mobile: slide-in drawer */}
+      <aside className="hidden md:flex w-64 border-r border-gray-200 dark:border-white/10 p-6 flex-col flex-shrink-0">
+        {SidebarContent}
+      </aside>
+
+      <AnimatePresence>
+        {showSidebar && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="md:hidden fixed inset-0 bg-black/50 z-40"
+            onClick={() => setShowSidebar(false)}
+          >
+            <motion.aside
+              initial={{ x: -280 }}
+              animate={{ x: 0 }}
+              exit={{ x: -280 }}
+              transition={{ duration: 0.25, ease: 'easeOut' }}
+              className="w-64 h-full bg-white dark:bg-black border-r border-gray-200 dark:border-white/10 p-6 flex flex-col"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {SidebarContent}
+            </motion.aside>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Main content */}
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-auto min-w-0">
         {/* Top bar */}
-        <motion.div initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.6 }} className="border-b border-gray-200 dark:border-white/10 px-8 py-6 flex justify-between items-center">
-          <div>
-            <h2 className="text-2xl font-bold">{getGreeting()}, <span className="bg-gradient-to-r from-purple-500 via-pink-500 to-orange-400 bg-clip-text text-transparent">{displayName}</span></h2>
+        <motion.div initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.6 }} className="border-b border-gray-200 dark:border-white/10 px-4 md:px-8 py-4 md:py-6 flex justify-between items-center gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <button onClick={() => setShowSidebar(true)} className="md:hidden w-9 h-9 rounded-full border border-gray-200 dark:border-white/10 flex items-center justify-center flex-shrink-0">☰</button>
+            <h2 className="text-lg md:text-2xl font-bold truncate">{getGreeting()}, <span className="bg-gradient-to-r from-purple-500 via-pink-500 to-orange-400 bg-clip-text text-transparent">{displayName}</span></h2>
           </div>
-          <button onClick={() => setShowSettings(true)} className="px-4 py-2 rounded-full border border-gray-300 dark:border-white/10 text-sm hover:bg-gray-100 dark:hover:bg-white/10 transition">⚙️ Settings</button>
+          <button onClick={() => setShowSettings(true)} className="px-3 md:px-4 py-2 rounded-full border border-gray-300 dark:border-white/10 text-sm hover:bg-gray-100 dark:hover:bg-white/10 transition flex-shrink-0">⚙️<span className="hidden sm:inline"> Settings</span></button>
         </motion.div>
 
         {/* Dashboard home */}
         {activePage === 'dashboard' && (
-          <div className="p-8 space-y-6">
+          <div className="p-4 md:p-8 space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {statsCards.map((card, i) => (
                 <motion.button key={card.title} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 + i * 0.1, duration: 0.5 }} onClick={card.onClick} className="text-left p-5 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors">

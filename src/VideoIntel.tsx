@@ -137,7 +137,7 @@ function createEmptySession(video: Video): EngagementSession {
 }
 
 interface VideoIntelProps {
-  /** Ranked primary + fallback videos handed off from Roadmap's "Watch AI-curated videos"
+  /** Ranked primary + fallback videos handed off from Roadmap's "Watch videos"
    *  button (via PlaylistBuilder). When present, auto-loads primary into the player and
    *  populates the left-panel list with primary + fallbacks. */
   initialPlaylist?: { primary: Video; fallbacks: Video[] } | null;
@@ -164,7 +164,7 @@ export default function VideoIntel({ initialPlaylist }: VideoIntelProps = {}) {
     playbackSpeed: 1,
   });
 
-  // AI Analysis (transcript + Gemini teacher-profile) state
+  // Transcript + teacher-profile analysis state
   const [teacherProfile, setTeacherProfile] = useState<TeacherProfile | null>(null);
   const [transcriptLoading, setTranscriptLoading] = useState(false);
   const [transcriptError, setTranscriptError] = useState('');
@@ -213,7 +213,7 @@ export default function VideoIntel({ initialPlaylist }: VideoIntelProps = {}) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedVideo]);
 
-  // Preload a ranked playlist handed off from Roadmap ("Watch AI-curated videos").
+  // Preload a ranked playlist handed off from Roadmap ("Watch videos").
   // Keyed on the primary video's id so a fresh handoff (even for the same topic
   // revisited later) re-triggers, but re-renders of the parent don't loop this.
   useEffect(() => {
@@ -356,13 +356,13 @@ export default function VideoIntel({ initialPlaylist }: VideoIntelProps = {}) {
 
  const saveWatchData = (data: VideoWatchData) => {
     const engagementPenalty = Math.max(0, data.pauseCount * 5);
-    const aiScore = Math.round(Math.max(0, data.watchPercentage - engagementPenalty));
+    const score = Math.round(Math.max(0, data.watchPercentage - engagementPenalty));
 
     const entry: WatchHistoryEntry = {
       videoId: data.videoId,
       title: data.title,
       watchPercentage: Math.round(data.watchPercentage),
-      aiScore,
+      aiScore: score,
     };
 
     setWatchHistory((prev) => {
@@ -405,7 +405,7 @@ export default function VideoIntel({ initialPlaylist }: VideoIntelProps = {}) {
       return;
     }
     if (!API_KEY) {
-      setErrorMessage('❌ API Key missing! .env.local mein VITE_YOUTUBE_API_KEY add karo, phir server restart karo.');
+      setErrorMessage('API Key missing! .env.local mein VITE_YOUTUBE_API_KEY add karo, phir server restart karo.');
       return;
     }
 
@@ -461,21 +461,21 @@ export default function VideoIntel({ initialPlaylist }: VideoIntelProps = {}) {
   const hasNextVideo = videos.length > 1 && !!selectedVideo;
 
   return (
-    <div className="min-h-screen bg-[#030303] text-white">
+    <div className="min-h-screen bg-white dark:bg-black text-black dark:text-white">
       {!API_KEY && (
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-6 bg-yellow-600/20 border border-yellow-500 rounded-lg p-4 flex gap-3"
+          className="m-4 md:m-8 mb-0 border border-gray-300 dark:border-white/20 rounded-lg p-4 flex gap-3"
         >
           <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
           <div>
-            <h3 className="font-semibold">⚠️ API Key Missing</h3>
-            <p className="text-sm text-white/80 mt-1">
-              <code className="bg-black/50 px-2 py-1 rounded text-xs">.env.local</code> (project root) mein add karo:
+            <h3 className="font-semibold">API Key Missing</h3>
+            <p className="text-sm text-gray-500 dark:text-white/70 mt-1">
+              <code className="bg-gray-100 dark:bg-white/10 px-2 py-1 rounded text-xs">.env.local</code> (project root) mein add karo:
             </p>
-            <code className="block bg-black/50 p-2 rounded mt-2 text-xs">VITE_YOUTUBE_API_KEY=your_key_here</code>
-            <p className="text-xs text-white/50 mt-2">Phir `npm run dev` restart karo.</p>
+            <code className="block bg-gray-100 dark:bg-white/10 p-2 rounded mt-2 text-xs">VITE_YOUTUBE_API_KEY=your_key_here</code>
+            <p className="text-xs text-gray-400 dark:text-white/50 mt-2">Phir `npm run dev` restart karo.</p>
           </div>
         </motion.div>
       )}
@@ -484,7 +484,7 @@ export default function VideoIntel({ initialPlaylist }: VideoIntelProps = {}) {
         <div className="p-4 md:p-8">
           <button
             onClick={() => setShowDeepNotes(false)}
-            className="mb-6 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg font-semibold transition"
+            className="mb-6 px-4 py-2 border border-gray-300 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg font-semibold transition"
           >
             ← Back to Video
           </button>
@@ -493,8 +493,8 @@ export default function VideoIntel({ initialPlaylist }: VideoIntelProps = {}) {
       ) : (
         <div className="p-4 md:p-8">
           <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-            <h1 className="text-4xl font-bold mb-2">📺 Video Intelligence</h1>
-            <p className="text-white/60">Search • Watch with AI tracking • Personalized recommendations</p>
+            <h1 className="text-4xl font-bold mb-2">📺 Videos</h1>
+            <p className="text-gray-500 dark:text-white/60">Search • Watch • Personalized recommendations</p>
           </motion.div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -502,7 +502,7 @@ export default function VideoIntel({ initialPlaylist }: VideoIntelProps = {}) {
             <div className="lg:col-span-1">
               <div className="flex gap-2 mb-4">
                 <div className="flex-1 relative">
-                  <Search className="absolute left-3 top-3 w-5 h-5 text-white/40" />
+                  <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400 dark:text-white/40" />
                   <input
                     type="text"
                     placeholder="Search videos..."
@@ -512,13 +512,13 @@ export default function VideoIntel({ initialPlaylist }: VideoIntelProps = {}) {
                       setErrorMessage('');
                     }}
                     onKeyDown={(e) => e.key === 'Enter' && searchVideos()}
-                    className="w-full bg-white/5 border border-white/10 rounded-lg pl-10 pr-4 py-2.5 placeholder-white/40 focus:outline-none focus:border-purple-500/50"
+                    className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg pl-10 pr-4 py-2.5 focus:outline-none focus:border-black dark:focus:border-white"
                   />
                 </div>
                 <button
                   onClick={searchVideos}
                   disabled={loading}
-                  className="px-5 py-2.5 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 rounded-lg font-semibold transition"
+                  className="px-5 py-2.5 bg-black text-white dark:bg-white dark:text-black disabled:opacity-40 rounded-lg font-semibold transition"
                 >
                   {loading ? '...' : 'Search'}
                 </button>
@@ -530,7 +530,7 @@ export default function VideoIntel({ initialPlaylist }: VideoIntelProps = {}) {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="mb-4 bg-red-600/20 border border-red-500 rounded-lg p-3 text-sm"
+                    className="mb-4 border border-gray-300 dark:border-white/20 rounded-lg p-3 text-sm"
                   >
                     {errorMessage}
                   </motion.div>
@@ -542,7 +542,7 @@ export default function VideoIntel({ initialPlaylist }: VideoIntelProps = {}) {
                   <button
                     key={s}
                     onClick={() => setSearchQuery(s)}
-                    className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-full text-sm hover:bg-white/10 transition"
+                    className="px-3 py-1.5 border border-gray-200 dark:border-white/10 rounded-full text-sm hover:bg-gray-100 dark:hover:bg-white/10 transition"
                   >
                     {s}
                   </button>
@@ -551,9 +551,9 @@ export default function VideoIntel({ initialPlaylist }: VideoIntelProps = {}) {
 
               <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
                 {videos.length === 0 ? (
-                  <div className="text-center py-12 text-white/60">
+                  <div className="text-center py-12 text-gray-400 dark:text-white/60">
                     <Play className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                    <p>🔍 Search se start karo</p>
+                    <p>Search se start karo</p>
                   </div>
                 ) : (
                   videos.map((video, i) => {
@@ -568,23 +568,23 @@ export default function VideoIntel({ initialPlaylist }: VideoIntelProps = {}) {
                           finalizeAndSaveSession();
                           setSelectedVideo(video);
                         }}
-                        className={`p-3 rounded-lg cursor-pointer transition ${
+                        className={`p-3 rounded-lg cursor-pointer transition border ${
                           selectedVideo?.id === video.id
-                            ? 'bg-purple-600/30 border border-purple-500'
-                            : 'bg-white/5 border border-white/10 hover:bg-white/10'
+                            ? 'border-black dark:border-white bg-gray-50 dark:bg-white/10'
+                            : 'border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/10'
                         }`}
                       >
                         <div className="flex gap-3">
                           <div className="relative flex-shrink-0">
                             <img src={video.thumbnail} alt="" className="w-20 h-12 rounded object-cover" />
                             {watched && (
-                              <CheckCircle className="w-4 h-4 text-green-400 absolute -top-1 -right-1 bg-black rounded-full" />
+                              <CheckCircle className="w-4 h-4 text-black dark:text-white absolute -top-1 -right-1 bg-white dark:bg-black rounded-full" />
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
                             <h3 className="font-semibold text-sm line-clamp-2">{video.title}</h3>
-                            <p className="text-xs text-white/60">{video.channel}</p>
-                            {watched && <span className="text-xs text-green-400">🎯 Score: {watched.aiScore}/100</span>}
+                            <p className="text-xs text-gray-500 dark:text-white/60">{video.channel}</p>
+                            {watched && <span className="text-xs text-gray-500 dark:text-white/60">Score: {watched.aiScore}/100</span>}
                           </div>
                         </div>
                       </motion.div>
@@ -598,7 +598,7 @@ export default function VideoIntel({ initialPlaylist }: VideoIntelProps = {}) {
             <div className="lg:col-span-2">
               {selectedVideo ? (
                 <motion.div key={selectedVideo.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-                  <div className="bg-black rounded-2xl overflow-hidden border border-white/10">
+                  <div className="bg-black rounded-2xl overflow-hidden border border-gray-200 dark:border-white/10">
                     <YouTubePlayer
                       videoId={selectedVideo.id}
                       playerRef={playerRef}
@@ -608,17 +608,17 @@ export default function VideoIntel({ initialPlaylist }: VideoIntelProps = {}) {
                     />
                   </div>
 
-                  <div className="bg-white/5 border border-white/10 rounded-xl p-6">
+                  <div className="bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl p-6">
                     <div className="flex justify-between items-start mb-4">
                       <div>
                         <h2 className="text-2xl font-bold mb-1">{selectedVideo.title}</h2>
-                        <p className="text-white/60">{selectedVideo.channel}</p>
+                        <p className="text-gray-500 dark:text-white/60">{selectedVideo.channel}</p>
                       </div>
                       <button
                         onClick={() => window.open(`https://youtube.com/watch?v=${selectedVideo.id}`, '_blank')}
-                        className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm font-semibold transition"
+                        className="px-4 py-2 border border-gray-300 dark:border-white/10 rounded-lg text-sm font-semibold hover:bg-gray-100 dark:hover:bg-white/10 transition"
                       >
-                        ▶️ YouTube
+                        YouTube
                       </button>
                     </div>
 
@@ -626,20 +626,20 @@ export default function VideoIntel({ initialPlaylist }: VideoIntelProps = {}) {
                     <div className="flex items-center gap-3 mb-4">
                       <button
                         onClick={() => handleFeedback('like')}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition ${
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition border ${
                           feedbackGiven === 'like'
-                            ? 'bg-green-500/20 text-green-300 border border-green-500/40'
-                            : 'bg-white/5 border border-white/10 text-white/70 hover:bg-white/10'
+                            ? 'bg-black text-white dark:bg-white dark:text-black border-transparent'
+                            : 'border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10'
                         }`}
                       >
                         <ThumbsUp className="w-4 h-4" /> Helpful
                       </button>
                       <button
                         onClick={() => handleFeedback('dislike')}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition ${
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition border ${
                           feedbackGiven === 'dislike'
-                            ? 'bg-red-500/20 text-red-300 border border-red-500/40'
-                            : 'bg-white/5 border border-white/10 text-white/70 hover:bg-white/10'
+                            ? 'bg-black text-white dark:bg-white dark:text-black border-transparent'
+                            : 'border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10'
                         }`}
                       >
                         <ThumbsDown className="w-4 h-4" /> Not for me
@@ -648,54 +648,54 @@ export default function VideoIntel({ initialPlaylist }: VideoIntelProps = {}) {
                       {hasNextVideo && (
                         <button
                           onClick={handleNextVideo}
-                          className="ml-auto flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-purple-600 hover:bg-purple-700 transition"
+                          className="ml-auto flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-black text-white dark:bg-white dark:text-black hover:opacity-80 transition"
                         >
                           Next <SkipForward className="w-4 h-4" />
                         </button>
                       )}
                     </div>
 
-                    <div className="bg-purple-600/10 border border-purple-500/20 rounded-lg p-4 mb-4">
-                      <h3 className="font-semibold mb-3">📊 Watch Progress</h3>
+                    <div className="border border-gray-200 dark:border-white/10 rounded-lg p-4 mb-4">
+                      <h3 className="font-semibold mb-3">Watch Progress</h3>
                       <div className="flex justify-between text-sm mb-2">
                         <span>Watched</span>
-                        <span className="text-white/60">
+                        <span className="text-gray-500 dark:text-white/60">
                           {formatTime(watchStats.watchedDuration)} / {formatTime(watchStats.totalDuration)}
                         </span>
                       </div>
-                      <div className="w-full bg-black/30 rounded-full h-2 mb-4">
+                      <div className="w-full bg-gray-100 dark:bg-white/10 rounded-full h-2 mb-4">
                         <div
-                          className="h-full bg-gradient-to-r from-purple-600 to-pink-600 rounded-full transition-all"
+                          className="h-full bg-black dark:bg-white rounded-full transition-all"
                           style={{ width: `${watchStats.watchPercentage}%` }}
                         />
                       </div>
                       <div className="grid grid-cols-2 gap-2 text-sm">
                         <div className="flex justify-between">
                           <span>Pauses:</span>
-                          <span className="text-white/60">{watchStats.pauseCount}x</span>
+                          <span className="text-gray-500 dark:text-white/60">{watchStats.pauseCount}x</span>
                         </div>
                         <div className="flex justify-between">
                           <span>Rewinds:</span>
-                          <span className="text-white/60">{watchStats.rewindCount}x</span>
+                          <span className="text-gray-500 dark:text-white/60">{watchStats.rewindCount}x</span>
                         </div>
                         <div className="flex justify-between">
                           <span>Speed:</span>
-                          <span className="text-white/60">{watchStats.playbackSpeed}x</span>
+                          <span className="text-gray-500 dark:text-white/60">{watchStats.playbackSpeed}x</span>
                         </div>
                         <div className="flex justify-between">
                           <span>Complete:</span>
-                          <span className="text-white/60">{Math.round(watchStats.watchPercentage)}%</span>
+                          <span className="text-gray-500 dark:text-white/60">{Math.round(watchStats.watchPercentage)}%</span>
                         </div>
                       </div>
                     </div>
 
-                    {/* TWO BUTTONS: Deep Notes + AI Analysis */}
+                    {/* TWO BUTTONS: Deep Notes + Analysis */}
                     <div className="grid grid-cols-2 gap-3">
                       <button
                         onClick={() => setShowDeepNotes(true)}
-                        className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold transition"
+                        className="px-4 py-2.5 border border-gray-300 dark:border-white/10 rounded-lg font-semibold hover:bg-gray-100 dark:hover:bg-white/10 transition"
                       >
-                        📚 Deep Notes
+                        Deep Notes
                       </button>
                       <button
                         onClick={() => {
@@ -704,9 +704,9 @@ export default function VideoIntel({ initialPlaylist }: VideoIntelProps = {}) {
                             analyzeVideoTranscript(selectedVideo.id);
                           }
                         }}
-                        className="px-4 py-2.5 bg-cyan-600 hover:bg-cyan-700 rounded-lg font-semibold transition flex items-center justify-center gap-2"
+                        className="px-4 py-2.5 border border-gray-300 dark:border-white/10 rounded-lg font-semibold hover:bg-gray-100 dark:hover:bg-white/10 transition flex items-center justify-center gap-2"
                       >
-                        <Volume2 className="w-4 h-4" /> AI Analysis
+                        <Volume2 className="w-4 h-4" /> Analysis
                       </button>
                     </div>
 
@@ -716,13 +716,13 @@ export default function VideoIntel({ initialPlaylist }: VideoIntelProps = {}) {
                           initial={{ opacity: 0, height: 0 }}
                           animate={{ opacity: 1, height: 'auto' }}
                           exit={{ opacity: 0, height: 0 }}
-                          className="mt-4 bg-black/30 rounded-lg p-4 text-sm text-white/70 space-y-3"
+                          className="mt-4 border border-gray-200 dark:border-white/10 rounded-lg p-4 text-sm text-gray-600 dark:text-white/70 space-y-3"
                         >
-                          {transcriptLoading && <p>🔍 Transcript fetch ho raha hai aur Gemini analyze kar raha hai...</p>}
-                          {transcriptError && <p className="text-red-400">❌ {transcriptError}</p>}
+                          {transcriptLoading && <p>Transcript fetch ho raha hai, analyze ho raha hai...</p>}
+                          {transcriptError && <p className="text-red-500 dark:text-red-400">{transcriptError}</p>}
                           {teacherProfile && !transcriptLoading && (
                             <div className="space-y-2">
-                              <h4 className="text-white font-semibold text-sm">🎯 Teaching Style Profile</h4>
+                              <h4 className="font-semibold text-sm">Teaching Style Profile</h4>
                               <div className="grid grid-cols-2 gap-2 text-xs">
                                 <div>Pace: {teacherProfile.pace}/10</div>
                                 <div>Practical: {teacherProfile.theory_vs_practical}/10</div>
@@ -733,14 +733,14 @@ export default function VideoIntel({ initialPlaylist }: VideoIntelProps = {}) {
                                 <div>Repetition: {teacherProfile.repetition}/10</div>
                                 <div>Prerequisite: {teacherProfile.prerequisite_assumed}/10</div>
                               </div>
-                              <p className="text-white/60 mt-2">
-                                <span className="text-purple-300">Style:</span> {teacherProfile.primary_style}
+                              <p className="text-gray-500 dark:text-white/60 mt-2">
+                                <span className="font-medium">Style:</span> {teacherProfile.primary_style}
                               </p>
-                              <p className="text-white/60">
-                                <span className="text-green-300">Ideal for:</span> {teacherProfile.ideal_for}
+                              <p className="text-gray-500 dark:text-white/60">
+                                <span className="font-medium">Ideal for:</span> {teacherProfile.ideal_for}
                               </p>
-                              <p className="text-white/60">
-                                <span className="text-red-300">Avoid for:</span> {teacherProfile.avoid_for}
+                              <p className="text-gray-500 dark:text-white/60">
+                                <span className="font-medium">Avoid for:</span> {teacherProfile.avoid_for}
                               </p>
                             </div>
                           )}
@@ -750,10 +750,10 @@ export default function VideoIntel({ initialPlaylist }: VideoIntelProps = {}) {
                   </div>
                 </motion.div>
               ) : (
-                <div className="h-96 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center">
+                <div className="h-96 border border-gray-200 dark:border-white/10 rounded-2xl flex items-center justify-center">
                   <div className="text-center">
-                    <Play className="w-16 h-16 mx-auto mb-4 text-white/30" />
-                    <p className="text-white/60">Video select karo dekhne ke liye</p>
+                    <Play className="w-16 h-16 mx-auto mb-4 text-gray-300 dark:text-white/30" />
+                    <p className="text-gray-500 dark:text-white/60">Video select karo dekhne ke liye</p>
                   </div>
                 </div>
               )}
