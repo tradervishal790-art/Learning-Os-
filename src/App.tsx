@@ -6,7 +6,7 @@ import Onboarding3D from './Onboarding3D';
 import Dashboard from './Dashboard';
 import { ThemeProvider } from './ThemeContext';
 import type { UserOnboardingData } from './types';
-
+import { trackOnboardingComplete, trackDashboardOpen } from './firebase';
 type Page = 'landing' | 'onboarding' | 'dashboard';
 
 const ONBOARDING_STORAGE_KEY = 'learning_os_onboarding_data';
@@ -63,6 +63,12 @@ function App() {
 
   const handleOnboardingComplete = async (data: UserOnboardingData) => {
     setUserData(data);
+    trackOnboardingComplete({
+  name: (data as unknown as Record<string, string>).name,
+  role: (data as unknown as Record<string, string>).role,
+  goal: (data as unknown as Record<string, string>).goal,
+  language: (data as unknown as Record<string, string>).language,
+});
     localStorage.setItem(ONBOARDING_STORAGE_KEY, JSON.stringify(data));
 
     try {
