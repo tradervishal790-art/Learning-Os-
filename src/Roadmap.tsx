@@ -5,6 +5,7 @@ import type { Topic, Video } from './types';
 import { buildCandidatePoolForConcept } from './conceptVideoPool';
 import { selectPlaylistForConcept, analyzedVideoToVideo, getLastTeacherForConcept } from './PlaylistBuilder';
 import { getLearningProfile } from './learningProfileStore';
+import DeepDiveChat from './DeepDiveChat';
 
 const statusConfig: Record<Topic['status'], { label: string; bg: string; border: string; text: string; icon: string }> = {
   mastered: { label: 'Mastered', bg: 'bg-gray-50 dark:bg-white/5', border: 'border-gray-200 dark:border-white/10', text: 'text-gray-600 dark:text-white/70', icon: '⭐' },
@@ -41,6 +42,7 @@ export default function Roadmap({ onLaunchPlaylist }: RoadmapProps) {
   const [playlistError, setPlaylistError] = useState('');
   const [topicHours, setTopicHours] = useState(0);
   const [topicDeadline, setTopicDeadline] = useState('');
+  const [showDeepDive, setShowDeepDive] = useState(false);
 
   const roadmap = getRoadmapData();
   const { total: totalTopics, completed: completedTopics, learning: learningTopics, percent: progressPercent } =
@@ -105,17 +107,17 @@ export default function Roadmap({ onLaunchPlaylist }: RoadmapProps) {
   };
 
   return (
-    <div className="p-8 max-w-6xl mx-auto text-black dark:text-white">
+    <div className="p-4 md:p-8 max-w-6xl mx-auto text-black dark:text-white">
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="mb-8">
         <div className="flex items-center gap-3 mb-2">
           <span className="text-2xl">🗺️</span>
-          <h1 className="text-3xl md:text-4xl font-bold">Your Roadmap</h1>
+          <h1 className="text-2xl md:text-4xl font-bold">Your Roadmap</h1>
         </div>
       </motion.div>
 
       {/* Top stats */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.5 }} className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.5 }} className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-8">
         <div className="p-4 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5">
           <div className="text-xs text-gray-400 dark:text-white/40 uppercase tracking-wider mb-1">Progress</div>
           <div className="text-2xl font-bold">{progressPercent}%</div>
@@ -147,12 +149,12 @@ export default function Roadmap({ onLaunchPlaylist }: RoadmapProps) {
       </motion.div>
 
       {/* Main path card */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.5 }} className="p-6 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 mb-6">
-        <div className="flex items-center justify-between">
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.5 }} className="p-5 md:p-6 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 mb-6">
+        <div className="flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-black dark:bg-white flex items-center justify-center text-2xl">🎯</div>
+            <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-black dark:bg-white flex items-center justify-center text-2xl flex-shrink-0">🎯</div>
             <div>
-             <h2 className="text-xl font-bold">{roadmap.title}</h2>
+             <h2 className="text-lg md:text-xl font-bold">{roadmap.title}</h2>
               <p className="text-sm text-gray-500 dark:text-white/50">{roadmap.description}</p>
             </div>
           </div>
@@ -175,12 +177,12 @@ export default function Roadmap({ onLaunchPlaylist }: RoadmapProps) {
               transition={{ delay: 0.4 + i * 0.08, duration: 0.4 }}
               onClick={() => openTopic(topic)}
               disabled={topic.status === 'locked'}
-              className={`relative w-full p-5 rounded-2xl border ${status.border} ${status.bg} text-left transition-all ${
-                topic.status === 'locked' ? 'opacity-50 cursor-not-allowed' : 'hover:scale-[1.01] cursor-pointer'
+              className={`relative w-full p-4 md:p-5 rounded-2xl border ${status.border} ${status.bg} text-left transition-all ${
+                topic.status === 'locked' ? 'opacity-50 cursor-not-allowed' : 'hover:scale-[1.01] active:scale-[0.99] cursor-pointer'
               }`}
             >
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl border border-gray-200 dark:border-white/10 flex items-center justify-center text-xl flex-shrink-0">
+              <div className="flex items-center gap-3 md:gap-4">
+                <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl border border-gray-200 dark:border-white/10 flex items-center justify-center text-lg md:text-xl flex-shrink-0">
                   {status.icon}
                 </div>
 
@@ -191,8 +193,8 @@ export default function Roadmap({ onLaunchPlaylist }: RoadmapProps) {
                       • {topic.difficulty}
                     </span>
                   </div>
-                  <h3 className="font-semibold mb-1">{topic.title}</h3>
-                  <p className="text-sm text-gray-500 dark:text-white/50 line-clamp-1">{topic.description}</p>
+                  <h3 className="font-semibold mb-1 text-sm md:text-base">{topic.title}</h3>
+                  <p className="text-xs md:text-sm text-gray-500 dark:text-white/50 line-clamp-1">{topic.description}</p>
                 </div>
 
                 <div className="text-right flex-shrink-0">
@@ -202,7 +204,7 @@ export default function Roadmap({ onLaunchPlaylist }: RoadmapProps) {
               </div>
 
               {!isLast && (
-                <div className="absolute left-[2.4rem] -bottom-3 w-0.5 h-3 bg-gradient-to-b from-gray-200 dark:from-white/20 to-transparent" />
+                <div className="absolute left-[2.2rem] md:left-[2.4rem] -bottom-3 w-0.5 h-3 bg-gradient-to-b from-gray-200 dark:from-white/20 to-transparent" />
               )}
             </motion.button>
           );
@@ -217,6 +219,7 @@ export default function Roadmap({ onLaunchPlaylist }: RoadmapProps) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
             onClick={() => setSelectedTopic(null)}
           >
             <motion.div
@@ -227,7 +230,7 @@ export default function Roadmap({ onLaunchPlaylist }: RoadmapProps) {
               className="bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-white/10 rounded-3xl max-w-3xl w-full max-h-[90vh] overflow-auto text-black dark:text-white"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="p-6 border-b border-gray-200 dark:border-white/5">
+              <div className="p-5 md:p-6 border-b border-gray-200 dark:border-white/5">
                 <div className="flex items-center justify-between mb-3">
                   <span
                     className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full border ${statusConfig[selectedTopic.status].border} ${statusConfig[selectedTopic.status].text}`}
@@ -236,12 +239,12 @@ export default function Roadmap({ onLaunchPlaylist }: RoadmapProps) {
                   </span>
                   <button
                     onClick={() => setSelectedTopic(null)}
-                    className="w-8 h-8 rounded-full border border-gray-200 dark:border-white/10 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-white/10 transition"
+                    className="w-8 h-8 rounded-full border border-gray-200 dark:border-white/10 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-white/10 transition flex-shrink-0"
                   >
                     ✕
                   </button>
                 </div>
-                <h2 className="text-2xl font-bold mb-2">{selectedTopic.title}</h2>
+                <h2 className="text-xl md:text-2xl font-bold mb-2">{selectedTopic.title}</h2>
                 <p className="text-gray-500 dark:text-white/60 text-sm">{selectedTopic.description}</p>
                 <div className="flex items-center gap-3 mt-3 text-xs text-gray-400 dark:text-white/40">
                   <span>⏱️ {selectedTopic.estimatedTime}</span>
@@ -265,7 +268,7 @@ export default function Roadmap({ onLaunchPlaylist }: RoadmapProps) {
                 </button>
               </div>
 
-              <div className="p-6">
+              <div className="p-5 md:p-6">
                 {!showWhy ? (
                   <div className="space-y-4">
                     <div className="p-4 rounded-xl border border-gray-200 dark:border-white/10">
@@ -280,19 +283,19 @@ export default function Roadmap({ onLaunchPlaylist }: RoadmapProps) {
                           <button
                             key={h}
                             onClick={() => setTopicHours(h)}
-                            className={`flex-1 py-2 rounded-lg text-sm border transition ${topicHours === h ? 'bg-black text-white dark:bg-white dark:text-black border-transparent' : 'border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10'}`}
+                            className={`flex-1 py-2.5 md:py-2 rounded-lg text-sm border transition ${topicHours === h ? 'bg-black text-white dark:bg-white dark:text-black border-transparent' : 'border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10'}`}
                           >
                             {h}h
                           </button>
                         ))}
                       </div>
                       <h3 className="text-sm font-semibold mb-2">Deadline</h3>
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 flex-wrap">
                         {deadlineOptions.map((d) => (
                           <button
                             key={d.id}
                             onClick={() => setTopicDeadline(d.id)}
-                            className={`flex-1 py-2 rounded-lg text-sm border transition ${topicDeadline === d.id ? 'bg-black text-white dark:bg-white dark:text-black border-transparent' : 'border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10'}`}
+                            className={`flex-1 min-w-[3.5rem] py-2.5 md:py-2 rounded-lg text-sm border transition ${topicDeadline === d.id ? 'bg-black text-white dark:bg-white dark:text-black border-transparent' : 'border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10'}`}
                           >
                             {d.label}
                           </button>
@@ -302,9 +305,16 @@ export default function Roadmap({ onLaunchPlaylist }: RoadmapProps) {
 
                     <div className="p-4 rounded-xl border border-gray-200 dark:border-white/10">
                       <button
+                        onClick={() => setShowDeepDive(true)}
+                        className="w-full text-left px-3 py-3 rounded-lg border border-purple-300/30 dark:border-purple-500/20 bg-purple-50 dark:bg-purple-500/5 text-sm text-purple-700 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-500/10 active:scale-[0.99] transition mb-3"
+                      >
+                        🔍 2 quick sawaal poochu? Better matched videos milenge (optional)
+                      </button>
+
+                      <button
                         onClick={handleWatchVideos}
                         disabled={playlistLoading}
-                        className="w-full px-4 py-2.5 rounded-lg bg-black text-white dark:bg-white dark:text-black disabled:opacity-40 text-sm font-semibold transition"
+                        className="w-full px-4 py-3.5 md:py-2.5 rounded-lg bg-black text-white dark:bg-white dark:text-black disabled:opacity-40 text-sm font-semibold transition active:scale-[0.98]"
                       >
                         {playlistLoading ? 'Dhundh raha hoon...' : 'Watch videos'}
                       </button>
@@ -338,6 +348,16 @@ export default function Roadmap({ onLaunchPlaylist }: RoadmapProps) {
               </div>
             </motion.div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Deep Dive optional Q&A modal */}
+      <AnimatePresence>
+        {showDeepDive && (
+          <DeepDiveChat
+            onClose={() => setShowDeepDive(false)}
+            onComplete={() => setShowDeepDive(false)}
+          />
         )}
       </AnimatePresence>
     </div>

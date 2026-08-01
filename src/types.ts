@@ -6,12 +6,16 @@
 // ============================================================
 
 // ---------- Onboarding ----------
+
 export interface UserOnboardingData {
+  name: string;        // ← already added (Settings ke liye)
   role: string;
   goal: string;
   language: string;
-  name: string;
+  hours: number;       // ← ADD THIS LINE
+  deadline: string;
 }
+
 
 // ---------- Playlist timing (moved out of onboarding, asked at playlist-creation time) ----------
 export interface PlaylistTiming {
