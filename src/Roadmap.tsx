@@ -68,8 +68,9 @@ export default function Roadmap({ onLaunchPlaylist }: RoadmapProps) {
     setPlaylistError('');
     setPlaylistLoading(true);
     try {
-      // Timing choice stored for the Revision engine to read later —
-      // not yet used by the ranking algorithm itself.
+      // Timing choice stored for the Revision engine to read later,
+      // AND now also fed into the ranking algorithm below (timing param)
+      // so a tight deadline actually biases which videos get picked.
       if (topicHours || topicDeadline) {
         try {
           localStorage.setItem(
@@ -88,7 +89,10 @@ export default function Roadmap({ onLaunchPlaylist }: RoadmapProps) {
       }
 
       const currentTeacherId = getLastTeacherForConcept(selectedTopic.id);
-      const result = selectPlaylistForConcept(candidates, learnerProfile, currentTeacherId);
+      const result = selectPlaylistForConcept(candidates, learnerProfile, currentTeacherId, {
+        hours: topicHours,
+        deadline: topicDeadline,
+      });
       if (!result) {
         setPlaylistError('Playlist ban nahi payi, dobara try karo.');
         return;
@@ -301,6 +305,11 @@ export default function Roadmap({ onLaunchPlaylist }: RoadmapProps) {
                           </button>
                         ))}
                       </div>
+                      {topicDeadline && topicDeadline !== 'none' && topicHours > 0 && (
+                        <p className="text-xs text-gray-400 dark:text-white/40 mt-3">
+                          Is deadline ke hisaab se, tez-paced videos ko priority milegi taaki topic time par complete ho sake.
+                        </p>
+                      )}
                     </div>
 
                     <div className="p-4 rounded-xl border border-gray-200 dark:border-white/10">

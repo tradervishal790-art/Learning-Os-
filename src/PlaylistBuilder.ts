@@ -11,6 +11,14 @@ import type { EngagementSession, LearningProfile, Video } from './types';
 // This file does NOT track engagement and does NOT call any AI API.
 // It only READS from engagementStore.ts (past sessions). It uses the
 // real LearningProfile / EngagementSession types from types.ts.
+//
+// DEADLINE AWARENESS (new):
+// If the user picked hours/week + a deadline for this topic, we convert
+// that into a total-hours budget and use it to nudge the learner's
+// effective "pace" preference upward when time is tight. A higher pace
+// score makes dimensionMatchScore favor faster / denser videos, so the
+// selected playlist is more likely to fit inside the deadline instead of
+// picking slow, deep-dive content that would blow past it.
 // ============================================================
 
 // ---- Types ----
@@ -51,6 +59,17 @@ export interface PlaylistResult {
   teacherSwitched: boolean;
 }
 
+/**
+ * User-chosen timing for a topic/custom playlist — hours/week they can commit
+ * and a deadline bucket. Both come straight from the UI (Roadmap.tsx /
+ * Dashboard.tsx custom playlist modal). `deadline` matches the `id` values of
+ * the deadlineOptions used in those components: 'none' | '1m' | '3m' | '6m' | '1y'.
+ */
+export interface PlaylistTiming {
+  hours: number;
+  deadline: string;
+}
+
 // ---- Tunable weights ----
 const WEIGHTS = {
   dimensionMatch: 0.5,
@@ -61,6 +80,50 @@ const WEIGHTS = {
 // Don't switch teacher unless the alternative is meaningfully better —
 // prevents flip-flopping between two close-scoring teachers every concept.
 const SWITCH_THRESHOLD = 0.12; // on a 0-1 normalized score
+
+// ---- Deadline handling ----
+
+/** Approximate days for each deadline bucket used across the UI. */
+const DEADLINE_DAYS: Record<string, number> = {
+  none: Infinity,
+  '1m': 30,
+  '3m': 90,
+  '6m': 180,
+  '1y': 365,
+};
+
+/**
+ * Converts hours/week + deadline bucket into a total-hours budget.
+ * Returns Infinity if there's no real constraint (no deadline chosen,
+ * or no hours/week given) — meaning "no urgency, don't touch pace".
+ */
+function calculateAvailableHours(timing?: PlaylistTiming): number {
+  if (!timing) return Infinity;
+  const { hours, deadline } = timing;
+  if (!hours || !deadline || deadline === 'none') return Infinity;
+  const days = DEADLINE_DAYS[deadline];
+  if (!days || days === Infinity) return Infinity;
+  const weeks = days / 7;
+  return weeks * hours;
+}
+
+/**
+ * Bumps the learner's pace preference upward when the available-hours
+ * budget is tight, so faster/denser videos score higher in dimensionMatchScore.
+ * Thresholds are deliberately simple/tunable — not derived from real usage data yet.
+ *   < 40 total hours available  -> big push toward fast pace (+3)
+ *   < 100 total hours available -> moderate push (+1.5)
+ *   otherwise                   -> no change, learner's own pace stands
+ * Result is clamped to the 1-10 scale used everywhere else.
+ */
+function adjustPaceForUrgency(basePace: number, timing?: PlaylistTiming): number {
+  const availableHours = calculateAvailableHours(timing);
+  let boost = 0;
+  if (availableHours < 40) boost = 3;
+  else if (availableHours < 100) boost = 1.5;
+  if (boost === 0) return basePace;
+  return Math.min(10, Math.max(1, basePace + boost));
+}
 
 // ---- Mapping: real LearningProfile (camelCase, quiz-derived) -> TeachingDimensions (snake_case, Gemini-derived) ----
 // Both scales are 1-10 and conceptually aligned pair-for-pair:
@@ -138,15 +201,22 @@ function scoreCandidate(
  * @param candidates   pre-analyzed candidate pool for this concept (5-10 videos)
  * @param learnerProfile  the student's current LearningProfile (from quiz / PersonalizationEngine)
  * @param currentTeacherId  teacherId of the last-completed video for this concept, if any (for continuity) — see getLastTeacherForConcept()
+ * @param timing  optional hours/week + deadline the user picked for this topic/custom playlist.
+ *                When the resulting time budget is tight, the learner's effective pace
+ *                preference is nudged up so faster-paced videos are favored — see
+ *                adjustPaceForUrgency(). Omit or pass { hours: 0, deadline: 'none' } for no effect.
  */
 export function selectPlaylistForConcept(
   candidates: AnalyzedVideo[],
   learnerProfile: LearningProfile,
-  currentTeacherId?: string
+  currentTeacherId?: string,
+  timing?: PlaylistTiming
 ): PlaylistResult | null {
   if (candidates.length === 0) return null;
 
   const learnerDimensions = dimensionsFromLearningProfile(learnerProfile);
+  learnerDimensions.pace = adjustPaceForUrgency(learnerDimensions.pace, timing);
+
   const allSessions = getEngagementSessions();
 
   const scored = candidates
@@ -188,13 +258,20 @@ export function selectPlaylistForConcept(
  * updated the LearningProfile). Re-scores the remaining candidate pool for
  * the CURRENT concept — use this instead of selectPlaylistForConcept when
  * the student hasn't moved to a new concept, only their profile changed.
+ *
+ * @param timing  same optional hours/week + deadline as selectPlaylistForConcept,
+ *                so reranking after a completed video keeps respecting the same
+ *                urgency the student set when they started this topic.
  */
 export function rerankRemaining(
   remainingCandidates: AnalyzedVideo[],
   updatedLearnerProfile: LearningProfile,
-  currentTeacherId?: string
+  currentTeacherId?: string,
+  timing?: PlaylistTiming
 ): AnalyzedVideo[] {
   const learnerDimensions = dimensionsFromLearningProfile(updatedLearnerProfile);
+  learnerDimensions.pace = adjustPaceForUrgency(learnerDimensions.pace, timing);
+
   const allSessions = getEngagementSessions();
 
   return remainingCandidates
