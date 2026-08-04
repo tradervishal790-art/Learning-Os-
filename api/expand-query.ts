@@ -15,6 +15,10 @@ interface Blueprint {
   };
 }
 
+// gemini-2.5-flash was returning 404 / API errors — same issue as Mentor.tsx had.
+// gemini-flash-latest auto-points to the current stable Flash model.
+const GEMINI_MODEL = 'gemini-flash-latest';
+
 const QUERY_EXPANSION_PROMPT = (userInput: string, blueprint: Blueprint) => `
 User ne likha: "${userInput}"
 
@@ -73,7 +77,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -86,6 +90,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const data = await geminiRes.json();
 
     if (!geminiRes.ok) {
+      console.error('Gemini API error:', geminiRes.status, data);
       return res.status(502).json({ error: 'Gemini API error', detail: data });
     }
 
@@ -108,6 +113,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       searchHint: parsed.searchHint ?? '',
     });
   } catch (err: any) {
+    console.error('Query expansion failed:', err);
     return res.status(500).json({ error: err?.message || 'Query expansion failed' });
   }
 }
