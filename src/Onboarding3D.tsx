@@ -64,11 +64,13 @@ const languages: CardOption[] = [
 export default function Onboarding3D({ onComplete }: Onboarding3DProps) {
   const [step, setStep] = useState(0);
   const [data, setData] = useState<UserOnboardingData>({
-    role: '',
-    goal: '',
-    language: '',
-    name: '',
-  });
+  role: '',
+  goal: '',
+  language: '',
+  name: '',
+  hours: 0,
+  deadline: 'none',
+});
 
   const next = () => {
     if (step < stepTitles.length - 1) {
