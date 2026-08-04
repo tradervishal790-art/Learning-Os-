@@ -22,7 +22,7 @@ def get_transcript(video_id):
     return " ".join([snippet.text for snippet in transcript])
 
 def analyze_teacher_style(transcript_text):
-    model = genai.GenerativeModel("gemini-3.5-flash")
+    model = genai.GenerativeModel("gemini-flash-latest")
     prompt = f"""
 Is transcript ko analyze karke teacher ka teaching-style profile do, in dimensions par 1-10 scale mein score karo:
 
