@@ -50,7 +50,6 @@ Transcript:
     # Kabhi-kabhi Gemini ```json wrap kar deta hai, usko clean karte hain
     text = text.replace("```json", "").replace("```", "").strip()
     return text
-
 def main():
     all_results = {}
 
