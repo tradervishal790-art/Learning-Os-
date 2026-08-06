@@ -156,3 +156,31 @@ export interface QuizAnswer {
   questionId: string;
   value: QuizAnswerValue;
 }
+// ---------- Result envelope for API-calling functions ----------
+// Distinguishes "call failed" from "call succeeded but found nothing"
+export type FailureStage =
+  | 'query-expansion'
+  | 'video-search'
+  | 'video-analysis'
+  | 'config'
+  | 'unknown';
+
+export type ApiResult<T> =
+  | { ok: true; data: T }
+  | { ok: false; stage: FailureStage; reason: string };
+
+// ---------- Teacher-style analysis source tracking ----------
+export type AnalysisSource = 'transcript' | 'metadata-fallback';
+
+// ---------- localStorage cache envelopes ----------
+export interface CachedQueryExpansion {
+  cacheKey: string;
+  queries: string[];
+  cachedAt: string;
+}
+
+export interface CachedCandidatePool {
+  cacheKey: string;
+  videoIds: string[];
+  cachedAt: string;
+}

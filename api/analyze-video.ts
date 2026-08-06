@@ -1,27 +1,38 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { YoutubeTranscript } from 'youtube-transcript';
+import { GEMINI_MODEL } from '../src/constants';
 
 // ============================================================
 // api/analyze-video.ts
 //
-// POST body: { videoId: string }
-// Response:  { profile: {...teacher dimensions...}, transcriptLength: number }
+// POST body: { videoId: string, title?: string, description?: string }
+// Response:  { profile: {...teacher dimensions...}, analysisSource: "transcript" | "metadata-fallback" }
 //
-// This runs server-side (Vercel serverless function) because:
-// 1. YouTube transcript fetching gets CORS-blocked from the browser
-// 2. Keeps the Gemini API key off the client bundle
+// ── FAILURE MODE (previously the #1 bug in this system) ────────────────
+// Transcript fetching via the unofficial `youtube-transcript` package
+// scrapes YouTube directly. Vercel's datacenter IPs get rate-limited, and
+// many videos simply have captions disabled. Previously, this function
+// returned an error the moment transcript fetch failed, which caused
+// conceptVideoPool.ts to silently drop that candidate — and if EVERY
+// candidate's transcript failed, the user saw a false "no videos found"
+// even though search worked fine.
 //
-// Setup needed:
-//   npm install youtube-transcript
-//   npm install -D @vercel/node
-//   Add VITE_GEMINI_API_KEY in Vercel Project Settings → Environment
-//   Variables (the .env.local value is NOT deployed automatically)
+// FIX: transcript is the PRIMARY path. If it fails for any reason, fall
+// back to a lightweight Gemini prompt that infers the same teaching-style
+// profile from TITLE + DESCRIPTION only (lower confidence, still usable).
+// Only return a genuine error if BOTH paths fail. Response always reports
+// which path was used so failures stay diagnosable, not silent.
+// ─────────────────────────────────────────────────────────────────────────
+//
+// Env var used: VITE_GEMINI_API_KEY — same key as api/expand-query.ts.
+// Do not confuse with VITE_YOUTUBE_API_KEY (different service, different key).
 // ============================================================
 
 const TRANSCRIPT_CHAR_LIMIT = 8000;
+const MIN_TRANSCRIPT_LENGTH = 50;
 
-const ANALYSIS_PROMPT = (transcript: string) => `
-Is transcript ko analyze karke teacher ka teaching-style profile do, in dimensions par 1-10 scale mein score karo:
+const DIMENSION_PROMPT = (basis: string, sourceLabel: string) => `
+Is ${sourceLabel} ko analyze karke teacher ka teaching-style profile do, in dimensions par 1-10 scale mein score karo:
 
 1. pace (1=very slow/detailed, 10=fast/dense)
 2. theory_vs_practical (1=pure theory, 10=pure hands-on/examples)
@@ -39,9 +50,55 @@ Ye bhi do:
 
 Sirf JSON return karo, koi extra text nahi, koi markdown backticks nahi.
 
-Transcript:
-${transcript.slice(0, TRANSCRIPT_CHAR_LIMIT)}
+Content:
+${basis.slice(0, TRANSCRIPT_CHAR_LIMIT)}
 `;
+
+/** Fetches and flattens a transcript. Returns null (never throws) on any
+ *  failure — caller decides what to do next (fall back to metadata). */
+async function tryFetchTranscript(videoId: string): Promise<string | null> {
+  try {
+    let chunks;
+    try {
+      chunks = await YoutubeTranscript.fetchTranscript(videoId, { lang: 'hi' });
+    } catch {
+      chunks = await YoutubeTranscript.fetchTranscript(videoId);
+    }
+    const text = chunks.map((c) => c.text).join(' ');
+    return text.trim().length >= MIN_TRANSCRIPT_LENGTH ? text : null;
+  } catch {
+    return null;
+  }
+}
+
+async function scoreWithGemini(
+  apiKey: string,
+  basis: string,
+  sourceLabel: string
+): Promise<any | null> {
+  try {
+    const geminiRes = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: DIMENSION_PROMPT(basis, sourceLabel) }] }],
+        }),
+      }
+    );
+
+    if (!geminiRes.ok) return null;
+
+    const geminiData = await geminiRes.json();
+    const rawText: string = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+    const cleaned = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
+
+    return JSON.parse(cleaned);
+  } catch {
+    return null;
+  }
+}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
@@ -49,7 +106,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
-  const { videoId } = (req.body ?? {}) as { videoId?: string };
+  const { videoId, title, description } = (req.body ?? {}) as {
+    videoId?: string;
+    title?: string;
+    description?: string;
+  };
+
   if (!videoId) {
     res.status(400).json({ error: 'videoId is required' });
     return;
@@ -61,63 +123,40 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
-  // 1. Fetch transcript — try Hindi/English first, fall back to whatever is available
-  let transcriptText = '';
-  try {
-    let chunks;
-    try {
-      chunks = await YoutubeTranscript.fetchTranscript(videoId, { lang: 'hi' });
-    } catch {
-      chunks = await YoutubeTranscript.fetchTranscript(videoId);
+  // ── Primary path: transcript ──────────────────────────────────────────
+  const transcript = await tryFetchTranscript(videoId);
+  let profile: any = null;
+  let analysisSource: 'transcript' | 'metadata-fallback' = 'transcript';
+
+  if (transcript) {
+    profile = await scoreWithGemini(apiKey, transcript, 'transcript');
+  }
+
+  // ── Fallback path: title + description ────────────────────────────────
+  // Triggered whenever transcript fetch failed OR transcript scoring failed.
+  // Never silently drop the candidate — always attempt this before giving up.
+  if (!profile) {
+    const metadataBasis = `Title: ${title ?? ''}\n\nDescription: ${description ?? ''}`;
+    if ((title || description)) {
+      profile = await scoreWithGemini(
+        apiKey,
+        metadataBasis,
+        "video's title and description (no transcript was available)"
+      );
+      analysisSource = 'metadata-fallback';
     }
-    transcriptText = chunks.map((c) => c.text).join(' ');
-  } catch (err: any) {
+  }
+
+  if (!profile) {
+    // Both paths failed — this is the only legitimate case to report failure
+    // for this videoId. The caller (conceptVideoPool.ts) should drop just
+    // this one video and continue with the rest, not treat this as "no
+    // candidates at all."
     res.status(422).json({
-      error: 'Could not fetch transcript for this video. Subtitles may be disabled.',
-      detail: err?.message,
+      error: `Could not analyze video ${videoId}: transcript unavailable and metadata-fallback also failed.`,
     });
     return;
   }
 
-  if (!transcriptText || transcriptText.length < 50) {
-    res.status(422).json({ error: 'Transcript too short or empty for this video' });
-    return;
-  }
-
-  // 2. Send to Gemini
-  try {
-    const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`,
-      
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: ANALYSIS_PROMPT(transcriptText) }] }],
-        }),
-      }
-    );
-
-    const geminiData = await geminiRes.json();
-
-    if (!geminiRes.ok) {
-      res.status(502).json({ error: 'Gemini API error', detail: geminiData });
-      return;
-    }
-
-    const rawText: string = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
-    const cleaned = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
-
-    let profile: unknown;
-    try {
-      profile = JSON.parse(cleaned);
-    } catch {
-      res.status(502).json({ error: 'Gemini returned non-JSON response', raw: rawText });
-      return;
-    }
-
-    res.status(200).json({ profile, transcriptLength: transcriptText.length });
-  } catch (err: any) {
-    res.status(500).json({ error: err?.message || 'Failed to analyze video' });
-  }
+  res.status(200).json({ profile, analysisSource });
 }

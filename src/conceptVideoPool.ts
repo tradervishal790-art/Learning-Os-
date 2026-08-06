@@ -12,6 +12,11 @@ import type { AnalyzedVideo, TeachingDimensions } from './PlaylistBuilder';
 //
 // Caches both YouTube search results (per-query-set) and Gemini teaching-
 // style analysis (per-video) in localStorage. Repeat visits cost 0 API calls.
+//
+// IMPORTANT: sends title + description with every /api/analyze-video call.
+// analyze-video.ts uses these as a FALLBACK when transcript fetch fails
+// (captions disabled / blocked) — without them, videos with no transcript
+// get silently dropped and the whole pool can end up empty.
 // ============================================================
 
 const SEARCH_CACHE_KEY = 'learning_os_topic_video_pool_cache';
@@ -21,6 +26,7 @@ const CANDIDATE_POOL_SIZE = 8;
 interface CandidateMeta {
   videoId: string;
   title: string;
+  description: string;
   thumbnail: string;
   channel: string;
   channelId: string;
@@ -39,6 +45,7 @@ interface GeminiProfile extends TeachingDimensions {
 
 interface CachedVideoAnalysis {
   profile: GeminiProfile;
+  analysisSource?: 'transcript' | 'metadata-fallback';
   cachedAt: string;
 }
 
@@ -138,6 +145,7 @@ async function getCandidateVideos(
         allCandidates.push({
           videoId,
           title: item.snippet.title,
+          description: item.snippet.description ?? '',
           thumbnail: item.snippet.thumbnails?.medium?.url ?? item.snippet.thumbnails?.default?.url ?? '',
           channel: item.snippet.channelTitle,
           channelId: item.snippet.channelId,
@@ -161,28 +169,45 @@ async function getCandidateVideos(
   return allCandidates;
 }
 
-/** Step 2: analyze one video's teaching style — cached per video, reused across every topic. */
-async function getAnalyzedProfile(videoId: string): Promise<GeminiProfile | null> {
+/**
+ * Step 2: analyze one video's teaching style — cached per video, reused
+ * across every topic. Sends title + description so analyze-video.ts can
+ * fall back to metadata-based scoring if the transcript is unavailable.
+ */
+async function getAnalyzedProfile(candidate: CandidateMeta): Promise<GeminiProfile | null> {
   const cache = readCache<CachedVideoAnalysis>(ANALYSIS_CACHE_KEY);
-  if (cache[videoId]) return cache[videoId].profile;
+  if (cache[candidate.videoId]) return cache[candidate.videoId].profile;
 
   try {
     const res = await fetch('/api/analyze-video', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ videoId }),
+      body: JSON.stringify({
+        videoId: candidate.videoId,
+        title: candidate.title,
+        description: candidate.description,
+      }),
     });
     const data = await res.json();
     if (!res.ok) {
-      console.warn(`[conceptVideoPool] skipped ${videoId}: ${data?.error ?? 'analyze-video error'}`);
+      console.warn(`[conceptVideoPool] skipped ${candidate.videoId}: ${data?.error ?? 'analyze-video error'}`);
       return null;
     }
 
-    cache[videoId] = { profile: data.profile as GeminiProfile, cachedAt: new Date().toISOString() };
+    cache[candidate.videoId] = {
+      profile: data.profile as GeminiProfile,
+      analysisSource: data.analysisSource,
+      cachedAt: new Date().toISOString(),
+    };
     writeCache(ANALYSIS_CACHE_KEY, cache);
+
+    if (data.analysisSource === 'metadata-fallback') {
+      console.info(`[conceptVideoPool] ${candidate.videoId} analyzed via metadata fallback (no transcript available).`);
+    }
+
     return data.profile as GeminiProfile;
   } catch (err: any) {
-    console.warn(`[conceptVideoPool] skipped ${videoId}: ${err?.message ?? err}`);
+    console.warn(`[conceptVideoPool] skipped ${candidate.videoId}: ${err?.message ?? err}`);
     return null;
   }
 }
@@ -193,8 +218,9 @@ async function getAnalyzedProfile(videoId: string): Promise<GeminiProfile | null
  * — when provided, YouTube is hit multiple times with merged results; when
  * omitted, falls back to cleaned topic.title + keywords.
  *
- * Any candidate whose analysis fails (no captions, Gemini error, etc.) is
- * silently dropped rather than failing the whole request.
+ * A candidate is only dropped if BOTH the transcript path AND the
+ * metadata-fallback path fail server-side (see analyze-video.ts) — a
+ * missing transcript alone no longer empties the whole pool.
  */
 export async function buildCandidatePoolForConcept(
   topic: Topic,
@@ -205,7 +231,7 @@ export async function buildCandidatePoolForConcept(
 
   const analyzed = await Promise.all(
     candidates.map(async (c): Promise<AnalyzedVideo | null> => {
-      const profile = await getAnalyzedProfile(c.videoId);
+      const profile = await getAnalyzedProfile(c);
       if (!profile) return null;
 
       return {
@@ -236,7 +262,7 @@ export async function buildCandidatePoolForConcept(
 
   if (pool.length === 0 && candidates.length > 0) {
     console.warn(
-      `[conceptVideoPool] YouTube ne ${candidates.length} videos diye "${topic.title}" ke liye, lekin sabka analysis fail ho gaya (likely: no captions). Check earlier warnings.`
+      `[conceptVideoPool] YouTube ne ${candidates.length} videos diye "${topic.title}" ke liye, lekin sabka analysis fail ho gaya (both transcript and metadata-fallback failed for every candidate). Check earlier warnings.`
     );
   }
 
