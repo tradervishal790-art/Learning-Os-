@@ -360,6 +360,16 @@ export default function Notes({ videoTitle, videoDescription }: { videoTitle?: s
             animate={{ opacity: 1, y: 0 }}
             className="bg-white/5 border border-white/10 rounded-2xl p-8"
           >
+            {currentVideoId && (
+              <a
+                href={`https://youtube.com/watch?v=${currentVideoId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-purple-400 hover:underline mb-3 inline-block"
+              >
+                🎥 Source video dekho
+              </a>
+            )}
             <h2 className="text-2xl font-bold mb-4">
               {sections.find((s) => s.id === activeSection)?.label} — {notes.topic}
             </h2>
