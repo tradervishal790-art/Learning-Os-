@@ -6,7 +6,7 @@ import Onboarding3D from './Onboarding3D';
 import Dashboard from './Dashboard';
 import { ThemeProvider } from './ThemeContext';
 import type { UserOnboardingData } from './types';
-import { trackOnboardingComplete, trackDashboardOpen } from './firebase';
+import { trackOnboardingComplete } from './firebase';
 type Page = 'landing' | 'onboarding' | 'dashboard';
 
 const ONBOARDING_STORAGE_KEY = 'learning_os_onboarding_data';
