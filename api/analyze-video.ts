@@ -1,6 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { YoutubeTranscript } from 'youtube-transcript';
-import { GEMINI_MODEL } from '../src/constants.js';
+const TRANSCRIPT_CHAR_LIMIT = 8000;
+const MIN_TRANSCRIPT_LENGTH = 50;
+const GEMINI_MODEL = 'gemini-flash-latest';
 
 // ============================================================
 // api/analyze-video.ts
@@ -28,8 +30,6 @@ import { GEMINI_MODEL } from '../src/constants.js';
 // Do not confuse with VITE_YOUTUBE_API_KEY (different service, different key).
 // ============================================================
 
-const TRANSCRIPT_CHAR_LIMIT = 8000;
-const MIN_TRANSCRIPT_LENGTH = 50;
 
 const DIMENSION_PROMPT = (basis: string, sourceLabel: string) => `
 Is ${sourceLabel} ko analyze karke teacher ka teaching-style profile do, in dimensions par 1-10 scale mein score karo:
