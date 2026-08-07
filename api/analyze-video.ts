@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { YoutubeTranscript } from 'youtube-transcript';
-import { GEMINI_MODEL } from '../src/constants';
+import { GEMINI_MODEL } from '../src/constants.js';
 
 // ============================================================
 // api/analyze-video.ts
