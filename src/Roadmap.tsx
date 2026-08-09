@@ -123,7 +123,7 @@ export default function Roadmap({ userData, onLaunchPlaylist }: RoadmapProps) {
         }
       }
 
-      const candidates = await buildCandidatePoolForConcept(selectedTopic, queries);
+      const candidates = await buildCandidatePoolForConcept(selectedTopic, queries, userData?.language);
       if (candidates.length === 0) {
         setPlaylistError('Koi achhi video nahi mili. Thodi der baad try karo.');
         return;

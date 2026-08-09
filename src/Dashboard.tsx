@@ -240,7 +240,7 @@ export default function Dashboard({ userData, onUpdateUserData }: DashboardProps
     };
 
     try {
-      const candidates = await buildCandidatePoolForConcept(adhocTopic, queries);
+      const candidates = await buildCandidatePoolForConcept(adhocTopic, queries, userData?.language);
       if (candidates.length === 0) {
         setCustomError('Koi video nahi mili. Alag words try karo.');
         return;

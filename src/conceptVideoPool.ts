@@ -81,17 +81,44 @@ function cleanTitleForSearch(title: string): string {
 }
 
 /**
+ * Maps the user's onboarding `language` choice to a YouTube Data API
+ * `relevanceLanguage` code — biases search results toward that language
+ * without hard-filtering (YouTube doesn't guarantee exact language match,
+ * but this meaningfully shifts results toward Hindi content for
+ * hindi/hinglish learners instead of always surfacing English-first results).
+ */
+function relevanceLanguageFor(language?: string): string | undefined {
+  const normalized = language?.toLowerCase();
+  if (normalized === 'hindi' || normalized === 'hinglish') return 'hi';
+  if (normalized === 'english') return 'en';
+  return undefined; // 'any' or unset — don't bias
+}
+
+/**
+ * Appends a language hint to a fallback query so even the un-personalized
+ * path (no Gemini-expanded queries) still searches for content in the
+ * user's chosen language, instead of defaulting to whatever language
+ * happens to rank highest on YouTube for that topic.
+ */
+function appendLanguageHint(query: string, language?: string): string {
+  const normalized = language?.toLowerCase();
+  if (normalized === 'hindi') return `${query} hindi mein explanation`;
+  if (normalized === 'hinglish') return `${query} hindi medium`;
+  return query;
+}
+
+/**
  * Builds fallback YouTube queries when no Gemini-expanded queries exist.
  * Returns 1-3 cleaned queries with helpful context suffixes.
  */
-function buildFallbackQueries(topic: Topic): string[] {
+function buildFallbackQueries(topic: Topic, language?: string): string[] {
   const cleaned = cleanTitleForSearch(topic.title);
   const keywords = topic.topicKeywords?.slice(0, 2).filter((k) => k.length > 2) ?? [];
 
   const queries: string[] = [];
-  if (cleaned) queries.push(cleaned);
-  if (keywords.length > 0) queries.push(`${cleaned} ${keywords.join(' ')}`.trim());
-  queries.push(`${cleaned} tutorial for students explanation`.trim());
+  if (cleaned) queries.push(appendLanguageHint(cleaned, language));
+  if (keywords.length > 0) queries.push(appendLanguageHint(`${cleaned} ${keywords.join(' ')}`.trim(), language));
+  queries.push(appendLanguageHint(`${cleaned} tutorial for students explanation`.trim(), language));
 
   return queries.filter((q, i, arr) => q.length > 2 && arr.indexOf(q) === i).slice(0, 3);
 }
@@ -99,7 +126,8 @@ function buildFallbackQueries(topic: Topic): string[] {
 /** Step 1: get Top N candidate videos for this topic. Multi-query when expandedQueries provided. */
 async function getCandidateVideos(
   topic: Topic,
-  expandedQueries?: string[]
+  expandedQueries?: string[],
+  language?: string
 ): Promise<CandidateMeta[]> {
   const apiKey = import.meta.env.VITE_YOUTUBE_API_KEY;
   if (!apiKey) {
@@ -109,12 +137,16 @@ async function getCandidateVideos(
   // Decide which queries to use
   const queries = expandedQueries && expandedQueries.length > 0
     ? expandedQueries.filter((q) => q.trim().length > 2)
-    : buildFallbackQueries(topic);
+    : buildFallbackQueries(topic, language);
 
   if (queries.length === 0) queries.push(topic.title);
 
-  // Cache key: hash the joined queries so different query-sets get separate cache
-  const cacheKey = `pool_${topic.id}__${queries.join('|').toLowerCase().slice(0, 120)}`;
+  const relevanceLanguage = relevanceLanguageFor(language);
+
+  // Cache key: hash the joined queries + language so different query-sets
+  // AND different language preferences get separate cache entries — same
+  // topic in English vs Hindi should never share a cached result.
+  const cacheKey = `pool_${topic.id}__${relevanceLanguage ?? 'any'}__${queries.join('|').toLowerCase().slice(0, 120)}`;
 
   const cache = readCache<CachedTopicPool>(SEARCH_CACHE_KEY);
   const cached = cache[cacheKey];
@@ -127,8 +159,9 @@ async function getCandidateVideos(
 
   for (const query of queries) {
     try {
+      const langParam = relevanceLanguage ? `&relevanceLanguage=${relevanceLanguage}` : '';
       const res = await fetch(
-        `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=${perQueryLimit}&type=video&q=${encodeURIComponent(query)}&key=${apiKey}`
+        `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=${perQueryLimit}&type=video&q=${encodeURIComponent(query)}${langParam}&key=${apiKey}`
       );
       const data = await res.json();
       if (!res.ok) {
@@ -218,15 +251,22 @@ async function getAnalyzedProfile(candidate: CandidateMeta): Promise<GeminiProfi
  * — when provided, YouTube is hit multiple times with merged results; when
  * omitted, falls back to cleaned topic.title + keywords.
  *
+ * @param language  user's onboarding language choice ('hindi' | 'hinglish' |
+ *                  'english' | 'any'). Biases YouTube search toward that
+ *                  language via relevanceLanguage, and — when no
+ *                  expandedQueries are given — adds a language hint to the
+ *                  fallback queries too. Omit for no language bias.
+ *
  * A candidate is only dropped if BOTH the transcript path AND the
  * metadata-fallback path fail server-side (see analyze-video.ts) — a
  * missing transcript alone no longer empties the whole pool.
  */
 export async function buildCandidatePoolForConcept(
   topic: Topic,
-  expandedQueries?: string[]
+  expandedQueries?: string[],
+  language?: string
 ): Promise<AnalyzedVideo[]> {
-  const candidates = await getCandidateVideos(topic, expandedQueries);
+  const candidates = await getCandidateVideos(topic, expandedQueries, language);
   if (candidates.length === 0) return [];
 
   const analyzed = await Promise.all(
