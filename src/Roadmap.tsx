@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getRoadmapData, getRoadmapProgress } from './roadmapData';
-import type { Topic, Video } from './types';
+import type { Topic, Video, UserOnboardingData } from './types';
 import { buildCandidatePoolForConcept } from './conceptVideoPool';
 import { selectPlaylistForConcept, analyzedVideoToVideo, getLastTeacherForConcept } from './PlaylistBuilder';
 import { getLearningProfile } from './learningProfileStore';
+import { expandSearchQuery } from './queryExpander';
 import DeepDiveChat from './DeepDiveChat';
 
 const statusConfig: Record<Topic['status'], { label: string; bg: string; border: string; text: string; icon: string }> = {
@@ -30,12 +31,16 @@ const deadlineOptions = [
 ];
 
 interface RoadmapProps {
+  /** Onboarding data (role/goal/language/hours) — needed to build the
+   *  Blueprint for query expansion so roadmap-topic searches get the
+   *  same personalized YouTube queries the Custom Playlist flow already gets. */
+  userData: UserOnboardingData | null;
   /** Called with the ranked primary + 2 fallback videos, so the parent can
    *  switch to the Video Intelligence page and preload them into the player. */
   onLaunchPlaylist: (payload: { primary: Video; fallbacks: Video[] }) => void;
 }
 
-export default function Roadmap({ onLaunchPlaylist }: RoadmapProps) {
+export default function Roadmap({ userData, onLaunchPlaylist }: RoadmapProps) {
   const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null);
   const [showWhy, setShowWhy] = useState(false);
   const [playlistLoading, setPlaylistLoading] = useState(false);
@@ -82,7 +87,43 @@ export default function Roadmap({ onLaunchPlaylist }: RoadmapProps) {
         }
       }
 
-      const candidates = await buildCandidatePoolForConcept(selectedTopic);
+      // FIX: pehle yahan buildCandidatePoolForConcept() bina expandedQueries
+      // ke call ho raha tha, jisse ye silently buildFallbackQueries() (sirf
+      // topic-title cleaning) pe gir jaata tha — na learner ka style (pace,
+      // depth, practical) use hota tha, na hi time-pressure. Ab Custom
+      // Playlist flow (Dashboard.tsx) jaisa hi expand-query call karte hain,
+      // taaki roadmap ke topics ke liye bhi personalized queries banein.
+      let queries: string[] | undefined;
+      if (userData) {
+        const blueprint = {
+          role: userData.role,
+          goal: userData.goal,
+          language: userData.language,
+          // Is topic ke liye explicitly chuna gaya hours/week agar hai to
+          // use karo (onboarding ke weekly hours se zyada relevant hai
+          // is specific topic ke liye), warna onboarding wala fallback.
+          hours: topicHours || userData.hours,
+          style: {
+            pace: learnerProfile.pace,
+            practical: learnerProfile.theoryVsPractical,
+            depth: learnerProfile.depth,
+            structure: learnerProfile.structureNeed,
+            storytelling: learnerProfile.storytelling,
+            languageComplexity: learnerProfile.languageComplexity,
+          },
+        };
+        try {
+          const expansion = await expandSearchQuery(selectedTopic.title, blueprint);
+          if (expansion?.queries && expansion.queries.length > 0) {
+            queries = expansion.queries;
+          }
+        } catch {
+          // Expansion failed — buildCandidatePoolForConcept falls back to
+          // cleaned-title queries on its own, no need to block here.
+        }
+      }
+
+      const candidates = await buildCandidatePoolForConcept(selectedTopic, queries);
       if (candidates.length === 0) {
         setPlaylistError('Koi achhi video nahi mili. Thodi der baad try karo.');
         return;

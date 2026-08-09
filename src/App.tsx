@@ -7,6 +7,7 @@ import Dashboard from './Dashboard';
 import { ThemeProvider } from './ThemeContext';
 import type { UserOnboardingData } from './types';
 import { trackOnboardingComplete } from './firebase';
+import { getLearningProfile } from './learningProfileStore';
 type Page = 'landing' | 'onboarding' | 'dashboard';
 
 const ONBOARDING_STORAGE_KEY = 'learning_os_onboarding_data';
@@ -72,10 +73,15 @@ function App() {
     localStorage.setItem(ONBOARDING_STORAGE_KEY, JSON.stringify(data));
 
     try {
+      // Agar user pehle se Learning Style Quiz de chuka hai (retaking onboarding
+      // ya settings se update), to uska profile bhi bhejo — roadmap ki depth/
+      // granularity ko is se bhi tune kiya jaata hai (generate-roadmap.ts dekho).
+      // Naya user ke liye ye null hoga, jo bilkul theek hai — API isko optional treat karti hai.
+      const learningProfile = getLearningProfile();
       const res = await fetch('/api/generate-roadmap', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, ...(learningProfile ? { learningProfile } : {}) }),
       });
       const result = await res.json();
       if (res.ok && result.roadmap) {

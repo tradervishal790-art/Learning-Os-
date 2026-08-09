@@ -482,7 +482,7 @@ export default function Dashboard({ userData, onUpdateUserData }: DashboardProps
           </div>
         )}
 
-        {activePage === 'roadmap' && <Roadmap onLaunchPlaylist={handleLaunchPlaylist} />}
+        {activePage === 'roadmap' && <Roadmap userData={userData} onLaunchPlaylist={handleLaunchPlaylist} />}
         {activePage === 'revision' && <Revision />}
         {activePage === 'videos' && <VideoIntel initialPlaylist={preloadedPlaylist} />}
         {activePage === 'mentor' && <Mentor />}
