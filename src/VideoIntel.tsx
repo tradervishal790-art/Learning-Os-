@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Play, AlertCircle, CheckCircle, Volume2, ThumbsUp, ThumbsDown, SkipForward } from 'lucide-react';
+import { Search, Play, AlertCircle, CheckCircle, ThumbsUp, ThumbsDown, SkipForward } from 'lucide-react';
 import type { Video, VideoWatchData, WatchHistoryEntry, EngagementSession, FeedbackValue, Topic } from './types';
 import { withComputedSignal } from './engagementScoring';
 import { upsertEngagementSession } from './engagementStore';
@@ -101,20 +101,6 @@ function findMatchingTopicId(videoTitle: string): string | undefined {
   return undefined;
 }
 
-interface TeacherProfile {
-  pace: number;
-  theory_vs_practical: number;
-  structure: number;
-  depth: number;
-  language_complexity: number;
-  storytelling: number;
-  repetition: number;
-  prerequisite_assumed: number;
-  primary_style: string;
-  ideal_for: string;
-  avoid_for: string;
-}
-
 function createEmptySession(video: Video): EngagementSession {
   return {
     id: `${video.id}-${Date.now()}`,
@@ -149,10 +135,10 @@ export default function VideoIntel({ initialPlaylist }: VideoIntelProps = {}) {
   const [searchQuery, setSearchQuery] = useState('');
   const [videos, setVideos] = useState<Video[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
   const [watchHistory, setWatchHistory] = useState<WatchHistoryEntry[]>([]);
   const [errorMessage, setErrorMessage] = useState('');
-  const [showTranscript, setShowTranscript] = useState(false);
   const [showDeepNotes, setShowDeepNotes] = useState(false);
   const [feedbackGiven, setFeedbackGiven] = useState<FeedbackValue>(null);
   const [watchStats, setWatchStats] = useState({
@@ -164,10 +150,11 @@ export default function VideoIntel({ initialPlaylist }: VideoIntelProps = {}) {
     playbackSpeed: 1,
   });
 
-  // Transcript + teacher-profile analysis state
-  const [teacherProfile, setTeacherProfile] = useState<TeacherProfile | null>(null);
-  const [transcriptLoading, setTranscriptLoading] = useState(false);
-  const [transcriptError, setTranscriptError] = useState('');
+  // YouTube's pagination token from the last search for the CURRENT query —
+  // lets us fetch the next fresh batch of results instead of re-fetching
+  // the same top results (see fetchMoreVideos()). Reset to null whenever a
+  // new manual search runs (searchVideos()).
+  const nextPageTokenRef = useRef<string | null>(null);
 
   const playerRef = useRef<any>(null);
   const watchDataRef = useRef<VideoWatchData>({
@@ -346,12 +333,33 @@ export default function VideoIntel({ initialPlaylist }: VideoIntelProps = {}) {
     }
   };
 
-  const handleNextVideo = () => {
+  const handleNextVideo = async () => {
     if (!selectedVideo || videos.length === 0) return;
     finalizeAndSaveSession();
+
     const currentIndex = videos.findIndex((v) => v.id === selectedVideo.id);
-    const nextIndex = (currentIndex + 1) % videos.length;
-    setSelectedVideo(videos[nextIndex]);
+
+    // Still videos left in the current batch — just move to the next one.
+    if (currentIndex !== -1 && currentIndex < videos.length - 1) {
+      setSelectedVideo(videos[currentIndex + 1]);
+      return;
+    }
+
+    // End of current batch reached — instead of wrapping back to video #1
+    // (old behaviour), fetch a FRESH batch for the same query, skipping
+    // anything already shown (see fetchMoreVideos()).
+    setLoadingMore(true);
+    setErrorMessage('');
+    try {
+      const freshVideos = await fetchMoreVideos();
+      if (freshVideos && freshVideos.length > 0) {
+        setSelectedVideo(freshVideos[0]);
+      } else {
+        setErrorMessage(`"${searchQuery}" ke liye aur naye videos nahi mile — sab dikha diye gaye.`);
+      }
+    } finally {
+      setLoadingMore(false);
+    }
   };
 
  const saveWatchData = (data: VideoWatchData) => {
@@ -375,30 +383,6 @@ export default function VideoIntel({ initialPlaylist }: VideoIntelProps = {}) {
   };
   
 
-  const analyzeVideoTranscript = async (videoId: string) => {
-    setTranscriptLoading(true);
-    setTranscriptError('');
-    setTeacherProfile(null);
-
-    try {
-      const res = await fetch('/api/analyze-video', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ videoId }),
-      });
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || 'Analysis failed');
-      }
-      setTeacherProfile(data.profile);
-    } catch (err: any) {
-      setTranscriptError(err.message || 'Transcript analysis fail hui');
-    } finally {
-      setTranscriptLoading(false);
-    }
-  };
-
   const searchVideos = async () => {
     if (!searchQuery.trim()) {
       setErrorMessage('Kuch search karo pehle');
@@ -411,6 +395,7 @@ export default function VideoIntel({ initialPlaylist }: VideoIntelProps = {}) {
 
     setLoading(true);
     setErrorMessage('');
+    nextPageTokenRef.current = null; // fresh query — start pagination over
 
     try {
       const res = await fetch(
@@ -428,6 +413,8 @@ export default function VideoIntel({ initialPlaylist }: VideoIntelProps = {}) {
         setVideos([]);
         return;
       }
+
+      nextPageTokenRef.current = data.nextPageToken ?? null;
 
       setVideos(
         data.items.map(
@@ -450,6 +437,59 @@ export default function VideoIntel({ initialPlaylist }: VideoIntelProps = {}) {
     }
   };
 
+  /**
+   * Fetches the NEXT page of results for the same searchQuery (using
+   * YouTube's pageToken) and appends only videos not already in the
+   * current playlist. Called by handleNextVideo() when the current batch
+   * runs out, instead of looping back to video #1.
+   *
+   * Returns the newly-added (deduplicated) videos, or an empty array if
+   * nothing new was found (no more pages, or everything came back as a
+   * repeat) — caller shows a "no more new videos" message in that case.
+   */
+  const fetchMoreVideos = async (): Promise<Video[]> => {
+    if (!searchQuery.trim() || !API_KEY) return [];
+    // No more pages for this query — nothing fresh left to fetch.
+    if (!nextPageTokenRef.current) return [];
+
+    try {
+      const res = await fetch(
+        `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=12&type=video&q=${encodeURIComponent(
+          searchQuery
+        )}&pageToken=${encodeURIComponent(nextPageTokenRef.current)}&key=${API_KEY}`
+      );
+      const data = await res.json();
+      if (!res.ok || !data.items?.length) {
+        nextPageTokenRef.current = null;
+        return [];
+      }
+
+      nextPageTokenRef.current = data.nextPageToken ?? null;
+
+      const alreadyShown = new Set(videos.map((v) => v.id));
+      const fresh: Video[] = data.items
+        .map(
+          (item: any): Video => ({
+            id: item.id.videoId,
+            title: item.snippet.title,
+            thumbnail: item.snippet.thumbnails?.medium?.url ?? item.snippet.thumbnails?.default?.url,
+            channel: item.snippet.channelTitle,
+            channelId: item.snippet.channelId,
+            views: '—',
+            duration: '—',
+          })
+        )
+        .filter((v: Video) => !alreadyShown.has(v.id));
+
+      if (fresh.length === 0) return [];
+
+      setVideos((prev) => [...prev, ...fresh]);
+      return fresh;
+    } catch {
+      return [];
+    }
+  };
+
   const formatTime = (s: number) => {
     if (!s || Number.isNaN(s)) return '0:00';
     const m = Math.floor(s / 60);
@@ -458,7 +498,7 @@ export default function VideoIntel({ initialPlaylist }: VideoIntelProps = {}) {
   };
 
   const suggestions = ['React Hooks', 'JavaScript Closures', 'TypeScript Basics', 'REST API Design'];
-  const hasNextVideo = videos.length > 1 && !!selectedVideo;
+  const hasNextVideo = !!selectedVideo;
 
   return (
     <div className="min-h-screen bg-white dark:bg-black text-black dark:text-white">
@@ -609,17 +649,9 @@ export default function VideoIntel({ initialPlaylist }: VideoIntelProps = {}) {
                   </div>
 
                   <div className="bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl p-6">
-                    <div className="flex justify-between items-start mb-4">
-                      <div>
-                        <h2 className="text-2xl font-bold mb-1">{selectedVideo.title}</h2>
-                        <p className="text-gray-500 dark:text-white/60">{selectedVideo.channel}</p>
-                      </div>
-                      <button
-                        onClick={() => window.open(`https://youtube.com/watch?v=${selectedVideo.id}`, '_blank')}
-                        className="px-4 py-2 border border-gray-300 dark:border-white/10 rounded-lg text-sm font-semibold hover:bg-gray-100 dark:hover:bg-white/10 transition"
-                      >
-                        YouTube
-                      </button>
+                    <div className="mb-4">
+                      <h2 className="text-2xl font-bold mb-1">{selectedVideo.title}</h2>
+                      <p className="text-gray-500 dark:text-white/60">{selectedVideo.channel}</p>
                     </div>
 
                     {/* Feedback + Next controls */}
@@ -648,9 +680,10 @@ export default function VideoIntel({ initialPlaylist }: VideoIntelProps = {}) {
                       {hasNextVideo && (
                         <button
                           onClick={handleNextVideo}
-                          className="ml-auto flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-black text-white dark:bg-white dark:text-black hover:opacity-80 transition"
+                          disabled={loadingMore}
+                          className="ml-auto flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-black text-white dark:bg-white dark:text-black hover:opacity-80 transition disabled:opacity-50"
                         >
-                          Next <SkipForward className="w-4 h-4" />
+                          {loadingMore ? 'Naye videos dhoondh raha hoon...' : 'Next'} <SkipForward className="w-4 h-4" />
                         </button>
                       )}
                     </div>
@@ -689,64 +722,12 @@ export default function VideoIntel({ initialPlaylist }: VideoIntelProps = {}) {
                       </div>
                     </div>
 
-                    {/* TWO BUTTONS: Deep Notes + Analysis */}
-                    <div className="grid grid-cols-2 gap-3">
-                      <button
-                        onClick={() => setShowDeepNotes(true)}
-                        className="px-4 py-2.5 border border-gray-300 dark:border-white/10 rounded-lg font-semibold hover:bg-gray-100 dark:hover:bg-white/10 transition"
-                      >
-                        Deep Notes
-                      </button>
-                      <button
-                        onClick={() => {
-                          setShowTranscript(!showTranscript);
-                          if (!showTranscript && !teacherProfile && selectedVideo) {
-                            analyzeVideoTranscript(selectedVideo.id);
-                          }
-                        }}
-                        className="px-4 py-2.5 border border-gray-300 dark:border-white/10 rounded-lg font-semibold hover:bg-gray-100 dark:hover:bg-white/10 transition flex items-center justify-center gap-2"
-                      >
-                        <Volume2 className="w-4 h-4" /> Analysis
-                      </button>
-                    </div>
-
-                    <AnimatePresence>
-                      {showTranscript && (
-                        <motion.div
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: 'auto' }}
-                          exit={{ opacity: 0, height: 0 }}
-                          className="mt-4 border border-gray-200 dark:border-white/10 rounded-lg p-4 text-sm text-gray-600 dark:text-white/70 space-y-3"
-                        >
-                          {transcriptLoading && <p>Transcript fetch ho raha hai, analyze ho raha hai...</p>}
-                          {transcriptError && <p className="text-red-500 dark:text-red-400">{transcriptError}</p>}
-                          {teacherProfile && !transcriptLoading && (
-                            <div className="space-y-2">
-                              <h4 className="font-semibold text-sm">Teaching Style Profile</h4>
-                              <div className="grid grid-cols-2 gap-2 text-xs">
-                                <div>Pace: {teacherProfile.pace}/10</div>
-                                <div>Practical: {teacherProfile.theory_vs_practical}/10</div>
-                                <div>Structure: {teacherProfile.structure}/10</div>
-                                <div>Depth: {teacherProfile.depth}/10</div>
-                                <div>Language: {teacherProfile.language_complexity}/10</div>
-                                <div>Storytelling: {teacherProfile.storytelling}/10</div>
-                                <div>Repetition: {teacherProfile.repetition}/10</div>
-                                <div>Prerequisite: {teacherProfile.prerequisite_assumed}/10</div>
-                              </div>
-                              <p className="text-gray-500 dark:text-white/60 mt-2">
-                                <span className="font-medium">Style:</span> {teacherProfile.primary_style}
-                              </p>
-                              <p className="text-gray-500 dark:text-white/60">
-                                <span className="font-medium">Ideal for:</span> {teacherProfile.ideal_for}
-                              </p>
-                              <p className="text-gray-500 dark:text-white/60">
-                                <span className="font-medium">Avoid for:</span> {teacherProfile.avoid_for}
-                              </p>
-                            </div>
-                          )}
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
+                    <button
+                      onClick={() => setShowDeepNotes(true)}
+                      className="w-full px-4 py-2.5 border border-gray-300 dark:border-white/10 rounded-lg font-semibold hover:bg-gray-100 dark:hover:bg-white/10 transition"
+                    >
+                      Deep Notes
+                    </button>
                   </div>
                 </motion.div>
               ) : (
