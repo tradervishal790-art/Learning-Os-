@@ -19,6 +19,12 @@ import Notes from './Notes';
 interface DashboardProps {
   userData: UserOnboardingData | null;
   onUpdateUserData: (data: UserOnboardingData) => void;
+  /** Re-runs roadmap generation with current userData + latest learning
+   *  profile, overwriting the cached roadmap. Returns true on success. */
+  onRegenerateRoadmap: () => Promise<boolean>;
+  /** Bumped every successful regenerate — passed as <Roadmap key={...}>
+   *  so it remounts and re-reads the fresh roadmap from localStorage. */
+  roadmapVersion: number;
 }
 
 interface Blueprint {
@@ -99,7 +105,7 @@ function trackAndComputeStreak(): number {
   return streak;
 }
 
-export default function Dashboard({ userData, onUpdateUserData }: DashboardProps) {
+export default function Dashboard({ userData, onUpdateUserData, onRegenerateRoadmap, roadmapVersion }: DashboardProps) {
   const { theme, toggleTheme } = useTheme();
   const [activePage, setActivePage] = useState<DashboardPageId>('dashboard');
   const [showSidebar, setShowSidebar] = useState(false);
@@ -112,6 +118,8 @@ export default function Dashboard({ userData, onUpdateUserData }: DashboardProps
   const [settingsName, setSettingsName] = useState(userData?.name ?? '');
   const [settingsRole, setSettingsRole] = useState(userData?.role ?? '');
   const [settingsGoal, setSettingsGoal] = useState(userData?.goal ?? '');
+  const [regeneratingRoadmap, setRegeneratingRoadmap] = useState(false);
+  const [regenerateResult, setRegenerateResult] = useState<'success' | 'error' | null>(null);
   const [settingsLanguage, setSettingsLanguage] = useState(userData?.language ?? '');
 
   const [showCustomPlaylist, setShowCustomPlaylist] = useState(false);
@@ -159,6 +167,19 @@ export default function Dashboard({ userData, onUpdateUserData }: DashboardProps
       hours: userData?.hours ?? 10,
     });
     setShowSettings(false);
+  };
+
+  // Re-runs roadmap generation with current userData + latest learning
+  // profile — overwrites the cached roadmap in localStorage. Needed
+  // because the roadmap is otherwise only generated ONCE, at onboarding;
+  // improvements to generate-roadmap.ts (or a retaken quiz) never reach
+  // an already-generated roadmap without this.
+  const handleRegenerateRoadmap = async () => {
+    setRegeneratingRoadmap(true);
+    setRegenerateResult(null);
+    const success = await onRegenerateRoadmap();
+    setRegenerateResult(success ? 'success' : 'error');
+    setRegeneratingRoadmap(false);
   };
 
   const buildBlueprint = (): Blueprint | null => {
@@ -482,7 +503,7 @@ export default function Dashboard({ userData, onUpdateUserData }: DashboardProps
           </div>
         )}
 
-        {activePage === 'roadmap' && <Roadmap userData={userData} onLaunchPlaylist={handleLaunchPlaylist} />}
+        {activePage === 'roadmap' && <Roadmap key={roadmapVersion} userData={userData} onLaunchPlaylist={handleLaunchPlaylist} />}
         {activePage === 'revision' && <Revision />}
         {activePage === 'videos' && <VideoIntel initialPlaylist={preloadedPlaylist} />}
         {activePage === 'mentor' && <Mentor />}
@@ -591,6 +612,26 @@ export default function Dashboard({ userData, onUpdateUserData }: DashboardProps
                       </button>
                     ))}
                   </div>
+                </div>
+
+                <div className="pt-2 border-t border-gray-200 dark:border-white/10">
+                  <label className="block text-xs uppercase tracking-wider text-gray-400 dark:text-white/40 mb-2 mt-4">Roadmap</label>
+                  <p className="text-xs text-gray-400 dark:text-white/40 mb-3">
+                    Roadmap sirf ek baar banta hai. Agar topics bahut broad lag rahe hain ya learning style change kiya hai, dobara generate karo.
+                  </p>
+                  <button
+                    onClick={handleRegenerateRoadmap}
+                    disabled={regeneratingRoadmap || !userData}
+                    className="w-full py-2.5 rounded-xl border border-gray-300 dark:border-white/10 text-sm font-medium hover:bg-gray-100 dark:hover:bg-white/10 transition disabled:opacity-40"
+                  >
+                    {regeneratingRoadmap ? 'Regenerating...' : 'Regenerate Roadmap'}
+                  </button>
+                  {regenerateResult === 'success' && (
+                    <p className="text-xs text-green-600 dark:text-green-400 mt-2">Naya roadmap ban gaya.</p>
+                  )}
+                  {regenerateResult === 'error' && (
+                    <p className="text-xs text-red-500 dark:text-red-400 mt-2">Kuch gadbad ho gayi, dobara try karo.</p>
+                  )}
                 </div>
               </div>
 

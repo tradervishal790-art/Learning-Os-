@@ -62,6 +62,33 @@ function App() {
   const [userData, setUserData] = useState<UserOnboardingData | null>(loadSavedOnboardingData);
   const [showDemo, setShowDemo] = useState(false);
 
+  /**
+   * Generates a roadmap via the API and saves it to localStorage. Shared by
+   * both onboarding (first-time) and the "Regenerate Roadmap" button in
+   * Settings (re-run with the SAME onboarding data + latest learning profile,
+   * whenever generate-roadmap.ts's prompt/logic has been improved, or the
+   * user's answers/learning style have changed since the roadmap was made).
+   * Returns true on success so the caller can show a confirmation/error message.
+   */
+  const generateAndSaveRoadmap = async (data: UserOnboardingData): Promise<boolean> => {
+    try {
+      const learningProfile = getLearningProfile();
+      const res = await fetch('/api/generate-roadmap', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...data, ...(learningProfile ? { learningProfile } : {}) }),
+      });
+      const result = await res.json();
+      if (res.ok && result.roadmap) {
+        localStorage.setItem(GENERATED_ROADMAP_STORAGE_KEY, JSON.stringify(result.roadmap));
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
+    }
+  };
+
   const handleOnboardingComplete = async (data: UserOnboardingData) => {
     setUserData(data);
     trackOnboardingComplete({
@@ -72,25 +99,9 @@ function App() {
 });
     localStorage.setItem(ONBOARDING_STORAGE_KEY, JSON.stringify(data));
 
-    try {
-      // Agar user pehle se Learning Style Quiz de chuka hai (retaking onboarding
-      // ya settings se update), to uska profile bhi bhejo — roadmap ki depth/
-      // granularity ko is se bhi tune kiya jaata hai (generate-roadmap.ts dekho).
-      // Naya user ke liye ye null hoga, jo bilkul theek hai — API isko optional treat karti hai.
-      const learningProfile = getLearningProfile();
-      const res = await fetch('/api/generate-roadmap', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...data, ...(learningProfile ? { learningProfile } : {}) }),
-      });
-      const result = await res.json();
-      if (res.ok && result.roadmap) {
-        localStorage.setItem(GENERATED_ROADMAP_STORAGE_KEY, JSON.stringify(result.roadmap));
-      }
-    } catch {
-      // If generation fails, Roadmap.tsx falls back to its default empty state —
-      // don't block the user from reaching the dashboard.
-    }
+    // If generation fails, Roadmap.tsx falls back to its default empty state —
+    // don't block the user from reaching the dashboard.
+    await generateAndSaveRoadmap(data);
 
     setPage('dashboard');
   };
@@ -102,12 +113,33 @@ function App() {
     localStorage.setItem(ONBOARDING_STORAGE_KEY, JSON.stringify(data));
   };
 
+  // Regenerate Roadmap button (Settings panel) — re-runs generation with the
+  // CURRENT userData + latest learning profile, overwriting the cached
+  // roadmap. Bumps roadmapVersion so <Roadmap key={roadmapVersion}> remounts
+  // and re-reads the fresh roadmap from localStorage (Roadmap.tsx reads it
+  // directly at render time, so a plain state update elsewhere wouldn't
+  // force it to re-read on its own).
+  const [roadmapVersion, setRoadmapVersion] = useState(0);
+  const handleRegenerateRoadmap = async (): Promise<boolean> => {
+    if (!userData) return false;
+    const success = await generateAndSaveRoadmap(userData);
+    if (success) setRoadmapVersion((v) => v + 1);
+    return success;
+  };
+
   let content: React.ReactNode;
 
   if (page === 'onboarding') {
     content = <Onboarding3D onComplete={handleOnboardingComplete} />;
   } else if (page === 'dashboard') {
-    content = <Dashboard userData={userData} onUpdateUserData={handleUpdateUserData} />;
+    content = (
+      <Dashboard
+        userData={userData}
+        onUpdateUserData={handleUpdateUserData}
+        onRegenerateRoadmap={handleRegenerateRoadmap}
+        roadmapVersion={roadmapVersion}
+      />
+    );
   } else {
     content = (
       <div className="relative min-h-screen overflow-hidden bg-[#030303]">
