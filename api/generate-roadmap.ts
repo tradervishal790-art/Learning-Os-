@@ -7,16 +7,21 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 //            + optional learningProfile (Mind Map / quiz result)
 // Response:  { roadmap: Topic }
 //
-// FIX (this version):
+// FIX HISTORY:
 // 1. Total available hours ab SERVER-SIDE calculate hote hain (hours/week x
-//    weeks-in-deadline) — Gemini ko sirf raw hours/deadline text nahi diya
-//    jaata, balki ek EXPLICIT target topic-count aur per-topic time-budget
-//    bataya jaata hai. Isse chapters properly granular sub-topics mein
-//    todte hain instead of "1 chapter = 1 flat topic" (jo one-shot-video
-//    problem ka root cause tha).
-// 2. learningProfile (Mind Map se) ab optional param hai — agar mile to
-//    prompt mein use hota hai taaki roadmap ki depth/style bhi learner ke
-//    hisaab se ho, sirf video-selection stage tak limited na rahe.
+//    weeks-in-deadline) — Gemini ko explicit target topic-count aur
+//    per-topic time-budget diya jaata hai, taaki chapters granular
+//    sub-topics mein tootein (ek flat topic per chapter nahi).
+// 2. learningProfile (Mind Map) optional param — mile to prompt mein use
+//    hota hai, roadmap ki depth/style bhi learner ke hisaab se ban sake.
+// 3. FOUNDATION-FIRST SEQUENCING: granularity fix ke baad ek naya issue
+//    dikha — roadmap seedha advanced/specific sub-topics (jaise "Gauss's
+//    Law derivation") pe chala jaata tha, bina basic concepts (jaise
+//    "charge kya hai") cover kiye. Ab prompt explicitly enforce karta hai
+//    ki har naye chapter/subject ki shuruaat foundational topics
+//    (definitions/intro concepts) se ho, phir properties/rules, tab
+//    advanced laws/derivations/applications — kabhi bhi advanced topic se
+//    directly start nahi hona chahiye.
 // ============================================================
 
 interface LearningProfileInput {
@@ -74,23 +79,17 @@ function calculateTotalHours(hoursPerWeek: number, deadline: string): number {
 
 /**
  * Turns total hours into an explicit target: how many topics, and how many
- * hours each topic should roughly take. This is the key fix — instead of
- * Gemini guessing "8-12 topics" blindly, it gets a concrete budget derived
- * from the user's actual time commitment.
- *
- * Rough heuristic: a single focused sub-topic (one concept, one sitting)
- * should take 1-2.5 hours of study including video + practice. We pick a
- * per-topic hour target based on total hours available, then derive count.
+ * hours each topic should roughly take.
  */
 function calculateTopicBudget(totalHours: number): { topicCount: number; hoursPerTopic: number } {
   let hoursPerTopic: number;
-  if (totalHours < 20) hoursPerTopic = 1;        // very tight — keep topics small & fast
+  if (totalHours < 20) hoursPerTopic = 1;
   else if (totalHours < 60) hoursPerTopic = 1.5;
   else if (totalHours < 150) hoursPerTopic = 2;
-  else hoursPerTopic = 2.5;                       // plenty of time — can go deeper per topic
+  else hoursPerTopic = 2.5;
 
   let topicCount = Math.round(totalHours / hoursPerTopic);
-  topicCount = Math.max(6, Math.min(20, topicCount)); // keep it sane — not 2 topics, not 60
+  topicCount = Math.max(6, Math.min(20, topicCount));
 
   return { topicCount, hoursPerTopic };
 }
@@ -138,7 +137,17 @@ IMPORTANT — topic granularity (time-budget based):
 Is learner ke paas total ~${totalHours} hours hain. Har topic learner ke liye roughly ${hoursPerTopic} hours ka honा chahiye (video watching + practice included) — na usse kaafi zyada, na kaafi kam.
 Isliye ~${topicCount} topics do — yeh sirf ek generic range nahi hai, yeh directly is learner ke time-budget se calculate hua hai.
 
-CRITICAL: agar goal ek bada chapter/subject cover karta hai (jaise "Class 12 Physics Chapter 1" ya "React seekhna"), to usse ek hi flat topic mat banao — usko is learner ke time-budget ke hisaab se multiple granular sub-topics mein todo (jaise "Electric Charges" → "Charge properties" + "Coulomb's Law" + "Superposition Principle" + "Electric Field" + "Electric Dipole" — agar ${topicCount} topics ka budget allow karta hai). Har sub-topic itna specific ho ki ek single, focused video/session mein cover ho sake — "poora chapter ek video mein" type broad topic mat banao.
+CRITICAL: agar goal ek bada chapter/subject cover karta hai (jaise "Class 12 Physics Chapter 1" ya "React seekhna"), to usse ek hi flat topic mat banao — usko is learner ke time-budget ke hisaab se multiple granular sub-topics mein todo. Har sub-topic itna specific ho ki ek single, focused video/session mein cover ho sake — "poora chapter ek video mein" type broad topic mat banao.
+
+CRITICAL — FOUNDATION-FIRST SEQUENCING (isse achieve karne ka tarika):
+Topics likhne se PEHLE, ek chhota "prerequisiteChain" likho — 3-6 lines mein saaf-saaf socho: "is goal/chapter ko samajhne ke liye sabse pehle kaunsa concept jaanna zaroori hai? uske baad kya? uske baad kya?" — jaise ek dependency chain. Sirf tabhi topics array likho jab ye chain clear ho jaaye, aur topics ka order EXACTLY isi chain ko follow kare.
+
+Is chain mein hamesha ye pattern follow karo: pehle basic definitions/core concept introduction, phir basic properties/rules (statement + simple application), phir connecting/related concepts, sabse aakhir mein advanced laws/derivations/applications.
+
+GALAT: seedha "Gauss's Law — Derivation" se topics shuru karna, jabki "electric charge kya hai" ya "Coulomb's Law" abhi tak chain mein cover hi nahi hua.
+SAHI: "Electric Charge — Properties & Types" -> "Coulomb's Law — Statement & Application" -> "Electric Field — Concept & Field Lines" -> "Electric Dipole" -> "Gauss's Law — Statement & Derivation" -> "Gauss's Law — Applications".
+
+Is rule ko time-budget granularity se zyada priority do — agar hours kam hain to topics chhote/fewer karo, lekin prerequisite chain kabhi mat todo, kisi bhi topic ka foundation skip mat karo.
 
 Topics beginner se advanced order mein hone chahiye, jo is goal ko achieve karne mein directly help karein — generic course list nahi, is specific goal ke liye tailored sequence.
 
@@ -151,6 +160,7 @@ Sirf JSON return karo, is EXACT shape mein, koi extra text ya markdown backticks
   "description": "1-2 line description",
   "difficulty": "Beginner" | "Intermediate" | "Advanced",
   "estimatedTime": "jaise '3 months'",
+  "prerequisiteChain": "3-6 lines mein prerequisite reasoning — kaunsa concept pehle, kaunsa uske baad, kyun (isi order ko topics array follow karega)",
   "topics": [
     {
       "title": "topic title (specific, granular sub-topic — not a whole chapter)",
@@ -189,16 +199,38 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`,
-      {
+    const promptText = ROADMAP_PROMPT(data as UserOnboardingData);
+    const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`;
+
+    let geminiRes = await fetch(GEMINI_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: promptText }] }],
+        // Thinking enabled — model ab pehle internally reason karega
+        // (prerequisite chain, sequencing) tab final JSON likhega, seedha
+        // output pe nahi kudega. -1 = dynamic budget, model khud decide
+        // karta hai kitna sochna hai request ki complexity ke hisaab se.
+        generationConfig: {
+          thinkingConfig: { thinkingBudget: -1 },
+        },
+      }),
+    });
+
+    // FALLBACK: "gemini-flash-latest" ek alias hai jo waqt ke saath alag
+    // underlying model resolve kar sakta hai — agar us model version ne
+    // thinkingConfig reject kar diya (invalid argument / unsupported field),
+    // to bina thinking ke retry karo. Isse roadmap generation kabhi bhi
+    // sirf is param ki wajah se completely fail nahi hogi.
+    if (!geminiRes.ok) {
+      geminiRes = await fetch(GEMINI_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: ROADMAP_PROMPT(data as UserOnboardingData) }] }],
+          contents: [{ parts: [{ text: promptText }] }],
         }),
-      }
-    );
+      });
+    }
 
     const geminiData = await geminiRes.json();
 
