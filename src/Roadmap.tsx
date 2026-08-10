@@ -21,15 +21,6 @@ const difficultyConfig: Record<Topic['difficulty'], string> = {
   Advanced: 'text-gray-700 dark:text-white/80',
 };
 
-const hoursOptions = [5, 10, 20, 40];
-const deadlineOptions = [
-  { id: 'none', label: 'None' },
-  { id: '1m', label: '1M' },
-  { id: '3m', label: '3M' },
-  { id: '6m', label: '6M' },
-  { id: '1y', label: '1Y' },
-];
-
 interface RoadmapProps {
   /** Onboarding data (role/goal/language/hours) — needed to build the
    *  Blueprint for query expansion so roadmap-topic searches get the
@@ -407,38 +398,6 @@ export default function Roadmap({ userData, onLaunchPlaylist, onGenerateForSubje
                     <div className="p-4 rounded-xl border border-gray-200 dark:border-white/10">
                       <h3 className="text-sm font-semibold mb-2">What you'll learn</h3>
                       <p className="text-sm text-gray-500 dark:text-white/60">{selectedTopic.description}</p>
-                    </div>
-
-                    <div className="p-4 rounded-xl border border-gray-200 dark:border-white/10">
-                      <h3 className="text-sm font-semibold mb-2">Hours / week</h3>
-                      <div className="flex gap-2 mb-4">
-                        {hoursOptions.map((h) => (
-                          <button
-                            key={h}
-                            onClick={() => setTopicHours(h)}
-                            className={`flex-1 py-2.5 md:py-2 rounded-lg text-sm border transition ${topicHours === h ? 'bg-black text-white dark:bg-white dark:text-black border-transparent' : 'border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10'}`}
-                          >
-                            {h}h
-                          </button>
-                        ))}
-                      </div>
-                      <h3 className="text-sm font-semibold mb-2">Deadline</h3>
-                      <div className="flex gap-2 flex-wrap">
-                        {deadlineOptions.map((d) => (
-                          <button
-                            key={d.id}
-                            onClick={() => setTopicDeadline(d.id)}
-                            className={`flex-1 min-w-[3.5rem] py-2.5 md:py-2 rounded-lg text-sm border transition ${topicDeadline === d.id ? 'bg-black text-white dark:bg-white dark:text-black border-transparent' : 'border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10'}`}
-                          >
-                            {d.label}
-                          </button>
-                        ))}
-                      </div>
-                      {topicDeadline && topicDeadline !== 'none' && topicHours > 0 && (
-                        <p className="text-xs text-gray-400 dark:text-white/40 mt-3">
-                          Is deadline ke hisaab se, tez-paced videos ko priority milegi taaki topic time par complete ho sake.
-                        </p>
-                      )}
                     </div>
 
                     <div className="p-4 rounded-xl border border-gray-200 dark:border-white/10">
