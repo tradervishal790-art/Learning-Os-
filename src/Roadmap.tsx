@@ -33,25 +33,23 @@ const deadlineOptions = [
 interface RoadmapProps {
   /** Onboarding data (role/goal/language/hours) — needed to build the
    *  Blueprint for query expansion so roadmap-topic searches get the
-   *  same personalized YouTube queries the Custom Playlist flow already gets.
-   *  Also used here to tell apart "never onboarded" vs "onboarded but
-   *  roadmap generation failed" — both leave roadmap.id === 'no-roadmap',
-   *  but only the second one should offer a retry. */
+   *  same personalized YouTube queries the Custom Playlist flow already gets. */
   userData: UserOnboardingData | null;
   /** Called with the ranked primary + 2 fallback videos, so the parent can
    *  switch to the Video Intelligence page and preload them into the player. */
   onLaunchPlaylist: (payload: { primary: Video; fallbacks: Video[] }) => void;
-  /** Re-runs roadmap generation (same fn Settings' "Regenerate Roadmap" uses).
-   *  Passed down so the empty-state retry banner can trigger it directly
-   *  instead of silently leaving the user stuck on "Your Roadmap Awaits". */
-  onRegenerateRoadmap?: () => Promise<boolean>;
+  /** Updates userData.goal/hours to the typed subject + slider value and
+   *  generates a roadmap for it directly from this page — powers the
+   *  empty-state "type a subject, set your time, and go" form (no roadmap
+   *  yet, or a previous generation failed). */
+  onGenerateForSubject?: (subject: string, hours: number) => Promise<boolean>;
   /** Actual server/network error from the last generation attempt (e.g.
-   *  missing API key, Gemini quota, bad JSON) — shown in the failure banner
-   *  so the cause is visible instead of a generic "something went wrong". */
+   *  missing API key, Gemini quota, bad JSON) — shown under the form so the
+   *  cause is visible instead of a generic "something went wrong". */
   lastRoadmapError?: string | null;
 }
 
-export default function Roadmap({ userData, onLaunchPlaylist, onRegenerateRoadmap, lastRoadmapError }: RoadmapProps) {
+export default function Roadmap({ userData, onLaunchPlaylist, onGenerateForSubject, lastRoadmapError }: RoadmapProps) {
   const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null);
   const [showWhy, setShowWhy] = useState(false);
   const [playlistLoading, setPlaylistLoading] = useState(false);
@@ -59,26 +57,28 @@ export default function Roadmap({ userData, onLaunchPlaylist, onRegenerateRoadma
   const [topicHours, setTopicHours] = useState(0);
   const [topicDeadline, setTopicDeadline] = useState('');
   const [showDeepDive, setShowDeepDive] = useState(false);
-  const [retrying, setRetrying] = useState(false);
-  const [retryFailed, setRetryFailed] = useState(false);
+  const [subjectInput, setSubjectInput] = useState('');
+  const [hoursInput, setHoursInput] = useState(10);
+  const [generating, setGenerating] = useState(false);
+  const [generateFailed, setGenerateFailed] = useState(false);
 
   const roadmap = getRoadmapData();
   const { total: totalTopics, completed: completedTopics, learning: learningTopics, percent: progressPercent } =
     getRoadmapProgress(roadmap);
 
-  // Onboarding data exists but roadmap is still the empty fallback — the
-  // AI generation call at onboarding time silently failed (bad/missing API
-  // key, Gemini error, non-JSON response, etc.). This is NOT the "user
-  // hasn't onboarded yet" case, so it needs its own retry-able banner.
-  const roadmapGenerationFailed = roadmap.id === 'no-roadmap' && !!userData;
+  // No roadmap yet — either never generated, or a previous attempt failed.
+  // Either way, the fix is the same: let the user type a subject + set
+  // their weekly time right here and generate, instead of sending them
+  // back through onboarding/Settings.
+  const hasNoRoadmap = roadmap.id === 'no-roadmap';
 
-  const handleRetryGeneration = async () => {
-    if (!onRegenerateRoadmap) return;
-    setRetrying(true);
-    setRetryFailed(false);
-    const success = await onRegenerateRoadmap();
-    if (!success) setRetryFailed(true);
-    setRetrying(false);
+  const handleGenerateClick = async () => {
+    if (!onGenerateForSubject || !subjectInput.trim()) return;
+    setGenerating(true);
+    setGenerateFailed(false);
+    const success = await onGenerateForSubject(subjectInput.trim(), hoursInput);
+    if (!success) setGenerateFailed(true);
+    setGenerating(false);
   };
 
   const openTopic = (topic: Topic) => {
@@ -236,29 +236,62 @@ export default function Roadmap({ userData, onLaunchPlaylist, onRegenerateRoadma
           </span>
         </div>
 
-        {roadmapGenerationFailed && (
-          <div className="mt-4 p-4 rounded-xl border border-red-200 dark:border-red-500/20 bg-red-50 dark:bg-red-500/5 flex items-center justify-between flex-wrap gap-3">
-            <div>
-              <p className="text-sm font-semibold text-red-700 dark:text-red-400">Roadmap generate nahi ho paaya</p>
-              <p className="text-xs text-red-600/80 dark:text-red-400/70 mt-0.5">
-                {retryFailed
-                  ? 'Retry bhi fail hua — thodi der baad phir try karo.'
-                  : 'Onboarding data save hai, par AI se roadmap banate waqt error aaya tha.'}
-              </p>
-              {lastRoadmapError && (
-                <p className="text-[11px] font-mono text-red-500/70 dark:text-red-400/60 mt-1 break-all">
-                  {lastRoadmapError}
-                </p>
-              )}
-            </div>
-            {onRegenerateRoadmap && (
+        {hasNoRoadmap && onGenerateForSubject && (
+          <div className="mt-5 p-5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5">
+            <label className="block text-sm font-semibold mb-2">Kya seekhna hai?</label>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <input
+                type="text"
+                value={subjectInput}
+                onChange={(e) => setSubjectInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleGenerateClick()}
+                placeholder='Jaise "React.js" ya "Class 12 Physics - Electric Charges"'
+                autoFocus
+                className="flex-1 px-4 py-2.5 rounded-lg text-sm border border-gray-200 dark:border-white/10 bg-white dark:bg-black/30 focus:outline-none focus:border-black dark:focus:border-white"
+              />
               <button
-                onClick={handleRetryGeneration}
-                disabled={retrying}
-                className="px-4 py-2 rounded-lg text-sm font-medium bg-red-600 text-white hover:bg-red-700 transition disabled:opacity-50 flex-shrink-0"
+                onClick={handleGenerateClick}
+                disabled={generating || !subjectInput.trim()}
+                className="px-5 py-2.5 rounded-lg text-sm font-medium bg-black text-white dark:bg-white dark:text-black hover:opacity-80 transition disabled:opacity-40 flex-shrink-0"
               >
-                {retrying ? 'Try kar raha hoon...' : 'Retry'}
+                {generating ? 'Roadmap ban raha hai...' : 'Generate Roadmap'}
               </button>
+            </div>
+
+            <div className="mt-4">
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-sm font-semibold">Weekly time available</label>
+                <span className="text-sm font-mono px-2 py-0.5 rounded-md bg-black text-white dark:bg-white dark:text-black">
+                  {hoursInput} hrs/week
+                </span>
+              </div>
+              <input
+                type="range"
+                min={1}
+                max={40}
+                step={1}
+                value={hoursInput}
+                onChange={(e) => setHoursInput(Number(e.target.value))}
+                className="w-full h-2 rounded-full appearance-none cursor-pointer bg-gray-200 dark:bg-white/10 accent-black dark:accent-white"
+              />
+              <div className="flex justify-between text-[11px] text-gray-400 dark:text-white/40 mt-1">
+                <span>1 hr</span>
+                <span>40 hrs</span>
+              </div>
+              <p className="text-[11px] text-gray-400 dark:text-white/40 mt-1.5">
+                Isse roadmap ke topics aur unki depth tumhare available time ke hisaab se accurate banti hai.
+              </p>
+            </div>
+
+            {generateFailed && (
+              <div className="mt-3">
+                <p className="text-xs text-red-600 dark:text-red-400">Roadmap generate nahi ho paaya — dobara try karo.</p>
+                {lastRoadmapError && (
+                  <p className="text-[11px] font-mono text-red-500/70 dark:text-red-400/60 mt-1 break-all">
+                    {lastRoadmapError}
+                  </p>
+                )}
+              </div>
             )}
           </div>
         )}

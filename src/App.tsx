@@ -157,6 +157,32 @@ function App() {
     return success;
   };
 
+  // Roadmap page's own empty-state input (when there's no roadmap yet, or
+  // the user wants to build one for a different subject without going back
+  // through full onboarding). Updates userData.goal/hours with the typed
+  // subject + slider value and generates immediately — passes the updated
+  // data straight into generateAndSaveRoadmap rather than relying on React
+  // state (which wouldn't be updated yet in this same function call).
+  // `hours` = weekly hours available, drives generate-roadmap.ts's
+  // time-budget calc (how many topics, how deep each one goes) — without
+  // it the backend silently assumed 0 hours/week, which is why past
+  // roadmaps were inaccurate regardless of subject.
+  const handleGenerateForSubject = async (subject: string, hours: number): Promise<boolean> => {
+    const trimmed = subject.trim();
+    if (!trimmed || !userData) return false;
+    const updatedData: UserOnboardingData = {
+      ...userData,
+      goal: trimmed,
+      hours,
+      deadline: userData.deadline || 'none',
+    };
+    setUserData(updatedData);
+    localStorage.setItem(ONBOARDING_STORAGE_KEY, JSON.stringify(updatedData));
+    const success = await generateAndSaveRoadmap(updatedData);
+    if (success) setRoadmapVersion((v) => v + 1);
+    return success;
+  };
+
   let content: React.ReactNode;
 
   if (page === 'onboarding') {
@@ -167,6 +193,7 @@ function App() {
         userData={userData}
         onUpdateUserData={handleUpdateUserData}
         onRegenerateRoadmap={handleRegenerateRoadmap}
+        onGenerateForSubject={handleGenerateForSubject}
         roadmapVersion={roadmapVersion}
         lastRoadmapError={lastRoadmapError}
       />

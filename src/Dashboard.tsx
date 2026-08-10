@@ -22,6 +22,11 @@ interface DashboardProps {
   /** Re-runs roadmap generation with current userData + latest learning
    *  profile, overwriting the cached roadmap. Returns true on success. */
   onRegenerateRoadmap: () => Promise<boolean>;
+  /** Updates userData.goal/hours to the given subject + weekly-hours slider
+   *  value and generates a roadmap for it directly — the Roadmap page's own
+   *  inline "type a subject, set your time, and go" flow, no full
+   *  onboarding needed. */
+  onGenerateForSubject: (subject: string, hours: number) => Promise<boolean>;
   /** Bumped every successful regenerate — passed as <Roadmap key={...}>
    *  so it remounts and re-reads the fresh roadmap from localStorage. */
   roadmapVersion: number;
@@ -56,7 +61,6 @@ const sidebarItems: { id: DashboardPageId; label: string; icon: string }[] = [
 ];
 
 const roleOptions = ['student', 'developer', 'researcher', 'business', 'exam', 'creator'];
-const goalOptions = ['job', 'skill', 'research', 'startup', 'curiosity', 'mastery', 'teaching'];
 const languageOptions = ['hindi', 'english', 'hinglish', 'any'];
 const hoursOptions = [5, 10, 20, 40];
 const deadlineOptions = [
@@ -108,7 +112,7 @@ function trackAndComputeStreak(): number {
   return streak;
 }
 
-export default function Dashboard({ userData, onUpdateUserData, onRegenerateRoadmap, roadmapVersion, lastRoadmapError }: DashboardProps) {
+export default function Dashboard({ userData, onUpdateUserData, onRegenerateRoadmap, onGenerateForSubject, roadmapVersion, lastRoadmapError }: DashboardProps) {
   const { theme, toggleTheme } = useTheme();
   const [activePage, setActivePage] = useState<DashboardPageId>('dashboard');
   const [showSidebar, setShowSidebar] = useState(false);
@@ -511,7 +515,7 @@ export default function Dashboard({ userData, onUpdateUserData, onRegenerateRoad
             key={roadmapVersion}
             userData={userData}
             onLaunchPlaylist={handleLaunchPlaylist}
-            onRegenerateRoadmap={onRegenerateRoadmap}
+            onGenerateForSubject={onGenerateForSubject}
             lastRoadmapError={lastRoadmapError}
           />
         )}
@@ -596,18 +600,14 @@ export default function Dashboard({ userData, onUpdateUserData, onRegenerateRoad
                 </div>
 
                 <div>
-                  <label className="block text-xs uppercase tracking-wider text-gray-400 dark:text-white/40 mb-2">Goal</label>
-                  <div className="flex flex-wrap gap-2">
-                    {goalOptions.map((g) => (
-                      <button
-                        key={g}
-                        onClick={() => setSettingsGoal(g)}
-                        className={`px-3 py-1.5 rounded-full text-xs border transition ${settingsGoal === g ? 'bg-black text-white dark:bg-white dark:text-black border-transparent' : 'border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10'}`}
-                      >
-                        {g}
-                      </button>
-                    ))}
-                  </div>
+                  <label className="block text-xs uppercase tracking-wider text-gray-400 dark:text-white/40 mb-2">Subject / Topic</label>
+                  <input
+                    type="text"
+                    value={settingsGoal}
+                    onChange={(e) => setSettingsGoal(e.target.value)}
+                    placeholder='Jaise "React.js" ya "Class 12 Physics - Electric Charges"'
+                    className="w-full px-3 py-2 rounded-lg text-sm border border-gray-200 dark:border-white/10 bg-transparent focus:outline-none focus:border-black dark:focus:border-white"
+                  />
                 </div>
 
                 <div>
