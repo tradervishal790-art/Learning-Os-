@@ -33,14 +33,21 @@ const deadlineOptions = [
 interface RoadmapProps {
   /** Onboarding data (role/goal/language/hours) — needed to build the
    *  Blueprint for query expansion so roadmap-topic searches get the
-   *  same personalized YouTube queries the Custom Playlist flow already gets. */
+   *  same personalized YouTube queries the Custom Playlist flow already gets.
+   *  Also used here to tell apart "never onboarded" vs "onboarded but
+   *  roadmap generation failed" — both leave roadmap.id === 'no-roadmap',
+   *  but only the second one should offer a retry. */
   userData: UserOnboardingData | null;
   /** Called with the ranked primary + 2 fallback videos, so the parent can
    *  switch to the Video Intelligence page and preload them into the player. */
   onLaunchPlaylist: (payload: { primary: Video; fallbacks: Video[] }) => void;
+  /** Re-runs roadmap generation (same fn Settings' "Regenerate Roadmap" uses).
+   *  Passed down so the empty-state retry banner can trigger it directly
+   *  instead of silently leaving the user stuck on "Your Roadmap Awaits". */
+  onRegenerateRoadmap?: () => Promise<boolean>;
 }
 
-export default function Roadmap({ userData, onLaunchPlaylist }: RoadmapProps) {
+export default function Roadmap({ userData, onLaunchPlaylist, onRegenerateRoadmap }: RoadmapProps) {
   const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null);
   const [showWhy, setShowWhy] = useState(false);
   const [playlistLoading, setPlaylistLoading] = useState(false);
@@ -48,10 +55,27 @@ export default function Roadmap({ userData, onLaunchPlaylist }: RoadmapProps) {
   const [topicHours, setTopicHours] = useState(0);
   const [topicDeadline, setTopicDeadline] = useState('');
   const [showDeepDive, setShowDeepDive] = useState(false);
+  const [retrying, setRetrying] = useState(false);
+  const [retryFailed, setRetryFailed] = useState(false);
 
   const roadmap = getRoadmapData();
   const { total: totalTopics, completed: completedTopics, learning: learningTopics, percent: progressPercent } =
     getRoadmapProgress(roadmap);
+
+  // Onboarding data exists but roadmap is still the empty fallback — the
+  // AI generation call at onboarding time silently failed (bad/missing API
+  // key, Gemini error, non-JSON response, etc.). This is NOT the "user
+  // hasn't onboarded yet" case, so it needs its own retry-able banner.
+  const roadmapGenerationFailed = roadmap.id === 'no-roadmap' && !!userData;
+
+  const handleRetryGeneration = async () => {
+    if (!onRegenerateRoadmap) return;
+    setRetrying(true);
+    setRetryFailed(false);
+    const success = await onRegenerateRoadmap();
+    if (!success) setRetryFailed(true);
+    setRetrying(false);
+  };
 
   const openTopic = (topic: Topic) => {
     setSelectedTopic(topic);
@@ -207,6 +231,28 @@ export default function Roadmap({ userData, onLaunchPlaylist }: RoadmapProps) {
            {roadmap.difficulty}
           </span>
         </div>
+
+        {roadmapGenerationFailed && (
+          <div className="mt-4 p-4 rounded-xl border border-red-200 dark:border-red-500/20 bg-red-50 dark:bg-red-500/5 flex items-center justify-between flex-wrap gap-3">
+            <div>
+              <p className="text-sm font-semibold text-red-700 dark:text-red-400">Roadmap generate nahi ho paaya</p>
+              <p className="text-xs text-red-600/80 dark:text-red-400/70 mt-0.5">
+                {retryFailed
+                  ? 'Retry bhi fail hua — thodi der baad phir try karo.'
+                  : 'Onboarding data save hai, par AI se roadmap banate waqt error aaya tha.'}
+              </p>
+            </div>
+            {onRegenerateRoadmap && (
+              <button
+                onClick={handleRetryGeneration}
+                disabled={retrying}
+                className="px-4 py-2 rounded-lg text-sm font-medium bg-red-600 text-white hover:bg-red-700 transition disabled:opacity-50 flex-shrink-0"
+              >
+                {retrying ? 'Try kar raha hoon...' : 'Retry'}
+              </button>
+            )}
+          </div>
+        )}
       </motion.div>
 
       {/* Topic list */}

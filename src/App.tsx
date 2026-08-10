@@ -80,7 +80,18 @@ function App() {
       });
       const result = await res.json();
       if (res.ok && result.roadmap) {
-        localStorage.setItem(GENERATED_ROADMAP_STORAGE_KEY, JSON.stringify(result.roadmap));
+        // Stamp the first topic's learning-start date client-side (server
+        // has no reliable "now" to attach) — this is the anchor the
+        // Revision engine schedules Day 1/3/7/15/30/60 checkpoints from.
+        const stampedRoadmap = {
+          ...result.roadmap,
+          children: (result.roadmap.children ?? []).map((t: any) =>
+            t.status === 'learning' && !t.learningStartedAt
+              ? { ...t, learningStartedAt: new Date().toISOString() }
+              : t
+          ),
+        };
+        localStorage.setItem(GENERATED_ROADMAP_STORAGE_KEY, JSON.stringify(stampedRoadmap));
         return true;
       }
       return false;

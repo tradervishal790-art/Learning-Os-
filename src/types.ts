@@ -46,6 +46,10 @@ export interface Topic {
   children?: Topic[];
   /** Short lowercase keywords/phrases used to match this topic against watched video titles. */
   topicKeywords?: string[];
+  /** ISO timestamp of when this topic's status first became 'learning' —
+   *  the anchor date the Revision engine schedules Day 1/3/7/15/30/60
+   *  spaced-repetition checkpoints from. Absent for topics never started. */
+  learningStartedAt?: string;
 }
 
 
@@ -55,6 +59,9 @@ export type RevisionDifficulty = 'Easy' | 'Medium' | 'Hard';
 
 export interface RevisionItem {
   id: string;
+  /** Roadmap topic this checkpoint belongs to — needed to persist "reviewed"
+   *  state back to the actual topic when the user marks it done. */
+  topicId: string;
   topic: string;
   category: string;
   day: number;

@@ -6,7 +6,7 @@ import Revision from './Revision';
 import VideoIntel from './VideoIntel';
 import LearningQuiz from './LearningQuiz';
 import { getRoadmapData, getCurrentTopic } from './roadmapData';
-import { revisionData, getRevisionStats } from './revisionData';
+import { getRevisionData, getRevisionStats } from './revisionData';
 import { getLearningProfile, saveLearningProfile } from './learningProfileStore';
 import { buildCandidatePoolForConcept } from './conceptVideoPool';
 import { selectPlaylistForConcept, analyzedVideoToVideo } from './PlaylistBuilder';
@@ -294,7 +294,7 @@ export default function Dashboard({ userData, onUpdateUserData, onRegenerateRoad
 
   const displayName = userData?.name?.trim() || 'Learner';
   const currentTopic = getCurrentTopic(getRoadmapData());
-  const revisionStats = getRevisionStats(revisionData);
+  const revisionStats = getRevisionStats(getRevisionData());
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -503,7 +503,14 @@ export default function Dashboard({ userData, onUpdateUserData, onRegenerateRoad
           </div>
         )}
 
-        {activePage === 'roadmap' && <Roadmap key={roadmapVersion} userData={userData} onLaunchPlaylist={handleLaunchPlaylist} />}
+        {activePage === 'roadmap' && (
+          <Roadmap
+            key={roadmapVersion}
+            userData={userData}
+            onLaunchPlaylist={handleLaunchPlaylist}
+            onRegenerateRoadmap={onRegenerateRoadmap}
+          />
+        )}
         {activePage === 'revision' && <Revision />}
         {activePage === 'videos' && <VideoIntel initialPlaylist={preloadedPlaylist} />}
         {activePage === 'mentor' && <Mentor />}

@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { revisionData, getRevisionStats } from './revisionData';
-import type { RevisionStatus, RevisionDifficulty } from './types';
+import { getRevisionData, getRevisionStats } from './revisionData';
+import { markDayReviewed } from './revisionstore';
+import type { RevisionStatus, RevisionDifficulty, RevisionItem } from './types';
 
 const statusConfig: Record<RevisionStatus, { label: string; icon: string }> = {
   'due-today': { label: 'Due Today', icon: '🔥' },
@@ -20,20 +21,22 @@ type FilterId = 'all' | RevisionStatus;
 
 export default function Revision() {
   const [filter, setFilter] = useState<FilterId>('all');
-  const [reviewedItems, setReviewedItems] = useState<Set<string>>(new Set());
+  // Live-computed from the actual roadmap (see revisionData.ts) — held in
+  // state (not recomputed on every render) so "Mark Done" can trigger a
+  // real refresh after persisting to revisionStore.
+  const [items, setItems] = useState<RevisionItem[]>(() => getRevisionData());
   const [reviewingId, setReviewingId] = useState<string | null>(null);
 
-  const handleMarkDone = (id: string) => {
-    setReviewedItems((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(id)) {
-        newSet.delete(id);
-      } else {
-        newSet.add(id);
-      }
-      return newSet;
-    });
-    if (reviewingId === id) setReviewingId(null);
+  const refreshItems = () => setItems(getRevisionData());
+
+  // Marking done is now a real state change, not a cosmetic toggle: it
+  // persists to revisionStore, and the item either moves to its next
+  // schedule checkpoint or becomes "mastered" if that was the last one.
+  const handleMarkDone = (item: RevisionItem) => {
+    if (item.status === 'mastered') return;
+    markDayReviewed(item.topicId, item.day);
+    refreshItems();
+    if (reviewingId === item.id) setReviewingId(null);
   };
 
   const handleReviewNow = (id: string) => {
@@ -42,9 +45,9 @@ export default function Revision() {
     // session for the topic instead of just flagging it as "in review".
   };
 
-  const stats = getRevisionStats(revisionData);
+  const stats = getRevisionStats(items);
 
-  const filteredItems = filter === 'all' ? revisionData : revisionData.filter((i) => i.status === filter);
+  const filteredItems = filter === 'all' ? items : items.filter((i) => i.status === filter);
 
   return (
     <div className="p-8 max-w-6xl mx-auto text-black dark:text-white">
@@ -106,7 +109,6 @@ export default function Revision() {
         <AnimatePresence>
           {filteredItems.map((item, i) => {
             const status = statusConfig[item.status];
-            const isReviewed = reviewedItems.has(item.id);
             const isReviewing = reviewingId === item.id;
             return (
               <motion.div
@@ -118,7 +120,7 @@ export default function Revision() {
                 transition={{ delay: i * 0.05, duration: 0.3 }}
                 className={`p-5 rounded-2xl border bg-gray-50 dark:bg-white/5 transition-all ${
                   isReviewing ? 'border-black dark:border-white' : 'border-gray-200 dark:border-white/10'
-                } ${isReviewed ? 'opacity-50' : ''}`}
+                }`}
               >
                 <div className="flex items-center gap-4">
                   <div className="w-16 h-16 rounded-2xl border border-gray-200 dark:border-white/10 flex flex-col items-center justify-center flex-shrink-0">
@@ -166,14 +168,10 @@ export default function Revision() {
                     ) : (
                       <>
                         <button
-                          onClick={() => handleMarkDone(item.id)}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${
-                            isReviewed
-                              ? 'border-gray-200 dark:border-white/10 text-gray-500 dark:text-white/60'
-                              : 'bg-black text-white dark:bg-white dark:text-black border-transparent hover:opacity-80'
-                          }`}
+                          onClick={() => handleMarkDone(item)}
+                          className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all border bg-black text-white dark:bg-white dark:text-black border-transparent hover:opacity-80"
                         >
-                          {isReviewed ? '✓ Reviewed' : 'Mark Done'}
+                          Mark Done
                         </button>
                         <button
                           onClick={() => handleReviewNow(item.id)}
@@ -191,7 +189,14 @@ export default function Revision() {
         </AnimatePresence>
       </div>
 
-      {filteredItems.length === 0 && (
+      {filteredItems.length === 0 && items.length === 0 && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-12 text-center">
+          <div className="text-5xl mb-4">🌱</div>
+          <h3 className="text-xl font-semibold mb-2">Abhi koi revision nahi</h3>
+          <p className="text-gray-400 dark:text-white/60">Roadmap mein koi topic start karo ya video dekho — revision schedule yahin apne aap ban jayega.</p>
+        </motion.div>
+      )}
+      {filteredItems.length === 0 && items.length > 0 && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-12 text-center">
           <div className="text-5xl mb-4">🎉</div>
           <h3 className="text-xl font-semibold mb-2">All caught up!</h3>

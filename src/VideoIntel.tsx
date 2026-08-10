@@ -16,6 +16,21 @@ declare global {
 const WATCH_HISTORY_STORAGE_KEY = 'video_watch_history';
 const SEEK_FORWARD_THRESHOLD_SECONDS = 3;
 const GENERATED_ROADMAP_STORAGE_KEY = 'learning_os_generated_roadmap';
+// Persists searchQuery + results + selectedVideo across tab switches within
+// the same browser session — sessionStorage (not localStorage) because this
+// is "what I was doing right now", not permanent data; clears when the tab
+// actually closes. Fixes: VideoIntel is conditionally mounted/unmounted by
+// Dashboard's activePage switch, so plain React state was wiped every time
+// the user left the "video" tab and came back — forcing the same search
+// to be typed again.
+const SEARCH_STATE_STORAGE_KEY = 'video_intel_search_state';
+
+interface PersistedSearchState {
+  searchQuery: string;
+  videos: Video[];
+  selectedVideoId: string | null;
+  nextPageToken: string | null;
+}
 
 // Below this watch percentage, we don't treat the session as meaningful
 // engagement with a topic at all — no status change happens.
@@ -52,7 +67,7 @@ function updateRoadmapFromWatch(videoTitle: string, watchPercentage: number) {
 
       if (topic.status === 'locked') {
         changed = true;
-        return { ...topic, status: 'learning' as const };
+        return { ...topic, status: 'learning' as const, learningStartedAt: new Date().toISOString() };
       }
 
       if (topic.status === 'learning' && watchPercentage >= LEARNING_TO_COMPLETED_THRESHOLD) {
@@ -188,10 +203,48 @@ export default function VideoIntel({ initialPlaylist }: VideoIntelProps = {}) {
       // Corrupted storage — ignore and start fresh.
     }
 
+    // Restore last search (query + results + selected video) so switching
+    // tabs and coming back doesn't force a re-search. A roadmap-handoff
+    // playlist (initialPlaylist) always takes priority — that effect below
+    // runs after this one and will overwrite this restore when present.
+    try {
+      const savedSearch = sessionStorage.getItem(SEARCH_STATE_STORAGE_KEY);
+      if (savedSearch) {
+        const parsed = JSON.parse(savedSearch) as PersistedSearchState;
+        if (parsed.searchQuery) setSearchQuery(parsed.searchQuery);
+        if (Array.isArray(parsed.videos) && parsed.videos.length > 0) {
+          setVideos(parsed.videos);
+          const restoredSelected = parsed.videos.find((v) => v.id === parsed.selectedVideoId) ?? null;
+          if (restoredSelected) setSelectedVideo(restoredSelected);
+        }
+        nextPageTokenRef.current = parsed.nextPageToken ?? null;
+      }
+    } catch {
+      // Corrupted/old-shape storage — ignore and start fresh.
+    }
+
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, []);
+
+  // Keep sessionStorage in sync with the current search so it survives
+  // unmount (tab switch). Skipped while nothing has been searched yet, so
+  // we don't overwrite a real saved search with an empty initial state.
+  useEffect(() => {
+    if (!searchQuery && videos.length === 0) return;
+    try {
+      const toSave: PersistedSearchState = {
+        searchQuery,
+        videos,
+        selectedVideoId: selectedVideo?.id ?? null,
+        nextPageToken: nextPageTokenRef.current,
+      };
+      sessionStorage.setItem(SEARCH_STATE_STORAGE_KEY, JSON.stringify(toSave));
+    } catch {
+      // Storage full/unavailable — non-critical, just skip persisting.
+    }
+  }, [searchQuery, videos, selectedVideo]);
 
   useEffect(() => {
     return () => {
@@ -318,6 +371,11 @@ export default function VideoIntel({ initialPlaylist }: VideoIntelProps = {}) {
         upsertEngagementSession(withComputedSignal(session));
       }
       saveWatchData(watchDataRef.current);
+      // Auto-advance to the next video — same logic as the manual "Next"
+      // button (moves within the current batch, or fetches a fresh batch
+      // once it's exhausted). If nothing's left, handleNextVideo just
+      // surfaces the "no more videos" error and stays on this one.
+      handleNextVideo();
     }
   };
 

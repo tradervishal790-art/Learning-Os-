@@ -1,95 +1,110 @@
-import type { RevisionItem } from './types';
+import type { RevisionItem, RevisionStatus, RevisionDifficulty, Topic, Difficulty } from './types';
+import { getRoadmapData } from './roadmapData';
+import { getReviewedDays } from './revisionstore';
 
-// NOTE: This file was reconstructed after its original content was
-// accidentally overwritten. The shape/types match what Revision.tsx and
-// Dashboard.tsx expect, but the specific items/dates below are placeholders —
-// replace with your real spaced-repetition data if you have a backup.
+// Standard spaced-repetition checkpoints, referenced across the app copy
+// (App.tsx demo modal) as "Day 1, 3, 7, 15, 30, 60".
+const SCHEDULE_DAYS = [1, 3, 7, 15, 30, 60];
 
-export const revisionData: RevisionItem[] = [
-  {
-    id: 'rev-why-react',
-    topic: 'Why React Exists',
-    category: 'Foundations',
-    day: 1,
-    dueDate: 'Today',
-    status: 'due-today',
-    difficulty: 'Easy',
-    retention: 85,
-  },
-  {
-    id: 'rev-virtual-dom',
-    topic: 'Virtual DOM and Reconciliation',
-    category: 'Foundations',
-    day: 3,
-    dueDate: 'Today',
-    status: 'due-today',
-    difficulty: 'Medium',
-    retention: 72,
-  },
-  {
-    id: 'rev-component-thinking',
-    topic: 'Component Thinking',
-    category: 'Core Concepts',
-    day: 7,
-    dueDate: 'Yesterday',
-    status: 'overdue',
-    difficulty: 'Easy',
-    retention: 60,
-  },
-  {
-    id: 'rev-state',
-    topic: 'State Management',
-    category: 'Core Concepts',
-    day: 7,
-    dueDate: '2 days ago',
-    status: 'overdue',
-    difficulty: 'Medium',
-    retention: 55,
-  },
-  {
-    id: 'rev-hooks',
-    topic: 'Hooks Deep Dive',
-    category: 'Core Concepts',
-    day: 15,
-    dueDate: 'In 3 days',
-    status: 'upcoming',
-    difficulty: 'Medium',
-    retention: 90,
-  },
-  {
-    id: 'rev-performance',
-    topic: 'Performance Optimization',
-    category: 'Advanced',
-    day: 30,
-    dueDate: 'In 10 days',
-    status: 'upcoming',
-    difficulty: 'Hard',
-    retention: 95,
-  },
-  {
-    id: 'rev-architecture',
-    topic: 'App Architecture',
-    category: 'Advanced',
-    day: 60,
-    dueDate: 'In 25 days',
-    status: 'upcoming',
-    difficulty: 'Hard',
-    retention: 98,
-  },
-  {
-    id: 'rev-real-projects',
-    topic: 'Real Projects',
-    category: 'Advanced',
-    day: 60,
-    dueDate: 'Completed',
-    status: 'mastered',
-    difficulty: 'Hard',
-    retention: 100,
-  },
-];
+function daysBetween(fromISO: string, to: Date = new Date()): number {
+  const from = new Date(fromISO).getTime();
+  if (Number.isNaN(from)) return 0;
+  return Math.floor((to.getTime() - from) / (1000 * 60 * 60 * 24));
+}
+
+function formatDueDate(daysUntilDue: number): string {
+  if (daysUntilDue === 0) return 'Today';
+  if (daysUntilDue === 1) return 'Tomorrow';
+  if (daysUntilDue === -1) return 'Yesterday';
+  if (daysUntilDue > 1) return `In ${daysUntilDue} days`;
+  return `${Math.abs(daysUntilDue)} days ago`;
+}
+
+// Rough Ebbinghaus-style estimate — retention starts high right after the
+// topic was last touched and decays the longer a due checkpoint is left
+// unreviewed, relative to how long that checkpoint's interval is.
+function estimateRetention(daysPastDue: number, intervalDays: number): number {
+  const ratio = intervalDays > 0 ? daysPastDue / intervalDays : 0;
+  const retention = 95 - Math.round(ratio * 40);
+  return Math.max(30, Math.min(98, retention));
+}
+
+function categoryForDifficulty(difficulty: Difficulty): string {
+  if (difficulty === 'Beginner') return 'Foundations';
+  if (difficulty === 'Intermediate') return 'Core Concepts';
+  return 'Advanced';
+}
+
+function toRevisionDifficulty(difficulty: Difficulty): RevisionDifficulty {
+  if (difficulty === 'Beginner') return 'Easy';
+  if (difficulty === 'Intermediate') return 'Medium';
+  return 'Hard';
+}
+
+/**
+ * Builds live spaced-repetition items straight from the roadmap — one item
+ * per next-due schedule checkpoint, only for topics the learner has
+ * actually started (status learning/completed/mastered AND has a
+ * learningStartedAt timestamp). Nothing here is seeded/mock: an empty
+ * roadmap or a roadmap nobody has started yet correctly returns [].
+ */
+export function getRevisionData(roadmap: Topic = getRoadmapData()): RevisionItem[] {
+  const topics = roadmap.children ?? [];
+  const items: RevisionItem[] = [];
+  const now = new Date();
+
+  for (const topic of topics) {
+    if (topic.status === 'locked' || !topic.learningStartedAt) continue;
+
+    const elapsedDays = daysBetween(topic.learningStartedAt, now);
+    const reviewedDays = getReviewedDays(topic.id);
+    const allCheckpointsDone = SCHEDULE_DAYS.every((d) => reviewedDays.includes(d));
+
+    if (topic.status === 'mastered' || allCheckpointsDone) {
+      items.push({
+        id: `${topic.id}-mastered`,
+        topicId: topic.id,
+        topic: topic.title,
+        category: categoryForDifficulty(topic.difficulty),
+        day: SCHEDULE_DAYS[SCHEDULE_DAYS.length - 1],
+        dueDate: 'Completed',
+        status: 'mastered',
+        difficulty: toRevisionDifficulty(topic.difficulty),
+        retention: 100,
+      });
+      continue;
+    }
+
+    const nextDay = SCHEDULE_DAYS.find((d) => !reviewedDays.includes(d));
+    if (nextDay === undefined) continue;
+
+    const daysUntilDue = nextDay - elapsedDays;
+    let status: RevisionStatus;
+    if (daysUntilDue > 0) status = 'upcoming';
+    else if (daysUntilDue === 0) status = 'due-today';
+    else status = 'overdue';
+
+    const retention = estimateRetention(Math.max(0, -daysUntilDue), nextDay);
+
+    items.push({
+      id: `${topic.id}-day${nextDay}`,
+      topicId: topic.id,
+      topic: topic.title,
+      category: categoryForDifficulty(topic.difficulty),
+      day: nextDay,
+      dueDate: formatDueDate(daysUntilDue),
+      status,
+      difficulty: toRevisionDifficulty(topic.difficulty),
+      retention,
+    });
+  }
+
+  const statusOrder: Record<RevisionStatus, number> = { overdue: 0, 'due-today': 1, upcoming: 2, mastered: 3 };
+  return items.sort((a, b) => statusOrder[a.status] - statusOrder[b.status] || a.day - b.day);
+}
 
 /** Aggregate stats for the Revision dashboard — counts + average retention. */
-export function getRevisionStats(items: RevisionItem[] = revisionData) {
+export function getRevisionStats(items: RevisionItem[]) {
   const total = items.length;
   const dueToday = items.filter((i) => i.status === 'due-today').length;
   const overdue = items.filter((i) => i.status === 'overdue').length;
