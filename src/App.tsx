@@ -61,6 +61,10 @@ function App() {
   const [page, setPage] = useState<Page>('landing');
   const [userData, setUserData] = useState<UserOnboardingData | null>(loadSavedOnboardingData);
   const [showDemo, setShowDemo] = useState(false);
+  // Actual server/network error from the last generate-roadmap attempt —
+  // shown in Roadmap.tsx's failure banner so a failure is debuggable
+  // instead of a silent "something went wrong".
+  const [lastRoadmapError, setLastRoadmapError] = useState<string | null>(null);
 
   /**
    * Generates a roadmap via the API and saves it to localStorage. Shared by
@@ -69,6 +73,9 @@ function App() {
    * whenever generate-roadmap.ts's prompt/logic has been improved, or the
    * user's answers/learning style have changed since the roadmap was made).
    * Returns true on success so the caller can show a confirmation/error message.
+   * Also stores the actual failure reason in lastRoadmapError (server error
+   * message, not just a generic "it failed") so the Roadmap page banner and
+   * the browser console can show WHY, instead of a black-box failure.
    */
   const generateAndSaveRoadmap = async (data: UserOnboardingData): Promise<boolean> => {
     try {
@@ -92,10 +99,22 @@ function App() {
           ),
         };
         localStorage.setItem(GENERATED_ROADMAP_STORAGE_KEY, JSON.stringify(stampedRoadmap));
+        setLastRoadmapError(null);
         return true;
       }
+      const serverMessage =
+        typeof result?.error === 'string'
+          ? result.error
+          : result?.detail
+            ? JSON.stringify(result.detail)
+            : `Server returned ${res.status}`;
+      console.error('generate-roadmap failed:', serverMessage, result);
+      setLastRoadmapError(serverMessage);
       return false;
-    } catch {
+    } catch (err: any) {
+      const message = err?.message || 'Network/fetch error while calling /api/generate-roadmap';
+      console.error('generate-roadmap failed:', message, err);
+      setLastRoadmapError(message);
       return false;
     }
   };
@@ -149,6 +168,7 @@ function App() {
         onUpdateUserData={handleUpdateUserData}
         onRegenerateRoadmap={handleRegenerateRoadmap}
         roadmapVersion={roadmapVersion}
+        lastRoadmapError={lastRoadmapError}
       />
     );
   } else {

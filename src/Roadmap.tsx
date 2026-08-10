@@ -45,9 +45,13 @@ interface RoadmapProps {
    *  Passed down so the empty-state retry banner can trigger it directly
    *  instead of silently leaving the user stuck on "Your Roadmap Awaits". */
   onRegenerateRoadmap?: () => Promise<boolean>;
+  /** Actual server/network error from the last generation attempt (e.g.
+   *  missing API key, Gemini quota, bad JSON) — shown in the failure banner
+   *  so the cause is visible instead of a generic "something went wrong". */
+  lastRoadmapError?: string | null;
 }
 
-export default function Roadmap({ userData, onLaunchPlaylist, onRegenerateRoadmap }: RoadmapProps) {
+export default function Roadmap({ userData, onLaunchPlaylist, onRegenerateRoadmap, lastRoadmapError }: RoadmapProps) {
   const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null);
   const [showWhy, setShowWhy] = useState(false);
   const [playlistLoading, setPlaylistLoading] = useState(false);
@@ -241,6 +245,11 @@ export default function Roadmap({ userData, onLaunchPlaylist, onRegenerateRoadma
                   ? 'Retry bhi fail hua — thodi der baad phir try karo.'
                   : 'Onboarding data save hai, par AI se roadmap banate waqt error aaya tha.'}
               </p>
+              {lastRoadmapError && (
+                <p className="text-[11px] font-mono text-red-500/70 dark:text-red-400/60 mt-1 break-all">
+                  {lastRoadmapError}
+                </p>
+              )}
             </div>
             {onRegenerateRoadmap && (
               <button

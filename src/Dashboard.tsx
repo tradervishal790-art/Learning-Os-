@@ -25,6 +25,9 @@ interface DashboardProps {
   /** Bumped every successful regenerate — passed as <Roadmap key={...}>
    *  so it remounts and re-reads the fresh roadmap from localStorage. */
   roadmapVersion: number;
+  /** Actual server/network error message from the last generation attempt,
+   *  shown in Roadmap.tsx's failure banner so failures are debuggable. */
+  lastRoadmapError: string | null;
 }
 
 interface Blueprint {
@@ -105,7 +108,7 @@ function trackAndComputeStreak(): number {
   return streak;
 }
 
-export default function Dashboard({ userData, onUpdateUserData, onRegenerateRoadmap, roadmapVersion }: DashboardProps) {
+export default function Dashboard({ userData, onUpdateUserData, onRegenerateRoadmap, roadmapVersion, lastRoadmapError }: DashboardProps) {
   const { theme, toggleTheme } = useTheme();
   const [activePage, setActivePage] = useState<DashboardPageId>('dashboard');
   const [showSidebar, setShowSidebar] = useState(false);
@@ -509,6 +512,7 @@ export default function Dashboard({ userData, onUpdateUserData, onRegenerateRoad
             userData={userData}
             onLaunchPlaylist={handleLaunchPlaylist}
             onRegenerateRoadmap={onRegenerateRoadmap}
+            lastRoadmapError={lastRoadmapError}
           />
         )}
         {activePage === 'revision' && <Revision />}
