@@ -29,11 +29,18 @@ interface RoadmapProps {
   /** Called with the ranked primary + 2 fallback videos, so the parent can
    *  switch to the Video Intelligence page and preload them into the player. */
   onLaunchPlaylist: (payload: { primary: Video; fallbacks: Video[] }) => void;
-  /** Updates userData.goal/hours to the typed subject + slider value and
-   *  generates a roadmap for it directly from this page — powers the
-   *  empty-state "type a subject, set your time, and go" form (no roadmap
-   *  yet, or a previous generation failed). */
-  onGenerateForSubject?: (subject: string, hours: number) => Promise<boolean>;
+  /** Updates userData.goal/hours/deadline to the typed subject + slider
+   *  values and generates a roadmap for it directly from this page — powers
+   *  the empty-state "type a subject, set your time, and go" form (no
+   *  roadmap yet, or a previous generation failed). `deadlineDays` is the
+   *  exact day count from the Day/Week/Month slider; `deadlineLabel` is the
+   *  human-readable text (e.g. "4 hafte") stored for display. */
+  onGenerateForSubject?: (
+    subject: string,
+    hours: number,
+    deadlineDays: number,
+    deadlineLabel: string
+  ) => Promise<boolean>;
   /** Actual server/network error from the last generation attempt (e.g.
    *  missing API key, Gemini quota, bad JSON) — shown under the form so the
    *  cause is visible instead of a generic "something went wrong". */
@@ -50,6 +57,8 @@ export default function Roadmap({ userData, onLaunchPlaylist, onGenerateForSubje
   const [showDeepDive, setShowDeepDive] = useState(false);
   const [subjectInput, setSubjectInput] = useState('');
   const [hoursInput, setHoursInput] = useState(10);
+  const [deadlineUnit, setDeadlineUnit] = useState<'day' | 'week' | 'month'>('week');
+  const [deadlineValue, setDeadlineValue] = useState(4); // matches 'week' default range below
   const [generating, setGenerating] = useState(false);
   const [generateFailed, setGenerateFailed] = useState(false);
 
@@ -63,11 +72,36 @@ export default function Roadmap({ userData, onLaunchPlaylist, onGenerateForSubje
   // back through onboarding/Settings.
   const hasNoRoadmap = roadmap.id === 'no-roadmap';
 
+  // One slider, range/default swap based on the Day/Week/Month toggle —
+  // not three separate sliders. Defaults chosen to land near a "1 month"
+  // deadline regardless of which unit is picked, so switching units
+  // mid-way doesn't suddenly imply a wildly different total timeframe.
+  const DEADLINE_UNIT_CONFIG = {
+    day: { min: 1, max: 30, default: 30, label: (v: number) => `${v} ${v === 1 ? 'din' : 'din'}` },
+    week: { min: 1, max: 12, default: 4, label: (v: number) => `${v} ${v === 1 ? 'hafta' : 'hafte'}` },
+    month: { min: 1, max: 12, default: 1, label: (v: number) => `${v} ${v === 1 ? 'mahina' : 'mahine'}` },
+  } as const;
+
+  const handleDeadlineUnitChange = (unit: 'day' | 'week' | 'month') => {
+    setDeadlineUnit(unit);
+    setDeadlineValue(DEADLINE_UNIT_CONFIG[unit].default);
+  };
+
+  // Exact day count sent to the backend — replaces the old 5-preset
+  // (none/1m/3m/6m/1y) lookup with the precise value from the slider.
+  const deadlineDays =
+    deadlineUnit === 'day' ? deadlineValue : deadlineUnit === 'week' ? deadlineValue * 7 : deadlineValue * 30;
+
   const handleGenerateClick = async () => {
     if (!onGenerateForSubject || !subjectInput.trim()) return;
     setGenerating(true);
     setGenerateFailed(false);
-    const success = await onGenerateForSubject(subjectInput.trim(), hoursInput);
+    const success = await onGenerateForSubject(
+      subjectInput.trim(),
+      hoursInput,
+      deadlineDays,
+      DEADLINE_UNIT_CONFIG[deadlineUnit].label(deadlineValue)
+    );
     if (!success) setGenerateFailed(true);
     setGenerating(false);
   };
@@ -272,6 +306,44 @@ export default function Roadmap({ userData, onLaunchPlaylist, onGenerateForSubje
               <p className="text-[11px] text-gray-400 dark:text-white/40 mt-1.5">
                 Isse roadmap ke topics aur unki depth tumhare available time ke hisaab se accurate banti hai.
               </p>
+            </div>
+
+            <div className="mt-4">
+              <label className="block text-sm font-semibold mb-2">Time limit</label>
+              <div className="flex gap-2 mb-3">
+                {(['day', 'week', 'month'] as const).map((unit) => (
+                  <button
+                    key={unit}
+                    onClick={() => handleDeadlineUnitChange(unit)}
+                    className={`flex-1 py-2 rounded-lg text-sm border transition capitalize ${
+                      deadlineUnit === unit
+                        ? 'bg-black text-white dark:bg-white dark:text-black border-transparent'
+                        : 'border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10'
+                    }`}
+                  >
+                    {unit}
+                  </button>
+                ))}
+              </div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs text-gray-400 dark:text-white/40">Deadline</span>
+                <span className="text-sm font-mono px-2 py-0.5 rounded-md bg-black text-white dark:bg-white dark:text-black">
+                  {DEADLINE_UNIT_CONFIG[deadlineUnit].label(deadlineValue)}
+                </span>
+              </div>
+              <input
+                type="range"
+                min={DEADLINE_UNIT_CONFIG[deadlineUnit].min}
+                max={DEADLINE_UNIT_CONFIG[deadlineUnit].max}
+                step={1}
+                value={deadlineValue}
+                onChange={(e) => setDeadlineValue(Number(e.target.value))}
+                className="w-full h-2 rounded-full appearance-none cursor-pointer bg-gray-200 dark:bg-white/10 accent-black dark:accent-white"
+              />
+              <div className="flex justify-between text-[11px] text-gray-400 dark:text-white/40 mt-1">
+                <span>{DEADLINE_UNIT_CONFIG[deadlineUnit].min} {deadlineUnit}</span>
+                <span>{DEADLINE_UNIT_CONFIG[deadlineUnit].max} {deadlineUnit}{DEADLINE_UNIT_CONFIG[deadlineUnit].max > 1 ? 's' : ''}</span>
+              </div>
             </div>
 
             {generateFailed && (

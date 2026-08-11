@@ -22,11 +22,16 @@ interface DashboardProps {
   /** Re-runs roadmap generation with current userData + latest learning
    *  profile, overwriting the cached roadmap. Returns true on success. */
   onRegenerateRoadmap: () => Promise<boolean>;
-  /** Updates userData.goal/hours to the given subject + weekly-hours slider
-   *  value and generates a roadmap for it directly — the Roadmap page's own
-   *  inline "type a subject, set your time, and go" flow, no full
+  /** Updates userData.goal/hours/deadline to the given subject + slider
+   *  values and generates a roadmap for it directly — the Roadmap page's
+   *  own inline "type a subject, set your time, and go" flow, no full
    *  onboarding needed. */
-  onGenerateForSubject: (subject: string, hours: number) => Promise<boolean>;
+  onGenerateForSubject: (
+    subject: string,
+    hours: number,
+    deadlineDays: number,
+    deadlineLabel: string
+  ) => Promise<boolean>;
   /** Bumped every successful regenerate — passed as <Roadmap key={...}>
    *  so it remounts and re-reads the fresh roadmap from localStorage. */
   roadmapVersion: number;

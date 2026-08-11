@@ -39,7 +39,10 @@ interface UserOnboardingData {
   goal: string;
   language: string;
   hours: number;      // hours/week
-  deadline: string;   // 'none' | '1m' | '3m' | '6m' | '1y'
+  deadline: string;   // 'none' | '1m' | '3m' | '6m' | '1y' | free-text label
+  /** Exact deadline in days from the Day/Week/Month slider — takes
+   *  priority over the coarse `deadline` string bucket when present. */
+  deadlineDays?: number;
   learningProfile?: LearningProfileInput;
 }
 
@@ -70,9 +73,11 @@ const DEADLINE_DAYS: Record<string, number> = {
   '1y': 365,
 };
 
-/** Total study hours available across the whole deadline window. */
-function calculateTotalHours(hoursPerWeek: number, deadline: string): number {
-  const days = DEADLINE_DAYS[deadline] ?? DEADLINE_DAYS.none;
+/** Total study hours available across the whole deadline window.
+ *  `deadlineDays`, when provided (from the Day/Week/Month slider), takes
+ *  priority — it's an exact day count instead of a coarse 5-bucket preset. */
+function calculateTotalHours(hoursPerWeek: number, deadline: string, deadlineDays?: number): number {
+  const days = deadlineDays && deadlineDays > 0 ? deadlineDays : (DEADLINE_DAYS[deadline] ?? DEADLINE_DAYS.none);
   const weeks = days / 7;
   return Math.round(weeks * hoursPerWeek);
 }
@@ -119,13 +124,13 @@ function learningStyleInstruction(profile?: LearningProfileInput): string {
 }
 
 const ROADMAP_PROMPT = (data: UserOnboardingData) => {
-  const totalHours = calculateTotalHours(data.hours, data.deadline);
+  const totalHours = calculateTotalHours(data.hours, data.deadline, data.deadlineDays);
   const { topicCount, hoursPerTopic } = calculateTopicBudget(totalHours);
 
   return `
 Ek learner ke liye ek personalized, sequential learning roadmap banao, in details ke aadhar par:
 - Role: ${data.role}
-- Goal: ${data.goal}
+- Subject/Topic to learn: ${data.goal}
 - Weekly hours available: ${data.hours}
 - Deadline: ${data.deadline}
 - Total study hours available (calculated): ~${totalHours} hours over this deadline

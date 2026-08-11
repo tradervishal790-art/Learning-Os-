@@ -14,6 +14,11 @@ export interface UserOnboardingData {
   language: string;
   hours: number;       // ← ADD THIS LINE
   deadline: string;
+  /** Exact deadline in days, when set via the Day/Week/Month slider (Roadmap
+   *  page's inline generate form). Takes priority over the coarse `deadline`
+   *  string bucket when present — lets the time-budget calc be precise
+   *  instead of snapping to one of 5 fixed presets. */
+  deadlineDays?: number;
 }
 
 
