@@ -6,13 +6,13 @@ import Revision from './Revision';
 import VideoIntel from './VideoIntel';
 import LearningQuiz from './LearningQuiz';
 import { getRoadmapData, getCurrentTopic } from './roadmapData';
-import { getRevisionData, getRevisionStats } from './revisionData';
+import { getRevisionStats, getRevisionDataForGoals } from './revisionData';
 import { getLearningProfile, saveLearningProfile } from './learningProfileStore';
 import { buildCandidatePoolForConcept } from './conceptVideoPool';
 import { selectPlaylistForConcept, analyzedVideoToVideo } from './PlaylistBuilder';
 import { expandSearchQuery } from './queryExpander';
 import { useTheme } from './ThemeContext';
-import type { DashboardPageId, PageConfig, UserOnboardingData, LearningProfile, Video, Topic } from './types';
+import type { DashboardPageId, PageConfig, UserOnboardingData, LearningProfile, Video, Topic, Goal } from './types';
 import Mentor from './Mentor';
 import Notes from './Notes';
 
@@ -38,6 +38,15 @@ interface DashboardProps {
   /** Actual server/network error message from the last generation attempt,
    *  shown in Roadmap.tsx's failure banner so failures are debuggable. */
   lastRoadmapError: string | null;
+  /** Up to 2 goals can be 'active' simultaneously — each with its own
+   *  roadmap. Passed straight through to Roadmap.tsx for the goal tabs. */
+  goals: Goal[];
+  activeGoalId: string | null;
+  /** Opens a 2nd goal slot (returns false if 2 are already active). */
+  onAddGoal: () => boolean;
+  /** Ends a goal, freeing its slot for a new one. */
+  onEndGoal: (goalId: string, outcome?: 'completed' | 'abandoned') => void;
+  onSwitchGoal: (goalId: string) => void;
 }
 
 interface Blueprint {
@@ -117,7 +126,7 @@ function trackAndComputeStreak(): number {
   return streak;
 }
 
-export default function Dashboard({ userData, onUpdateUserData, onRegenerateRoadmap, onGenerateForSubject, roadmapVersion, lastRoadmapError }: DashboardProps) {
+export default function Dashboard({ userData, onUpdateUserData, onRegenerateRoadmap, onGenerateForSubject, roadmapVersion, lastRoadmapError, goals, activeGoalId, onAddGoal, onEndGoal, onSwitchGoal }: DashboardProps) {
   const { theme, toggleTheme } = useTheme();
   const [activePage, setActivePage] = useState<DashboardPageId>('dashboard');
   const [showSidebar, setShowSidebar] = useState(false);
@@ -305,8 +314,8 @@ export default function Dashboard({ userData, onUpdateUserData, onRegenerateRoad
   }
 
   const displayName = userData?.name?.trim() || 'Learner';
-  const currentTopic = getCurrentTopic(getRoadmapData());
-  const revisionStats = getRevisionStats(getRevisionData());
+  const currentTopic = getCurrentTopic(getRoadmapData(activeGoalId ?? undefined));
+  const revisionStats = getRevisionStats(getRevisionDataForGoals(goals));
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -517,15 +526,20 @@ export default function Dashboard({ userData, onUpdateUserData, onRegenerateRoad
 
         {activePage === 'roadmap' && (
           <Roadmap
-            key={roadmapVersion}
+            key={`${roadmapVersion}-${activeGoalId}`}
             userData={userData}
             onLaunchPlaylist={handleLaunchPlaylist}
             onGenerateForSubject={onGenerateForSubject}
             lastRoadmapError={lastRoadmapError}
+            goals={goals}
+            activeGoalId={activeGoalId}
+            onAddGoal={onAddGoal}
+            onEndGoal={onEndGoal}
+            onSwitchGoal={onSwitchGoal}
           />
         )}
-        {activePage === 'revision' && <Revision />}
-        {activePage === 'videos' && <VideoIntel initialPlaylist={preloadedPlaylist} />}
+        {activePage === 'revision' && <Revision goals={goals} />}
+        {activePage === 'videos' && <VideoIntel initialPlaylist={preloadedPlaylist} activeGoalId={activeGoalId} />}
         {activePage === 'mentor' && <Mentor />}
         {activePage === 'notes' && <Notes />}
 

@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getRevisionData, getRevisionStats } from './revisionData';
+import { getRevisionStats, getRevisionDataForGoals } from './revisionData';
 import { markDayReviewed } from './revisionstore';
-import type { RevisionStatus, RevisionDifficulty, RevisionItem } from './types';
+import type { RevisionStatus, RevisionDifficulty, RevisionItem, Goal } from './types';
 
 const statusConfig: Record<RevisionStatus, { label: string; icon: string }> = {
   'due-today': { label: 'Due Today', icon: '🔥' },
@@ -19,15 +19,22 @@ const difficultyConfig: Record<RevisionDifficulty, string> = {
 
 type FilterId = 'all' | RevisionStatus;
 
-export default function Revision() {
+interface RevisionProps {
+  /** All goals — used to pull spaced-repetition items from EVERY active
+   *  goal's roadmap at once, so revision covers both simultaneous goals
+   *  instead of only whichever one Roadmap.tsx's tab happens to be on. */
+  goals?: Goal[];
+}
+
+export default function Revision({ goals = [] }: RevisionProps) {
   const [filter, setFilter] = useState<FilterId>('all');
-  // Live-computed from the actual roadmap (see revisionData.ts) — held in
+  // Live-computed from the actual roadmap(s) (see revisionData.ts) — held in
   // state (not recomputed on every render) so "Mark Done" can trigger a
   // real refresh after persisting to revisionStore.
-  const [items, setItems] = useState<RevisionItem[]>(() => getRevisionData());
+  const [items, setItems] = useState<(RevisionItem & { goalTitle?: string })[]>(() => getRevisionDataForGoals(goals));
   const [reviewingId, setReviewingId] = useState<string | null>(null);
 
-  const refreshItems = () => setItems(getRevisionData());
+  const refreshItems = () => setItems(getRevisionDataForGoals(goals));
 
   // Marking done is now a real state change, not a cosmetic toggle: it
   // persists to revisionStore, and the item either moves to its next
@@ -134,6 +141,11 @@ export default function Revision() {
                         {status.icon} {status.label}
                       </span>
                       <span className="text-[10px] text-gray-400 dark:text-white/40 uppercase tracking-wider">• {item.category}</span>
+                      {item.goalTitle && (
+                        <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full border border-gray-200 dark:border-white/10 text-gray-500 dark:text-white/50">
+                          🎯 {item.goalTitle}
+                        </span>
+                      )}
                       <span className={`text-[10px] uppercase tracking-wider ${difficultyConfig[item.difficulty]}`}>
                         • {item.difficulty}
                       </span>

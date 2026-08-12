@@ -24,16 +24,38 @@ const FALLBACK_ROADMAP: Topic = {
   children: [],
 };
 
-/** Reads the AI-generated roadmap saved to localStorage after onboarding. */
-export function getRoadmapData(): Topic {
+/**
+ * Resolves the localStorage key for a given goal's roadmap. goalId
+ * 'primary' (or omitted, for old callers) aliases the original flat key —
+ * this is what lets pre-multi-goal users' roadmaps keep working with zero
+ * data migration. Any other goalId gets its own suffixed key, so a 2nd
+ * simultaneous goal never touches the 1st goal's roadmap.
+ */
+function storageKeyFor(goalId?: string): string {
+  return goalId && goalId !== 'primary' ? `${GENERATED_ROADMAP_STORAGE_KEY}:${goalId}` : GENERATED_ROADMAP_STORAGE_KEY;
+}
+
+/** Reads the AI-generated roadmap for a given goal (or the legacy/primary
+ *  roadmap if no goalId is passed) saved to localStorage after onboarding. */
+export function getRoadmapData(goalId?: string): Topic {
   try {
-    const saved = localStorage.getItem(GENERATED_ROADMAP_STORAGE_KEY);
+    const saved = localStorage.getItem(storageKeyFor(goalId));
     if (!saved) return FALLBACK_ROADMAP;
     const parsed = JSON.parse(saved) as Topic;
     if (!parsed || !parsed.id || !Array.isArray(parsed.children)) return FALLBACK_ROADMAP;
     return parsed;
   } catch {
     return FALLBACK_ROADMAP;
+  }
+}
+
+/** Saves a generated roadmap under the given goal's key. Single source of
+ *  truth for the key naming so App.tsx doesn't duplicate storageKeyFor logic. */
+export function saveRoadmapData(goalId: string | undefined, roadmap: Topic): void {
+  try {
+    localStorage.setItem(storageKeyFor(goalId), JSON.stringify(roadmap));
+  } catch {
+    // Storage full/unavailable — non-critical, just won't persist.
   }
 }
 

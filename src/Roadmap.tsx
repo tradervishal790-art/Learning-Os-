@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getRoadmapData, getRoadmapProgress } from './roadmapData';
-import type { Topic, Video, UserOnboardingData } from './types';
+import { MAX_ACTIVE_GOALS } from './goalsStore';
+import type { Topic, Video, UserOnboardingData, Goal } from './types';
 import { buildCandidatePoolForConcept } from './conceptVideoPool';
 import { selectPlaylistForConcept, analyzedVideoToVideo, getLastTeacherForConcept } from './PlaylistBuilder';
 import { getLearningProfile } from './learningProfileStore';
@@ -45,9 +46,26 @@ interface RoadmapProps {
    *  missing API key, Gemini quota, bad JSON) — shown under the form so the
    *  cause is visible instead of a generic "something went wrong". */
   lastRoadmapError?: string | null;
+  /** Up to MAX_ACTIVE_GOALS goals can run simultaneously — each with its
+   *  own roadmap, switched between via the tab strip below the header. */
+  goals: Goal[];
+  activeGoalId: string | null;
+  onAddGoal: () => boolean;
+  onEndGoal: (goalId: string, outcome?: 'completed' | 'abandoned') => void;
+  onSwitchGoal: (goalId: string) => void;
 }
 
-export default function Roadmap({ userData, onLaunchPlaylist, onGenerateForSubject, lastRoadmapError }: RoadmapProps) {
+export default function Roadmap({
+  userData,
+  onLaunchPlaylist,
+  onGenerateForSubject,
+  lastRoadmapError,
+  goals,
+  activeGoalId,
+  onAddGoal,
+  onEndGoal,
+  onSwitchGoal,
+}: RoadmapProps) {
   const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null);
   const [showWhy, setShowWhy] = useState(false);
   const [playlistLoading, setPlaylistLoading] = useState(false);
@@ -61,8 +79,12 @@ export default function Roadmap({ userData, onLaunchPlaylist, onGenerateForSubje
   const [deadlineValue, setDeadlineValue] = useState(4); // matches 'week' default range below
   const [generating, setGenerating] = useState(false);
   const [generateFailed, setGenerateFailed] = useState(false);
+  const [confirmEndGoal, setConfirmEndGoal] = useState(false);
 
-  const roadmap = getRoadmapData();
+  const activeGoals = goals.filter((g) => g.status === 'active');
+  const canAddGoal = activeGoals.length < MAX_ACTIVE_GOALS;
+
+  const roadmap = getRoadmapData(activeGoalId ?? undefined);
   const { total: totalTopics, completed: completedTopics, learning: learningTopics, percent: progressPercent } =
     getRoadmapProgress(roadmap);
 
@@ -70,7 +92,7 @@ export default function Roadmap({ userData, onLaunchPlaylist, onGenerateForSubje
   // Either way, the fix is the same: let the user type a subject + set
   // their weekly time right here and generate, instead of sending them
   // back through onboarding/Settings.
-  const hasNoRoadmap = roadmap.id === 'no-roadmap';
+  const hasNoRoadmap = roadmap.id === 'no-roadmap' || !activeGoalId;
 
   // One slider, range/default swap based on the Day/Week/Month toggle —
   // not three separate sliders. Defaults chosen to land near a "1 month"
@@ -207,12 +229,100 @@ export default function Roadmap({ userData, onLaunchPlaylist, onGenerateForSubje
   return (
     <div className="p-4 md:p-8 max-w-6xl mx-auto text-black dark:text-white">
       {/* Header */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="mb-8">
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="mb-4">
         <div className="flex items-center gap-3 mb-2">
           <span className="text-2xl">🗺️</span>
           <h1 className="text-2xl md:text-4xl font-bold">Your Roadmap</h1>
         </div>
       </motion.div>
+
+      {/* Goal tabs — up to MAX_ACTIVE_GOALS active goals at once */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.05, duration: 0.4 }}
+        className="flex items-center gap-2 mb-6 flex-wrap"
+      >
+        {activeGoals.map((g) => (
+          <button
+            key={g.id}
+            onClick={() => onSwitchGoal(g.id)}
+            className={`px-4 py-2 rounded-xl text-sm font-medium border transition truncate max-w-[220px] ${
+              g.id === activeGoalId
+                ? 'bg-black text-white dark:bg-white dark:text-black border-transparent'
+                : 'border-gray-200 dark:border-white/10 text-gray-500 dark:text-white/50 hover:bg-gray-100 dark:hover:bg-white/10'
+            }`}
+            title={g.title || 'Naya Goal'}
+          >
+            🎯 {g.title || 'Naya Goal'}
+          </button>
+        ))}
+
+        {canAddGoal ? (
+          <button
+            onClick={onAddGoal}
+            className="px-4 py-2 rounded-xl text-sm font-medium border border-dashed border-gray-300 dark:border-white/20 text-gray-500 dark:text-white/50 hover:bg-gray-100 dark:hover:bg-white/10 transition"
+          >
+            + Add Goal
+          </button>
+        ) : (
+          <span className="text-[11px] text-gray-400 dark:text-white/40 px-1">
+            Max {MAX_ACTIVE_GOALS} goals ek saath — koi ek end karo naya start karne ke liye.
+          </span>
+        )}
+
+        {activeGoalId && !hasNoRoadmap && (
+          <button
+            onClick={() => setConfirmEndGoal(true)}
+            className="ml-auto px-3 py-2 rounded-xl text-xs font-medium border border-red-200 dark:border-red-500/20 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition"
+          >
+            End this goal
+          </button>
+        )}
+      </motion.div>
+
+      {/* End-goal confirmation */}
+      <AnimatePresence>
+        {confirmEndGoal && activeGoalId && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setConfirmEndGoal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-white/10 rounded-2xl max-w-sm w-full p-6 text-black dark:text-white"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="text-lg font-bold mb-2">Ye goal end karein?</h3>
+              <p className="text-sm text-gray-500 dark:text-white/50 mb-5">
+                "{roadmap.title}" end ho jayega — progress safe rahega, aur slot free ho jayega naye goal ke liye.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setConfirmEndGoal(false)}
+                  className="flex-1 py-2.5 rounded-lg text-sm font-medium border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    onEndGoal(activeGoalId, 'abandoned');
+                    setConfirmEndGoal(false);
+                  }}
+                  className="flex-1 py-2.5 rounded-lg text-sm font-medium bg-red-600 text-white hover:bg-red-700 transition"
+                >
+                  End Goal
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Top stats */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.5 }} className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-8">
@@ -261,7 +371,13 @@ export default function Roadmap({ userData, onLaunchPlaylist, onGenerateForSubje
           </span>
         </div>
 
-        {hasNoRoadmap && onGenerateForSubject && (
+        {hasNoRoadmap && !activeGoalId && (
+          <div className="mt-5 p-5 rounded-xl border border-dashed border-gray-300 dark:border-white/20 text-center text-sm text-gray-500 dark:text-white/50">
+            Koi active goal nahi hai. Upar "+ Add Goal" dabao naya goal shuru karne ke liye.
+          </div>
+        )}
+
+        {hasNoRoadmap && activeGoalId && onGenerateForSubject && (
           <div className="mt-5 p-5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5">
             <label className="block text-sm font-semibold mb-2">Kya seekhna hai?</label>
             <div className="flex flex-col sm:flex-row gap-3">

@@ -22,6 +22,24 @@ export interface UserOnboardingData {
 }
 
 
+// ---------- Goals (multi-goal support) ----------
+// A user can run up to 2 goals at once. Each goal owns its own roadmap
+// (stored separately, keyed by goal id — see roadmapData.ts). Ending a
+// goal frees a slot for a new one without losing the old roadmap's data.
+export type GoalStatus = 'active' | 'completed' | 'abandoned';
+
+export interface Goal {
+  id: string;
+  /** Subject/topic typed by the user — same as onboarding's `goal` field. */
+  title: string;
+  hours: number;
+  deadline: string;
+  deadlineDays?: number;
+  status: GoalStatus;
+  createdAt: string;
+  endedAt?: string;
+}
+
 // ---------- Playlist timing (moved out of onboarding, asked at playlist-creation time) ----------
 export interface PlaylistTiming {
   hours: number;

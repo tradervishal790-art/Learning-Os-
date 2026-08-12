@@ -5,13 +5,14 @@ import Stars from './Stars';
 import Onboarding3D from './Onboarding3D';
 import Dashboard from './Dashboard';
 import { ThemeProvider } from './ThemeContext';
-import type { UserOnboardingData } from './types';
+import type { UserOnboardingData, Goal } from './types';
 import { trackOnboardingComplete } from './firebase';
 import { getLearningProfile } from './learningProfileStore';
+import { saveRoadmapData } from './roadmapData';
+import { getGoals, getActiveGoals, addGoal, endGoal as endGoalInStore, updateGoal, saveGoals, MAX_ACTIVE_GOALS } from './goalsStore';
 type Page = 'landing' | 'onboarding' | 'dashboard';
 
 const ONBOARDING_STORAGE_KEY = 'learning_os_onboarding_data';
-const GENERATED_ROADMAP_STORAGE_KEY = 'learning_os_generated_roadmap';
 const wordAnimation = {
   hidden: { opacity: 0, y: 20 },
   visible: (i: number) => ({
@@ -61,6 +62,15 @@ function App() {
   const [page, setPage] = useState<Page>('landing');
   const [userData, setUserData] = useState<UserOnboardingData | null>(loadSavedOnboardingData);
   const [showDemo, setShowDemo] = useState(false);
+
+  // Multi-goal state — up to MAX_ACTIVE_GOALS (2) goals can be 'active' at
+  // once, each with its own roadmap (roadmapData.ts keys it by goal id).
+  // getGoals() auto-wraps a pre-existing single roadmap as a 'primary'
+  // goal the first time this runs, so old users see it as Goal #1.
+  const [goals, setGoals] = useState<Goal[]>(() => getGoals(loadSavedOnboardingData()));
+  const [activeGoalId, setActiveGoalId] = useState<string | null>(
+    () => getActiveGoals(getGoals(loadSavedOnboardingData()))[0]?.id ?? null
+  );
   // Actual server/network error from the last generate-roadmap attempt —
   // shown in Roadmap.tsx's failure banner so a failure is debuggable
   // instead of a silent "something went wrong".
@@ -77,7 +87,7 @@ function App() {
    * message, not just a generic "it failed") so the Roadmap page banner and
    * the browser console can show WHY, instead of a black-box failure.
    */
-  const generateAndSaveRoadmap = async (data: UserOnboardingData): Promise<boolean> => {
+  const generateAndSaveRoadmap = async (data: UserOnboardingData, goalId?: string): Promise<boolean> => {
     try {
       const learningProfile = getLearningProfile();
       const res = await fetch('/api/generate-roadmap', {
@@ -98,7 +108,7 @@ function App() {
               : t
           ),
         };
-        localStorage.setItem(GENERATED_ROADMAP_STORAGE_KEY, JSON.stringify(stampedRoadmap));
+        saveRoadmapData(goalId, stampedRoadmap);
         setLastRoadmapError(null);
         return true;
       }
@@ -129,9 +139,24 @@ function App() {
 });
     localStorage.setItem(ONBOARDING_STORAGE_KEY, JSON.stringify(data));
 
+    // First-ever goal always gets id 'primary' — aliases the legacy flat
+    // roadmap key in roadmapData.ts, same as pre-multi-goal behaviour.
+    const primaryGoal: Goal = {
+      id: 'primary',
+      title: data.goal,
+      hours: data.hours,
+      deadline: data.deadline,
+      deadlineDays: data.deadlineDays,
+      status: 'active',
+      createdAt: new Date().toISOString(),
+    };
+    setGoals([primaryGoal]);
+    saveGoals([primaryGoal]);
+    setActiveGoalId('primary');
+
     // If generation fails, Roadmap.tsx falls back to its default empty state —
     // don't block the user from reaching the dashboard.
-    await generateAndSaveRoadmap(data);
+    await generateAndSaveRoadmap(data, 'primary');
 
     setPage('dashboard');
   };
@@ -151,10 +176,42 @@ function App() {
   // force it to re-read on its own).
   const [roadmapVersion, setRoadmapVersion] = useState(0);
   const handleRegenerateRoadmap = async (): Promise<boolean> => {
-    if (!userData) return false;
-    const success = await generateAndSaveRoadmap(userData);
+    if (!userData || !activeGoalId) return false;
+    const activeGoal = goals.find((g) => g.id === activeGoalId);
+    // Regenerate with the active goal's own subject/hours/deadline (not
+    // necessarily userData's, if this isn't the primary goal).
+    const data: UserOnboardingData = activeGoal
+      ? { ...userData, goal: activeGoal.title, hours: activeGoal.hours, deadline: activeGoal.deadline, deadlineDays: activeGoal.deadlineDays }
+      : userData;
+    const success = await generateAndSaveRoadmap(data, activeGoalId);
     if (success) setRoadmapVersion((v) => v + 1);
     return success;
+  };
+
+  // "+ Add Goal" — opens a 2nd (max) empty goal slot. No roadmap yet, so
+  // Roadmap.tsx's existing "Kya seekhna hai?" empty-state form renders for
+  // it automatically (same as a brand-new user), scoped to this goal id.
+  const handleAddGoal = (): boolean => {
+    if (getActiveGoals(goals).length >= MAX_ACTIVE_GOALS) return false;
+    const { goals: updated, goal } = addGoal(goals);
+    setGoals(updated);
+    setActiveGoalId(goal.id);
+    return true;
+  };
+
+  // Ends a goal (default: abandoned) — frees a slot for a new one. The
+  // ended goal's roadmap/revision data stays in localStorage untouched.
+  const handleEndGoal = (goalId: string, outcome: 'completed' | 'abandoned' = 'abandoned') => {
+    const updated = endGoalInStore(goals, goalId, outcome);
+    setGoals(updated);
+    if (activeGoalId === goalId) {
+      const stillActive = getActiveGoals(updated);
+      setActiveGoalId(stillActive[0]?.id ?? null);
+    }
+  };
+
+  const handleSwitchGoal = (goalId: string) => {
+    setActiveGoalId(goalId);
   };
 
   // Roadmap page's own empty-state input (when there's no roadmap yet, or
@@ -178,6 +235,11 @@ function App() {
   ): Promise<boolean> => {
     const trimmed = subject.trim();
     if (!trimmed || !userData) return false;
+
+    // Which goal slot this generation is for: the currently active tab if
+    // one exists (covers both "first-ever goal" and "filling a freshly
+    // added 2nd goal"), else fall back to 'primary'.
+    const goalId = activeGoalId ?? 'primary';
     const updatedData: UserOnboardingData = {
       ...userData,
       goal: trimmed,
@@ -185,9 +247,22 @@ function App() {
       deadline: deadlineLabel,
       deadlineDays,
     };
-    setUserData(updatedData);
-    localStorage.setItem(ONBOARDING_STORAGE_KEY, JSON.stringify(updatedData));
-    const success = await generateAndSaveRoadmap(updatedData);
+
+    // Only the primary goal mirrors into userData/onboarding storage (role,
+    // language etc. stay shared) — a 2nd goal just updates its own Goal record.
+    if (goalId === 'primary') {
+      setUserData(updatedData);
+      localStorage.setItem(ONBOARDING_STORAGE_KEY, JSON.stringify(updatedData));
+    }
+    const updatedGoals = updateGoal(goals, goalId, {
+      title: trimmed,
+      hours,
+      deadline: deadlineLabel,
+      deadlineDays,
+    });
+    setGoals(updatedGoals);
+
+    const success = await generateAndSaveRoadmap(updatedData, goalId);
     if (success) setRoadmapVersion((v) => v + 1);
     return success;
   };
@@ -205,6 +280,11 @@ function App() {
         onGenerateForSubject={handleGenerateForSubject}
         roadmapVersion={roadmapVersion}
         lastRoadmapError={lastRoadmapError}
+        goals={goals}
+        activeGoalId={activeGoalId}
+        onAddGoal={handleAddGoal}
+        onEndGoal={handleEndGoal}
+        onSwitchGoal={handleSwitchGoal}
       />
     );
   } else {

@@ -1,4 +1,4 @@
-import type { RevisionItem, RevisionStatus, RevisionDifficulty, Topic, Difficulty } from './types';
+import type { RevisionItem, RevisionStatus, RevisionDifficulty, Topic, Difficulty, Goal } from './types';
 import { getRoadmapData } from './roadmapData';
 import { getReviewedDays } from './revisionstore';
 
@@ -101,6 +101,28 @@ export function getRevisionData(roadmap: Topic = getRoadmapData()): RevisionItem
 
   const statusOrder: Record<RevisionStatus, number> = { overdue: 0, 'due-today': 1, upcoming: 2, mastered: 3 };
   return items.sort((a, b) => statusOrder[a.status] - statusOrder[b.status] || a.day - b.day);
+}
+
+/**
+ * Same as getRevisionData, but merges checkpoints from EVERY active goal's
+ * roadmap at once (each active goal has its own roadmap — see
+ * roadmapData.ts). Items get a `goalTitle` tag when there's more than 1
+ * active goal, so the UI can show which goal a checkpoint belongs to;
+ * single-goal users see no change. Used by Dashboard's stats card and the
+ * Revision page, so revision always covers both simultaneous goals instead
+ * of just whichever one the Roadmap tab happens to be open on.
+ */
+export function getRevisionDataForGoals(goals: Goal[]): (RevisionItem & { goalTitle?: string })[] {
+  const activeGoals = goals.filter((g) => g.status === 'active');
+  if (activeGoals.length === 0) return getRevisionData();
+
+  const merged = activeGoals.flatMap((g) => {
+    const items = getRevisionData(getRoadmapData(g.id));
+    return activeGoals.length > 1 ? items.map((it) => ({ ...it, goalTitle: g.title })) : items;
+  });
+
+  const statusOrder: Record<RevisionStatus, number> = { overdue: 0, 'due-today': 1, upcoming: 2, mastered: 3 };
+  return merged.sort((a, b) => statusOrder[a.status] - statusOrder[b.status] || a.day - b.day);
 }
 
 /** Aggregate stats for the Revision dashboard — counts + average retention. */

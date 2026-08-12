@@ -4,6 +4,7 @@ import { Search, Play, AlertCircle, CheckCircle, ThumbsUp, ThumbsDown, SkipForwa
 import type { Video, VideoWatchData, WatchHistoryEntry, EngagementSession, FeedbackValue, Topic } from './types';
 import { withComputedSignal } from './engagementScoring';
 import { upsertEngagementSession } from './engagementStore';
+import { getRoadmapData, saveRoadmapData } from './roadmapData';
 import Notes from './Notes';
 
 declare global {
@@ -15,7 +16,6 @@ declare global {
 
 const WATCH_HISTORY_STORAGE_KEY = 'video_watch_history';
 const SEEK_FORWARD_THRESHOLD_SECONDS = 3;
-const GENERATED_ROADMAP_STORAGE_KEY = 'learning_os_generated_roadmap';
 // Persists searchQuery + results + selectedVideo across tab switches within
 // the same browser session — sessionStorage (not localStorage) because this
 // is "what I was doing right now", not permanent data; clears when the tab
@@ -44,13 +44,11 @@ const LEARNING_TO_COMPLETED_THRESHOLD = 85;
  * and a roadmap topic's `topicKeywords`, updating locked/learning topics
  * in the saved roadmap based on watch percentage.
  */
-function updateRoadmapFromWatch(videoTitle: string, watchPercentage: number) {
+function updateRoadmapFromWatch(goalId: string | undefined, videoTitle: string, watchPercentage: number) {
   if (watchPercentage < LOCKED_TO_LEARNING_THRESHOLD) return;
 
   try {
-    const saved = localStorage.getItem(GENERATED_ROADMAP_STORAGE_KEY);
-    if (!saved) return;
-    const roadmap = JSON.parse(saved) as Topic;
+    const roadmap = getRoadmapData(goalId);
     if (!roadmap?.children?.length) return;
 
     const normalizedTitle = videoTitle.toLowerCase();
@@ -80,7 +78,7 @@ function updateRoadmapFromWatch(videoTitle: string, watchPercentage: number) {
 
     if (changed) {
       const updatedRoadmap: Topic = { ...roadmap, children: updatedChildren };
-      localStorage.setItem(GENERATED_ROADMAP_STORAGE_KEY, JSON.stringify(updatedRoadmap));
+      saveRoadmapData(goalId, updatedRoadmap);
     }
   } catch {
     // Corrupted roadmap data in storage — skip silently, don't break video tracking.
@@ -95,11 +93,9 @@ function updateRoadmapFromWatch(videoTitle: string, watchPercentage: number) {
  * concept-based reranking. Returns undefined if no roadmap or no match —
  * never throws, never mutates storage.
  */
-function findMatchingTopicId(videoTitle: string): string | undefined {
+function findMatchingTopicId(goalId: string | undefined, videoTitle: string): string | undefined {
   try {
-    const saved = localStorage.getItem(GENERATED_ROADMAP_STORAGE_KEY);
-    if (!saved) return undefined;
-    const roadmap = JSON.parse(saved) as Topic;
+    const roadmap = getRoadmapData(goalId);
     if (!roadmap?.children?.length) return undefined;
 
     const normalizedTitle = videoTitle.toLowerCase();
@@ -116,13 +112,13 @@ function findMatchingTopicId(videoTitle: string): string | undefined {
   return undefined;
 }
 
-function createEmptySession(video: Video): EngagementSession {
+function createEmptySession(video: Video, goalId: string | undefined): EngagementSession {
   return {
     id: `${video.id}-${Date.now()}`,
     videoId: video.id,
     userId: 'guest',
     teacherId: video.channelId,
-    conceptId: findMatchingTopicId(video.title),
+    conceptId: findMatchingTopicId(goalId, video.title),
     totalDuration: 0,
     watchedSeconds: 0,
     watchPercentage: 0,
@@ -142,9 +138,12 @@ interface VideoIntelProps {
    *  button (via PlaylistBuilder). When present, auto-loads primary into the player and
    *  populates the left-panel list with primary + fallbacks. */
   initialPlaylist?: { primary: Video; fallbacks: Video[] } | null;
+  /** Which goal's roadmap watch-progress (topic status, concept matching)
+   *  should be attributed to — the currently open goal tab on Roadmap. */
+  activeGoalId?: string | null;
 }
 
-export default function VideoIntel({ initialPlaylist }: VideoIntelProps = {}) {
+export default function VideoIntel({ initialPlaylist, activeGoalId }: VideoIntelProps = {}) {
   const API_KEY = import.meta.env.VITE_YOUTUBE_API_KEY;
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -331,7 +330,7 @@ export default function VideoIntel({ initialPlaylist }: VideoIntelProps = {}) {
     lastTimeRef.current = 0;
     hasEndedRef.current = false;
     playStartTimeRef.current = null;
-    sessionRef.current = createEmptySession(selectedVideo);
+    sessionRef.current = createEmptySession(selectedVideo, activeGoalId ?? undefined);
     setFeedbackGiven(null);
     upsertEngagementSession(withComputedSignal(sessionRef.current));
   };
@@ -437,7 +436,7 @@ export default function VideoIntel({ initialPlaylist }: VideoIntelProps = {}) {
       return updated;
     });
 
-    updateRoadmapFromWatch(data.title, data.watchPercentage);
+    updateRoadmapFromWatch(activeGoalId ?? undefined, data.title, data.watchPercentage);
   };
   
 
