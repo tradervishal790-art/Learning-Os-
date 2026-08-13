@@ -18,89 +18,49 @@ const SUGGESTED_PROMPTS = [
 ];
 
 // ============================================
-// GEMINI API CALL — replaces old generateMentorResponse()
+// MENTOR RESPONSE — now routed through /api/mentor-chat
 // ============================================
-// gemini-1.5-flash is SHUT DOWN (404) as of 2026.
-// gemini-flash-latest auto-points to the current stable Flash model.
-const GEMINI_MODEL = 'gemini-flash-latest';
-
+// The Gemini key used to be called directly from the browser with
+// `import.meta.env.VITE_GEMINI_API_KEY` in the URL, which gets baked
+// into the client bundle and is readable by anyone. The system prompt
+// + actual Gemini call now live server-side in api/mentor-chat.ts —
+// this function just sends the conversation and gets text back.
 async function generateMentorResponse(
   userMessage: string,
   context: string,
   history: Message[]
 ): Promise<string> {
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-  const topic = context || 'general learning';
-
-  // Fallback if key missing — keeps app usable even without setup
-  if (!apiKey) {
-    return `⚠️ Gemini API key nahi mila. .env.local mein VITE_GEMINI_API_KEY add karein.\n\nAbhi ke liye, ${topic} ke baare mein aap specific poochh sakte hain — main basic guidance de deta hoon.`;
-  }
-
-  const systemInstructions = `Aap ek expert AI Mentor hain jo Hinglish (Hindi + English mix) mein sikhaate hain.
-Current topic: ${topic}
-
-Tone & Respect Rules:
-- User ko hamesha "aap" se address karein, "tu/tum" kabhi use na karein
-- Polite, encouraging aur patient tone rakhein — kabhi condescending ya dismissive na lagein
-- Agar user galti kare, gently correct karein bina judge kiye
-- Har response mein user ke effort ko acknowledge karein jab appropriate ho
-
-Content Rules:
-- Hinglish mein naturally jawab dein, robotic mat lagein
-- Concepts ko real-world analogies se samjhaayein
-- Bold important terms
-- Response concise rakhein (max 150-200 words) — lekin jo bhi likhein, use POORA complete karein, adhoori sentence mein mat chhodein
-- Emojis use karein but overdo na karein
-- End mein ek clear next step suggest karein`;
-
-  const contents = [
-    ...history.slice(-6).map((m) => ({
-      role: m.role === 'user' ? 'user' : 'model',
-      parts: [{ text: m.content }],
-    })),
-    { role: 'user', parts: [{ text: userMessage }] },
-  ];
-
   try {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          system_instruction: { parts: [{ text: systemInstructions }] },
-          contents,
-          // Hinglish/Hindi text uses more tokens per word than English,
-          // so 800 was cutting responses off mid-sentence. Bumped up.
-          generationConfig: { maxOutputTokens: 2048, temperature: 0.7 },
-        }),
-      }
-    );
+    const response = await fetch('/api/mentor-chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userMessage,
+        context,
+        history: history.slice(-6).map((m) => ({ role: m.role, content: m.content })),
+      }),
+    });
+
+    const data = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-      const errBody = await response.json().catch(() => ({}));
-      console.error('Gemini API error:', response.status, errBody);
-      return `Kuch gadbad ho gayi API call mein (${response.status}: ${errBody?.error?.message || 'unknown'}). Thodi der mein phir try karein. 🔄`;
+      console.error('Mentor chat API error:', response.status, data);
+      return data?.error || `Kuch gadbad ho gayi (${response.status}). Thodi der mein phir try karein. 🔄`;
     }
 
-    const data = await response.json();
-    const finishReason = data?.candidates?.[0]?.finishReason;
-    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-
-    if (!text) {
+    if (!data?.text) {
       return 'Response nahi mil paaya, phir se try karein. 🔄';
     }
 
     // Let the user know explicitly if a response still got cut off,
     // instead of silently showing an incomplete sentence.
-    if (finishReason === 'MAX_TOKENS') {
-      return text + '\n\n_(⚠️ Response lambi thi aur beech mein kat gayi — "Deep dive" ki jagah chhota sawaal poochhein)_';
+    if (data.finishReason === 'MAX_TOKENS') {
+      return data.text + '\n\n_(⚠️ Response lambi thi aur beech mein kat gayi — "Deep dive" ki jagah chhota sawaal poochhein)_';
     }
 
-    return text;
+    return data.text;
   } catch (error) {
-    console.error('Gemini fetch failed:', error);
+    console.error('Mentor chat fetch failed:', error);
     return 'Network error aaya. Internet check karein aur phir try karein. 🔄';
   }
 }

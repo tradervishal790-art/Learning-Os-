@@ -21,156 +21,27 @@ interface DeepNotesData {
   keyInsights: string[];
 }
 
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-const GEMINI_MODEL = 'gemini-flash-latest';
-
+// Deep Notes generation now happens server-side (api/generate-notes.ts) —
+// the full prompt, schema, AND the Gemini key used to live here in the
+// browser with `import.meta.env.VITE_GEMINI_API_KEY` in the fetch URL,
+// exposed in the shipped bundle. Client now just sends topic +
+// videoContext and gets the parsed notes object back.
 async function generateDeepNotes(topic: string, videoContext?: string): Promise<DeepNotesData> {
-  // Enhanced prompt for DEEP learning
-  const prompt = `Generate DEEP, comprehensive study notes for "${topic}" in Hinglish (Hindi + English mix).
-${videoContext ? `Video context: ${videoContext}` : ''}
+  const response = await fetch('/api/generate-notes', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ topic, videoContext }),
+  });
 
-Focus on:
-1. WHY this concept exists (history, problem it solved)
-2. DEEP understanding (not surface knowledge)
-3. Prerequisites that must be known first
-4. Mental models experts use
-5. Common misconceptions and why people get confused
-6. Real-world applications with specific contexts
-7. Critical thinking questions
-8. Learning path for mastery (days 1,3,7,15,30)
-
-Return ONLY this JSON structure:
-{
-  "summary": "1-2 line essence of the topic",
-  "concept": "Detailed explanation - why invented, evolution, core principles",
-  "prerequisites": "What must be known first - foundational concepts",
-  "mentalModel": "How experts think about this - psychological framework",
-  "analogy": "Powerful analogy that makes it click",
-  "deepExamples": [
-    "Example 1 with detailed context and WHY it illustrates the concept",
-    "Example 2 showing edge case or complexity",
-    "Example 3 with counterexample or when it fails"
-  ],
-  "stepByStep": [
-    "Step 1: Core principle explanation",
-    "Step 2: Mechanism and how it works",
-    "Step 3: Apply to different contexts",
-    "Step 4: Recognize patterns and relationships",
-    "Step 5: Build intuition and mental shortcuts"
-  ],
-  "misconceptions": [
-    "Common misconception 1 + WHY people think this + correct understanding",
-    "Misconception 2 + root cause of confusion + how to avoid",
-    "Misconception 3 + expert perspective"
-  ],
-  "criticalThinking": [
-    "Why is this important? What real problems does it solve?",
-    "What breaks or fails when this concept doesn't apply?",
-    "How does this connect to related concepts?",
-    "What would happen if this didn't exist?"
-  ],
-  "realWorldApps": [
-    "Application 1: Industry/context + exact use case + impact",
-    "Application 2: Different field + how it solves problems there",
-    "Application 3: Edge case or emerging application"
-  ],
-  "advancedConcepts": [
-    "Advanced concept 1 + how it builds on basics",
-    "Related concept 2 + connections",
-    "Research frontier 3 + future directions"
-  ],
-  "exercises": [
-    "Exercise 1: Apply concept to new, unseen problem",
-    "Exercise 2: Find counterexample or breaking case",
-    "Exercise 3: Explain to 10-year-old child",
-    "Exercise 4: Compare and contrast with related concept"
-  ],
-  "deepQuestions": [
-    "Why was this concept invented? What specific problem?",
-    "What core assumptions does this make?",
-    "Can you find situations where this breaks or fails?",
-    "How would you explain this to expert in completely different field?",
-    "What's the non-obvious insight most people miss?"
-  ],
-  "learningPath": [
-    "Day 1: Deep read - understand WHY (not just WHAT)",
-    "Day 3: Apply to 3-4 different real contexts",
-    "Day 7: Teach concept to someone else in detail",
-    "Day 15: Find advanced applications + edge cases",
-    "Day 30: Connect to 5+ related concepts, see the patterns"
-  ],
-  "keyInsights": [
-    "Critical insight 1: The thing that changes how you see everything",
-    "Insight 2: The pattern connecting all these ideas",
-    "Insight 3: The mindset shift needed for mastery"
-  ]
-}`;
-
-  const responseSchema = {
-    type: 'OBJECT',
-    properties: {
-      summary: { type: 'STRING' },
-      concept: { type: 'STRING' },
-      prerequisites: { type: 'STRING' },
-      mentalModel: { type: 'STRING' },
-      analogy: { type: 'STRING' },
-      deepExamples: { type: 'ARRAY', items: { type: 'STRING' } },
-      stepByStep: { type: 'ARRAY', items: { type: 'STRING' } },
-      misconceptions: { type: 'ARRAY', items: { type: 'STRING' } },
-      criticalThinking: { type: 'ARRAY', items: { type: 'STRING' } },
-      realWorldApps: { type: 'ARRAY', items: { type: 'STRING' } },
-      advancedConcepts: { type: 'ARRAY', items: { type: 'STRING' } },
-      exercises: { type: 'ARRAY', items: { type: 'STRING' } },
-      deepQuestions: { type: 'ARRAY', items: { type: 'STRING' } },
-      learningPath: { type: 'ARRAY', items: { type: 'STRING' } },
-      keyInsights: { type: 'ARRAY', items: { type: 'STRING' } },
-    },
-    required: [
-      'summary', 'concept', 'prerequisites', 'mentalModel', 'analogy',
-      'deepExamples', 'stepByStep', 'misconceptions', 'criticalThinking',
-      'realWorldApps', 'advancedConcepts', 'exercises', 'deepQuestions',
-      'learningPath', 'keyInsights',
-    ],
-  };
-
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        generationConfig: {
-          responseMimeType: 'application/json',
-          responseSchema,
-          maxOutputTokens: 8000, // Increased for deep content
-          temperature: 0.8, // Slightly higher for more nuanced thinking
-        },
-      }),
-    }
-  );
+  const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    const errBody = await response.json().catch(() => ({}));
-    console.error('Gemini API error:', response.status, errBody);
-    throw new Error(`Gemini API error ${response.status}`);
+    console.error('Generate notes API error:', response.status, data);
+    throw new Error(data?.error || `Notes generation failed (${response.status})`);
   }
 
-  const data = await response.json();
-  const finishReason = data?.candidates?.[0]?.finishReason;
-
-  if (finishReason === 'MAX_TOKENS') {
-    throw new Error('Response too long — try simpler topic');
-  }
-
-  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!text) throw new Error('Empty Gemini response');
-
-  const parsed = JSON.parse(text.trim());
-  return { topic, ...parsed };
+  return data as DeepNotesData;
 }
-
-const YOUTUBE_API_KEY = import.meta.env.VITE_YOUTUBE_API_KEY;
 
 function extractVideoId(url: string): string | null {
   const patterns = [
@@ -187,14 +58,11 @@ function extractVideoId(url: string): string | null {
 }
 
 async function fetchVideoMeta(videoId: string): Promise<{ title: string; description: string }> {
-  const res = await fetch(
-    `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId}&key=${YOUTUBE_API_KEY}`
-  );
+  const res = await fetch(`/api/youtube-video?id=${encodeURIComponent(videoId)}`);
   if (!res.ok) throw new Error('YouTube meta fetch failed');
   const data = await res.json();
-  const snippet = data?.items?.[0]?.snippet;
-  if (!snippet) throw new Error('Video not found');
-  return { title: snippet.title, description: snippet.description || '' };
+  if (!data?.title) throw new Error('Video not found');
+  return { title: data.title, description: data.description || '' };
 }
 
 export default function Notes({ videoTitle, videoDescription }: { videoTitle?: string; videoDescription?: string }) {

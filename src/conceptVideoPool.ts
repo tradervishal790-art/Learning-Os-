@@ -129,10 +129,9 @@ async function getCandidateVideos(
   expandedQueries?: string[],
   language?: string
 ): Promise<CandidateMeta[]> {
-  const apiKey = import.meta.env.VITE_YOUTUBE_API_KEY;
-  if (!apiKey) {
-    throw new Error('YouTube API key missing — .env.local mein VITE_YOUTUBE_API_KEY add karo.');
-  }
+  // YouTube search now goes through /api/youtube-search — the key
+  // used to live client-side here via `import.meta.env.VITE_YOUTUBE_API_KEY`,
+  // exposed in the shipped bundle. It's server-only now.
 
   // Decide which queries to use
   const queries = expandedQueries && expandedQueries.length > 0
@@ -161,11 +160,11 @@ async function getCandidateVideos(
     try {
       const langParam = relevanceLanguage ? `&relevanceLanguage=${relevanceLanguage}` : '';
       const res = await fetch(
-        `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=${perQueryLimit}&type=video&q=${encodeURIComponent(query)}${langParam}&key=${apiKey}`
+        `/api/youtube-search?maxResults=${perQueryLimit}&q=${encodeURIComponent(query)}${langParam}`
       );
       const data = await res.json();
       if (!res.ok) {
-        console.warn(`[conceptVideoPool] YouTube query failed for "${query}": ${data?.error?.message}`);
+        console.warn(`[conceptVideoPool] YouTube query failed for "${query}": ${data?.error}`);
         continue;
       }
       if (!data.items?.length) continue;

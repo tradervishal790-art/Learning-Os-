@@ -4,29 +4,21 @@ import { DEEP_DIVE_QUESTIONS, buildExtractionPrompt, parseDeepDiveResponse } fro
 import { getLearningProfile, mergeLearningProfile } from './learningProfileStore';
 import type { LearningProfile } from './types';
 
-const GEMINI_MODEL = 'gemini-flash-latest';
-
+// Gemini call now happens server-side (api/deep-dive-extract.ts) — the
+// key was previously exposed in the client bundle via
+// `import.meta.env.VITE_GEMINI_API_KEY`. The prompt itself isn't
+// sensitive, so it's still built client-side and just sent along.
 async function callGemini(prompt: string): Promise<string> {
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-  if (!apiKey) throw new Error('Gemini API key missing');
+  const response = await fetch('/api/deep-dive-extract', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prompt }),
+  });
 
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        generationConfig: { maxOutputTokens: 500, temperature: 0.4 },
-      }),
-    }
-  );
-
-  if (!response.ok) throw new Error(`Gemini error ${response.status}`);
-  const data = await response.json();
-  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!text) throw new Error('Empty Gemini response');
-  return text;
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data?.error || `Gemini error ${response.status}`);
+  if (!data?.text) throw new Error('Empty Gemini response');
+  return data.text;
 }
 
 interface DeepDiveChatProps {

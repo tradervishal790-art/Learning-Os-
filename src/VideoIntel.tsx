@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Play, AlertCircle, CheckCircle, ThumbsUp, ThumbsDown, SkipForward } from 'lucide-react';
+import { Search, Play, CheckCircle, ThumbsUp, ThumbsDown, SkipForward } from 'lucide-react';
 import type { Video, VideoWatchData, WatchHistoryEntry, EngagementSession, FeedbackValue, Topic } from './types';
 import { withComputedSignal } from './engagementScoring';
 import { upsertEngagementSession } from './engagementStore';
@@ -144,8 +144,10 @@ interface VideoIntelProps {
 }
 
 export default function VideoIntel({ initialPlaylist, activeGoalId }: VideoIntelProps = {}) {
-  const API_KEY = import.meta.env.VITE_YOUTUBE_API_KEY;
-
+  // YouTube search now goes through /api/youtube-search — the key
+  // used to be `import.meta.env.VITE_YOUTUBE_API_KEY` appended directly
+  // to the googleapis.com URL from the browser, which bakes it into the
+  // client bundle. It now lives server-side only.
   const [searchQuery, setSearchQuery] = useState('');
   const [videos, setVideos] = useState<Video[]>([]);
   const [loading, setLoading] = useState(false);
@@ -445,10 +447,6 @@ export default function VideoIntel({ initialPlaylist, activeGoalId }: VideoIntel
       setErrorMessage('Kuch search karo pehle');
       return;
     }
-    if (!API_KEY) {
-      setErrorMessage('API Key missing! .env.local mein VITE_YOUTUBE_API_KEY add karo, phir server restart karo.');
-      return;
-    }
 
     setLoading(true);
     setErrorMessage('');
@@ -456,14 +454,12 @@ export default function VideoIntel({ initialPlaylist, activeGoalId }: VideoIntel
 
     try {
       const res = await fetch(
-        `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=12&type=video&q=${encodeURIComponent(
-          searchQuery
-        )}&key=${API_KEY}`
+        `/api/youtube-search?maxResults=12&q=${encodeURIComponent(searchQuery)}`
       );
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data?.error?.message || 'YouTube API error');
+        throw new Error(data?.error || 'YouTube API error');
       }
       if (!data.items?.length) {
         setErrorMessage('Koi video nahi mila, kuch aur search karo');
@@ -505,15 +501,13 @@ export default function VideoIntel({ initialPlaylist, activeGoalId }: VideoIntel
    * repeat) — caller shows a "no more new videos" message in that case.
    */
   const fetchMoreVideos = async (): Promise<Video[]> => {
-    if (!searchQuery.trim() || !API_KEY) return [];
+    if (!searchQuery.trim()) return [];
     // No more pages for this query — nothing fresh left to fetch.
     if (!nextPageTokenRef.current) return [];
 
     try {
       const res = await fetch(
-        `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=12&type=video&q=${encodeURIComponent(
-          searchQuery
-        )}&pageToken=${encodeURIComponent(nextPageTokenRef.current)}&key=${API_KEY}`
+        `/api/youtube-search?maxResults=12&q=${encodeURIComponent(searchQuery)}&pageToken=${encodeURIComponent(nextPageTokenRef.current)}`
       );
       const data = await res.json();
       if (!res.ok || !data.items?.length) {
@@ -559,24 +553,6 @@ export default function VideoIntel({ initialPlaylist, activeGoalId }: VideoIntel
 
   return (
     <div className="min-h-screen bg-white dark:bg-black text-black dark:text-white">
-      {!API_KEY && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="m-4 md:m-8 mb-0 border border-gray-300 dark:border-white/20 rounded-lg p-4 flex gap-3"
-        >
-          <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
-          <div>
-            <h3 className="font-semibold">API Key Missing</h3>
-            <p className="text-sm text-gray-500 dark:text-white/70 mt-1">
-              <code className="bg-gray-100 dark:bg-white/10 px-2 py-1 rounded text-xs">.env.local</code> (project root) mein add karo:
-            </p>
-            <code className="block bg-gray-100 dark:bg-white/10 p-2 rounded mt-2 text-xs">VITE_YOUTUBE_API_KEY=your_key_here</code>
-            <p className="text-xs text-gray-400 dark:text-white/50 mt-2">Phir `npm run dev` restart karo.</p>
-          </div>
-        </motion.div>
-      )}
-
       {showDeepNotes && selectedVideo ? (
         <div className="p-4 md:p-8">
           <button
