@@ -56,6 +56,7 @@ export default function BlueprintInterview({
   const [errorMsg, setErrorMsg] = useState('');
   const [questionCount, setQuestionCount] = useState(0);
   const [report, setReport] = useState('');
+  const [lastFailedHistory, setLastFailedHistory] = useState<HistoryMessage[] | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -72,6 +73,7 @@ export default function BlueprintInterview({
       } catch (err: any) {
         setPhase('error');
         setErrorMsg(err.message || 'Interview start nahi ho paaya.');
+        setLastFailedHistory([]);
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -124,6 +126,21 @@ export default function BlueprintInterview({
     try {
       const data = await callInterviewApi(updatedHistory);
       handleApiResult(data, updatedHistory);
+    } catch (err: any) {
+      setPhase('error');
+      setErrorMsg(err.message || 'Kuch gadbad ho gayi.');
+      setLastFailedHistory(updatedHistory);
+    }
+  };
+
+  const handleRetry = async () => {
+    if (lastFailedHistory === null) return;
+    setPhase(lastFailedHistory.length === 0 ? 'loading' : 'finishing');
+    setErrorMsg('');
+    try {
+      const data = await callInterviewApi(lastFailedHistory);
+      handleApiResult(data, lastFailedHistory);
+      setLastFailedHistory(null);
     } catch (err: any) {
       setPhase('error');
       setErrorMsg(err.message || 'Kuch gadbad ho gayi.');
@@ -199,8 +216,14 @@ export default function BlueprintInterview({
           </AnimatePresence>
 
           {phase === 'error' && (
-            <div className="text-center py-2">
+            <div className="text-center py-2 space-y-3">
               <p className="text-sm text-red-500 dark:text-red-400">{errorMsg}</p>
+              <button
+                onClick={handleRetry}
+                className="px-4 py-2 rounded-xl border border-gray-300 dark:border-white/10 text-sm font-medium hover:bg-gray-100 dark:hover:bg-white/10 transition"
+              >
+                🔄 Phir try karein
+              </button>
             </div>
           )}
 

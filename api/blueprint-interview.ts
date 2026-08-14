@@ -82,6 +82,30 @@ function validateComplete(parsed: any): boolean {
   return true;
 }
 
+async function callGeminiWithRetry(apiKey: string, body: object, maxRetries = 2): Promise<Response> {
+  let lastRes: Response | null = null;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      }
+    );
+    // 503 (overloaded) and 429 (rate limited) are transient — worth a retry.
+    // Anything else (400, 401, etc.) is not going to fix itself.
+    if (res.ok || (res.status !== 503 && res.status !== 429)) {
+      return res;
+    }
+    lastRes = res;
+    if (attempt < maxRetries) {
+      await new Promise((r) => setTimeout(r, 500 * Math.pow(2, attempt))); // 500ms, 1s
+    }
+  }
+  return lastRes as Response;
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'POST only' });
@@ -100,18 +124,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       : [{ role: 'user', parts: [{ text: 'Interview shuru karo.' }] }];
 
   try {
-    const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          system_instruction: { parts: [{ text: SYSTEM_INSTRUCTIONS }] },
-          contents,
-          generationConfig: { maxOutputTokens: 1024, temperature: 0.8 },
-        }),
-      }
-    );
+    const geminiRes = await callGeminiWithRetry(apiKey, {
+      system_instruction: { parts: [{ text: SYSTEM_INSTRUCTIONS }] },
+      contents,
+      generationConfig: { maxOutputTokens: 1024, temperature: 0.8 },
+    });
 
     if (!geminiRes.ok) {
       const errBody = await geminiRes.json().catch(() => ({}));
