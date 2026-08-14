@@ -4,7 +4,7 @@ import PagePlaceholder from './PagePlaceholder';
 import Roadmap from './Roadmap';
 import Revision from './Revision';
 import VideoIntel from './VideoIntel';
-import LearningQuiz from './LearningQuiz';
+import BlueprintInterview from './BlueprintInterview';
 import { getRoadmapData, getCurrentTopic } from './roadmapData';
 import { getRevisionStats, getRevisionDataForGoals } from './revisionData';
 import { getLearningProfile, saveLearningProfile } from './learningProfileStore';
@@ -310,7 +310,12 @@ export default function Dashboard({ userData, onUpdateUserData, onRegenerateRoad
   };
 
   if (showLearningQuiz) {
-    return <LearningQuiz onComplete={handleQuizComplete} />;
+    return (
+      <BlueprintInterview
+        onComplete={handleQuizComplete}
+        onClose={() => setShowLearningQuiz(false)}
+      />
+    );
   }
 
   const displayName = userData?.name?.trim() || 'Learner';
@@ -514,11 +519,16 @@ export default function Dashboard({ userData, onUpdateUserData, onRegenerateRoad
                   <div>Reliability: {learningProfile.reliabilityScore}%</div>
                 </div>
               )}
+              {learningProfile?.blueprintReport && (
+                <p className="text-xs text-gray-500 dark:text-white/60 leading-relaxed mb-4 border-t border-gray-200 dark:border-white/10 pt-3">
+                  {learningProfile.blueprintReport}
+                </p>
+              )}
               <button
                 onClick={() => setShowLearningQuiz(true)}
                 className="w-full py-2.5 rounded-xl border border-gray-300 dark:border-white/10 text-sm font-medium hover:bg-gray-100 dark:hover:bg-white/10 transition"
               >
-                {learningProfile ? 'Retake quiz' : 'Take quiz'}
+                {learningProfile ? 'Retake Blueprint Interview' : 'Start Blueprint Interview'}
               </button>
             </motion.div>
           </div>

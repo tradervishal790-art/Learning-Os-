@@ -180,6 +180,11 @@ export interface LearningProfile {
   reliabilityScore: number;
   selfReportedHonesty: 'honest' | 'partially_honest' | 'gamed' | 'declined';
   completedAt: string;
+  // Written narrative report from the live AI Blueprint Interview
+  // (BlueprintInterview.tsx) — optional because profiles built by the
+  // older static quiz (LearningQuiz.tsx) or blended via Deep Dive don't
+  // have one.
+  blueprintReport?: string;
 }
 export type QuizAnswerValue = 'A' | 'B' | 'C' | 'D';
 export interface QuizAnswer {
