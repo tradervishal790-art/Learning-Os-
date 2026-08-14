@@ -36,6 +36,20 @@ export function saveLearningProfile(profile: LearningProfile): void {
 }
 
 /**
+ * Wipes the stored LearningProfile without starting a new interview.
+ * Use for a "Clear my data" / "Reset profile" action — downstream code
+ * (Roadmap.tsx, PlaylistBuilder.ts) already handles a null profile
+ * gracefully by falling back to non-personalized defaults.
+ */
+export function clearLearningProfile(): void {
+  try {
+    localStorage.removeItem(LEARNING_PROFILE_STORAGE_KEY);
+  } catch {
+    // Best-effort.
+  }
+}
+
+/**
  * Blends optional deep-dive signals into the existing LearningProfile
  * and persists the result. Call this after DeepDiveChat.tsx completes.
  * Returns the updated profile so the caller can use it immediately

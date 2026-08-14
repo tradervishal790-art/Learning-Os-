@@ -7,7 +7,7 @@ import VideoIntel from './VideoIntel';
 import BlueprintInterview from './BlueprintInterview';
 import { getRoadmapData, getCurrentTopic } from './roadmapData';
 import { getRevisionStats, getRevisionDataForGoals } from './revisionData';
-import { getLearningProfile, saveLearningProfile } from './learningProfileStore';
+import { getLearningProfile, saveLearningProfile, clearLearningProfile } from './learningProfileStore';
 import { buildCandidatePoolForConcept } from './conceptVideoPool';
 import { selectPlaylistForConcept, analyzedVideoToVideo } from './PlaylistBuilder';
 import { expandSearchQuery } from './queryExpander';
@@ -165,6 +165,11 @@ export default function Dashboard({ userData, onUpdateUserData, onRegenerateRoad
     setLearningProfile(profile);
     saveLearningProfile(profile);
     setShowLearningQuiz(false);
+  };
+
+  const handleClearProfile = () => {
+    clearLearningProfile();
+    setLearningProfile(null);
   };
 
   const handleLaunchPlaylist = (payload: { primary: Video; fallbacks: Video[] }) => {
@@ -530,6 +535,14 @@ export default function Dashboard({ userData, onUpdateUserData, onRegenerateRoad
               >
                 {learningProfile ? 'Retake Blueprint Interview' : 'Start Blueprint Interview'}
               </button>
+              {learningProfile && (
+                <button
+                  onClick={handleClearProfile}
+                  className="w-full mt-2 py-2 rounded-xl text-xs text-gray-400 dark:text-white/40 hover:text-red-500 dark:hover:text-red-400 transition"
+                >
+                  Clear my profile
+                </button>
+              )}
             </motion.div>
           </div>
         )}
