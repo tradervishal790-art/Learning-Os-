@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { LearningProfile } from './types';
 import { BLUEPRINT_QUESTIONS } from './blueprintQuestions';
+import BlueprintRadar, { DIMENSION_ORDER } from './BlueprintRadar';
+import { getGrade, getVerdict } from './blueprintGrading';
 
 // ============================================================
 // BlueprintInterview.tsx — v2
@@ -47,6 +49,8 @@ export default function BlueprintInterview({
   const [phase, setPhase] = useState<Phase>('answering');
   const [errorMsg, setErrorMsg] = useState('');
   const [report, setReport] = useState('');
+  const [resultProfile, setResultProfile] = useState<LearningProfile | null>(null);
+  const [expandedDim, setExpandedDim] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const currentQuestion = BLUEPRINT_QUESTIONS[currentIndex];
@@ -88,6 +92,7 @@ export default function BlueprintInterview({
         completedAt: new Date().toISOString(),
         blueprintReport: data.report,
       };
+      setResultProfile(profile);
       setReport(data.report);
       setPhase('done');
       onComplete(profile);
@@ -116,6 +121,7 @@ export default function BlueprintInterview({
         completedAt: new Date().toISOString(),
         blueprintReport: data.report,
       };
+      setResultProfile(profile);
       setReport(data.report);
       setPhase('done');
       onComplete(profile);
@@ -214,18 +220,75 @@ export default function BlueprintInterview({
           )}
 
           <AnimatePresence>
-            {phase === 'done' && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="p-4 rounded-xl border border-purple-300/30 dark:border-purple-500/20 bg-purple-50 dark:bg-purple-500/5"
-              >
-                <h3 className="text-sm font-semibold mb-2 text-purple-700 dark:text-purple-300">
-                  📋 Tera Learning Blueprint
-                </h3>
-                <p className="text-sm text-gray-700 dark:text-white/80 leading-relaxed whitespace-pre-wrap">
-                  {report}
-                </p>
+            {phase === 'done' && resultProfile && (
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+                {/* Mind score ring + radar */}
+                <div className="p-4 rounded-xl border border-purple-300/30 dark:border-purple-500/20 bg-purple-50/50 dark:bg-purple-500/5">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-xs font-semibold text-purple-700 dark:text-purple-300">🔮 Your Mind Map</p>
+                    <div className="text-right">
+                      <p className="text-[10px] text-gray-400 dark:text-white/40 uppercase tracking-wide">Mind Score</p>
+                      <p className="text-lg font-bold text-purple-600 dark:text-purple-300">
+                        {Math.round(
+                          (DIMENSION_ORDER.reduce((sum, d) => sum + (resultProfile[d.key] as number), 0) /
+                            DIMENSION_ORDER.length) *
+                            10
+                        )}
+                        <span className="text-xs font-normal text-gray-400 dark:text-white/40">/100</span>
+                      </p>
+                    </div>
+                  </div>
+                  <BlueprintRadar profile={resultProfile} />
+                </div>
+
+                {/* Expandable dimension rows */}
+                <div className="space-y-1.5">
+                  {DIMENSION_ORDER.map((d) => {
+                    const score = resultProfile[d.key] as number;
+                    const grade = getGrade(score);
+                    const isOpen = expandedDim === d.key;
+                    return (
+                      <div
+                        key={d.key}
+                        onClick={() => setExpandedDim(isOpen ? null : d.key)}
+                        className="rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 px-3 py-2.5 cursor-pointer transition"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <span className="text-xs font-medium w-28 flex-shrink-0 text-gray-700 dark:text-white/70">
+                            {d.label}
+                          </span>
+                          <div className="flex-1 h-1.5 rounded-full bg-gray-200 dark:bg-white/10 overflow-hidden">
+                            <div
+                              className="h-full rounded-full bg-purple-500 transition-all duration-500"
+                              style={{ width: `${score * 10}%` }}
+                            />
+                          </div>
+                          <span className="text-xs text-gray-400 dark:text-white/40 w-6 text-right">{score}</span>
+                          <span
+                            className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md border min-w-[22px] text-center ${grade.colorClass}`}
+                          >
+                            {grade.letter}
+                          </span>
+                        </div>
+                        {isOpen && (
+                          <p className="text-xs text-gray-500 dark:text-white/50 leading-relaxed mt-2 pt-2 border-t border-gray-200 dark:border-white/10">
+                            {getVerdict(d.key, score)}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Written report */}
+                <div className="p-4 rounded-xl border border-purple-300/30 dark:border-purple-500/20 bg-purple-50 dark:bg-purple-500/5">
+                  <h3 className="text-sm font-semibold mb-2 text-purple-700 dark:text-purple-300">
+                    📋 Tera Learning Blueprint
+                  </h3>
+                  <p className="text-sm text-gray-700 dark:text-white/80 leading-relaxed whitespace-pre-wrap">
+                    {report}
+                  </p>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
