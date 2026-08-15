@@ -1,157 +1,160 @@
-// src/blueprintQuestions.ts
+// api/blueprint-interview.ts
 //
-// Static question bank for the AI Blueprint Interview.
-// Design goals (per product decision):
-// 1. Every question maps to 2-3 of the 8 LearningProfile dimensions at once
-//    (dense signal per question, so we don't need 15+ questions).
-// 2. Key dimensions get a SECOND, independently-worded question later in
-//    the set (see `crossChecks`) so contradictory answers can be caught —
-//    this feeds the reliabilityScore / selfReportedHonesty fields Gemini
-//    returns, instead of trusting every answer at face value.
-// 3. All 12 questions are answered locally in the browser with ZERO
-//    Gemini calls — only ONE Gemini call happens at the very end, with
-//    all 12 Q&A pairs bundled into a single prompt. This is the main
-//    token-saving change vs the old "ask Gemini live, one call per
-//    question" version.
+// v2 — token-efficient rewrite.
+// Old version: Gemini asked one question at a time live (10-15 sequential
+// calls per interview). New version: questions come from a static bank
+// (src/blueprintQuestions.ts), answered entirely client-side with ZERO
+// Gemini calls, then bundled into ONE single Gemini call at the end that
+// deeply analyzes all answers together and extracts all 8 dimensions —
+// including cross-checking pairs of questions that target the same
+// dimension from different angles, to catch inconsistent/gamed answers.
+//
+// Downstream consumers are unaffected: this still returns the same
+// {report, dimensions, reliabilityScore, selfReportedHonesty} shape that
+// maps onto LearningProfile, same as before.
 
-export interface BlueprintOption {
-  key: 'A' | 'B' | 'C' | 'D';
-  text: string;
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+
+const GEMINI_MODEL = 'gemini-flash-latest';
+
+interface AnswerPayload {
+  questionId: string;
+  question: string;
+  selectedOption: string; // the option text the user picked
 }
 
-export interface BlueprintQuestion {
-  id: string;
-  text: string;
-  options: BlueprintOption[];
-  /** Which dimensions this question primarily signals — for our own docs/debugging, not sent to Gemini. */
-  dimensions: string[];
-  /** id of an earlier question this one cross-validates, if any. */
-  crossChecks?: string;
+const DIMENSION_KEYS = [
+  'pace',
+  'theoryVsPractical',
+  'structureNeed',
+  'depth',
+  'languageComplexity',
+  'storytelling',
+  'repetitionNeed',
+  'priorKnowledgeComfort',
+] as const;
+
+const SYSTEM_INSTRUCTIONS = `Tum ek expert learning-psychology analyst ho. Tumhe ek student ke 11 multiple-choice answers diye jaayenge (poora question + jo option unhone chuna). Tumhara kaam hai in answers ko DEEPLY cross-analyze karke in 8 dimensions ko 1-10 scale par accurately nikalna:
+
+- pace (1=slow/thorough, 10=fast/skim)
+- theoryVsPractical (1=theory-first, 10=practical/hands-on-first)
+- structureNeed (1=flexible okay, 10=needs strict structure)
+- depth (1=surface-level okay, 10=needs root-cause depth)
+- languageComplexity (1=simple language chahiye, 10=technical/jargon comfortable)
+- storytelling (1=direct/no-story pasand, 10=needs narrative/analogy)
+- repetitionNeed (1=once is enough, 10=needs repeated revision)
+- priorKnowledgeComfort (1=needs zero-background start, 10=comfortable connecting to prior knowledge)
+
+CRITICAL — cross-validation: Kuch questions jaanbujh kar ek hi dimension ko do baar, alag angle se test karte hain (jaise Q5 aur Q9 dono storytelling ko chhoote hain; Q5 aur Q10 dono repetitionNeed ko; Q4 aur Q11 dono priorKnowledgeComfort ko). Agar in pairs ke jawab EK-DOOSRE SE CONTRADICT karte hain (jaise Q5 mein storytelling pasand bola but Q9 mein clearly reject kiya), toh:
+1. Us dimension ka final score in dono jawabon ke beech ka weighted-realistic estimate rakho, extreme value mat do.
+2. reliabilityScore ko neeche lao (jitni zyada contradictions utna kam score).
+3. selfReportedHonesty ko "partially_honest" ya "gamed" set karo agar multiple contradictions hain.
+
+Agar sab jawab consistent hain toh reliabilityScore high (80-100) rakho aur selfReportedHonesty "honest" rakho.
+
+Sirf answers ke actual content se dimensions nikaalo — options ka surface keyword mat dekho, actual meaning/intent samjho.
+
+Response — SIRF valid JSON, koi markdown fence nahi, koi extra text nahi:
+{"report":"student ke liye ek warm, personal, paragraph-form likha hua report — 4-6 sentences, Hinglish mein, jaise ek mentor apne student ko unke baare mein bata raha ho, jisme unki learning style ke key traits mention ho","dimensions":{"pace":N,"theoryVsPractical":N,"structureNeed":N,"depth":N,"languageComplexity":N,"storytelling":N,"repetitionNeed":N,"priorKnowledgeComfort":N},"reliabilityScore":N,"selfReportedHonesty":"honest"}`;
+
+function parseGeminiJson(rawText: string): any | null {
+  try {
+    const cleaned = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
+    return JSON.parse(cleaned);
+  } catch {
+    return null;
+  }
 }
 
-export const BLUEPRINT_QUESTIONS: BlueprintQuestion[] = [
-  {
-    id: 'q1',
-    text: 'Koi bilkul nayi skill sikhni hai — pehle aap naturally kya karte hain?',
-    dimensions: ['theoryVsPractical', 'structureNeed'],
-    options: [
-      { key: 'A', text: 'Best video ya resource dhundta/dhundti hoon — visual explanation se seedha samajh aata hai' },
-      { key: 'B', text: 'Seedha ek chota kaam try karta/karti hoon — karte karte cheezein clear hoti hain' },
-      { key: 'C', text: 'Poora structure samajhta/samajhti hoon pehle — systematically move karna better lagta hai' },
-      { key: 'D', text: 'Kisi experienced insaan se baat karta/karti hoon — real experience se jo seekha woh books mein nahi milta' },
-    ],
-  },
-  {
-    id: 'q2',
-    text: 'Bahut mehnat ke baad bhi result expected nahi aaya — aap kya karte hain?',
-    dimensions: ['depth', 'pace'],
-    options: [
-      { key: 'A', text: 'Deeply analyze karta/karti hoon — exact point dhundta/dhundti hoon jahan cheez miss hui' },
-      { key: 'B', text: 'Thoda space leta/leti hoon — clear mind se wapas aana zyada effective hota hai' },
-      { key: 'C', text: 'Immediately different approach try karta/karti hoon — momentum banana zaroori hai' },
-      { key: 'D', text: 'Trusted insaan se baat karta/karti hoon — outside perspective helpful hota hai' },
-    ],
-  },
-  {
-    id: 'q3',
-    text: 'Koi topic padhte waqt ek aisi cheez mili jo seedha kaam nahi aayegi — aap kya karte hain?',
-    dimensions: ['depth', 'structureNeed', 'pace'],
-    options: [
-      { key: 'A', text: 'Ruk ke samajhta/samajhti hoon — adhoori samajh ke saath aage badhna suit nahi karta' },
-      { key: 'B', text: 'Note karta/karti hoon — relevant time pe wapas aaunga/aaungi' },
-      { key: 'C', text: 'Us cheez ko deeper explore karna shuru karta/karti hoon — curiosity mujhe le jaati hai' },
-      { key: 'D', text: 'Focus goal pe rakhta/rakhti hoon — jo seedha kaam aaye woh pehle' },
-    ],
-  },
-  {
-    id: 'q4',
-    text: 'Important decision lena ho aur information incomplete ho — aap?',
-    dimensions: ['pace', 'depth', 'priorKnowledgeComfort'],
-    options: [
-      { key: 'A', text: 'Pehle aur data gather karta/karti hoon — informed decision better hota hai' },
-      { key: 'B', text: 'Past patterns dekhta/dekhti hoon — similar situations ne kya suggest kiya' },
-      { key: 'C', text: 'Best available information se decide karta/karti hoon — perfect timing kabhi nahi aata' },
-      { key: 'D', text: 'Kisi trusted insaan ka perspective leta/leti hoon — blind spots cover hote hain' },
-    ],
-  },
-  {
-    id: 'q5',
-    text: 'Koi complex concept samajh nahi aa raha — kaunsa approach aapke liye kaam karta hai?',
-    dimensions: ['storytelling', 'structureNeed', 'theoryVsPractical', 'repetitionNeed'],
-    options: [
-      { key: 'A', text: 'Real life se connect karta/karti hoon — "yeh bilkul aise hai jaise..." se cheezein click karti hain' },
-      { key: 'B', text: 'Visual flow bana leta/leti hoon — diagram mein dekha toh clear ho jaata hai' },
-      { key: 'C', text: 'Khud experiment karta/karti hoon — hands-on hone ke baad theory settle hoti hai' },
-      { key: 'D', text: 'Multiple baar padhta/padhti hoon — repetition se deep clarity aati hai' },
-    ],
-  },
-  {
-    id: 'q6',
-    text: '2 ghante ka deep topic padh rahe hain — 45 minute baad naturally kya hota hai?',
-    dimensions: ['pace', 'depth'],
-    options: [
-      { key: 'A', text: 'Flow mein hoon — focused rehna mujhe aata hai, time pata nahi chalta' },
-      { key: 'B', text: 'Short mental break leta/leti hoon — recharge karke wapas aata/aati hoon, productivity better rehti hai' },
-      { key: 'C', text: 'Topic switch karta/karti hoon — variety se energy maintain rehti hai meri' },
-      { key: 'D', text: 'Kaafi progress kar chuka/chuki hoon — efficient pace mein kaam karta/karti hoon' },
-    ],
-  },
-  {
-    id: 'q7',
-    text: 'Koi nayi cheez seekhne ke liye ideal format kaunsa hai aapke liye?',
-    dimensions: ['pace', 'depth', 'theoryVsPractical'],
-    options: [
-      { key: 'A', text: 'Focused short videos — concise, to the point, time ki respect' },
-      { key: 'B', text: 'Detailed comprehensive video — ek jagah poora picture milna better lagta hai' },
-      { key: 'C', text: 'Written content — apni pace pe padhna zyada effective hai mere liye' },
-      { key: 'D', text: 'Project-based learning — seedha banate hue sikhna natural lagta hai' },
-    ],
-  },
-  {
-    id: 'q8',
-    text: 'Koi teacher video mein technical jargon use kar raha hai bina explain kiye — aap kya karte hain?',
-    dimensions: ['languageComplexity', 'structureNeed', 'pace'],
-    options: [
-      { key: 'A', text: 'Turant ruk ke word ka matlab search karta/karti hoon — bina samjhe aage badhna sahi nahi lagta' },
-      { key: 'B', text: 'Context se hi matlab nikal leta/leti hoon aur aage badhta/badhti rehta/rehti hoon — jargon se problem nahi hoti' },
-      { key: 'C', text: 'Simpler resource dhoondh leta/leti hoon jahan easy language mein samjhaya ho' },
-      { key: 'D', text: 'Un words ko note kar leta/leti hoon, baad mein ek saath sabko clarify karta/karti hoon' },
-    ],
-  },
-  {
-    id: 'q9',
-    text: 'Kisi ne ek naya concept aapko real-life story ya analogy ke through samjhaya — aapko kaisa lagta hai?',
-    dimensions: ['storytelling'],
-    crossChecks: 'q5',
-    options: [
-      { key: 'A', text: 'Bahut helpful — story se concept hamesha ke liye yaad reh jaata hai' },
-      { key: 'B', text: 'Thoda helpful hai, lekin main directly technical/clear definition prefer karta/karti hoon' },
-      { key: 'C', text: 'Depends — agar story genuinely relevant hai tabhi kaam aati hai, warna time waste lagta hai' },
-      { key: 'D', text: 'Story yaad reh jaati hai lekin actual concept nahi — isliye main aisi cheezein avoid karta/karti hoon' },
-    ],
-  },
-  {
-    id: 'q10',
-    text: 'Ek mushkil concept seekhne ke ek hafte baad, aap usse naturally kitni baar revise karte hain?',
-    dimensions: ['repetitionNeed'],
-    crossChecks: 'q5',
-    options: [
-      { key: 'A', text: 'Ek baar acche se samajh liya toh dobara zaroorat nahi padti' },
-      { key: 'B', text: '2-3 baar zaroor revise karta/karti hoon, tabhi confidence aata hai' },
-      { key: 'C', text: 'Sirf jab actually use karna ho tab revise karta/karti hoon, warna nahi' },
-      { key: 'D', text: 'Notes bana leta/leti hoon aur beech-beech mein glance maarta/maarti rehta/rehti hoon' },
-    ],
-  },
-  {
-    id: 'q11',
-    text: 'Naya topic start karte waqt, agar wo kisi purani cheez se related hai jo aap already jaante hain — aap kya karte hain?',
-    dimensions: ['priorKnowledgeComfort'],
-    crossChecks: 'q4',
-    options: [
-      { key: 'A', text: 'Turant connect karta/karti hoon — "yeh toh us jaisa hi hai" — naya seekhna aasaan ho jaata hai' },
-      { key: 'B', text: 'Purani knowledge ko side rakh ke bilkul fresh start karta/karti hoon, confusion se bachne ke liye' },
-      { key: 'C', text: 'Thoda connect karta/karti hoon lekin zyada dependent nahi hota — case by case' },
-      { key: 'D', text: 'Mujhe purana concept pehle revise karna padta hai, warna naya samajh nahi aata' },
-    ],
-  },
-];
+function validateComplete(parsed: any): boolean {
+  if (!parsed?.dimensions || typeof parsed.report !== 'string' || !parsed.report.trim()) return false;
+  for (const key of DIMENSION_KEYS) {
+    const val = parsed.dimensions[key];
+    if (typeof val !== 'number' || val < 1 || val > 10) return false;
+  }
+  return true;
+}
+
+async function callGeminiWithRetry(apiKey: string, body: object, maxRetries = 2): Promise<Response> {
+  let lastRes: Response | null = null;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      }
+    );
+    if (res.ok || (res.status !== 503 && res.status !== 429)) {
+      return res;
+    }
+    lastRes = res;
+    if (attempt < maxRetries) {
+      const delayMs = res.status === 429 ? 4000 * (attempt + 1) : 500 * Math.pow(2, attempt);
+      await new Promise((r) => setTimeout(r, delayMs));
+    }
+  }
+  return lastRes as Response;
+}
+
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'POST only' });
+  }
+
+  const { answers } = (req.body ?? {}) as { answers?: AnswerPayload[] };
+  if (!Array.isArray(answers) || answers.length === 0) {
+    return res.status(400).json({ error: 'answers array required' });
+  }
+
+  const apiKey = process.env.VITE_GEMINI_API_KEY;
+  if (!apiKey) {
+    return res.status(500).json({ error: 'Gemini API key not configured on server' });
+  }
+
+  const answersBlock = answers
+    .map((a, i) => `${i + 1}. Q: ${a.question}\n   Chosen: ${a.selectedOption}`)
+    .join('\n\n');
+
+  try {
+    const geminiRes = await callGeminiWithRetry(apiKey, {
+      system_instruction: { parts: [{ text: SYSTEM_INSTRUCTIONS }] },
+      contents: [{ role: 'user', parts: [{ text: `Student ke jawab:\n\n${answersBlock}` }] }],
+      generationConfig: { maxOutputTokens: 1024, temperature: 0.6 },
+    });
+
+    if (!geminiRes.ok) {
+      const errBody = await geminiRes.json().catch(() => ({}));
+      console.error('Gemini API error:', geminiRes.status, errBody);
+      const message =
+        geminiRes.status === 429
+          ? 'Abhi requests zyada ho gaye hain (rate limit). ~30-60 second ruk kar "Phir try karein" dabao. 🔄'
+          : `Analysis mein gadbad ho gayi (${geminiRes.status}). Thodi der mein phir try karein. 🔄`;
+      return res.status(502).json({ error: message });
+    }
+
+    const data = await geminiRes.json();
+    const rawText: string = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+    const parsed = parseGeminiJson(rawText);
+
+    if (!validateComplete(parsed)) {
+      return res.status(502).json({ error: 'Response samajh nahi aaya, phir se try karein. 🔄' });
+    }
+
+    return res.status(200).json({
+      report: parsed.report.trim(),
+      dimensions: parsed.dimensions,
+      reliabilityScore:
+        typeof parsed.reliabilityScore === 'number'
+          ? Math.max(0, Math.min(100, Math.round(parsed.reliabilityScore)))
+          : 70,
+      selfReportedHonesty: ['honest', 'partially_honest', 'gamed', 'declined'].includes(parsed.selfReportedHonesty)
+        ? parsed.selfReportedHonesty
+        : 'honest',
+    });
+  } catch (err: any) {
+    console.error('Blueprint analysis proxy failed:', err);
+    return res.status(500).json({ error: 'Network error aaya. Internet check karein aur phir try karein. 🔄' });
+  }
+}
