@@ -420,7 +420,7 @@ export default function Roadmap({
                 <span>40 hrs</span>
               </div>
               <p className="text-[11px] text-gray-400 dark:text-white/40 mt-1.5">
-                Isse roadmap ke topics aur unki depth tumhare available time ke hisaab se accurate banti hai.
+                Isse roadmap ke topics aur unki depth aapke available time ke hisaab se accurate banti hai.
               </p>
             </div>
 

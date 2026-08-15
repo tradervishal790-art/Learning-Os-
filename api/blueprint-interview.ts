@@ -54,6 +54,8 @@ Agar sab jawab consistent hain toh reliabilityScore high (80-100) rakho aur self
 
 Sirf answers ke actual content se dimensions nikaalo — options ka surface keyword mat dekho, actual meaning/intent samjho.
 
+TONE — report likhte waqt hamesha respectful "aap" form use karo (jaise "aap", "aapka", "aapko"). Informal "tum", "tera", "tu" bilkul use mat karo.
+
 Response — SIRF valid JSON, koi markdown fence nahi, koi extra text nahi:
 {"report":"student ke liye ek warm, personal, paragraph-form likha hua report — 4-6 sentences, Hinglish mein, jaise ek mentor apne student ko unke baare mein bata raha ho, jisme unki learning style ke key traits mention ho","dimensions":{"pace":N,"theoryVsPractical":N,"structureNeed":N,"depth":N,"languageComplexity":N,"storytelling":N,"repetitionNeed":N,"priorKnowledgeComfort":N},"reliabilityScore":N,"selfReportedHonesty":"honest"}`;
 

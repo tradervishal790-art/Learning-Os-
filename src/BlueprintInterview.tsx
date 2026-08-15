@@ -215,7 +215,7 @@ export default function BlueprintInterview({
                 <span className="w-2.5 h-2.5 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
                 <span className="w-2.5 h-2.5 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
               </div>
-              <p className="text-xs text-gray-400 dark:text-white/40">Tumhare jawabon ko deeply analyze kar rahe hain...</p>
+              <p className="text-xs text-gray-400 dark:text-white/40">Aapke jawabon ko deeply analyze kar rahe hain...</p>
             </div>
           )}
 
@@ -283,7 +283,7 @@ export default function BlueprintInterview({
                 {/* Written report */}
                 <div className="p-4 rounded-xl border border-purple-300/30 dark:border-purple-500/20 bg-purple-50 dark:bg-purple-500/5">
                   <h3 className="text-sm font-semibold mb-2 text-purple-700 dark:text-purple-300">
-                    📋 Tera Learning Blueprint
+                    📋 Aapka Learning Blueprint
                   </h3>
                   <p className="text-sm text-gray-700 dark:text-white/80 leading-relaxed whitespace-pre-wrap">
                     {report}

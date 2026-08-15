@@ -23,9 +23,9 @@ export type DimensionKey =
 export type DeepDiveSignals = Partial<Record<DimensionKey, number>>;
 
 export const DEEP_DIVE_QUESTIONS = [
-  'Koi recent topic bata jo tumhe samajhne mein dikkat hui — kya problem thi exactly?',
-  'Jab koi concept achhe se "click" ho jaata hai tumhare liye, wo moment kaisa hota hai? Ek example do.',
-  'Kal se ek bilkul naya subject start karna ho jisme kuch pata nahi — sabse pehla step kya loge?',
+  'Koi recent topic bataiye jo aapko samajhne mein dikkat hui — kya problem thi exactly?',
+  'Jab koi concept achhe se "click" ho jaata hai aapke liye, wo moment kaisa hota hai? Ek example dijiye.',
+  'Kal se ek bilkul naya subject start karna ho jisme kuch pata nahi — sabse pehla step kya lenge?',
 ] as const;
 
 const DIMENSION_KEYS: DimensionKey[] = [

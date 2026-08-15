@@ -20,44 +20,44 @@ export function getGrade(score: number): Grade {
 
 const VERDICTS: Record<string, { high: string; mid: string; low: string }> = {
   pace: {
-    high: 'Tum fast-paced learner ho — lambi cheezein skim karke seedha essence pakadte ho.',
-    mid: 'Tumhara pace balanced hai — na bahut slow, na bahut fast.',
-    low: 'Tumhe thorough, slow-paced content chahiye — jaldi mein cheezein miss ho jaati hain.',
+    high: 'Aap fast-paced learner hain — lambi cheezein skim karke seedha essence pakadte hain.',
+    mid: 'Aapka pace balanced hai — na bahut slow, na bahut fast.',
+    low: 'Aapko thorough, slow-paced content chahiye — jaldi mein cheezein miss ho jaati hain.',
   },
   theoryVsPractical: {
-    high: 'Tum hands-on seekhte ho — pehle karke dekhna, phir samajhna tumhara style hai.',
-    mid: 'Theory aur practical dono ka mix tumhare liye kaam karta hai.',
-    low: 'Tumhe pehle solid theory chahiye, uske baad hi practical mein confidence aata hai.',
+    high: 'Aap hands-on seekhte hain — pehle karke dekhna, phir samajhna aapka style hai.',
+    mid: 'Theory aur practical dono ka mix aapke liye kaam karta hai.',
+    low: 'Aapko pehle solid theory chahiye, uske baad hi practical mein confidence aata hai.',
   },
   structureNeed: {
-    high: 'Tumhe clear, step-by-step structure chahiye — flexible/random content confuse karta hai.',
+    high: 'Aapko clear, step-by-step structure chahiye — flexible/random content confuse karta hai.',
     mid: 'Thoda structure helpful hai, lekin poori rigidity zaroori nahi.',
-    low: 'Tum flexible learners ho — structure ki zyada zaroorat nahi padti.',
+    low: 'Aap flexible learner hain — structure ki zyada zaroorat nahi padti.',
   },
   depth: {
-    high: 'Tumhe root-cause tak jaana pasand hai — surface-level explanation satisfy nahi karta.',
-    mid: 'Tum zaroorat ke hisaab se depth mein jaate ho, hamesha nahi.',
-    low: 'Surface-level understanding tumhare liye kaafi hai — deep-diving se pace slow hoti hai.',
+    high: 'Aapko root-cause tak jaana pasand hai — surface-level explanation satisfy nahi karta.',
+    mid: 'Aap zaroorat ke hisaab se depth mein jaate hain, hamesha nahi.',
+    low: 'Surface-level understanding aapke liye kaafi hai — deep-diving se pace slow hoti hai.',
   },
   languageComplexity: {
-    high: 'Technical jargon se tumhe problem nahi — comfortable ho complex vocabulary ke saath.',
+    high: 'Technical jargon se aapko problem nahi — comfortable hain complex vocabulary ke saath.',
     mid: 'Kuch jargon chalta hai, lekin bahut technical language confuse kar sakti hai.',
-    low: 'Tumhe simple, everyday language mein samjhaya jaana chahiye — jargon se dooriyan.',
+    low: 'Aapko simple, everyday language mein samjhaya jaana chahiye — jargon se dooriyan.',
   },
   storytelling: {
-    high: 'Real-life stories aur analogies se concepts tumhare mind mein permanently baith jaate hain.',
+    high: 'Real-life stories aur analogies se concepts aapke mind mein permanently baith jaate hain.',
     mid: 'Stories help karti hain, lekin zaroori nahi har jagah.',
-    low: 'Tumhe direct, to-the-point explanation pasand hai — stories se distract ho sakte ho.',
+    low: 'Aapko direct, to-the-point explanation pasand hai — stories se distract ho sakte hain.',
   },
   repetitionNeed: {
-    high: 'Tumhe multiple revisions chahiye deep clarity ke liye — ek baar padhna kaafi nahi.',
+    high: 'Aapko multiple revisions chahiye deep clarity ke liye — ek baar padhna kaafi nahi.',
     mid: 'Thoda revision helpful hota hai, lekin zyada zaroorat nahi.',
-    low: 'Ek baar samajh lo to dobara revise karne ki zaroorat kam hi padti hai.',
+    low: 'Ek baar samajh liya to dobara revise karne ki zaroorat kam hi padti hai.',
   },
   priorKnowledgeComfort: {
-    high: 'Naye topics ko purani knowledge se connect karke tum jaldi seekhte ho.',
-    mid: 'Kabhi kabhi prior knowledge se connect karte ho, hamesha nahi.',
-    low: 'Tumhe fresh start pasand hai — purani knowledge se connect karna zaroori nahi lagta.',
+    high: 'Naye topics ko purani knowledge se connect karke aap jaldi seekhte hain.',
+    mid: 'Kabhi kabhi prior knowledge se connect karte hain, hamesha nahi.',
+    low: 'Aapko fresh start pasand hai — purani knowledge se connect karna zaroori nahi lagta.',
   },
 };
 
