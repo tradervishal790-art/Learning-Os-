@@ -1,44 +1,37 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { LearningProfile } from './types';
+import { BLUEPRINT_QUESTIONS } from './blueprintQuestions';
 
 // ============================================================
-// BlueprintInterview.tsx
+// BlueprintInterview.tsx — v2
 //
-// Replaces LearningQuiz.tsx's static 12-question form with a live,
-// adaptive interview: Gemini asks one question at a time (see
-// api/blueprint-interview.ts), follows up based on prior answers, and
-// closes itself when it has enough signal (10-15 questions). Ends with
-// a written report + the same 8 LearningProfile dimensions the old quiz
-// produced, so nothing downstream (Roadmap.tsx, PlaylistBuilder.ts,
-// queryExpander.ts) needs to change — they all just read LearningProfile.
-//
-// onComplete signature intentionally mirrors LearningQuiz's
-// onComplete(profile) so Dashboard.tsx can swap one for the other with
-// a one-line change.
+// Replaces LearningQuiz.tsx's static form AND the old live-Gemini-per-
+// question version. Now: questions come from a fixed local bank
+// (blueprintQuestions.ts), answered entirely client-side with zero
+// network calls, then ONE single call to api/blueprint-interview at the
+// very end with all 11 answers bundled together — Gemini cross-analyzes
+// them in one shot and returns the written report + 8 LearningProfile
+// dimensions. Big token/cost saving vs one-call-per-question, same
+// output shape as before so nothing downstream changes.
 // ============================================================
 
-interface HistoryMessage {
-  role: 'user' | 'model';
-  content: string;
+interface AnswerRecord {
+  questionId: string;
+  question: string;
+  selectedOption: string;
 }
 
-interface ChatMessage {
-  id: string;
-  role: 'user' | 'mentor';
-  content: string;
-}
+type Phase = 'answering' | 'analyzing' | 'done' | 'error';
 
-type Phase = 'loading' | 'asking' | 'finishing' | 'done' | 'error';
-
-async function callInterviewApi(history: HistoryMessage[]): Promise<any> {
+async function callAnalysisApi(answers: AnswerRecord[]): Promise<any> {
   const response = await fetch('/api/blueprint-interview', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ history }),
+    body: JSON.stringify({ answers }),
   });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data?.error || `Interview error ${response.status}`);
+  if (!response.ok) throw new Error(data?.error || `Analysis error ${response.status}`);
   return data;
 }
 
@@ -49,46 +42,38 @@ export default function BlueprintInterview({
   onComplete: (profile: LearningProfile) => void;
   onClose?: () => void;
 }) {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [history, setHistory] = useState<HistoryMessage[]>([]);
-  const [input, setInput] = useState('');
-  const [phase, setPhase] = useState<Phase>('loading');
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [answers, setAnswers] = useState<AnswerRecord[]>([]);
+  const [phase, setPhase] = useState<Phase>('answering');
   const [errorMsg, setErrorMsg] = useState('');
-  const [questionCount, setQuestionCount] = useState(0);
   const [report, setReport] = useState('');
-  const [lastFailedHistory, setLastFailedHistory] = useState<HistoryMessage[] | null>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const currentQuestion = BLUEPRINT_QUESTIONS[currentIndex];
+  const totalQuestions = BLUEPRINT_QUESTIONS.length;
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, phase]);
+    containerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [currentIndex]);
 
-  // Kick off the interview on mount — empty history tells the backend
-  // to generate the first question.
-  useEffect(() => {
-    (async () => {
-      try {
-        const data = await callInterviewApi([]);
-        handleApiResult(data, []);
-      } catch (err: any) {
-        setPhase('error');
-        setErrorMsg(err.message || 'Interview start nahi ho paaya.');
-        setLastFailedHistory([]);
-      }
-    })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const handleSelect = async (optionText: string) => {
+    const newAnswer: AnswerRecord = {
+      questionId: currentQuestion.id,
+      question: currentQuestion.text,
+      selectedOption: optionText,
+    };
+    const updatedAnswers = [...answers, newAnswer];
+    setAnswers(updatedAnswers);
 
-  function handleApiResult(data: any, historySoFar: HistoryMessage[]) {
-    if (data.type === 'question') {
-      setQuestionCount((c) => c + 1);
-      setMessages((prev) => [...prev, { id: `q-${Date.now()}`, role: 'mentor', content: data.text }]);
-      setHistory([...historySoFar, { role: 'model', content: JSON.stringify({ type: 'question', text: data.text }) }]);
-      setPhase('asking');
+    if (currentIndex < totalQuestions - 1) {
+      setCurrentIndex((i) => i + 1);
       return;
     }
 
-    if (data.type === 'complete') {
+    // Last question answered — fire the single analysis call.
+    setPhase('analyzing');
+    try {
+      const data = await callAnalysisApi(updatedAnswers);
       const profile: LearningProfile = {
         pace: data.dimensions.pace,
         theoryVsPractical: data.dimensions.theoryVsPractical,
@@ -106,45 +91,44 @@ export default function BlueprintInterview({
       setReport(data.report);
       setPhase('done');
       onComplete(profile);
-      return;
-    }
-
-    setPhase('error');
-    setErrorMsg('Response samajh nahi aaya, phir se try karo.');
-  }
-
-  const handleSend = async () => {
-    if (!input.trim() || phase !== 'asking') return;
-    const answer = input.trim();
-    setInput('');
-    setMessages((prev) => [...prev, { id: `a-${Date.now()}`, role: 'user', content: answer }]);
-
-    const updatedHistory: HistoryMessage[] = [...history, { role: 'user', content: answer }];
-    setHistory(updatedHistory);
-    setPhase('finishing');
-
-    try {
-      const data = await callInterviewApi(updatedHistory);
-      handleApiResult(data, updatedHistory);
     } catch (err: any) {
       setPhase('error');
-      setErrorMsg(err.message || 'Kuch gadbad ho gayi.');
-      setLastFailedHistory(updatedHistory);
+      setErrorMsg(err.message || 'Analysis fail ho gaya.');
     }
   };
 
-  const handleRetry = async () => {
-    if (lastFailedHistory === null) return;
-    setPhase(lastFailedHistory.length === 0 ? 'loading' : 'finishing');
+  const handleRetryAnalysis = async () => {
+    setPhase('analyzing');
     setErrorMsg('');
     try {
-      const data = await callInterviewApi(lastFailedHistory);
-      handleApiResult(data, lastFailedHistory);
-      setLastFailedHistory(null);
+      const data = await callAnalysisApi(answers);
+      const profile: LearningProfile = {
+        pace: data.dimensions.pace,
+        theoryVsPractical: data.dimensions.theoryVsPractical,
+        structureNeed: data.dimensions.structureNeed,
+        depth: data.dimensions.depth,
+        languageComplexity: data.dimensions.languageComplexity,
+        storytelling: data.dimensions.storytelling,
+        repetitionNeed: data.dimensions.repetitionNeed,
+        priorKnowledgeComfort: data.dimensions.priorKnowledgeComfort,
+        reliabilityScore: data.reliabilityScore,
+        selfReportedHonesty: data.selfReportedHonesty,
+        completedAt: new Date().toISOString(),
+        blueprintReport: data.report,
+      };
+      setReport(data.report);
+      setPhase('done');
+      onComplete(profile);
     } catch (err: any) {
       setPhase('error');
-      setErrorMsg(err.message || 'Kuch gadbad ho gayi.');
+      setErrorMsg(err.message || 'Analysis fail ho gaya.');
     }
+  };
+
+  const handleBack = () => {
+    if (currentIndex === 0) return;
+    setAnswers((prev) => prev.slice(0, -1));
+    setCurrentIndex((i) => i - 1);
   };
 
   return (
@@ -155,46 +139,77 @@ export default function BlueprintInterview({
         className="bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-white/10 rounded-3xl max-w-lg w-full text-black dark:text-white max-h-[85vh] flex flex-col overflow-hidden"
       >
         <div className="flex items-center justify-between px-5 md:px-6 py-4 border-b border-gray-200 dark:border-white/10">
-          <div>
+          <div className="flex-1">
             <h2 className="text-base font-semibold">🧭 AI Blueprint Interview</h2>
             <p className="text-xs text-gray-400 dark:text-white/40 mt-0.5">
-              {phase === 'done' ? 'Complete!' : questionCount > 0 ? `Sawaal ${questionCount}` : 'Shuru ho raha hai...'}
+              {phase === 'done'
+                ? 'Complete!'
+                : phase === 'analyzing'
+                ? 'Analyzing your answers...'
+                : `Sawaal ${currentIndex + 1} / ${totalQuestions}`}
             </p>
+            {phase === 'answering' && (
+              <div className="mt-2 h-1 bg-gray-200 dark:bg-white/10 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-purple-500 transition-all duration-300"
+                  style={{ width: `${((currentIndex + 1) / totalQuestions) * 100}%` }}
+                />
+              </div>
+            )}
           </div>
           {onClose && phase !== 'done' && (
             <button
               onClick={onClose}
-              className="w-8 h-8 rounded-full border border-gray-200 dark:border-white/10 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-white/10 transition text-sm flex-shrink-0"
+              className="w-8 h-8 rounded-full border border-gray-200 dark:border-white/10 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-white/10 transition text-sm flex-shrink-0 ml-3"
             >
               ✕
             </button>
           )}
         </div>
 
-        <div className="flex-1 overflow-y-auto p-5 md:p-6 space-y-4">
-          {messages.map((msg) => (
-            <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div
-                className={`max-w-[85%] px-4 py-3 rounded-2xl text-sm leading-relaxed ${
-                  msg.role === 'user'
-                    ? 'bg-black text-white dark:bg-white dark:text-black'
-                    : 'bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10'
-                }`}
+        <div ref={containerRef} className="flex-1 overflow-y-auto p-5 md:p-6">
+          {phase === 'answering' && (
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentQuestion.id}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.2 }}
               >
-                {msg.content}
-              </div>
-            </div>
-          ))}
-
-          {(phase === 'loading' || phase === 'finishing') && (
-            <div className="flex justify-start">
-              <div className="bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 px-4 py-3 rounded-2xl">
-                <div className="flex gap-1">
-                  <span className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <span className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <span className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                <p className="text-sm font-medium leading-relaxed mb-4">{currentQuestion.text}</p>
+                <div className="space-y-2">
+                  {currentQuestion.options.map((opt) => (
+                    <button
+                      key={opt.key}
+                      onClick={() => handleSelect(opt.text)}
+                      className="w-full text-left px-4 py-3 rounded-xl border border-gray-200 dark:border-white/10 hover:border-purple-400 hover:bg-purple-50 dark:hover:bg-purple-500/10 transition text-sm leading-relaxed"
+                    >
+                      <span className="font-semibold text-purple-500 mr-2">{opt.key}.</span>
+                      {opt.text}
+                    </button>
+                  ))}
                 </div>
+                {currentIndex > 0 && (
+                  <button
+                    onClick={handleBack}
+                    className="mt-4 text-xs text-gray-400 dark:text-white/40 hover:text-gray-600 dark:hover:text-white/70 transition"
+                  >
+                    ← Pichla sawaal
+                  </button>
+                )}
+              </motion.div>
+            </AnimatePresence>
+          )}
+
+          {phase === 'analyzing' && (
+            <div className="flex flex-col items-center justify-center py-12 gap-3">
+              <div className="flex gap-1">
+                <span className="w-2.5 h-2.5 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                <span className="w-2.5 h-2.5 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                <span className="w-2.5 h-2.5 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
               </div>
+              <p className="text-xs text-gray-400 dark:text-white/40">Tumhare jawabon ko deeply analyze kar rahe hain...</p>
             </div>
           )}
 
@@ -216,40 +231,17 @@ export default function BlueprintInterview({
           </AnimatePresence>
 
           {phase === 'error' && (
-            <div className="text-center py-2 space-y-3">
+            <div className="text-center py-6 space-y-3">
               <p className="text-sm text-red-500 dark:text-red-400">{errorMsg}</p>
               <button
-                onClick={handleRetry}
+                onClick={handleRetryAnalysis}
                 className="px-4 py-2 rounded-xl border border-gray-300 dark:border-white/10 text-sm font-medium hover:bg-gray-100 dark:hover:bg-white/10 transition"
               >
                 🔄 Phir try karein
               </button>
             </div>
           )}
-
-          <div ref={messagesEndRef} />
         </div>
-
-        {phase !== 'done' && (
-          <div className="p-4 border-t border-gray-200 dark:border-white/10 flex gap-2">
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-              placeholder="Apna jawab yahan likho..."
-              disabled={phase !== 'asking'}
-              className="flex-1 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm placeholder-gray-400 dark:placeholder-white/40 focus:outline-none focus:border-purple-500/50 disabled:opacity-50"
-            />
-            <button
-              onClick={handleSend}
-              disabled={phase !== 'asking' || !input.trim()}
-              className="px-5 py-2.5 rounded-xl bg-black text-white dark:bg-white dark:text-black disabled:opacity-40 text-sm font-semibold transition active:scale-[0.98]"
-            >
-              Send
-            </button>
-          </div>
-        )}
 
         {phase === 'done' && (
           <div className="p-4 border-t border-gray-200 dark:border-white/10">
