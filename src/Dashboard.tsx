@@ -647,7 +647,7 @@ export default function Dashboard({ userData, onUpdateUserData, onRegenerateRoad
                     type="text"
                     value={settingsGoal}
                     onChange={(e) => setSettingsGoal(e.target.value)}
-                    placeholder='Jaise "React.js" ya "Class 12 Physics - Electric Charges"'
+                    placeholder="Aap kya seekhna chahte ho?"
                     className="w-full px-3 py-2 rounded-lg text-sm border border-gray-200 dark:border-white/10 bg-transparent focus:outline-none focus:border-black dark:focus:border-white"
                   />
                 </div>
@@ -789,17 +789,20 @@ export default function Dashboard({ userData, onUpdateUserData, onRegenerateRoad
 
                 <div className="flex flex-wrap gap-2">
                   <span className="text-xs text-gray-400 dark:text-white/40 mr-1 self-center">Quick:</span>
-                  {['React Hooks', 'Python Basics', 'Calculus', 'SQL', 'CSS Grid', 'Data Structures'].map((s) => (
+                  {(getRoadmapData(activeGoalId ?? undefined)?.children ?? [])
+                    .filter((t) => t.status !== 'locked')
+                    .slice(0, 6)
+                    .map((t) => (
                     <button
-                      key={s}
+                      key={t.id}
                       onClick={() => {
-                        setCustomTopic(s);
+                        setCustomTopic(t.title);
                         setCustomError('');
                       }}
                       disabled={customLoading}
                       className="px-3 py-1 border border-gray-200 dark:border-white/10 rounded-full text-xs hover:bg-gray-100 dark:hover:bg-white/10 transition disabled:opacity-50"
                     >
-                      {s}
+                      {t.title}
                     </button>
                   ))}
                 </div>

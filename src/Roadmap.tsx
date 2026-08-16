@@ -386,7 +386,7 @@ export default function Roadmap({
                 value={subjectInput}
                 onChange={(e) => setSubjectInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleGenerateClick()}
-                placeholder='Jaise "React.js" ya "Class 12 Physics - Electric Charges"'
+                placeholder="Aap kya seekhna chahte ho?"
                 autoFocus
                 className="flex-1 px-4 py-2.5 rounded-lg text-sm border border-gray-200 dark:border-white/10 bg-white dark:bg-black/30 focus:outline-none focus:border-black dark:focus:border-white"
               />

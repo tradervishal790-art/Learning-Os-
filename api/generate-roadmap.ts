@@ -142,7 +142,7 @@ IMPORTANT — topic granularity (time-budget based):
 Is learner ke paas total ~${totalHours} hours hain. Har topic learner ke liye roughly ${hoursPerTopic} hours ka honा chahiye (video watching + practice included) — na usse kaafi zyada, na kaafi kam.
 Isliye ~${topicCount} topics do — yeh sirf ek generic range nahi hai, yeh directly is learner ke time-budget se calculate hua hai.
 
-CRITICAL: agar goal ek bada chapter/subject cover karta hai (jaise "Class 12 Physics Chapter 1" ya "React seekhna"), to usse ek hi flat topic mat banao — usko is learner ke time-budget ke hisaab se multiple granular sub-topics mein todo. Har sub-topic itna specific ho ki ek single, focused video/session mein cover ho sake — "poora chapter ek video mein" type broad topic mat banao.
+CRITICAL: agar goal ek bada chapter/subject cover karta hai (jaise ek poora subject ya ek poora chapter), to usse ek hi flat topic mat banao — usko is learner ke time-budget ke hisaab se multiple granular sub-topics mein todo. Har sub-topic itna specific ho ki ek single, focused video/session mein cover ho sake — "poora chapter ek video mein" type broad topic mat banao.
 
 CRITICAL — FOUNDATION-FIRST SEQUENCING (isse achieve karne ka tarika):
 Topics likhne se PEHLE, ek chhota "prerequisiteChain" likho — 3-6 lines mein saaf-saaf socho: "is goal/chapter ko samajhne ke liye sabse pehle kaunsa concept jaanna zaroori hai? uske baad kya? uske baad kya?" — jaise ek dependency chain. Sirf tabhi topics array likho jab ye chain clear ho jaaye, aur topics ka order EXACTLY isi chain ko follow kare.

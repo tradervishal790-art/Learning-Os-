@@ -548,7 +548,13 @@ export default function VideoIntel({ initialPlaylist, activeGoalId }: VideoIntel
     return `${m}:${sec.toString().padStart(2, '0')}`;
   };
 
-  const suggestions = ['React Hooks', 'JavaScript Closures', 'TypeScript Basics', 'REST API Design'];
+  // Pulled from the learner's own roadmap topics instead of a fixed generic
+  // list — so suggestions are always relevant to what they're actually
+  // learning, whatever subject that is.
+  const suggestions = (getRoadmapData()?.children ?? [])
+    .filter((t) => t.status !== 'locked')
+    .slice(0, 4)
+    .map((t) => t.title);
   const hasNextVideo = !!selectedVideo;
 
   return (
