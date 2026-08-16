@@ -15,6 +15,7 @@ import { useTheme } from './ThemeContext';
 import type { DashboardPageId, PageConfig, UserOnboardingData, LearningProfile, Video, Topic, Goal } from './types';
 import Mentor from './Mentor';
 import Notes from './Notes';
+import Progress from './progress';
 
 interface DashboardProps {
   userData: UserOnboardingData | null;
@@ -85,18 +86,7 @@ const deadlineOptions = [
   { id: '1y', label: '1Y' },
 ];
 
-const pageConfigs: Partial<Record<DashboardPageId, PageConfig>> = {
-  progress: {
-    title: 'Progress',
-    description: 'Track your speed, retention, and mastery.',
-    icon: 'chart',
-    status: 'beta',
-    features: [
-      'Time tracking', 'Mastery heatmap', 'Retention rate',
-      'Completion %', 'Streaks', 'Weak areas',
-    ],
-  },
-};
+const pageConfigs: Partial<Record<DashboardPageId, PageConfig>> = {};
 
 const ACTIVE_DAYS_STORAGE_KEY = 'learning_os_active_days';
 const TOPIC_TIMING_STORAGE_KEY = 'learning_os_topic_timing';
@@ -592,7 +582,7 @@ export default function Dashboard({ userData, onUpdateUserData, onRegenerateRoad
         {activePage === 'videos' && <VideoIntel initialPlaylist={preloadedPlaylist} activeGoalId={activeGoalId} />}
         {activePage === 'mentor' && <Mentor />}
         {activePage === 'notes' && <Notes />}
-
+{activePage === 'progress' && <Progress goals={goals} />}
         {config && (
           <PagePlaceholder
             title={config.title}
