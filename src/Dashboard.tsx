@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import PagePlaceholder from './PagePlaceholder';
 import Roadmap from './Roadmap';
@@ -128,7 +128,34 @@ function trackAndComputeStreak(): number {
 
 export default function Dashboard({ userData, onUpdateUserData, onRegenerateRoadmap, onGenerateForSubject, roadmapVersion, lastRoadmapError, goals, activeGoalId, onAddGoal, onEndGoal, onSwitchGoal }: DashboardProps) {
   const { theme, toggleTheme } = useTheme();
-  const [activePage, setActivePage] = useState<DashboardPageId>('dashboard');
+  const [activePage, setActivePageRaw] = useState<DashboardPageId>('dashboard');
+  // Every in-app page change pushes a browser/PWA history entry, and the
+  // hardware/gesture back button pops it (via popstate below) instead of
+  // exiting the app — this was the root cause of one-tap-back closing the
+  // whole app: activePage was pure React state with zero history entries
+  // for the back button to consume.
+  const setActivePage = useCallback((page: DashboardPageId) => {
+    setActivePageRaw((current) => {
+      if (current === page) return current;
+      window.history.pushState({ activePage: page }, '', '');
+      return page;
+    });
+  }, []);
+
+  useEffect(() => {
+    // Establish the very first history entry so there's always something
+    // for the initial back-press to land on instead of falling through to
+    // "close app".
+    window.history.replaceState({ activePage: 'dashboard' }, '', '');
+
+    const onPopState = (e: PopStateEvent) => {
+      const page = (e.state?.activePage as DashboardPageId | undefined) ?? 'dashboard';
+      setActivePageRaw(page);
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
+
   const [showSidebar, setShowSidebar] = useState(false);
   const [streak, setStreak] = useState(0);
   const [showLearningQuiz, setShowLearningQuiz] = useState(false);
