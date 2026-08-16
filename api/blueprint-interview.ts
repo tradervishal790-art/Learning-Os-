@@ -134,7 +134,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const geminiRes = await callGeminiWithRetry(apiKey, {
       system_instruction: { parts: [{ text: SYSTEM_INSTRUCTIONS }] },
       contents: [{ role: 'user', parts: [{ text: `Student ke jawab:\n\n${answersBlock}` }] }],
-      generationConfig: { maxOutputTokens: 1024, temperature: 0.6 },
+      generationConfig: {
+        maxOutputTokens: 2048,
+        temperature: 0.6,
+        thinkingConfig: { thinkingBudget: 0 },
+      },
     });
 
     if (!geminiRes.ok) {
@@ -149,10 +153,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const data = await geminiRes.json();
     const rawText: string = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+    const finishReason: string = data?.candidates?.[0]?.finishReason ?? 'UNKNOWN';
     const parsed = parseGeminiJson(rawText);
 
     if (!validateComplete(parsed)) {
-      return res.status(502).json({ error: 'Response samajh nahi aaya, phir se try karein. 🔄' });
+      console.error(
+        'Blueprint analysis: unparseable/incomplete Gemini response.',
+        'finishReason:', finishReason,
+        'rawText:', rawText.slice(0, 2000),
+      );
+      const truncated = finishReason === 'MAX_TOKENS';
+      return res.status(502).json({
+        error: truncated
+          ? 'Response bahut lamba ho gaya tha (cut off). Phir se try karein. 🔄'
+          : 'Response samajh nahi aaya, phir se try karein. 🔄',
+      });
     }
 
     return res.status(200).json({
