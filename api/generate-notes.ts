@@ -8,8 +8,7 @@
 // parsed DeepNotesData object.
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-
-const GEMINI_MODEL = 'gemini-flash-latest';
+import { generateAIText } from './_lib/aiFallback';
 
 const buildPrompt = (topic: string, videoContext?: string) => `Generate DEEP, comprehensive study notes for "${topic}" in Hinglish (Hindi + English mix).
 ${videoContext ? `Video context: ${videoContext}` : ''}
@@ -129,51 +128,35 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const apiKey = process.env.VITE_GEMINI_API_KEY;
-  if (!apiKey) {
-    return res.status(500).json({ error: 'Gemini API key not configured on server' });
+  const minimaxApiKey = process.env.MINIMAX_API_KEY;
+  if (!apiKey && !minimaxApiKey) {
+    return res.status(500).json({ error: 'No AI provider configured on server (VITE_GEMINI_API_KEY / MINIMAX_API_KEY both missing)' });
   }
 
   try {
-    const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ role: 'user', parts: [{ text: buildPrompt(topic, videoContext) }] }],
-          generationConfig: {
-            responseMimeType: 'application/json',
-            responseSchema,
-            maxOutputTokens: 8000,
-            temperature: 0.8,
-          },
-        }),
-      }
-    );
-
-    if (!geminiRes.ok) {
-      const errBody = await geminiRes.json().catch(() => ({}));
-      console.error('Gemini API error:', geminiRes.status, errBody);
-      return res.status(502).json({ error: `Gemini API error ${geminiRes.status}` });
-    }
-
-    const data = await geminiRes.json();
-    const finishReason = data?.candidates?.[0]?.finishReason;
+    const { text, finishReason } = await generateAIText({
+      geminiApiKey: apiKey,
+      minimaxApiKey,
+      contents: [{ role: 'user', parts: [{ text: buildPrompt(topic, videoContext) }] }],
+      generationConfig: {
+        responseMimeType: 'application/json',
+        responseSchema,
+        maxOutputTokens: 8000,
+        temperature: 0.8,
+      },
+      minimaxJsonMode: true,
+      minimaxMaxTokens: 8000,
+    });
 
     if (finishReason === 'MAX_TOKENS') {
       return res.status(502).json({ error: 'Response too long — try simpler topic' });
-    }
-
-    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!text) {
-      return res.status(502).json({ error: 'Empty Gemini response' });
     }
 
     let parsed: any;
     try {
       parsed = JSON.parse(text.trim());
     } catch {
-      return res.status(502).json({ error: 'Gemini returned invalid JSON' });
+      return res.status(502).json({ error: 'AI returned invalid JSON' });
     }
 
     return res.status(200).json({ topic, ...parsed });

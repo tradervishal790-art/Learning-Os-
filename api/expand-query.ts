@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { generateAIText } from './_lib/aiFallback';
 
 interface Blueprint {
   role: string;
@@ -14,10 +15,6 @@ interface Blueprint {
     languageComplexity: number;
   };
 }
-
-// gemini-2.5-flash was returning 404 / API errors — same issue as Mentor.tsx had.
-// gemini-flash-latest auto-points to the current stable Flash model.
-const GEMINI_MODEL = 'gemini-flash-latest';
 
 const QUERY_EXPANSION_PROMPT = (userInput: string, blueprint: Blueprint) => `
 User ne likha: "${userInput}"
@@ -71,30 +68,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const apiKey = process.env.VITE_GEMINI_API_KEY;
-  if (!apiKey) {
-    return res.status(500).json({ error: 'Gemini API key missing on server' });
+  const minimaxApiKey = process.env.MINIMAX_API_KEY;
+  if (!apiKey && !minimaxApiKey) {
+    return res.status(500).json({ error: 'No AI provider configured on server (VITE_GEMINI_API_KEY / MINIMAX_API_KEY both missing)' });
   }
 
   try {
-    const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: QUERY_EXPANSION_PROMPT(userInput, blueprint) }] }],
-        }),
-      }
-    );
+    const { text: rawText } = await generateAIText({
+      geminiApiKey: apiKey,
+      minimaxApiKey,
+      contents: [{ parts: [{ text: QUERY_EXPANSION_PROMPT(userInput, blueprint) }] }],
+      minimaxJsonMode: true,
+    });
 
-    const data = await geminiRes.json();
-
-    if (!geminiRes.ok) {
-      console.error('Gemini API error:', geminiRes.status, data);
-      return res.status(502).json({ error: 'Gemini API error', detail: data });
-    }
-
-    const rawText: string = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
     const cleaned = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
 
     let parsed: any;

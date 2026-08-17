@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { YoutubeTranscript } from 'youtube-transcript';
+import { generateAIText } from './_lib/aiFallback';
 const TRANSCRIPT_CHAR_LIMIT = 8000;
 const MIN_TRANSCRIPT_LENGTH = 50;
-const GEMINI_MODEL = 'gemini-flash-latest';
 
 // ============================================================
 // api/analyze-video.ts
@@ -72,28 +72,20 @@ async function tryFetchTranscript(videoId: string): Promise<string | null> {
 }
 
 async function scoreWithGemini(
-  apiKey: string,
+  apiKey: string | undefined,
+  minimaxApiKey: string | undefined,
   basis: string,
   sourceLabel: string
 ): Promise<any | null> {
   try {
-    const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: DIMENSION_PROMPT(basis, sourceLabel) }] }],
-        }),
-      }
-    );
+    const { text: rawText } = await generateAIText({
+      geminiApiKey: apiKey,
+      minimaxApiKey,
+      contents: [{ parts: [{ text: DIMENSION_PROMPT(basis, sourceLabel) }] }],
+      minimaxJsonMode: true,
+    });
 
-    if (!geminiRes.ok) return null;
-
-    const geminiData = await geminiRes.json();
-    const rawText: string = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
     const cleaned = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
-
     return JSON.parse(cleaned);
   } catch {
     return null;
@@ -118,8 +110,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const apiKey = process.env.VITE_GEMINI_API_KEY;
-  if (!apiKey) {
-    res.status(500).json({ error: 'Gemini API key not configured on server (VITE_GEMINI_API_KEY missing)' });
+  const minimaxApiKey = process.env.MINIMAX_API_KEY;
+  if (!apiKey && !minimaxApiKey) {
+    res.status(500).json({ error: 'No AI provider configured on server (VITE_GEMINI_API_KEY / MINIMAX_API_KEY both missing)' });
     return;
   }
 
@@ -129,7 +122,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   let analysisSource: 'transcript' | 'metadata-fallback' = 'transcript';
 
   if (transcript) {
-    profile = await scoreWithGemini(apiKey, transcript, 'transcript');
+    profile = await scoreWithGemini(apiKey, minimaxApiKey, transcript, 'transcript');
   }
 
   // ── Fallback path: title + description ────────────────────────────────
@@ -140,6 +133,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if ((title || description)) {
       profile = await scoreWithGemini(
         apiKey,
+        minimaxApiKey,
         metadataBasis,
         "video's title and description (no transcript was available)"
       );

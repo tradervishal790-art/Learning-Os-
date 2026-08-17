@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { generateAIText } from './_lib/aiFallback';
 
 // ============================================================
 // api/generate-roadmap.ts
@@ -198,53 +199,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const apiKey = process.env.VITE_GEMINI_API_KEY;
-  if (!apiKey) {
-    res.status(500).json({ error: 'Gemini API key not configured on server (VITE_GEMINI_API_KEY missing)' });
+  const minimaxApiKey = process.env.MINIMAX_API_KEY;
+  if (!apiKey && !minimaxApiKey) {
+    res.status(500).json({ error: 'No AI provider configured on server (VITE_GEMINI_API_KEY / MINIMAX_API_KEY both missing)' });
     return;
   }
 
   try {
     const promptText = ROADMAP_PROMPT(data as UserOnboardingData);
-    const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`;
 
-    let geminiRes = await fetch(GEMINI_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: promptText }] }],
-        // Thinking enabled — model ab pehle internally reason karega
-        // (prerequisite chain, sequencing) tab final JSON likhega, seedha
-        // output pe nahi kudega. -1 = dynamic budget, model khud decide
-        // karta hai kitna sochna hai request ki complexity ke hisaab se.
-        generationConfig: {
-          thinkingConfig: { thinkingBudget: -1 },
-        },
-      }),
+    const { text: rawText } = await generateAIText({
+      geminiApiKey: apiKey,
+      minimaxApiKey,
+      contents: [{ parts: [{ text: promptText }] }],
+      // Thinking enabled on Gemini — model reasons through the prerequisite
+      // chain/sequencing before writing the final JSON, rather than jumping
+      // straight to output. -1 = dynamic budget, model decides how much to
+      // think based on request complexity. MiniMax (fallback) ignores this
+      // field — it gets a plain non-thinking call via aiFallback.ts.
+      generationConfig: { thinkingConfig: { thinkingBudget: -1 } },
+      minimaxJsonMode: true,
+      minimaxMaxTokens: 8000,
     });
 
-    // FALLBACK: "gemini-flash-latest" ek alias hai jo waqt ke saath alag
-    // underlying model resolve kar sakta hai — agar us model version ne
-    // thinkingConfig reject kar diya (invalid argument / unsupported field),
-    // to bina thinking ke retry karo. Isse roadmap generation kabhi bhi
-    // sirf is param ki wajah se completely fail nahi hogi.
-    if (!geminiRes.ok) {
-      geminiRes = await fetch(GEMINI_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: promptText }] }],
-        }),
-      });
-    }
-
-    const geminiData = await geminiRes.json();
-
-    if (!geminiRes.ok) {
-      res.status(502).json({ error: 'Gemini API error', detail: geminiData });
-      return;
-    }
-
-    const rawText: string = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
     const cleaned = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
 
     let parsed: any;

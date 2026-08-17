@@ -14,12 +14,7 @@
 // maps onto LearningProfile, same as before.
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-
-const GEMINI_MODEL = 'gemini-flash-latest';
-// gemini-flash-latest has been experiencing frequent 503 "high demand"
-// errors industry-wide recently. If it's still failing after retries,
-// fall back to a more stable pinned model rather than giving up.
-const FALLBACK_MODEL = 'gemini-2.5-flash';
+import { generateAIText } from './_lib/aiFallback';
 
 interface AnswerPayload {
   questionId: string;
@@ -81,35 +76,7 @@ function validateComplete(parsed: any): boolean {
   return true;
 }
 
-async function callGeminiOnce(apiKey: string, model: string, body: object): Promise<Response> {
-  return fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-}
 
-async function callGeminiWithRetry(apiKey: string, body: object, maxRetries = 2): Promise<Response> {
-  let lastRes: Response | null = null;
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    const res = await callGeminiOnce(apiKey, GEMINI_MODEL, body);
-    if (res.ok || (res.status !== 503 && res.status !== 429)) {
-      return res;
-    }
-    lastRes = res;
-    if (attempt < maxRetries) {
-      const delayMs = res.status === 429 ? 4000 * (attempt + 1) : 500 * Math.pow(2, attempt);
-      await new Promise((r) => setTimeout(r, delayMs));
-    }
-  }
-  // Primary model still overloaded after all retries — try the fallback
-  // model once before giving up entirely.
-  if (lastRes && lastRes.status === 503) {
-    const fallbackRes = await callGeminiOnce(apiKey, FALLBACK_MODEL, body);
-    if (fallbackRes.ok) return fallbackRes;
-  }
-  return lastRes as Response;
-}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
@@ -122,8 +89,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const apiKey = process.env.VITE_GEMINI_API_KEY;
-  if (!apiKey) {
-    return res.status(500).json({ error: 'Gemini API key not configured on server' });
+  const minimaxApiKey = process.env.MINIMAX_API_KEY;
+  if (!apiKey && !minimaxApiKey) {
+    return res.status(500).json({ error: 'No AI provider configured on server (VITE_GEMINI_API_KEY / MINIMAX_API_KEY both missing)' });
   }
 
   const answersBlock = answers
@@ -131,29 +99,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     .join('\n\n');
 
   try {
-    const geminiRes = await callGeminiWithRetry(apiKey, {
-      system_instruction: { parts: [{ text: SYSTEM_INSTRUCTIONS }] },
+    const { text: rawText, finishReason: rawFinishReason } = await generateAIText({
+      geminiApiKey: apiKey,
+      minimaxApiKey,
+      systemInstruction: SYSTEM_INSTRUCTIONS,
       contents: [{ role: 'user', parts: [{ text: `Student ke jawab:\n\n${answersBlock}` }] }],
       generationConfig: {
         maxOutputTokens: 2048,
         temperature: 0.6,
         thinkingConfig: { thinkingBudget: 0 },
       },
+      minimaxJsonMode: true,
+      minimaxMaxTokens: 2048,
     });
 
-    if (!geminiRes.ok) {
-      const errBody = await geminiRes.json().catch(() => ({}));
-      console.error('Gemini API error:', geminiRes.status, errBody);
-      const message =
-        geminiRes.status === 429
-          ? 'Abhi requests zyada ho gaye hain (rate limit). ~30-60 second ruk kar "Phir try karein" dabao. 🔄'
-          : `Analysis mein gadbad ho gayi (${geminiRes.status}). Thodi der mein phir try karein. 🔄`;
-      return res.status(502).json({ error: message });
-    }
-
-    const data = await geminiRes.json();
-    const rawText: string = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
-    const finishReason: string = data?.candidates?.[0]?.finishReason ?? 'UNKNOWN';
+    const finishReason = rawFinishReason ?? 'UNKNOWN';
     const parsed = parseGeminiJson(rawText);
 
     if (!validateComplete(parsed)) {

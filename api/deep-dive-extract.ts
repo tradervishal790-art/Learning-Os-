@@ -8,8 +8,7 @@
 // only place that holds it.
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-
-const GEMINI_MODEL = 'gemini-flash-latest';
+import { generateAIText } from './_lib/aiFallback';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
@@ -22,34 +21,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const apiKey = process.env.VITE_GEMINI_API_KEY;
-  if (!apiKey) {
-    return res.status(500).json({ error: 'Gemini API key not configured on server' });
+  const minimaxApiKey = process.env.MINIMAX_API_KEY;
+  if (!apiKey && !minimaxApiKey) {
+    return res.status(500).json({ error: 'No AI provider configured on server (VITE_GEMINI_API_KEY / MINIMAX_API_KEY both missing)' });
   }
 
   try {
-    const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ role: 'user', parts: [{ text: prompt }] }],
-          generationConfig: { maxOutputTokens: 500, temperature: 0.4 },
-        }),
-      }
-    );
-
-    if (!geminiRes.ok) {
-      const errBody = await geminiRes.json().catch(() => ({}));
-      console.error('Gemini API error:', geminiRes.status, errBody);
-      return res.status(502).json({ error: `Gemini error ${geminiRes.status}` });
-    }
-
-    const data = await geminiRes.json();
-    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!text) {
-      return res.status(502).json({ error: 'Empty Gemini response' });
-    }
+    const { text } = await generateAIText({
+      geminiApiKey: apiKey,
+      minimaxApiKey,
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      generationConfig: { maxOutputTokens: 500, temperature: 0.4 },
+      minimaxMaxTokens: 500,
+      minimaxTemperature: 0.4,
+    });
 
     return res.status(200).json({ text });
   } catch (err: any) {

@@ -7,8 +7,7 @@
 // conversation content, never the key.
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-
-const GEMINI_MODEL = 'gemini-flash-latest';
+import { generateAIText } from './_lib/aiFallback';
 
 interface HistoryMessage {
   role: 'user' | 'mentor';
@@ -48,8 +47,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const apiKey = process.env.VITE_GEMINI_API_KEY;
-  if (!apiKey) {
-    return res.status(500).json({ error: 'Gemini API key not configured on server' });
+  const minimaxApiKey = process.env.MINIMAX_API_KEY;
+  if (!apiKey && !minimaxApiKey) {
+    return res.status(500).json({ error: 'No AI provider configured on server (VITE_GEMINI_API_KEY / MINIMAX_API_KEY both missing)' });
   }
 
   const topic = context || 'general learning';
@@ -62,38 +62,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   ];
 
   try {
-    const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          system_instruction: { parts: [{ text: buildSystemInstructions(topic) }] },
-          contents,
-          generationConfig: { maxOutputTokens: 2048, temperature: 0.7 },
-        }),
-      }
-    );
+    const { text } = await generateAIText({
+      geminiApiKey: apiKey,
+      minimaxApiKey,
+      systemInstruction: buildSystemInstructions(topic),
+      contents,
+      generationConfig: { maxOutputTokens: 2048, temperature: 0.7 },
+    });
 
-    if (!geminiRes.ok) {
-      const errBody = await geminiRes.json().catch(() => ({}));
-      console.error('Gemini API error:', geminiRes.status, errBody);
-      return res.status(502).json({
-        error: `Kuch gadbad ho gayi API call mein (${geminiRes.status}: ${errBody?.error?.message || 'unknown'}). Thodi der mein phir try karein. 🔄`,
-      });
-    }
-
-    const data = await geminiRes.json();
-    const finishReason = data?.candidates?.[0]?.finishReason;
-    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-
-    if (!text) {
-      return res.status(502).json({ error: 'Response nahi mil paaya, phir se try karein. 🔄' });
-    }
-
-    return res.status(200).json({ text, finishReason: finishReason ?? null });
+    return res.status(200).json({ text, finishReason: null });
   } catch (err: any) {
     console.error('Mentor chat proxy failed:', err);
-    return res.status(500).json({ error: 'Network error aaya. Internet check karein aur phir try karein. 🔄' });
+    return res.status(500).json({ error: 'Kuch gadbad ho gayi (Gemini aur MiniMax dono fail hue). Thodi der mein phir try karein. 🔄' });
   }
 }
