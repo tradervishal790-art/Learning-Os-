@@ -45,7 +45,6 @@ export default function Progress({ goals = [] }: ProgressProps) {
           <span className="text-2xl">📊</span>
           <h1 className="text-3xl md:text-4xl font-bold">Progress</h1>
         </div>
-        <p className="text-gray-500 dark:text-white/60 mt-1">Speed, retention aur mastery — real data se.</p>
       </motion.div>
 
       {/* Top stats */}

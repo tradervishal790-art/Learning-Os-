@@ -65,14 +65,14 @@ interface Blueprint {
   };
 }
 
-const sidebarItems: { id: DashboardPageId; label: string; icon: string }[] = [
-  { id: 'dashboard', label: 'Dashboard', icon: 'home' },
-  { id: 'roadmap', label: 'Roadmap', icon: 'roadmap' },
-  { id: 'revision', label: 'Revision', icon: 'refresh' },
-  { id: 'notes', label: 'AI Notes', icon: 'notes' },
-  { id: 'videos', label: 'Videos', icon: 'video' },
-  { id: 'mentor', label: 'AI Mentor', icon: 'mentor' },
-  { id: 'progress', label: 'Progress', icon: 'chart' },
+const sidebarItems: { id: DashboardPageId; label: string }[] = [
+  { id: 'dashboard', label: 'Home' },
+  { id: 'roadmap', label: 'Roadmap' },
+  { id: 'revision', label: 'Revision' },
+  { id: 'notes', label: 'Notes' },
+  { id: 'videos', label: 'Videos' },
+  { id: 'mentor', label: 'Mentor' },
+  { id: 'progress', label: 'Progress' },
 ];
 
 const roleOptions = ['student', 'developer', 'researcher', 'business', 'exam', 'creator'];
@@ -399,7 +399,6 @@ export default function Dashboard({ userData, onUpdateUserData, onRegenerateRoad
             }}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${activePage === item.id ? 'bg-black text-white dark:bg-white dark:text-black' : 'text-gray-500 dark:text-white/50 hover:text-black dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5'}`}
           >
-            <span className="text-lg">{item.icon}</span>
             {item.label}
           </motion.button>
         ))}
@@ -483,7 +482,6 @@ export default function Dashboard({ userData, onUpdateUserData, onRegenerateRoad
                   className="text-left p-5 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
                 >
                   <div className="flex justify-between items-start mb-3">
-                    <span className="text-2xl">{card.icon}</span>
                     <span className="text-[10px] uppercase tracking-wider text-gray-400 dark:text-white/40">{card.title}</span>
                   </div>
                   <div className="text-xl font-bold mb-1 line-clamp-1">{card.value}</div>
@@ -498,7 +496,6 @@ export default function Dashboard({ userData, onUpdateUserData, onRegenerateRoad
               transition={{ delay: 0.5, duration: 0.5 }}
               className="p-6 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 flex items-center gap-4 flex-wrap"
             >
-              <div className="text-3xl">bulb</div>
               <div className="flex-1 min-w-[200px]">
                 <div className="text-xs uppercase tracking-wider text-gray-400 dark:text-white/40 mb-1">Suggestion</div>
                 <p className="text-sm">Try: React Visual Guide</p>
@@ -582,7 +579,8 @@ export default function Dashboard({ userData, onUpdateUserData, onRegenerateRoad
         {activePage === 'videos' && <VideoIntel initialPlaylist={preloadedPlaylist} activeGoalId={activeGoalId} />}
         {activePage === 'mentor' && <Mentor />}
         {activePage === 'notes' && <Notes />}
-{activePage === 'progress' && <Progress goals={goals} />}
+        {activePage === 'progress' && <Progress goals={goals} />}
+
         {config && (
           <PagePlaceholder
             title={config.title}
