@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { YoutubeTranscript } from 'youtube-transcript';
-import { generateAIText } from './_lib/aiFallback';
+import { generateAIText } from './_lib/aiFallback.js';
 const TRANSCRIPT_CHAR_LIMIT = 8000;
 const MIN_TRANSCRIPT_LENGTH = 50;
 

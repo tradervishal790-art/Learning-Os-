@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { generateAIText } from './_lib/aiFallback';
+import { generateAIText } from './_lib/aiFallback.js';
 
 interface Blueprint {
   role: string;

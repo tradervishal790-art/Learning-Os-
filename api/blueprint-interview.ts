@@ -14,7 +14,7 @@
 // maps onto LearningProfile, same as before.
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { generateAIText } from './_lib/aiFallback';
+import { generateAIText } from './_lib/aiFallback.js';
 
 interface AnswerPayload {
   questionId: string;

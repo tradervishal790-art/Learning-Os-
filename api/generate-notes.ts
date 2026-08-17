@@ -8,7 +8,7 @@
 // parsed DeepNotesData object.
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { generateAIText } from './_lib/aiFallback';
+import { generateAIText } from './_lib/aiFallback.js';
 
 const buildPrompt = (topic: string, videoContext?: string) => `Generate DEEP, comprehensive study notes for "${topic}" in Hinglish (Hindi + English mix).
 ${videoContext ? `Video context: ${videoContext}` : ''}

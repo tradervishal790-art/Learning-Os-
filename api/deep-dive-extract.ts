@@ -8,7 +8,7 @@
 // only place that holds it.
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { generateAIText } from './_lib/aiFallback';
+import { generateAIText } from './_lib/aiFallback.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {

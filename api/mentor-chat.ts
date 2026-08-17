@@ -7,7 +7,7 @@
 // conversation content, never the key.
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { generateAIText } from './_lib/aiFallback';
+import { generateAIText } from './_lib/aiFallback.js';
 
 interface HistoryMessage {
   role: 'user' | 'mentor';
