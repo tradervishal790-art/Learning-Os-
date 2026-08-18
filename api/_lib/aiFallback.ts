@@ -60,7 +60,14 @@ export interface AICallResult {
   finishReason: string | null;
 }
 
-const DEFAULT_GEMINI_MODEL = 'gemini-flash-latest';
+const DEFAULT_GEMINI_MODEL = 'gemini-3-flash-preview';
+// Pinned instead of 'gemini-flash-latest' — that alias currently points to
+// an experimental model with tighter rate limits, which was the likely
+// cause of the frequent 503 "overloaded" errors. gemini-3-flash-preview is
+// Google's current recommended free-tier default: 10 RPM / 1,500 RPD /
+// 250K TPM with NO billing account required. If Google eventually retires
+// this specific version, update the string here — MiniMax fallback below
+// still covers you in the meantime.
 const DEFAULT_MINIMAX_MODEL = process.env.MINIMAX_MODEL || 'MiniMax-M3';
 const MINIMAX_URL = 'https://api.minimax.io/v1/chat/completions';
 

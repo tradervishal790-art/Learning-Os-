@@ -1,13 +1,12 @@
 /**
  * constants.ts
  *
- * GEMINI_MODEL is the ONLY place the Gemini model name is written.
- * Every file that calls Gemini imports this constant — never hardcode a
- * dated model string (e.g. "gemini-2.5-flash") anywhere else. Dated model
- * names silently 404 or become invalid as Google rotates versions;
- * "-latest" aliases always resolve to the current stable release.
+ * NOTE: GEMINI_MODEL below is currently unused — all Gemini calls go
+ * through the server-side proxy in api/_lib/aiFallback.ts, which has its
+ * own DEFAULT_GEMINI_MODEL. Keeping this in sync in case anything
+ * client-side starts referencing it again.
  */
-export const GEMINI_MODEL = "gemini-flash-latest";
+export const GEMINI_MODEL = "gemini-3-flash-preview";
 
 export const GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta";
 
