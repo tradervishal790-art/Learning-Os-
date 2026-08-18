@@ -16,13 +16,14 @@ declare global {
 
 const WATCH_HISTORY_STORAGE_KEY = 'video_watch_history';
 const SEEK_FORWARD_THRESHOLD_SECONDS = 3;
-// Persists searchQuery + results + selectedVideo across tab switches within
-// the same browser session — sessionStorage (not localStorage) because this
-// is "what I was doing right now", not permanent data; clears when the tab
-// actually closes. Fixes: VideoIntel is conditionally mounted/unmounted by
-// Dashboard's activePage switch, so plain React state was wiped every time
-// the user left the "video" tab and came back — forcing the same search
-// to be typed again.
+// Persists searchQuery + results + selectedVideo across tab switches AND
+// across full site visits — localStorage (not sessionStorage), because
+// users expect their last search/video to still be there after closing
+// the browser and coming back later, not just within the same tab session.
+// Fixes: VideoIntel is conditionally mounted/unmounted by Dashboard's
+// activePage switch (and sessionStorage was wiped on tab/browser close),
+// so the same search had to be redone every time the user left and
+// returned to the "video" tab, or left the site entirely.
 const SEARCH_STATE_STORAGE_KEY = 'video_intel_search_state';
 
 interface PersistedSearchState {
@@ -209,7 +210,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId }: VideoIntel
     // playlist (initialPlaylist) always takes priority — that effect below
     // runs after this one and will overwrite this restore when present.
     try {
-      const savedSearch = sessionStorage.getItem(SEARCH_STATE_STORAGE_KEY);
+      const savedSearch = localStorage.getItem(SEARCH_STATE_STORAGE_KEY);
       if (savedSearch) {
         const parsed = JSON.parse(savedSearch) as PersistedSearchState;
         if (parsed.searchQuery) setSearchQuery(parsed.searchQuery);
@@ -229,9 +230,10 @@ export default function VideoIntel({ initialPlaylist, activeGoalId }: VideoIntel
     };
   }, []);
 
-  // Keep sessionStorage in sync with the current search so it survives
-  // unmount (tab switch). Skipped while nothing has been searched yet, so
-  // we don't overwrite a real saved search with an empty initial state.
+  // Keep localStorage in sync with the current search so it survives both
+  // unmount (tab switch) and closing/reopening the site. Skipped while
+  // nothing has been searched yet, so we don't overwrite a real saved
+  // search with an empty initial state.
   useEffect(() => {
     if (!searchQuery && videos.length === 0) return;
     try {
@@ -241,7 +243,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId }: VideoIntel
         selectedVideoId: selectedVideo?.id ?? null,
         nextPageToken: nextPageTokenRef.current,
       };
-      sessionStorage.setItem(SEARCH_STATE_STORAGE_KEY, JSON.stringify(toSave));
+      localStorage.setItem(SEARCH_STATE_STORAGE_KEY, JSON.stringify(toSave));
     } catch {
       // Storage full/unavailable — non-critical, just skip persisting.
     }
