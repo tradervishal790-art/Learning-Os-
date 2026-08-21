@@ -26,6 +26,13 @@ const SEEK_FORWARD_THRESHOLD_SECONDS = 3;
 // returned to the "video" tab, or left the site entirely.
 const SEARCH_STATE_STORAGE_KEY = 'video_intel_search_state';
 
+/** Per-goal key — without this, switching the goal tab on Roadmap left
+ *  the Videos page still showing whichever goal's search was done last
+ *  (e.g. an old test roadmap's videos bleeding into an unrelated goal). */
+function getSearchStateKey(goalId: string | undefined): string {
+  return `${SEARCH_STATE_STORAGE_KEY}:${goalId ?? 'primary'}`;
+}
+
 interface PersistedSearchState {
   searchQuery: string;
   videos: Video[];
@@ -260,7 +267,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, allGoalIds }
     // playlist (initialPlaylist) always takes priority — that effect below
     // runs after this one and will overwrite this restore when present.
     try {
-      const savedSearch = localStorage.getItem(SEARCH_STATE_STORAGE_KEY);
+      const savedSearch = localStorage.getItem(getSearchStateKey(activeGoalId ?? undefined));
       if (savedSearch) {
         const parsed = JSON.parse(savedSearch) as PersistedSearchState;
         if (parsed.searchQuery) setSearchQuery(parsed.searchQuery);
@@ -280,6 +287,43 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, allGoalIds }
     };
   }, []);
 
+  // Re-load (or clear) search state whenever the active goal changes —
+  // without this, switching the goal tab on Roadmap and coming to Videos
+  // kept showing whichever goal's search/video was last active, since this
+  // component doesn't remount on goal switch.
+  const isFirstGoalRenderRef = useRef(true);
+  useEffect(() => {
+    if (isFirstGoalRenderRef.current) {
+      // Already handled by the mount effect above — skip to avoid a
+      // redundant double-load on first render.
+      isFirstGoalRenderRef.current = false;
+      return;
+    }
+    finalizeAndSaveSession();
+    try {
+      const savedSearch = localStorage.getItem(getSearchStateKey(activeGoalId ?? undefined));
+      if (savedSearch) {
+        const parsed = JSON.parse(savedSearch) as PersistedSearchState;
+        setSearchQuery(parsed.searchQuery ?? '');
+        setVideos(Array.isArray(parsed.videos) ? parsed.videos : []);
+        const restoredSelected = parsed.videos?.find((v) => v.id === parsed.selectedVideoId) ?? null;
+        setSelectedVideo(restoredSelected);
+        nextPageTokenRef.current = parsed.nextPageToken ?? null;
+      } else {
+        setSearchQuery('');
+        setVideos([]);
+        setSelectedVideo(null);
+        nextPageTokenRef.current = null;
+      }
+    } catch {
+      setSearchQuery('');
+      setVideos([]);
+      setSelectedVideo(null);
+      nextPageTokenRef.current = null;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeGoalId]);
+
   // Keep localStorage in sync with the current search so it survives both
   // unmount (tab switch) and closing/reopening the site. Skipped while
   // nothing has been searched yet, so we don't overwrite a real saved
@@ -293,11 +337,11 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, allGoalIds }
         selectedVideoId: selectedVideo?.id ?? null,
         nextPageToken: nextPageTokenRef.current,
       };
-      localStorage.setItem(SEARCH_STATE_STORAGE_KEY, JSON.stringify(toSave));
+      localStorage.setItem(getSearchStateKey(activeGoalId ?? undefined), JSON.stringify(toSave));
     } catch {
       // Storage full/unavailable — non-critical, just skip persisting.
     }
-  }, [searchQuery, videos, selectedVideo]);
+  }, [searchQuery, videos, selectedVideo, activeGoalId]);
 
   useEffect(() => {
     return () => {
