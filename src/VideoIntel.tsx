@@ -446,8 +446,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId }: VideoIntel
   };
 
  const saveWatchData = (data: VideoWatchData) => {
-    const engagementPenalty = Math.max(0, data.pauseCount * 5);
-    const score = Math.round(Math.max(0, data.watchPercentage - engagementPenalty));
+    const score = Math.round(Math.max(0, Math.min(100, data.watchPercentage)));
 
     const entry: WatchHistoryEntry = {
       videoId: data.videoId,
