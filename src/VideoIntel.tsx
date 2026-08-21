@@ -55,7 +55,11 @@ function updateRoadmapFromWatch(goalId: string | undefined, videoTitle: string, 
     const normalizedTitle = videoTitle.toLowerCase();
     let changed = false;
 
-    const updatedChildren = roadmap.children.map((topic) => {
+    // Index of a topic that gets marked 'completed' in this pass, if any —
+    // used below to auto-unlock the next 'locked' topic in sequence.
+    let justCompletedIndex = -1;
+
+    const updatedChildren = roadmap.children.map((topic, index) => {
       if (topic.status !== 'locked' && topic.status !== 'learning') return topic;
 
       const keywords = topic.topicKeywords ?? [];
@@ -71,11 +75,29 @@ function updateRoadmapFromWatch(goalId: string | undefined, videoTitle: string, 
 
       if (topic.status === 'learning' && watchPercentage >= LEARNING_TO_COMPLETED_THRESHOLD) {
         changed = true;
+        justCompletedIndex = index;
         return { ...topic, status: 'completed' as const };
       }
 
       return topic;
     });
+
+    // Sequential unlock: as soon as a topic is completed, open up the next
+    // still-locked topic so the user isn't stuck unable to open it to find
+    // a video for it (locked topics can't be opened from the roadmap UI).
+    if (justCompletedIndex !== -1) {
+      for (let i = justCompletedIndex + 1; i < updatedChildren.length; i++) {
+        if (updatedChildren[i].status === 'locked') {
+          updatedChildren[i] = {
+            ...updatedChildren[i],
+            status: 'learning' as const,
+            learningStartedAt: new Date().toISOString(),
+          };
+          changed = true;
+          break;
+        }
+      }
+    }
 
     if (changed) {
       const updatedRoadmap: Topic = { ...roadmap, children: updatedChildren };
