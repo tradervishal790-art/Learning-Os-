@@ -127,7 +127,8 @@ function buildFallbackQueries(topic: Topic, language?: string): string[] {
 async function getCandidateVideos(
   topic: Topic,
   expandedQueries?: string[],
-  language?: string
+  language?: string,
+  forceRefresh?: boolean
 ): Promise<CandidateMeta[]> {
   // YouTube search now goes through /api/youtube-search — the key
   // used to live client-side here via `import.meta.env.VITE_YOUTUBE_API_KEY`,
@@ -149,7 +150,7 @@ async function getCandidateVideos(
 
   const cache = readCache<CachedTopicPool>(SEARCH_CACHE_KEY);
   const cached = cache[cacheKey];
-  if (cached && cached.candidates.length > 0) return cached.candidates;
+  if (!forceRefresh && cached && cached.candidates.length > 0) return cached.candidates;
 
   // Multi-query search — split YouTube quota across queries, merge + dedupe
   const seen = new Set<string>();
@@ -263,9 +264,10 @@ async function getAnalyzedProfile(candidate: CandidateMeta): Promise<GeminiProfi
 export async function buildCandidatePoolForConcept(
   topic: Topic,
   expandedQueries?: string[],
-  language?: string
+  language?: string,
+  forceRefresh?: boolean
 ): Promise<AnalyzedVideo[]> {
-  const candidates = await getCandidateVideos(topic, expandedQueries, language);
+  const candidates = await getCandidateVideos(topic, expandedQueries, language, forceRefresh);
   if (candidates.length === 0) return [];
 
   const analyzed = await Promise.all(

@@ -33,6 +33,20 @@ function getSearchStateKey(goalId: string | undefined): string {
   return `${SEARCH_STATE_STORAGE_KEY}:${goalId ?? 'primary'}`;
 }
 
+/** Whether this goal has a previously watched/selected video saved —
+ *  used by Roadmap.tsx to decide whether to show a "Saved video" button
+ *  alongside "Watch videos". Read-only, safe to call outside VideoIntel. */
+export function hasSavedVideoForGoal(goalId: string | undefined): boolean {
+  try {
+    const saved = localStorage.getItem(getSearchStateKey(goalId));
+    if (!saved) return false;
+    const parsed = JSON.parse(saved) as PersistedSearchState;
+    return !!parsed.selectedVideoId;
+  } catch {
+    return false;
+  }
+}
+
 interface PersistedSearchState {
   searchQuery: string;
   videos: Video[];

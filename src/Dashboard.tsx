@@ -194,6 +194,14 @@ export default function Dashboard({ userData, onUpdateUserData, onRegenerateRoad
     setActivePage('videos');
   };
 
+  // "Saved video" — opens the Videos page WITHOUT a fresh search/playlist
+  // handoff, so VideoIntel's own per-goal restore just shows whatever was
+  // last searched/watched for the active goal (no new API calls).
+  const handleOpenSavedVideo = () => {
+    setPreloadedPlaylist(null);
+    setActivePage('videos');
+  };
+
   // FIX: Pehle yahan sirf name/role/goal/language/hours bhej rahe the,
   // jisse `deadline` (aur userData ki koi bhi aur field) drop ho rahi thi
   // aur TypeScript sahi tarike se complain kar raha tha (Property 'deadline' is missing).
@@ -566,6 +574,7 @@ export default function Dashboard({ userData, onUpdateUserData, onRegenerateRoad
             key={`${roadmapVersion}-${activeGoalId}`}
             userData={userData}
             onLaunchPlaylist={handleLaunchPlaylist}
+            onOpenSavedVideo={handleOpenSavedVideo}
             onGenerateForSubject={onGenerateForSubject}
             lastRoadmapError={lastRoadmapError}
             goals={goals}

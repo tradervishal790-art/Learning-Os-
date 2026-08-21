@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getRoadmapData, getRoadmapProgress, markTopicFinished } from './roadmapData';
+import { hasSavedVideoForGoal } from './VideoIntel';
 import { MAX_ACTIVE_GOALS } from './goalsStore';
 import type { Topic, Video, UserOnboardingData, Goal } from './types';
 import { buildCandidatePoolForConcept } from './conceptVideoPool';
@@ -30,6 +31,9 @@ interface RoadmapProps {
   /** Called with the ranked primary + 2 fallback videos, so the parent can
    *  switch to the Video Intelligence page and preload them into the player. */
   onLaunchPlaylist: (payload: { primary: Video; fallbacks: Video[] }) => void;
+  /** Opens the Videos page showing whatever was last searched/watched for
+   *  the active goal, with no new search — the "Saved video" button. */
+  onOpenSavedVideo: () => void;
   /** Updates userData.goal/hours/deadline to the typed subject + slider
    *  values and generates a roadmap for it directly from this page — powers
    *  the empty-state "type a subject, set your time, and go" form (no
@@ -58,6 +62,7 @@ interface RoadmapProps {
 export default function Roadmap({
   userData,
   onLaunchPlaylist,
+  onOpenSavedVideo,
   onGenerateForSubject,
   lastRoadmapError,
   goals,
@@ -212,7 +217,7 @@ export default function Roadmap({
         }
       }
 
-      const candidates = await buildCandidatePoolForConcept(selectedTopic, queries, userData?.language);
+      const candidates = await buildCandidatePoolForConcept(selectedTopic, queries, userData?.language, true);
       if (candidates.length === 0) {
         setPlaylistError('Koi achhi video nahi mili. Thodi der baad try karo.');
         return;
@@ -617,6 +622,14 @@ export default function Roadmap({
                       >
                         {playlistLoading ? 'Dhundh raha hoon...' : 'Watch videos'}
                       </button>
+                      {hasSavedVideoForGoal(activeGoalId ?? undefined) && (
+                        <button
+                          onClick={onOpenSavedVideo}
+                          className="w-full mt-2 px-4 py-3 md:py-2 rounded-lg border border-gray-300 dark:border-white/20 text-sm font-medium hover:bg-gray-50 dark:hover:bg-white/5 active:scale-[0.98] transition"
+                        >
+                          Saved video
+                        </button>
+                      )}
                       {playlistError && <p className="text-xs text-red-500 dark:text-red-400 mt-2">{playlistError}</p>}
 
                       {selectedTopic.status !== 'completed' && selectedTopic.status !== 'mastered' && (
