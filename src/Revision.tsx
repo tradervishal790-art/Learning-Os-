@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getRevisionStats, getRevisionDataForGoals } from './revisionData';
 import { markDayReviewed } from './revisionstore';
+import { markTopicFinished } from './roadmapData';
 import type { RevisionStatus, RevisionDifficulty, RevisionItem, Goal } from './types';
 
 const statusConfig: Record<RevisionStatus, { label: string; icon: string }> = {
@@ -34,16 +35,22 @@ export default function Revision({ goals = [] }: RevisionProps) {
   const [items, setItems] = useState<(RevisionItem & { goalTitle?: string })[]>(() => getRevisionDataForGoals(goals));
   const [reviewingId, setReviewingId] = useState<string | null>(null);
 
-  const refreshItems = () => setItems(getRevisionDataForGoals(goals));
-
   // Marking done is now a real state change, not a cosmetic toggle: it
   // persists to revisionStore, and the item either moves to its next
   // schedule checkpoint or becomes "mastered" if that was the last one.
-  const handleMarkDone = (item: RevisionItem) => {
+  const handleMarkDone = (item: RevisionItem & { goalId?: string }) => {
     if (item.status === 'mastered') return;
     markDayReviewed(item.topicId, item.day);
-    refreshItems();
+    const refreshed = getRevisionDataForGoals(goals);
+    setItems(refreshed);
     if (reviewingId === item.id) setReviewingId(null);
+
+    // If that was the last checkpoint, the topic is now fully mastered —
+    // propagate that to the roadmap so the next locked step unlocks too.
+    const updated = refreshed.find((i) => i.topicId === item.topicId);
+    if (updated?.status === 'mastered') {
+      markTopicFinished(item.goalId, item.topicId, 'mastered');
+    }
   };
 
   const handleReviewNow = (id: string) => {

@@ -112,13 +112,16 @@ export function getRevisionData(roadmap: Topic = getRoadmapData()): RevisionItem
  * Revision page, so revision always covers both simultaneous goals instead
  * of just whichever one the Roadmap tab happens to be open on.
  */
-export function getRevisionDataForGoals(goals: Goal[]): (RevisionItem & { goalTitle?: string })[] {
+export function getRevisionDataForGoals(goals: Goal[]): (RevisionItem & { goalTitle?: string; goalId?: string })[] {
   const activeGoals = goals.filter((g) => g.status === 'active');
   if (activeGoals.length === 0) return getRevisionData();
 
   const merged = activeGoals.flatMap((g) => {
     const items = getRevisionData(getRoadmapData(g.id));
-    return activeGoals.length > 1 ? items.map((it) => ({ ...it, goalTitle: g.title })) : items;
+    // goalId is always stamped (needed so "Mark Done" can write back to the
+    // right goal's roadmap); goalTitle is only added for display when the
+    // learner has more than one active goal at once.
+    return items.map((it) => ({ ...it, goalId: g.id, ...(activeGoals.length > 1 ? { goalTitle: g.title } : {}) }));
   });
 
   const statusOrder: Record<RevisionStatus, number> = { overdue: 0, 'due-today': 1, upcoming: 2, mastered: 3 };

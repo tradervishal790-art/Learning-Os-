@@ -87,3 +87,41 @@ export function getRoadmapProgress(roadmap: Topic = getRoadmapData()) {
   const percent = total === 0 ? 0 : Math.round((completed / total) * 100);
   return { total, completed, learning, percent };
 }
+
+/**
+ * Single source of truth for "finishing" a topic, whatever route got it
+ * there (video watched to completion in VideoIntel, or every spaced-
+ * repetition checkpoint marked done in Revision). Sets the topic's status
+ * and — critically — unlocks the next 'locked' topic in sequence, so the
+ * roadmap never gets stuck with a finished topic but a still-locked next
+ * step. Safe to call even if the topic is already at/above finalStatus.
+ */
+export function markTopicFinished(
+  goalId: string | undefined,
+  topicId: string,
+  finalStatus: 'completed' | 'mastered'
+): void {
+  const roadmap = getRoadmapData(goalId);
+  const children = roadmap.children ?? [];
+  const index = children.findIndex((t) => t.id === topicId);
+  if (index === -1) return;
+
+  const current = children[index];
+  if (current.status === finalStatus) return; // already there, nothing to do
+
+  const updatedChildren = [...children];
+  updatedChildren[index] = { ...current, status: finalStatus };
+
+  for (let i = index + 1; i < updatedChildren.length; i++) {
+    if (updatedChildren[i].status === 'locked') {
+      updatedChildren[i] = {
+        ...updatedChildren[i],
+        status: 'learning' as const,
+        learningStartedAt: new Date().toISOString(),
+      };
+      break;
+    }
+  }
+
+  saveRoadmapData(goalId, { ...roadmap, children: updatedChildren });
+}
