@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getRoadmapData, getRoadmapProgress } from './roadmapData';
+import { getRoadmapData, getRoadmapProgress, markTopicFinished } from './roadmapData';
 import { MAX_ACTIVE_GOALS } from './goalsStore';
 import type { Topic, Video, UserOnboardingData, Goal } from './types';
 import { buildCandidatePoolForConcept } from './conceptVideoPool';
@@ -80,6 +80,10 @@ export default function Roadmap({
   const [generating, setGenerating] = useState(false);
   const [generateFailed, setGenerateFailed] = useState(false);
   const [confirmEndGoal, setConfirmEndGoal] = useState(false);
+  // Bumped after a manual "Mark as Complete" so `roadmap` below (read fresh
+  // from storage on every render) re-fetches the just-updated data — the
+  // state value itself is unused, only the setter's re-render matters.
+  const [, forceRefresh] = useState(0);
 
   const activeGoals = goals.filter((g) => g.status === 'active');
   const canAddGoal = activeGoals.length < MAX_ACTIVE_GOALS;
@@ -134,6 +138,16 @@ export default function Roadmap({
     setPlaylistError('');
     setTopicHours(0);
     setTopicDeadline('');
+  };
+
+  // Manual override for when the auto-detect (video watch % / keyword
+  // match) doesn't cooperate — lets the learner mark a topic done and move
+  // on without having to keep re-watching a video to retrigger it.
+  const handleMarkComplete = () => {
+    if (!selectedTopic) return;
+    markTopicFinished(activeGoalId ?? undefined, selectedTopic.id, 'completed');
+    setSelectedTopic(null);
+    forceRefresh((n) => n + 1);
   };
 
   const handleWatchVideos = async () => {
@@ -604,6 +618,15 @@ export default function Roadmap({
                         {playlistLoading ? 'Dhundh raha hoon...' : 'Watch videos'}
                       </button>
                       {playlistError && <p className="text-xs text-red-500 dark:text-red-400 mt-2">{playlistError}</p>}
+
+                      {selectedTopic.status !== 'completed' && selectedTopic.status !== 'mastered' && (
+                        <button
+                          onClick={handleMarkComplete}
+                          className="w-full mt-2 px-4 py-3 md:py-2 rounded-lg border border-gray-300 dark:border-white/20 text-sm font-medium text-gray-600 dark:text-white/70 hover:bg-gray-50 dark:hover:bg-white/5 active:scale-[0.98] transition"
+                        >
+                          ✓ Maine ye already seekh liya — mark as complete
+                        </button>
+                      )}
                     </div>
                   </div>
                 ) : (
