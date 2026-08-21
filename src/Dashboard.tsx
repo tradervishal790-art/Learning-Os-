@@ -576,7 +576,13 @@ export default function Dashboard({ userData, onUpdateUserData, onRegenerateRoad
           />
         )}
         {activePage === 'revision' && <Revision goals={goals} />}
-        {activePage === 'videos' && <VideoIntel initialPlaylist={preloadedPlaylist} activeGoalId={activeGoalId} />}
+        {activePage === 'videos' && (
+          <VideoIntel
+            initialPlaylist={preloadedPlaylist}
+            activeGoalId={activeGoalId}
+            allGoalIds={goals.filter((g) => g.status === 'active').map((g) => g.id)}
+          />
+        )}
         {activePage === 'mentor' && <Mentor />}
         {activePage === 'notes' && <Notes />}
         {activePage === 'progress' && <Progress goals={goals} />}

@@ -44,67 +44,80 @@ const LEARNING_TO_COMPLETED_THRESHOLD = 85;
  * Simple, rule-based (no AI call) match between a watched video's title
  * and a roadmap topic's `topicKeywords`, updating locked/learning topics
  * in the saved roadmap based on watch percentage.
+ *
+ * Checks EVERY given goal's roadmap (not just the goal tab that happens to
+ * be selected right now) and applies the update to whichever one actually
+ * has a matching topic. This matters because a learner can watch a video
+ * for Goal B's topic while Goal A's tab is still the one they last had
+ * open on the Roadmap page — without this, that watch would silently be
+ * checked only against Goal A, find no keyword match, and do nothing,
+ * leaving Goal B's step permanently stuck "in progress".
  */
-function updateRoadmapFromWatch(goalId: string | undefined, videoTitle: string, watchPercentage: number) {
+function updateRoadmapFromWatch(goalIds: (string | undefined)[], videoTitle: string, watchPercentage: number) {
   if (watchPercentage < LOCKED_TO_LEARNING_THRESHOLD) return;
 
-  try {
-    const roadmap = getRoadmapData(goalId);
-    if (!roadmap?.children?.length) return;
+  for (const goalId of goalIds) {
+    try {
+      const roadmap = getRoadmapData(goalId);
+      if (!roadmap?.children?.length) continue;
 
-    const normalizedTitle = videoTitle.toLowerCase();
-    let changed = false;
+      const normalizedTitle = videoTitle.toLowerCase();
+      const hasKeywordMatch = roadmap.children.some((topic) =>
+        (topic.topicKeywords ?? []).some((kw) => normalizedTitle.includes(kw.toLowerCase()))
+      );
+      if (!hasKeywordMatch) continue; // this goal's topics don't mention this video — try the next goal
 
-    // Index of a topic that gets marked 'completed' in this pass, if any —
-    // used below to auto-unlock the next 'locked' topic in sequence.
-    let justCompletedIndex = -1;
+      let changed = false;
+      let justCompletedIndex = -1;
 
-    const updatedChildren = roadmap.children.map((topic, index) => {
-      if (topic.status !== 'locked' && topic.status !== 'learning') return topic;
+      const updatedChildren = roadmap.children.map((topic, index) => {
+        if (topic.status !== 'locked' && topic.status !== 'learning') return topic;
 
-      const keywords = topic.topicKeywords ?? [];
-      if (keywords.length === 0) return topic;
+        const keywords = topic.topicKeywords ?? [];
+        if (keywords.length === 0) return topic;
 
-      const isMatch = keywords.some((kw) => normalizedTitle.includes(kw.toLowerCase()));
-      if (!isMatch) return topic;
+        const isMatch = keywords.some((kw) => normalizedTitle.includes(kw.toLowerCase()));
+        if (!isMatch) return topic;
 
-      if (topic.status === 'locked') {
-        changed = true;
-        return { ...topic, status: 'learning' as const, learningStartedAt: new Date().toISOString() };
-      }
-
-      if (topic.status === 'learning' && watchPercentage >= LEARNING_TO_COMPLETED_THRESHOLD) {
-        changed = true;
-        justCompletedIndex = index;
-        return { ...topic, status: 'completed' as const };
-      }
-
-      return topic;
-    });
-
-    // Sequential unlock: as soon as a topic is completed, open up the next
-    // still-locked topic so the user isn't stuck unable to open it to find
-    // a video for it (locked topics can't be opened from the roadmap UI).
-    if (justCompletedIndex !== -1) {
-      for (let i = justCompletedIndex + 1; i < updatedChildren.length; i++) {
-        if (updatedChildren[i].status === 'locked') {
-          updatedChildren[i] = {
-            ...updatedChildren[i],
-            status: 'learning' as const,
-            learningStartedAt: new Date().toISOString(),
-          };
+        if (topic.status === 'locked') {
           changed = true;
-          break;
+          return { ...topic, status: 'learning' as const, learningStartedAt: new Date().toISOString() };
+        }
+
+        if (topic.status === 'learning' && watchPercentage >= LEARNING_TO_COMPLETED_THRESHOLD) {
+          changed = true;
+          justCompletedIndex = index;
+          return { ...topic, status: 'completed' as const };
+        }
+
+        return topic;
+      });
+
+      // Sequential unlock: as soon as a topic is completed, open up the next
+      // still-locked topic so the user isn't stuck unable to open it to find
+      // a video for it (locked topics can't be opened from the roadmap UI).
+      if (justCompletedIndex !== -1) {
+        for (let i = justCompletedIndex + 1; i < updatedChildren.length; i++) {
+          if (updatedChildren[i].status === 'locked') {
+            updatedChildren[i] = {
+              ...updatedChildren[i],
+              status: 'learning' as const,
+              learningStartedAt: new Date().toISOString(),
+            };
+            changed = true;
+            break;
+          }
         }
       }
-    }
 
-    if (changed) {
-      const updatedRoadmap: Topic = { ...roadmap, children: updatedChildren };
-      saveRoadmapData(goalId, updatedRoadmap);
+      if (changed) {
+        const updatedRoadmap: Topic = { ...roadmap, children: updatedChildren };
+        saveRoadmapData(goalId, updatedRoadmap);
+      }
+      return; // matched (and handled) against this goal — don't also apply to others
+    } catch {
+      // Corrupted roadmap data in storage for this goal — try the next one.
     }
-  } catch {
-    // Corrupted roadmap data in storage — skip silently, don't break video tracking.
   }
 }
 
@@ -112,36 +125,39 @@ function updateRoadmapFromWatch(goalId: string | undefined, videoTitle: string, 
  * Read-only lookup: given a watched video's title, find which roadmap
  * Topic.id it matches (via the same topicKeywords used by
  * updateRoadmapFromWatch), regardless of that topic's current status.
- * Used to stamp EngagementSession.conceptId so PlaylistBuilder can do
- * concept-based reranking. Returns undefined if no roadmap or no match —
- * never throws, never mutates storage.
+ * Checks every given goal and returns the first match. Used to stamp
+ * EngagementSession.conceptId so PlaylistBuilder can do concept-based
+ * reranking. Returns undefined if no roadmap or no match — never throws,
+ * never mutates storage.
  */
-function findMatchingTopicId(goalId: string | undefined, videoTitle: string): string | undefined {
-  try {
-    const roadmap = getRoadmapData(goalId);
-    if (!roadmap?.children?.length) return undefined;
+function findMatchingTopicId(goalIds: (string | undefined)[], videoTitle: string): string | undefined {
+  const normalizedTitle = videoTitle.toLowerCase();
+  for (const goalId of goalIds) {
+    try {
+      const roadmap = getRoadmapData(goalId);
+      if (!roadmap?.children?.length) continue;
 
-    const normalizedTitle = videoTitle.toLowerCase();
-    for (const topic of roadmap.children) {
-      const keywords = topic.topicKeywords ?? [];
-      if (keywords.length === 0) continue;
-      if (keywords.some((kw) => normalizedTitle.includes(kw.toLowerCase()))) {
-        return topic.id;
+      for (const topic of roadmap.children) {
+        const keywords = topic.topicKeywords ?? [];
+        if (keywords.length === 0) continue;
+        if (keywords.some((kw) => normalizedTitle.includes(kw.toLowerCase()))) {
+          return topic.id;
+        }
       }
+    } catch {
+      // Corrupted roadmap data for this goal — try the next one.
     }
-  } catch {
-    // Corrupted roadmap data — no concept match, not fatal.
   }
   return undefined;
 }
 
-function createEmptySession(video: Video, goalId: string | undefined): EngagementSession {
+function createEmptySession(video: Video, goalIds: (string | undefined)[]): EngagementSession {
   return {
     id: `${video.id}-${Date.now()}`,
     videoId: video.id,
     userId: 'guest',
     teacherId: video.channelId,
-    conceptId: findMatchingTopicId(goalId, video.title),
+    conceptId: findMatchingTopicId(goalIds, video.title),
     totalDuration: 0,
     watchedSeconds: 0,
     watchPercentage: 0,
@@ -157,16 +173,27 @@ function createEmptySession(video: Video, goalId: string | undefined): Engagemen
 }
 
 interface VideoIntelProps {
-  /** Ranked primary + fallback videos handed off from Roadmap's "Watch videos"
+  /** Ranked primary + fallback videos handed off from Roadmap's \"Watch videos\"
    *  button (via PlaylistBuilder). When present, auto-loads primary into the player and
    *  populates the left-panel list with primary + fallbacks. */
   initialPlaylist?: { primary: Video; fallbacks: Video[] } | null;
   /** Which goal's roadmap watch-progress (topic status, concept matching)
-   *  should be attributed to — the currently open goal tab on Roadmap. */
+   *  should be attributed to — the currently open goal tab on Roadmap.
+   *  Tried first, but see `allGoalIds` below for why it's not the only one. */
   activeGoalId?: string | null;
+  /** Every currently-active goal's id (both slots, if 2 are running). Watch
+   *  completion is checked against ALL of these, not just activeGoalId, so
+   *  progress is attributed correctly even if the learner watches a video
+   *  for Goal B while Goal A's tab is still the one selected on Roadmap. */
+  allGoalIds?: string[];
 }
 
-export default function VideoIntel({ initialPlaylist, activeGoalId }: VideoIntelProps = {}) {
+export default function VideoIntel({ initialPlaylist, activeGoalId, allGoalIds }: VideoIntelProps = {}) {
+  // Every active goal, active-tab first (checked first so ties resolve in
+  // the learner's favor) — deduped in case activeGoalId is also in the list.
+  const goalIdsToCheck = Array.from(
+    new Set([activeGoalId ?? undefined, ...(allGoalIds ?? [])])
+  );
   // YouTube search now goes through /api/youtube-search — the key
   // used to be `import.meta.env.VITE_YOUTUBE_API_KEY` appended directly
   // to the googleapis.com URL from the browser, which bakes it into the
@@ -356,7 +383,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId }: VideoIntel
     lastTimeRef.current = 0;
     hasEndedRef.current = false;
     playStartTimeRef.current = null;
-    sessionRef.current = createEmptySession(selectedVideo, activeGoalId ?? undefined);
+    sessionRef.current = createEmptySession(selectedVideo, goalIdsToCheck);
     setFeedbackGiven(null);
     upsertEngagementSession(withComputedSignal(sessionRef.current));
   };
@@ -461,7 +488,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId }: VideoIntel
       return updated;
     });
 
-    updateRoadmapFromWatch(activeGoalId ?? undefined, data.title, data.watchPercentage);
+    updateRoadmapFromWatch(goalIdsToCheck, data.title, data.watchPercentage);
   };
   
 
