@@ -237,6 +237,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, allGoalIds }
   const sessionRef = useRef<EngagementSession | null>(null);
   const playStartTimeRef = useRef<number | null>(null);
   const hasEndedRef = useRef(false);
+  const hasSavedProgressRef = useRef<string | null>(null);
   const lastTimeRef = useRef(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -360,6 +361,20 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, allGoalIds }
           rewindCount: watchDataRef.current.rewindCount,
           playbackSpeed: watchDataRef.current.playbackSpeed,
         });
+
+        // Don't wait for the YouTube 'ended' event to persist progress —
+        // it doesn't always fire (tab switch, autoplay blocked, closing the
+        // player early, etc). As soon as the completion threshold is
+        // crossed, save immediately so roadmap unlock isn't silently lost.
+        // Guarded per-video so this only fires once even though the
+        // interval keeps ticking above the threshold.
+        if (
+          watchDataRef.current.watchPercentage >= LEARNING_TO_COMPLETED_THRESHOLD &&
+          hasSavedProgressRef.current !== selectedVideo.id
+        ) {
+          hasSavedProgressRef.current = selectedVideo.id;
+          saveWatchData(watchDataRef.current);
+        }
       }
     }, 1000);
 
@@ -382,6 +397,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, allGoalIds }
     };
     lastTimeRef.current = 0;
     hasEndedRef.current = false;
+    hasSavedProgressRef.current = null;
     playStartTimeRef.current = null;
     sessionRef.current = createEmptySession(selectedVideo, goalIdsToCheck);
     setFeedbackGiven(null);
