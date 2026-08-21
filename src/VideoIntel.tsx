@@ -616,8 +616,11 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, allGoalIds }
 
   // Pulled from the learner's own roadmap topics instead of a fixed generic
   // list — so suggestions are always relevant to what they're actually
-  // learning, whatever subject that is.
-  const suggestions = (getRoadmapData()?.children ?? [])
+  // learning, whatever subject that is. Must scope to the currently active
+  // goal — without a goalId this silently fell back to the 'primary' key
+  // (whatever roadmap was made first, ever), showing stale/unrelated
+  // suggestions once a learner had more than one goal.
+  const suggestions = (getRoadmapData(activeGoalId ?? undefined)?.children ?? [])
     .filter((t) => t.status !== 'locked')
     .slice(0, 4)
     .map((t) => t.title);
