@@ -187,11 +187,21 @@ export default function Roadmap({
       // depth, practical) use hota tha, na hi time-pressure. Ab Custom
       // Playlist flow (Dashboard.tsx) jaisa hi expand-query call karte hain,
       // taaki roadmap ke topics ke liye bhi personalized queries banein.
+      //
+      // FIX 2: `goal` yahan userData.goal (ek hi global onboarding field)
+      // se nahi, balki CURRENTLY ACTIVE goal ke title se lena chahiye —
+      // multi-goal setup (n8n + Agwentic AI) mein userData.goal sirf ek hi
+      // goal ko reflect karta hai, chahe koi bhi tab open ho. Isse dusre
+      // goal ka topic search karte waqt AI ko galat "overall goal" context
+      // milta tha, jisse query expansion generic/irrelevant results deta
+      // tha (e.g. n8n ke "Data Structure" topic ke liye generic DSA video).
+      const activeGoalTitle = goals.find((g) => g.id === activeGoalId)?.title ?? userData?.goal;
+
       let queries: string[] | undefined;
       if (userData) {
         const blueprint = {
           role: userData.role,
-          goal: userData.goal,
+          goal: activeGoalTitle ?? userData.goal,
           language: userData.language,
           // Is topic ke liye explicitly chuna gaya hours/week agar hai to
           // use karo (onboarding ke weekly hours se zyada relevant hai
