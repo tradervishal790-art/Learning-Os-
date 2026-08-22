@@ -26,19 +26,22 @@ const SEEK_FORWARD_THRESHOLD_SECONDS = 3;
 // returned to the "video" tab, or left the site entirely.
 const SEARCH_STATE_STORAGE_KEY = 'video_intel_search_state';
 
-/** Per-goal key — without this, switching the goal tab on Roadmap left
- *  the Videos page still showing whichever goal's search was done last
- *  (e.g. an old test roadmap's videos bleeding into an unrelated goal). */
-function getSearchStateKey(goalId: string | undefined): string {
-  return `${SEARCH_STATE_STORAGE_KEY}:${goalId ?? 'primary'}`;
+/** Per-goal + per-topic key — without the topic part, switching topics
+ *  within the SAME goal (e.g. Step 2 -> Step 3) shared one storage slot,
+ *  so Step 3's saved video silently overwrote/looked like Step 2's saved
+ *  video (and vice versa). `topicId` undefined = the general/typed-search
+ *  slot used outside the roadmap flow (Videos page opened directly). */
+function getSearchStateKey(goalId: string | undefined, topicId: string | undefined): string {
+  return `${SEARCH_STATE_STORAGE_KEY}:${goalId ?? 'primary'}:${topicId ?? 'general'}`;
 }
 
-/** Whether this goal has a previously watched/selected video saved —
- *  used by Roadmap.tsx to decide whether to show a "Saved video" button
- *  alongside "Watch videos". Read-only, safe to call outside VideoIntel. */
-export function hasSavedVideoForGoal(goalId: string | undefined): boolean {
+/** Whether this specific topic (within this goal) has a previously
+ *  watched/selected video saved — used by Roadmap.tsx to decide whether to
+ *  show a "Saved video" button for THAT topic. Read-only, safe to call
+ *  outside VideoIntel. */
+export function hasSavedVideoForTopic(goalId: string | undefined, topicId: string): boolean {
   try {
-    const saved = localStorage.getItem(getSearchStateKey(goalId));
+    const saved = localStorage.getItem(getSearchStateKey(goalId, topicId));
     if (!saved) return false;
     const parsed = JSON.parse(saved) as PersistedSearchState;
     return !!parsed.selectedVideoId;
@@ -205,6 +208,13 @@ interface VideoIntelProps {
    *  should be attributed to — the currently open goal tab on Roadmap.
    *  Tried first, but see `allGoalIds` below for why it's not the only one. */
   activeGoalId?: string | null;
+  /** Which topic's saved-video slot is currently being viewed — the topic
+   *  the learner clicked "Watch videos"/"Saved video" on for. Together with
+   *  activeGoalId this keys the saved search/video state (see
+   *  getSearchStateKey) so each topic keeps its OWN saved video instead of
+   *  all topics in a goal sharing one slot. Undefined/null = general
+   *  search slot (Videos page opened directly, not via a specific topic). */
+  activeTopicId?: string | null;
   /** Every currently-active goal's id (both slots, if 2 are running). Watch
    *  completion is checked against ALL of these, not just activeGoalId, so
    *  progress is attributed correctly even if the learner watches a video
@@ -212,7 +222,7 @@ interface VideoIntelProps {
   allGoalIds?: string[];
 }
 
-export default function VideoIntel({ initialPlaylist, activeGoalId, allGoalIds }: VideoIntelProps = {}) {
+export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicId, allGoalIds }: VideoIntelProps = {}) {
   // Every active goal, active-tab first (checked first so ties resolve in
   // the learner's favor) — deduped in case activeGoalId is also in the list.
   const goalIdsToCheck = Array.from(
@@ -289,7 +299,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, allGoalIds }
     // playlist (initialPlaylist) always takes priority — that effect below
     // runs after this one and will overwrite this restore when present.
     try {
-      const savedSearch = localStorage.getItem(getSearchStateKey(activeGoalId ?? undefined));
+      const savedSearch = localStorage.getItem(getSearchStateKey(activeGoalId ?? undefined, activeTopicId ?? undefined));
       if (savedSearch) {
         const parsed = JSON.parse(savedSearch) as PersistedSearchState;
         if (parsed.searchQuery) setSearchQuery(parsed.searchQuery);
@@ -309,10 +319,10 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, allGoalIds }
     };
   }, []);
 
-  // Re-load (or clear) search state whenever the active goal changes —
-  // without this, switching the goal tab on Roadmap and coming to Videos
-  // kept showing whichever goal's search/video was last active, since this
-  // component doesn't remount on goal switch.
+  // Re-load (or clear) search state whenever the active goal OR active topic
+  // changes — without this, switching topics (even within the same goal,
+  // e.g. Step 2 -> Step 3) kept showing whichever topic's search/video was
+  // last active, since this component doesn't remount on topic switch.
   const isFirstGoalRenderRef = useRef(true);
   useEffect(() => {
     if (isFirstGoalRenderRef.current) {
@@ -323,7 +333,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, allGoalIds }
     }
     finalizeAndSaveSession();
     try {
-      const savedSearch = localStorage.getItem(getSearchStateKey(activeGoalId ?? undefined));
+      const savedSearch = localStorage.getItem(getSearchStateKey(activeGoalId ?? undefined, activeTopicId ?? undefined));
       if (savedSearch) {
         const parsed = JSON.parse(savedSearch) as PersistedSearchState;
         setSearchQuery(parsed.searchQuery ?? '');
@@ -344,7 +354,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, allGoalIds }
       nextPageTokenRef.current = null;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeGoalId]);
+  }, [activeGoalId, activeTopicId]);
 
   // Keep localStorage in sync with the current search so it survives both
   // unmount (tab switch) and closing/reopening the site. Skipped while
@@ -359,11 +369,11 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, allGoalIds }
         selectedVideoId: selectedVideo?.id ?? null,
         nextPageToken: nextPageTokenRef.current,
       };
-      localStorage.setItem(getSearchStateKey(activeGoalId ?? undefined), JSON.stringify(toSave));
+      localStorage.setItem(getSearchStateKey(activeGoalId ?? undefined, activeTopicId ?? undefined), JSON.stringify(toSave));
     } catch {
       // Storage full/unavailable — non-critical, just skip persisting.
     }
-  }, [searchQuery, videos, selectedVideo, activeGoalId]);
+  }, [searchQuery, videos, selectedVideo, activeGoalId, activeTopicId]);
 
   useEffect(() => {
     return () => {

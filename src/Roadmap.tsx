@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getRoadmapData, getRoadmapProgress, markTopicFinished } from './roadmapData';
-import { hasSavedVideoForGoal } from './VideoIntel';
+import { hasSavedVideoForTopic } from './VideoIntel';
 import { MAX_ACTIVE_GOALS } from './goalsStore';
 import type { Topic, Video, UserOnboardingData, Goal, TopicBridge } from './types';
 import { buildCandidatePoolForConcept } from './conceptVideoPool';
@@ -31,11 +31,14 @@ interface RoadmapProps {
   /** Called with the ranked primary + 2 fallback videos, so the parent can
    *  switch to the Video Intelligence page and preload them into the player.
    *  `bridge`, when present, tells VideoIntel how this topic's video connects
-   *  to the one the learner just finished — see TopicBridge. */
-  onLaunchPlaylist: (payload: { primary: Video; fallbacks: Video[]; bridge?: TopicBridge }) => void;
+   *  to the one the learner just finished — see TopicBridge. `topicId` tells
+   *  the parent which topic's OWN saved-video slot this playlist belongs to
+   *  (see VideoIntel's activeTopicId) — without it, every topic in a goal
+   *  shared one saved-video slot and topics could show each other's videos. */
+  onLaunchPlaylist: (payload: { primary: Video; fallbacks: Video[]; bridge?: TopicBridge; topicId: string }) => void;
   /** Opens the Videos page showing whatever was last searched/watched for
-   *  the active goal, with no new search — the "Saved video" button. */
-  onOpenSavedVideo: () => void;
+   *  THIS SPECIFIC topic, with no new search — the "Saved video" button. */
+  onOpenSavedVideo: (topicId: string) => void;
   /** Updates userData.goal/hours/deadline to the typed subject + slider
    *  values and generates a roadmap for it directly from this page — powers
    *  the empty-state "type a subject, set your time, and go" form (no
@@ -272,6 +275,7 @@ export default function Roadmap({
         primary: analyzedVideoToVideo(result.primary),
         fallbacks: result.fallbacks.map(analyzedVideoToVideo),
         bridge: getBridgeForTopic(selectedTopic),
+        topicId: selectedTopic.id,
       });
       setSelectedTopic(null);
     } catch (err: any) {
@@ -681,9 +685,9 @@ export default function Roadmap({
                       >
                         {playlistLoading ? 'Dhundh raha hoon...' : 'Watch videos'}
                       </button>
-                      {hasSavedVideoForGoal(activeGoalId ?? undefined) && (
+                      {hasSavedVideoForTopic(activeGoalId ?? undefined, selectedTopic.id) && (
                         <button
-                          onClick={onOpenSavedVideo}
+                          onClick={() => onOpenSavedVideo(selectedTopic.id)}
                           className="w-full mt-2 px-4 py-3 md:py-2 rounded-lg border border-gray-300 dark:border-white/20 text-sm font-medium hover:bg-gray-50 dark:hover:bg-white/5 active:scale-[0.98] transition"
                         >
                           Saved video

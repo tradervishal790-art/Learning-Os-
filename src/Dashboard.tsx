@@ -151,6 +151,11 @@ export default function Dashboard({ userData, onUpdateUserData, onRegenerateRoad
   const [showLearningQuiz, setShowLearningQuiz] = useState(false);
   const [learningProfile, setLearningProfile] = useState<LearningProfile | null>(getLearningProfile);
   const [preloadedPlaylist, setPreloadedPlaylist] = useState<{ primary: Video; fallbacks: Video[]; bridge?: TopicBridge } | null>(null);
+  // Which topic's saved-video slot the Videos page is currently showing —
+  // set whenever a topic's playlist is launched or its "Saved video" is
+  // opened, so each topic keeps its own saved video instead of every topic
+  // in a goal sharing one slot (see VideoIntel's activeTopicId).
+  const [viewingTopicId, setViewingTopicId] = useState<string | null>(null);
 
   const [showSettings, setShowSettings] = useState(false);
   const [settingsName, setSettingsName] = useState(userData?.name ?? '');
@@ -189,16 +194,18 @@ export default function Dashboard({ userData, onUpdateUserData, onRegenerateRoad
     setLearningProfile(null);
   };
 
-  const handleLaunchPlaylist = (payload: { primary: Video; fallbacks: Video[]; bridge?: TopicBridge }) => {
+  const handleLaunchPlaylist = (payload: { primary: Video; fallbacks: Video[]; bridge?: TopicBridge; topicId: string }) => {
     setPreloadedPlaylist(payload);
+    setViewingTopicId(payload.topicId);
     setActivePage('videos');
   };
 
   // "Saved video" — opens the Videos page WITHOUT a fresh search/playlist
-  // handoff, so VideoIntel's own per-goal restore just shows whatever was
-  // last searched/watched for the active goal (no new API calls).
-  const handleOpenSavedVideo = () => {
+  // handoff, so VideoIntel's own per-goal-per-topic restore just shows
+  // whatever was last searched/watched for THIS topic (no new API calls).
+  const handleOpenSavedVideo = (topicId: string) => {
     setPreloadedPlaylist(null);
+    setViewingTopicId(topicId);
     setActivePage('videos');
   };
 
@@ -333,6 +340,7 @@ export default function Dashboard({ userData, onUpdateUserData, onRegenerateRoad
       handleLaunchPlaylist({
         primary: analyzedVideoToVideo(result.primary),
         fallbacks: result.fallbacks.map(analyzedVideoToVideo),
+        topicId: adhocTopic.id,
       });
       setShowCustomPlaylist(false);
       setCustomTopic('');
@@ -595,6 +603,7 @@ export default function Dashboard({ userData, onUpdateUserData, onRegenerateRoad
           <VideoIntel
             initialPlaylist={preloadedPlaylist}
             activeGoalId={activeGoalId}
+            activeTopicId={viewingTopicId}
             allGoalIds={goals.filter((g) => g.status === 'active').map((g) => g.id)}
           />
         )}
