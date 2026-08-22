@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { getRoadmapData, getRoadmapProgress, markTopicFinished } from './roadmapData';
 import { hasSavedVideoForGoal } from './VideoIntel';
 import { MAX_ACTIVE_GOALS } from './goalsStore';
-import type { Topic, Video, UserOnboardingData, Goal } from './types';
+import type { Topic, Video, UserOnboardingData, Goal, TopicBridge } from './types';
 import { buildCandidatePoolForConcept } from './conceptVideoPool';
 import { selectPlaylistForConcept, analyzedVideoToVideo, getLastTeacherForConcept } from './PlaylistBuilder';
 import { getLearningProfile } from './learningProfileStore';
@@ -29,8 +29,10 @@ interface RoadmapProps {
    *  same personalized YouTube queries the Custom Playlist flow already gets. */
   userData: UserOnboardingData | null;
   /** Called with the ranked primary + 2 fallback videos, so the parent can
-   *  switch to the Video Intelligence page and preload them into the player. */
-  onLaunchPlaylist: (payload: { primary: Video; fallbacks: Video[] }) => void;
+   *  switch to the Video Intelligence page and preload them into the player.
+   *  `bridge`, when present, tells VideoIntel how this topic's video connects
+   *  to the one the learner just finished — see TopicBridge. */
+  onLaunchPlaylist: (payload: { primary: Video; fallbacks: Video[]; bridge?: TopicBridge }) => void;
   /** Opens the Videos page showing whatever was last searched/watched for
    *  the active goal, with no new search — the "Saved video" button. */
   onOpenSavedVideo: () => void;
@@ -145,6 +147,29 @@ export default function Roadmap({
     setTopicDeadline('');
   };
 
+  /** The topic immediately before `topic` in the roadmap's flat sequence —
+   *  used to build the "connects to what you just watched" bridge. Returns
+   *  null for the first topic (nothing to connect from) or if the topic
+   *  isn't found in the current roadmap's children. */
+  const getPreviousTopic = (topic: Topic): Topic | null => {
+    const index = (roadmap.children ?? []).findIndex((t) => t.id === topic.id);
+    if (index <= 0) return null;
+    return roadmap.children![index - 1];
+  };
+
+  /** Builds the bridge for `topic`, if there's a previous topic AND
+   *  generate-roadmap.ts actually wrote a non-empty `why.connect` for it —
+   *  no bridge is better than a blank/placeholder one. */
+  const getBridgeForTopic = (topic: Topic): TopicBridge | undefined => {
+    const previousTopic = getPreviousTopic(topic);
+    if (!previousTopic || !topic.why?.connect?.trim()) return undefined;
+    return {
+      fromTopicTitle: previousTopic.title,
+      toTopicTitle: topic.title,
+      connectText: topic.why.connect.trim(),
+    };
+  };
+
   // Manual override for when the auto-detect (video watch % / keyword
   // match) doesn't cooperate — lets the learner mark a topic done and move
   // on without having to keep re-watching a video to retrigger it.
@@ -246,6 +271,7 @@ export default function Roadmap({
       onLaunchPlaylist({
         primary: analyzedVideoToVideo(result.primary),
         fallbacks: result.fallbacks.map(analyzedVideoToVideo),
+        bridge: getBridgeForTopic(selectedTopic),
       });
       setSelectedTopic(null);
     } catch (err: any) {
@@ -616,6 +642,29 @@ export default function Roadmap({
                       <h3 className="text-sm font-semibold mb-2">What you'll learn</h3>
                       <p className="text-sm text-gray-500 dark:text-white/60">{selectedTopic.description}</p>
                     </div>
+
+                    {/* Connection bridge — shown BEFORE "Watch videos" so the
+                        learner sees how this video picks up from the last one,
+                        instead of it feeling like a disconnected new clip.
+                        Previously this same text (`why.connect`) only lived
+                        buried inside the "Why" tab, easy to never open. */}
+                    {(() => {
+                      const bridge = getBridgeForTopic(selectedTopic);
+                      if (!bridge) return null;
+                      return (
+                        <div className="p-4 rounded-xl border border-gray-300 dark:border-white/20 bg-gray-50 dark:bg-white/5">
+                          <div className="flex items-center gap-2 mb-2 text-xs text-gray-400 dark:text-white/40">
+                            <span>{bridge.fromTopicTitle}</span>
+                            <span>→</span>
+                            <span className="text-black dark:text-white font-medium">{bridge.toTopicTitle}</span>
+                          </div>
+                          <div className="flex items-start gap-2">
+                            <span className="text-lg leading-none">🔗</span>
+                            <p className="text-sm text-gray-600 dark:text-white/70 leading-relaxed">{bridge.connectText}</p>
+                          </div>
+                        </div>
+                      );
+                    })()}
 
                     <div className="p-4 rounded-xl border border-gray-200 dark:border-white/10">
                       <button

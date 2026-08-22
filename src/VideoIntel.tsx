@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Play, CheckCircle, ThumbsUp, ThumbsDown, SkipForward } from 'lucide-react';
-import type { Video, VideoWatchData, WatchHistoryEntry, EngagementSession, FeedbackValue, Topic } from './types';
+import type { Video, VideoWatchData, WatchHistoryEntry, EngagementSession, FeedbackValue, Topic, TopicBridge } from './types';
 import { withComputedSignal } from './engagementScoring';
 import { upsertEngagementSession } from './engagementStore';
 import { getRoadmapData, saveRoadmapData } from './roadmapData';
@@ -196,8 +196,11 @@ function createEmptySession(video: Video, goalIds: (string | undefined)[]): Enga
 interface VideoIntelProps {
   /** Ranked primary + fallback videos handed off from Roadmap's \"Watch videos\"
    *  button (via PlaylistBuilder). When present, auto-loads primary into the player and
-   *  populates the left-panel list with primary + fallbacks. */
-  initialPlaylist?: { primary: Video; fallbacks: Video[] } | null;
+   *  populates the left-panel list with primary + fallbacks.
+   *  `bridge`, when present, describes how this topic connects to the one the
+   *  learner just finished — shown as a banner above the player so the new
+   *  video doesn't feel like an unrelated, disconnected clip. */
+  initialPlaylist?: { primary: Video; fallbacks: Video[]; bridge?: TopicBridge } | null;
   /** Which goal's roadmap watch-progress (topic status, concept matching)
    *  should be attributed to — the currently open goal tab on Roadmap.
    *  Tried first, but see `allGoalIds` below for why it's not the only one. */
@@ -228,6 +231,11 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, allGoalIds }
   const [errorMessage, setErrorMessage] = useState('');
   const [showDeepNotes, setShowDeepNotes] = useState(false);
   const [feedbackGiven, setFeedbackGiven] = useState<FeedbackValue>(null);
+  // How this handoff's topic connects to the one the learner just finished
+  // (see TopicBridge). Set once when a Roadmap "Watch videos" handoff loads,
+  // dismissible, and NOT re-shown for fallback/"Next" videos within the same
+  // topic — it's a topic-to-topic bridge, not a per-video one.
+  const [activeBridge, setActiveBridge] = useState<TopicBridge | null>(null);
   const [watchStats, setWatchStats] = useState({
     watchedDuration: 0,
     totalDuration: 0,
@@ -372,6 +380,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, allGoalIds }
     finalizeAndSaveSession();
     setVideos([initialPlaylist.primary, ...initialPlaylist.fallbacks]);
     setSelectedVideo(initialPlaylist.primary);
+    setActiveBridge(initialPlaylist.bridge ?? null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialPlaylist?.primary.id]);
 
@@ -520,6 +529,10 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, allGoalIds }
   const handleNextVideo = async () => {
     if (!selectedVideo || videos.length === 0) return;
     finalizeAndSaveSession();
+    // The bridge connects the PREVIOUS topic to THIS topic's primary video —
+    // once the learner moves to a fallback/fresh video within this same
+    // topic, it no longer applies.
+    setActiveBridge(null);
 
     const currentIndex = videos.findIndex((v) => v.id === selectedVideo.id);
 
@@ -773,6 +786,10 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, allGoalIds }
                         onClick={() => {
                           finalizeAndSaveSession();
                           setSelectedVideo(video);
+                          // Manually picking a video from the list is the
+                          // learner overriding the auto-picked primary — the
+                          // topic-to-topic bridge no longer applies to it.
+                          if (video.id !== initialPlaylist?.primary?.id) setActiveBridge(null);
                         }}
                         className={`p-3 rounded-lg cursor-pointer transition border ${
                           selectedVideo?.id === video.id
@@ -804,6 +821,26 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, allGoalIds }
             <div className="lg:col-span-2">
               {selectedVideo ? (
                 <motion.div key={selectedVideo.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+                  {activeBridge && selectedVideo.id === initialPlaylist?.primary?.id && (
+                    <div className="flex items-start gap-2 p-4 rounded-xl border border-gray-300 dark:border-white/20 bg-gray-50 dark:bg-white/5">
+                      <span className="text-lg leading-none">🔗</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1 text-xs text-gray-400 dark:text-white/40">
+                          <span>{activeBridge.fromTopicTitle}</span>
+                          <span>→</span>
+                          <span className="text-black dark:text-white font-medium">{activeBridge.toTopicTitle}</span>
+                        </div>
+                        <p className="text-sm text-gray-600 dark:text-white/70 leading-relaxed">{activeBridge.connectText}</p>
+                      </div>
+                      <button
+                        onClick={() => setActiveBridge(null)}
+                        className="text-gray-400 dark:text-white/40 hover:text-black dark:hover:text-white transition flex-shrink-0"
+                        aria-label="Dismiss"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  )}
                   <div className="bg-black rounded-2xl overflow-hidden border border-gray-200 dark:border-white/10">
                     <YouTubePlayer
                       videoId={selectedVideo.id}

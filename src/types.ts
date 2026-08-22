@@ -94,6 +94,20 @@ export interface RevisionItem {
   retention: number;
 }
 
+// ---------- Topic-to-topic connection ("bridge") ----------
+// Shown right before the next topic's video starts, so the learner sees
+// how the video they're about to watch connects to what they just
+// finished — instead of every video feeling like an unrelated, standalone
+// clip. Built from the just-completed topic's title + the next topic's
+// own `why.connect` (already written with exactly this purpose in mind
+// by generate-roadmap.ts, previously only shown buried inside the topic
+// modal's "Why" tab).
+export interface TopicBridge {
+  fromTopicTitle: string;
+  toTopicTitle: string;
+  connectText: string;
+}
+
 // ---------- Video Intelligence ----------
 export interface Video {
   id: string;

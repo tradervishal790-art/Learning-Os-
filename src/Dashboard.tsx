@@ -12,7 +12,7 @@ import { buildCandidatePoolForConcept } from './conceptVideoPool';
 import { selectPlaylistForConcept, analyzedVideoToVideo } from './PlaylistBuilder';
 import { expandSearchQuery } from './queryExpander';
 import { useTheme } from './ThemeContext';
-import type { DashboardPageId, PageConfig, UserOnboardingData, LearningProfile, Video, Topic, Goal } from './types';
+import type { DashboardPageId, PageConfig, UserOnboardingData, LearningProfile, Video, Topic, Goal, TopicBridge } from './types';
 import Mentor from './Mentor';
 import Notes from './Notes';
 import Progress from './progress';
@@ -150,7 +150,7 @@ export default function Dashboard({ userData, onUpdateUserData, onRegenerateRoad
   const [streak, setStreak] = useState(0);
   const [showLearningQuiz, setShowLearningQuiz] = useState(false);
   const [learningProfile, setLearningProfile] = useState<LearningProfile | null>(getLearningProfile);
-  const [preloadedPlaylist, setPreloadedPlaylist] = useState<{ primary: Video; fallbacks: Video[] } | null>(null);
+  const [preloadedPlaylist, setPreloadedPlaylist] = useState<{ primary: Video; fallbacks: Video[]; bridge?: TopicBridge } | null>(null);
 
   const [showSettings, setShowSettings] = useState(false);
   const [settingsName, setSettingsName] = useState(userData?.name ?? '');
@@ -189,7 +189,7 @@ export default function Dashboard({ userData, onUpdateUserData, onRegenerateRoad
     setLearningProfile(null);
   };
 
-  const handleLaunchPlaylist = (payload: { primary: Video; fallbacks: Video[] }) => {
+  const handleLaunchPlaylist = (payload: { primary: Video; fallbacks: Video[]; bridge?: TopicBridge }) => {
     setPreloadedPlaylist(payload);
     setActivePage('videos');
   };
