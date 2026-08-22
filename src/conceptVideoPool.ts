@@ -302,9 +302,40 @@ export async function buildCandidatePoolForConcept(
   const pool = analyzed.filter((v): v is AnalyzedVideo => v !== null);
 
   if (pool.length === 0 && candidates.length > 0) {
+    // BOTH AI paths (transcript-based AND metadata-fallback) failed for
+    // every single candidate — near-certainly Gemini + MiniMax both down
+    // or unconfigured server-side, not "no good videos exist". Previously
+    // this meant the learner saw "koi achhi video nahi mili" even though
+    // YouTube search worked fine and real candidates DID come back — the
+    // AI-analysis step failing shouldn't be able to hide search results
+    // that actually exist. Fall back to a neutral, unranked profile built
+    // straight from metadata (no AI call) so search still returns
+    // something usable; PlaylistBuilder's ranking will just be less
+    // personalized for this one request.
     console.warn(
-      `[conceptVideoPool] YouTube ne ${candidates.length} videos diye "${topic.title}" ke liye, lekin sabka analysis fail ho gaya (both transcript and metadata-fallback failed for every candidate). Check earlier warnings.`
+      `[conceptVideoPool] YouTube ne ${candidates.length} videos diye "${topic.title}" ke liye, lekin sabka analysis fail ho gaya (both transcript and metadata-fallback failed for every candidate) — neutral fallback profile use kar rahe hain.`
     );
+    return candidates.map((c) => ({
+      videoId: c.videoId,
+      title: c.title,
+      thumbnail: c.thumbnail,
+      channel: c.channel,
+      teacherId: c.channelId,
+      conceptId: topic.id,
+      dimensions: {
+        pace: 5,
+        theory_vs_practical: 5,
+        structure: 5,
+        depth: 5,
+        language_complexity: 5,
+        storytelling: 5,
+        repetition: 5,
+        prerequisite_assumed: 5,
+      },
+      primaryStyle: 'unknown',
+      idealFor: 'AI analysis unavailable right now — showing unranked results.',
+      avoidFor: '',
+    }));
   }
 
   return pool;

@@ -236,9 +236,15 @@ export default function Dashboard({ userData, onUpdateUserData, onRegenerateRoad
   const buildBlueprint = (): Blueprint | null => {
     const profile = getLearningProfile();
     if (!profile || !userData) return null;
+    // Same fix as Roadmap.tsx's handleWatchVideos: use the ACTIVE goal's
+    // own title, not the single global userData.goal — otherwise the
+    // free-text video search hands the AI query-expander whichever goal
+    // was onboarded with FIRST (could be a completely different subject
+    // than whatever goal tab the learner currently has open).
+    const activeGoalTitle = goals.find((g) => g.id === activeGoalId)?.title ?? userData.goal;
     return {
       role: userData.role,
-      goal: userData.goal,
+      goal: activeGoalTitle,
       language: userData.language,
       hours: userData.hours,
       style: {
