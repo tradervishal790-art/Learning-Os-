@@ -3,15 +3,42 @@
 // Server-side proxy for Deep Notes generation (Notes.tsx). Previously
 // the ENTIRE prompt, responseSchema, and Gemini fetch call lived in the
 // browser with `import.meta.env.VITE_GEMINI_API_KEY` in the URL — key
-// exposed in the shipped bundle. Moved the whole thing server-side:
-// client now sends only { topic, videoContext } and gets back the
-// parsed DeepNotesData object.
+// exposed in the shipped bundle. Moved the whole thing server-side.
+//
+// ── GROUNDING FIX ───────────────────────────────────────────────────────
+// Previously notes were generated generically from just the topic name +
+// optional title/description videoContext — the model had no idea what
+// THIS specific video actually covered, so it invented generic textbook
+// content that often didn't match what the learner just watched.
+//
+// FIX: when the client sends a `videoId`, fetch the real transcript
+// (same shared helper analyze-video.ts uses) and use it as the primary
+// basis for the prompt. The model is explicitly told to ground every
+// section in what the transcript actually covers, not invent generic
+// content. Falls back to videoContext metadata, then to topic-only, if
+// no transcript is available — same as analyze-video.ts's fallback
+// chain, so a missing/failed transcript never blocks note generation,
+// it just lowers grounding quality (reported via `notesSource`).
+// ─────────────────────────────────────────────────────────────────────────
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { generateAIText } from './_lib/aiFallback.js';
+import { tryFetchTranscript, TRANSCRIPT_CHAR_LIMIT } from './_lib/transcript.js';
 
-const buildPrompt = (topic: string, videoContext?: string) => `Generate DEEP, comprehensive study notes for "${topic}" in Hinglish (Hindi + English mix).
-${videoContext ? `Video context: ${videoContext}` : ''}
+type NotesSource = 'transcript' | 'metadata' | 'topic-only';
+
+const buildPrompt = (topic: string, basis: string | undefined, notesSource: NotesSource) => `Generate DEEP, comprehensive study notes for "${topic}" in Hinglish (Hindi + English mix).
+${basis ? (notesSource === 'transcript' ? `Video transcript:\n${basis}` : `Video context: ${basis}`) : ''}
+
+${
+  notesSource === 'transcript'
+    ? `GROUNDING (critical): every section below must be grounded in what THIS video's transcript actually covers — its own examples, its own sequence of explanation, its own analogies. Do NOT invent generic textbook content the transcript doesn't touch. If the transcript covers something narrower than the full topic, keep the notes narrower too rather than padding with unrelated generic material.`
+    : notesSource === 'metadata'
+      ? `GROUNDING: only the video's title/description are available (no transcript), so favor ACCURACY over invented specifics — where you're inferring rather than certain, keep that section general instead of fabricating precise details that may not match the actual video.`
+      : `GROUNDING: no video-specific information is available, so write general, accurate notes on the topic itself rather than inventing details as if they came from a specific video.`
+}
+
+ANTI-REPETITION (critical): each of the 15 JSON sections below must add a genuinely NEW angle — do not restate an earlier section in simpler words. If a section has nothing new to add, keep it short rather than padding it with a rephrase of another section.
 
 Focus on:
 1. WHY this concept exists (history, problem it solved)
@@ -122,7 +149,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'POST only' });
   }
 
-  const { topic, videoContext } = (req.body ?? {}) as { topic?: string; videoContext?: string };
+  const { topic, videoContext, videoId } = (req.body ?? {}) as {
+    topic?: string;
+    videoContext?: string;
+    videoId?: string;
+  };
   if (!topic?.trim()) {
     return res.status(400).json({ error: 'topic required' });
   }
@@ -133,11 +164,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(500).json({ error: 'No AI provider configured on server (VITE_GEMINI_API_KEY / MINIMAX_API_KEY both missing)' });
   }
 
+  // ── Primary path: real transcript (grounds notes in what THIS video
+  // actually covers). Falls back to metadata, then topic-only — never
+  // blocks note generation, only affects grounding quality. ──────────────
+  let basis: string | undefined;
+  let notesSource: NotesSource;
+
+  const transcript = videoId ? await tryFetchTranscript(videoId) : null;
+  if (transcript) {
+    basis = transcript.slice(0, TRANSCRIPT_CHAR_LIMIT);
+    notesSource = 'transcript';
+  } else if (videoContext?.trim()) {
+    basis = videoContext;
+    notesSource = 'metadata';
+  } else {
+    notesSource = 'topic-only';
+  }
+
   try {
     const { text, finishReason } = await generateAIText({
       geminiApiKey: apiKey,
       minimaxApiKey,
-      contents: [{ role: 'user', parts: [{ text: buildPrompt(topic, videoContext) }] }],
+      contents: [{ role: 'user', parts: [{ text: buildPrompt(topic, basis, notesSource) }] }],
       generationConfig: {
         responseMimeType: 'application/json',
         responseSchema,
@@ -159,7 +207,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(502).json({ error: 'AI returned invalid JSON' });
     }
 
-    return res.status(200).json({ topic, ...parsed });
+    return res.status(200).json({ topic, notesSource, ...parsed });
   } catch (err: any) {
     console.error('Generate notes proxy failed:', err);
     return res.status(500).json({ error: err?.message || 'Notes generation failed' });

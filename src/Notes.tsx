@@ -17,6 +17,7 @@ function topicCacheKey(topic: string): string {
 
 interface DeepNotesData {
   topic: string;
+  notesSource?: 'transcript' | 'metadata' | 'topic-only';
   summary: string;
   concept: string;
   prerequisites: string;
@@ -38,12 +39,14 @@ interface DeepNotesData {
 // the full prompt, schema, AND the Gemini key used to live here in the
 // browser with `import.meta.env.VITE_GEMINI_API_KEY` in the fetch URL,
 // exposed in the shipped bundle. Client now just sends topic +
-// videoContext and gets the parsed notes object back.
-async function generateDeepNotes(topic: string, videoContext?: string): Promise<DeepNotesData> {
+// videoContext (+ videoId, when known, so the server can ground notes in
+// the real transcript instead of generic title-based generation) and
+// gets the parsed notes object back.
+async function generateDeepNotes(topic: string, videoContext?: string, videoId?: string): Promise<DeepNotesData> {
   const response = await fetch('/api/generate-notes', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ topic, videoContext }),
+    body: JSON.stringify({ topic, videoContext, videoId }),
   });
 
   const data = await response.json().catch(() => ({}));
@@ -78,7 +81,7 @@ async function fetchVideoMeta(videoId: string): Promise<{ title: string; descrip
   return { title: data.title, description: data.description || '' };
 }
 
-export default function Notes({ videoTitle, videoDescription }: { videoTitle?: string; videoDescription?: string }) {
+export default function Notes({ videoTitle, videoDescription, videoId }: { videoTitle?: string; videoDescription?: string; videoId?: string }) {
   const [topic, setTopic] = useState(videoTitle || '');
   const [notes, setNotes] = useState<DeepNotesData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -153,7 +156,8 @@ export default function Notes({ videoTitle, videoDescription }: { videoTitle?: s
       }
 
       const context = videoDescription ? `Title: ${videoTitle}\nDescription: ${videoDescription}` : '';
-      const deepNotes = await generateDeepNotes(topic, context);
+      const deepNotes = await generateDeepNotes(topic, context, videoId);
+      if (videoId) setCurrentVideoId(videoId);
       localStorage.setItem(cacheKey, JSON.stringify(deepNotes));
       setNotes(deepNotes);
     } catch (err) {
@@ -184,7 +188,7 @@ export default function Notes({ videoTitle, videoDescription }: { videoTitle?: s
 
       const meta = await fetchVideoMeta(videoId);
       const context = `Title: ${meta.title}\nDescription: ${meta.description.slice(0, 500)}`;
-      const deepNotes = await generateDeepNotes(meta.title, context);
+      const deepNotes = await generateDeepNotes(meta.title, context, videoId);
 
       localStorage.setItem(`deepnotes_${videoId}`, JSON.stringify(deepNotes));
       setNotes(deepNotes);
@@ -310,6 +314,12 @@ export default function Notes({ videoTitle, videoDescription }: { videoTitle?: s
               >
                 🎥 Source video dekho
               </a>
+            )}
+            {notes.notesSource === 'transcript' && (
+              <p className="text-xs text-white/40 mb-3">✓ Video transcript se banaye gaye notes</p>
+            )}
+            {notes.notesSource === 'metadata' && (
+              <p className="text-xs text-white/40 mb-3">⚠ Transcript available nahi thi — sirf title/description se banaye gaye</p>
             )}
             <h2 className="text-2xl font-bold mb-4">
               {sections.find((s) => s.id === activeSection)?.label} — {notes.topic}

@@ -717,7 +717,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
           >
             ← Back to Video
           </button>
-          <Notes videoTitle={selectedVideo.title} />
+          <Notes videoTitle={selectedVideo.title} videoId={selectedVideo.id} />
         </div>
       ) : (
         <div className="p-4 md:p-8">

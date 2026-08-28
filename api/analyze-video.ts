@@ -1,8 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { YoutubeTranscript } from 'youtube-transcript';
 import { generateAIText } from './_lib/aiFallback.js';
-const TRANSCRIPT_CHAR_LIMIT = 8000;
-const MIN_TRANSCRIPT_LENGTH = 50;
+import { tryFetchTranscript, TRANSCRIPT_CHAR_LIMIT } from './_lib/transcript.js';
 
 // ============================================================
 // api/analyze-video.ts
@@ -53,23 +51,6 @@ Sirf JSON return karo, koi extra text nahi, koi markdown backticks nahi.
 Content:
 ${basis.slice(0, TRANSCRIPT_CHAR_LIMIT)}
 `;
-
-/** Fetches and flattens a transcript. Returns null (never throws) on any
- *  failure — caller decides what to do next (fall back to metadata). */
-async function tryFetchTranscript(videoId: string): Promise<string | null> {
-  try {
-    let chunks;
-    try {
-      chunks = await YoutubeTranscript.fetchTranscript(videoId, { lang: 'hi' });
-    } catch {
-      chunks = await YoutubeTranscript.fetchTranscript(videoId);
-    }
-    const text = chunks.map((c) => c.text).join(' ');
-    return text.trim().length >= MIN_TRANSCRIPT_LENGTH ? text : null;
-  } catch {
-    return null;
-  }
-}
 
 async function scoreWithGemini(
   apiKey: string | undefined,
