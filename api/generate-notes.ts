@@ -20,6 +20,17 @@
 // chain, so a missing/failed transcript never blocks note generation,
 // it just lowers grounding quality (reported via `notesSource`).
 // ─────────────────────────────────────────────────────────────────────────
+//
+// ── SCHEMA (10 fields, not 15) ───────────────────────────────────────────
+// Previously had 15 fields with real semantic overlap: concept +
+// mentalModel + analogy were three separate takes on "explain this idea",
+// and exercises + criticalThinking + deepQuestions were three separate
+// takes on "things to actively practice". Merged into coreConcept (one
+// cohesive explanation) and practice (one mixed list of do-exercises +
+// think-questions) respectively — fewer sections, each with a genuinely
+// distinct job, instead of the same idea generated three slightly
+// different ways.
+// ─────────────────────────────────────────────────────────────────────────
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { generateAIText } from './_lib/aiFallback.js';
@@ -38,47 +49,22 @@ ${
       : `GROUNDING: no video-specific information is available, so write general, accurate notes on the topic itself rather than inventing details as if they came from a specific video.`
 }
 
-ANTI-REPETITION (critical): each of the 15 JSON sections below must add a genuinely NEW angle — do not restate an earlier section in simpler words. If a section has nothing new to add, keep it short rather than padding it with a rephrase of another section.
-
-Focus on:
-1. WHY this concept exists (history, problem it solved)
-2. DEEP understanding (not surface knowledge)
-3. Prerequisites that must be known first
-4. Mental models experts use
-5. Common misconceptions and why people get confused
-6. Real-world applications with specific contexts
-7. Critical thinking questions
-8. Learning path for mastery (days 1,3,7,15,30)
+ANTI-REPETITION (critical): each of the 10 JSON sections below must add a genuinely NEW angle — do not restate an earlier section in simpler words. If a section has nothing new to add, keep it short rather than padding it with a rephrase of another section.
 
 Return ONLY this JSON structure:
 {
   "summary": "1-2 line essence of the topic",
-  "concept": "Detailed explanation - why invented, evolution, core principles",
   "prerequisites": "What must be known first - foundational concepts",
-  "mentalModel": "How experts think about this - psychological framework",
-  "analogy": "Powerful analogy that makes it click",
-  "deepExamples": [
-    "Example 1 with detailed context and WHY it illustrates the concept",
-    "Example 2 showing edge case or complexity",
-    "Example 3 with counterexample or when it fails"
-  ],
-  "stepByStep": [
-    "Step 1: Core principle explanation",
-    "Step 2: Mechanism and how it works",
-    "Step 3: Apply to different contexts",
-    "Step 4: Recognize patterns and relationships",
-    "Step 5: Build intuition and mental shortcuts"
+  "coreConcept": "ONE cohesive explanation covering: WHY this concept exists (history, problem it solved), HOW experts mentally model it, AND a concrete analogy that makes it click — woven together as one flowing explanation, not three disconnected paragraphs",
+  "workedExamples": [
+    "Step-by-step mechanism illustrated through a concrete example - how it actually works, walked through",
+    "A second example showing a different context or application of the same mechanism",
+    "An edge case or counterexample - where/how this breaks or behaves unexpectedly"
   ],
   "misconceptions": [
     "Common misconception 1 + WHY people think this + correct understanding",
     "Misconception 2 + root cause of confusion + how to avoid",
     "Misconception 3 + expert perspective"
-  ],
-  "criticalThinking": [
-    "Why is this important? What real problems does it solve?",
-    "What breaks or fails when this concept doesn't apply?",
-    "How does this connect to related concepts?",
-    "What would happen if this didn't exist?"
   ],
   "realWorldApps": [
     "Application 1: Industry/context + exact use case + impact",
@@ -90,18 +76,12 @@ Return ONLY this JSON structure:
     "Related concept 2 + connections",
     "Research frontier 3 + future directions"
   ],
-  "exercises": [
-    "Exercise 1: Apply concept to new, unseen problem",
-    "Exercise 2: Find counterexample or breaking case",
-    "Exercise 3: Explain to 10-year-old child",
-    "Exercise 4: Compare and contrast with related concept"
-  ],
-  "deepQuestions": [
-    "Why was this concept invented? What specific problem?",
-    "What core assumptions does this make?",
-    "Can you find situations where this breaks or fails?",
-    "How would you explain this to expert in completely different field?",
-    "What's the non-obvious insight most people miss?"
+  "practice": [
+    "Exercise: Apply the concept to a new, unseen problem",
+    "Exercise: Find a counterexample or breaking case",
+    "Question to wrestle with: a critical-thinking question that tests real understanding, not recall",
+    "Question to wrestle with: what would happen if this didn't exist, or what core assumption does it make",
+    "Exercise: Explain this to a 10-year-old, or compare/contrast it with a related concept"
   ],
   "learningPath": [
     "Day 1: Deep read - understand WHY (not just WHAT)",
@@ -121,25 +101,19 @@ const responseSchema = {
   type: 'OBJECT',
   properties: {
     summary: { type: 'STRING' },
-    concept: { type: 'STRING' },
     prerequisites: { type: 'STRING' },
-    mentalModel: { type: 'STRING' },
-    analogy: { type: 'STRING' },
-    deepExamples: { type: 'ARRAY', items: { type: 'STRING' } },
-    stepByStep: { type: 'ARRAY', items: { type: 'STRING' } },
+    coreConcept: { type: 'STRING' },
+    workedExamples: { type: 'ARRAY', items: { type: 'STRING' } },
     misconceptions: { type: 'ARRAY', items: { type: 'STRING' } },
-    criticalThinking: { type: 'ARRAY', items: { type: 'STRING' } },
     realWorldApps: { type: 'ARRAY', items: { type: 'STRING' } },
     advancedConcepts: { type: 'ARRAY', items: { type: 'STRING' } },
-    exercises: { type: 'ARRAY', items: { type: 'STRING' } },
-    deepQuestions: { type: 'ARRAY', items: { type: 'STRING' } },
+    practice: { type: 'ARRAY', items: { type: 'STRING' } },
     learningPath: { type: 'ARRAY', items: { type: 'STRING' } },
     keyInsights: { type: 'ARRAY', items: { type: 'STRING' } },
   },
   required: [
-    'summary', 'concept', 'prerequisites', 'mentalModel', 'analogy',
-    'deepExamples', 'stepByStep', 'misconceptions', 'criticalThinking',
-    'realWorldApps', 'advancedConcepts', 'exercises', 'deepQuestions',
+    'summary', 'prerequisites', 'coreConcept', 'workedExamples',
+    'misconceptions', 'realWorldApps', 'advancedConcepts', 'practice',
     'learningPath', 'keyInsights',
   ],
 };

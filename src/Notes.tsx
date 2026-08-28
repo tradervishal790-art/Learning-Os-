@@ -8,29 +8,30 @@ import { motion } from 'framer-motion';
 const NOTES_STATE_STORAGE_KEY = 'learning_os_notes_state';
 
 // Per-topic cache for topic-based "Deep Dive" generations, same idea as
-// the existing per-video `deepnotes_${videoId}` cache below — keyed by
+// the existing per-video `deepnotes_v2_${videoId}` cache below — keyed by
 // topic text so re-visiting the same topic (or the same video's title,
 // when embedded inside VideoIntel) loads instantly instead of re-generating.
+//
+// v2: schema went from 15 fields to 10 (merged concept/mentalModel/analogy
+// into coreConcept, and exercises/criticalThinking/deepQuestions into
+// practice) — bumped so old v1-shaped cached notes don't get loaded into
+// the new UI and render broken/missing sections. Old `deepnotes_topic_*` /
+// `deepnotes_v2_${videoId}` entries are simply orphaned, not migrated.
 function topicCacheKey(topic: string): string {
-  return `deepnotes_topic_${topic.trim().toLowerCase()}`;
+  return `deepnotes_v2_topic_${topic.trim().toLowerCase()}`;
 }
 
 interface DeepNotesData {
   topic: string;
   notesSource?: 'transcript' | 'metadata' | 'topic-only';
   summary: string;
-  concept: string;
   prerequisites: string;
-  mentalModel: string;
-  analogy: string;
-  deepExamples: string[];
-  stepByStep: string[];
+  coreConcept: string;
+  workedExamples: string[];
   misconceptions: string[];
-  criticalThinking: string[];
   realWorldApps: string[];
   advancedConcepts: string[];
-  exercises: string[];
-  deepQuestions: string[];
+  practice: string[];
   learningPath: string[];
   keyInsights: string[];
 }
@@ -179,7 +180,7 @@ export default function Notes({ videoTitle, videoDescription, videoId }: { video
     setCurrentVideoId(videoId);
 
     try {
-      const cached = localStorage.getItem(`deepnotes_${videoId}`);
+      const cached = localStorage.getItem(`deepnotes_v2_${videoId}`);
       if (cached) {
         setNotes(JSON.parse(cached));
         setLoading(false);
@@ -190,7 +191,7 @@ export default function Notes({ videoTitle, videoDescription, videoId }: { video
       const context = `Title: ${meta.title}\nDescription: ${meta.description.slice(0, 500)}`;
       const deepNotes = await generateDeepNotes(meta.title, context, videoId);
 
-      localStorage.setItem(`deepnotes_${videoId}`, JSON.stringify(deepNotes));
+      localStorage.setItem(`deepnotes_v2_${videoId}`, JSON.stringify(deepNotes));
       setNotes(deepNotes);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error generating notes from video');
@@ -201,18 +202,13 @@ export default function Notes({ videoTitle, videoDescription, videoId }: { video
 
   const sections = [
     { id: 'summary', label: 'Summary', key: 'summary' },
-    { id: 'concept', label: 'Concept', key: 'concept' },
     { id: 'prereq', label: 'Prerequisites', key: 'prerequisites' },
-    { id: 'mental', label: 'Mental Model', key: 'mentalModel' },
-    { id: 'analogy', label: 'Analogy', key: 'analogy' },
-    { id: 'examples', label: 'Deep Examples', key: 'deepExamples' },
-    { id: 'steps', label: 'Step-by-Step', key: 'stepByStep' },
+    { id: 'coreConcept', label: 'Core Concept', key: 'coreConcept' },
+    { id: 'workedExamples', label: 'Worked Examples', key: 'workedExamples' },
     { id: 'misconceptions', label: 'Misconceptions', key: 'misconceptions' },
-    { id: 'thinking', label: 'Critical Thinking', key: 'criticalThinking' },
-    { id: 'realworld', label: 'Real-World Apps', key: 'realWorldApps' },
+    { id: 'realworld', label: 'Real World Application', key: 'realWorldApps' },
     { id: 'advanced', label: 'Advanced', key: 'advancedConcepts' },
-    { id: 'exercises', label: 'Exercises', key: 'exercises' },
-    { id: 'questions', label: 'Deep Questions', key: 'deepQuestions' },
+    { id: 'practice', label: 'Practice', key: 'practice' },
     { id: 'path', label: 'Learning Path', key: 'learningPath' },
     { id: 'insights', label: 'Key Insights', key: 'keyInsights' },
   ];
