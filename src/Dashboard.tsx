@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
+import type { ComponentType } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Search } from 'lucide-react';
 import PagePlaceholder from './PagePlaceholder';
 import Roadmap from './Roadmap';
 import Revision from './Revision';
@@ -66,7 +68,7 @@ interface Blueprint {
   };
 }
 
-const sidebarItems: { id: DashboardPageId; label: string }[] = [
+const sidebarItems: { id: DashboardPageId; label: string; icon?: ComponentType<{ className?: string }> }[] = [
   { id: 'dashboard', label: 'Home' },
   { id: 'roadmap', label: 'Roadmap' },
   { id: 'revision', label: 'Revision' },
@@ -74,7 +76,7 @@ const sidebarItems: { id: DashboardPageId; label: string }[] = [
   { id: 'videos', label: 'Videos' },
   { id: 'mentor', label: 'Mentor' },
   { id: 'progress', label: 'Progress' },
-  { id: 'research', label: 'Research' },
+  { id: 'research', label: 'Research', icon: Search },
 ];
 
 const roleOptions = ['student', 'developer', 'researcher', 'business', 'exam', 'creator'];
@@ -423,6 +425,7 @@ export default function Dashboard({ userData, onUpdateUserData, onRegenerateRoad
             }}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${activePage === item.id ? 'bg-black text-white dark:bg-white dark:text-black' : 'text-gray-500 dark:text-white/50 hover:text-black dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5'}`}
           >
+            {item.icon && <item.icon className="w-4 h-4" />}
             {item.label}
           </motion.button>
         ))}

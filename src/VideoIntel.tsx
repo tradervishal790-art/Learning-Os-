@@ -6,6 +6,7 @@ import { withComputedSignal } from './engagementScoring';
 import { upsertEngagementSession } from './engagementStore';
 import { getRoadmapData, saveRoadmapData } from './roadmapData';
 import Notes from './Notes';
+import Research from './Research';
 
 declare global {
   interface Window {
@@ -240,6 +241,10 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
   const [watchHistory, setWatchHistory] = useState<WatchHistoryEntry[]>([]);
   const [errorMessage, setErrorMessage] = useState('');
   const [showDeepNotes, setShowDeepNotes] = useState(false);
+  // Research panel opens alongside the still-playing video (unlike Deep
+  // Notes, which replaces the page) — this is the "research in parallel
+  // while watching" flow, so it never touches the video player at all.
+  const [showResearch, setShowResearch] = useState(false);
   const [feedbackGiven, setFeedbackGiven] = useState<FeedbackValue>(null);
   // How this handoff's topic connects to the one the learner just finished
   // (see TopicBridge). Set once when a Roadmap "Watch videos" handoff loads,
@@ -935,13 +940,34 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                       </div>
                     </div>
 
-                    <button
-                      onClick={() => setShowDeepNotes(true)}
-                      className="w-full px-4 py-2.5 border border-gray-300 dark:border-white/10 rounded-lg font-semibold hover:bg-gray-100 dark:hover:bg-white/10 transition"
-                    >
-                      Deep Notes
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setShowDeepNotes(true)}
+                        className="flex-1 px-4 py-2.5 border border-gray-300 dark:border-white/10 rounded-lg font-semibold hover:bg-gray-100 dark:hover:bg-white/10 transition"
+                      >
+                        Deep Notes
+                      </button>
+                      <button
+                        onClick={() => setShowResearch((v) => !v)}
+                        className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-semibold transition border ${
+                          showResearch
+                            ? 'bg-black text-white dark:bg-white dark:text-black border-transparent'
+                            : 'border-gray-300 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10'
+                        }`}
+                      >
+                        <Search className="w-4 h-4" /> Research
+                      </button>
+                    </div>
                   </div>
+
+                  {showResearch && (
+                    <Research
+                      key={selectedVideo.id}
+                      embedded
+                      initialQuery={selectedVideo.title}
+                      onClose={() => setShowResearch(false)}
+                    />
+                  )}
                 </motion.div>
               ) : (
                 <div className="h-96 border border-gray-200 dark:border-white/10 rounded-2xl flex items-center justify-center">

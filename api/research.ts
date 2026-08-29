@@ -22,6 +22,24 @@ interface ResearchSource {
 
 const RESEARCH_MODEL = 'gemini-3-flash-preview'; // same pinned default as aiFallback.ts
 
+// Written to kill every "obviously AI" tell in the output — this is what
+// makes the page usable as an actual research aid instead of reading like
+// a chatbot disclaimer wrapped around a Wikipedia summary.
+const HUMAN_RESEARCH_STYLE = `Tum ek insaan ho jisne abhi is topic pe khud internet khangaal ke padha hai, aur apne kisi dost/colleague ko seedha bata rahe ho jo samajhna chahta hai. Hinglish mein likho, natural bolchaal wali tone mein — jaise koi likha hua notes nahi, seedha samjha raha ho.
+
+Sakht mana hai:
+- "Based on my research", "I hope this helps", "In conclusion", "Certainly!", "Great question", "As we can see", "It's important to note that", "Overall" jaise koi bhi AI-typical opener/closer/filler phrase — inn sab ko poori tarah avoid karo
+- Robotic intro jaise "Yahaan hai ek summary" ya "Is topic ke baare mein" — seedha content se shuru karo
+- Har point ko alag bullet mein todna jab wo ek hi flow ka hissa ho — jahan natural lage wahi bullet use karo, baaki normal paragraphs mein likho jaise baat kar rahe ho
+- Generic hedging ("it depends", "there are many factors") bina kisi specific fact ke — agar hedge karna hai to WHY bhi batao
+- Formal closing summary ya "Let me know if" jaisa kuch mat jodo
+
+Karna hai:
+- Seedha point pe aao, pehli line se hi kuch concrete batao
+- Specific facts, numbers, naam, dates jo search mein mile wahi use karo — vague mat raho
+- Jahan koi cheez interesting ya surprising lage, wahan wahi natural reaction dikhao jaise koi insaan dikhata (bina overdo kiye)
+- 200-350 words, lekin fixed structure follow mat karo — jo topic maange wahi likho`;
+
 async function groundedGeminiSearch(
   query: string,
   apiKey: string
@@ -29,17 +47,10 @@ async function groundedGeminiSearch(
   const body = {
     contents: [{ role: 'user', parts: [{ text: query }] }],
     system_instruction: {
-      parts: [
-        {
-          text:
-            'Aap ek research assistant hain. User ke query ka current, factual, well-organized summary do (Hinglish mein, natural tone). ' +
-            'Bullet points aur short paragraphs use karein. Bold important terms. 200-350 words. ' +
-            'Sirf apni knowledge se mat likho — search results ko ground truth maano.',
-        },
-      ],
+      parts: [{ text: HUMAN_RESEARCH_STYLE }],
     },
     tools: [{ googleSearch: {} }],
-    generationConfig: { temperature: 0.4, maxOutputTokens: 2048 },
+    generationConfig: { temperature: 0.75, maxOutputTokens: 2048 },
   };
 
   const res = await fetch(
@@ -100,8 +111,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { text } = await generateAIText({
       geminiApiKey: apiKey,
       minimaxApiKey,
-      systemInstruction:
-        'Aap ek research assistant hain. Hinglish mein, 200-300 words ka clear summary do. Bullet points use karein.',
+      systemInstruction: HUMAN_RESEARCH_STYLE,
       contents: [{ parts: [{ text: query }] }],
       generationConfig: { temperature: 0.4, maxOutputTokens: 2048 },
     });
