@@ -1,16 +1,16 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Search, ExternalLink, X } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 
-interface ResearchSource {
+interface SerpResult {
   title: string;
   url: string;
+  snippet: string;
 }
 
-interface ResearchResult {
+interface ResearchResponse {
   query: string;
-  summary: string;
-  sources: ResearchSource[];
+  results: SerpResult[];
   grounded: boolean;
 }
 
@@ -21,7 +21,16 @@ function cacheKey(query: string): string {
   return `${RESEARCH_CACHE_PREFIX}${query.trim().toLowerCase()}`;
 }
 
-async function runResearch(query: string): Promise<ResearchResult> {
+function displayUrl(url: string): string {
+  try {
+    const u = new URL(url);
+    return u.hostname.replace(/^www\./, '') + u.pathname.replace(/\/$/, '');
+  } catch {
+    return url;
+  }
+}
+
+async function runResearch(query: string): Promise<ResearchResponse> {
   const response = await fetch('/api/research', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -34,37 +43,34 @@ async function runResearch(query: string): Promise<ResearchResult> {
     throw new Error(data?.error || `Research failed (${response.status})`);
   }
 
-  return { query, summary: data.summary, sources: data.sources ?? [], grounded: !!data.grounded };
+  return { query, results: data.results ?? [], grounded: !!data.grounded };
 }
 
 interface ResearchProps {
   /** Compact mode — used when opened alongside a playing video (VideoIntel)
-   *  so the learner can research without leaving/pausing the video. Drops
-   *  the full-page chrome and skips the standalone session restore. */
+   *  so the learner can research without leaving/pausing the video. Opens
+   *  as a blank search space every time — it does NOT auto-search the
+   *  video's title, since the point is a free research space, not a
+   *  pre-filled "about this video" lookup. */
   embedded?: boolean;
-  initialQuery?: string;
   onClose?: () => void;
 }
 
-export default function Research({ embedded = false, initialQuery, onClose }: ResearchProps) {
-  const [query, setQuery] = useState(initialQuery || '');
-  const [result, setResult] = useState<ResearchResult | null>(null);
+export default function Research({ embedded = false, onClose }: ResearchProps) {
+  const [query, setQuery] = useState('');
+  const [result, setResult] = useState<ResearchResponse | null>(null);
   const [history, setHistory] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Standalone mode restores the last session. Embedded mode starts fresh
-  // each time (it's scoped to whatever video is open right now) but still
-  // auto-searches the video's title if one was passed in.
+  // Standalone mode restores the last session. Embedded mode always opens
+  // as a blank search space (see ResearchProps.embedded doc above).
   useEffect(() => {
-    if (embedded) {
-      if (initialQuery) handleSearch(initialQuery);
-      return;
-    }
+    if (embedded) return;
     try {
       const saved = localStorage.getItem(RESEARCH_STATE_STORAGE_KEY);
       if (saved) {
-        const parsed = JSON.parse(saved) as { query: string; result: ResearchResult | null; history: string[] };
+        const parsed = JSON.parse(saved) as { query: string; result: ResearchResponse | null; history: string[] };
         if (parsed.query) setQuery(parsed.query);
         if (parsed.result) setResult(parsed.result);
         if (parsed.history) setHistory(parsed.history);
@@ -72,8 +78,7 @@ export default function Research({ embedded = false, initialQuery, onClose }: Re
     } catch {
       // Corrupted storage — ignore, start fresh.
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [embedded]);
 
   useEffect(() => {
     if (embedded) return;
@@ -85,13 +90,12 @@ export default function Research({ embedded = false, initialQuery, onClose }: Re
     }
   }, [embedded, query, result, history]);
 
-  const handleSearch = async (searchQuery?: string) => {
-    const q = (searchQuery ?? query).trim();
+  const handleSearch = async () => {
+    const q = query.trim();
     if (!q) return;
 
     setLoading(true);
     setError('');
-    setQuery(q);
 
     try {
       const cached = localStorage.getItem(cacheKey(q));
@@ -124,12 +128,13 @@ export default function Research({ embedded = false, initialQuery, onClose }: Re
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
           placeholder="Kya jaanna hai?"
+          autoFocus={embedded}
           className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg pl-9 pr-4 py-2.5 placeholder-gray-400 dark:placeholder-white/40 focus:outline-none focus:border-black dark:focus:border-white"
         />
       </div>
       <div className="flex gap-2 mt-2">
         <button
-          onClick={() => handleSearch()}
+          onClick={handleSearch}
           disabled={loading || !query.trim()}
           className="flex-1 px-5 py-2.5 bg-black text-white dark:bg-white dark:text-black disabled:opacity-40 rounded-lg font-semibold transition"
         >
@@ -148,45 +153,28 @@ export default function Research({ embedded = false, initialQuery, onClose }: Re
     </div>
   );
 
-  const resultBlock = result && (
-    <div className={embedded ? 'mt-4' : 'max-w-4xl mx-auto'}>
-      <motion.div
-        key={result.query}
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className={`bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl p-5 ${embedded ? '' : 'md:p-8 mb-6'}`}
-      >
-        {!result.grounded && (
-          <p className="text-xs text-gray-400 dark:text-white/40 mb-3">
-            Live search source nahi mila is baar — ye general knowledge se likha gaya jawab hai, current cheezon ke liye double-check kar lena
-          </p>
-        )}
-        <h2 className={`font-bold mb-3 ${embedded ? 'text-lg' : 'text-2xl mb-4'}`}>{result.query}</h2>
-        <div className="text-gray-700 dark:text-white/80 leading-relaxed whitespace-pre-wrap text-sm">{result.summary}</div>
-      </motion.div>
-
-      {result.sources.length > 0 && (
-        <div className={embedded ? 'mt-4' : 'mt-0'}>
-          <h3 className="text-xs font-semibold text-gray-400 dark:text-white/40 mb-3 uppercase tracking-wide">Sources</h3>
-          <div className={`grid gap-2 ${embedded ? '' : 'sm:grid-cols-2'}`}>
-            {result.sources.map((s, i) => (
-              <a
-                key={i}
-                href={s.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-start gap-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg p-3 hover:bg-gray-100 dark:hover:bg-white/10 hover:border-black dark:hover:border-white/30 transition"
-              >
-                <ExternalLink className="w-3.5 h-3.5 mt-0.5 flex-shrink-0 text-gray-400 dark:text-white/40" />
-                <div className="min-w-0">
-                  <p className="text-sm font-medium line-clamp-2">{s.title}</p>
-                  <p className="text-xs text-gray-400 dark:text-white/40 truncate">{s.url}</p>
-                </div>
-              </a>
-            ))}
-          </div>
-        </div>
+  // Renders like a search-engine results page: title link, url line,
+  // snippet — one card per source, instead of one AI-written essay.
+  const resultsBlock = result && result.results.length > 0 && (
+    <div className={embedded ? 'mt-4 space-y-4' : 'max-w-3xl mx-auto space-y-5'}>
+      {!result.grounded && (
+        <p className="text-xs text-gray-400 dark:text-white/40">
+          Live search source nahi mila is baar — neeche wala jawab general knowledge se hai, current cheezon ke liye double-check kar lena
+        </p>
       )}
+      {result.results.map((r, i) => (
+        <motion.div key={i} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
+          {r.url ? (
+            <a href={r.url} target="_blank" rel="noopener noreferrer" className="group block">
+              <p className="text-xs text-gray-400 dark:text-white/40 truncate mb-0.5">{displayUrl(r.url)}</p>
+              <h3 className="text-base font-medium underline-offset-2 group-hover:underline">{r.title}</h3>
+            </a>
+          ) : (
+            <h3 className="text-base font-medium">{r.title}</h3>
+          )}
+          <p className="text-sm text-gray-600 dark:text-white/70 leading-relaxed mt-1">{r.snippet}</p>
+        </motion.div>
+      ))}
     </div>
   );
 
@@ -199,7 +187,10 @@ export default function Research({ embedded = false, initialQuery, onClose }: Re
         </div>
         {searchBar}
         {error && <p className="text-red-500 dark:text-red-400 text-sm mt-2">{error}</p>}
-        {resultBlock}
+        {resultsBlock}
+        {!result && !loading && (
+          <p className="text-sm text-gray-400 dark:text-white/40 mt-4">Kuch bhi search karo — video chalti rahegi.</p>
+        )}
       </div>
     );
   }
@@ -213,7 +204,7 @@ export default function Research({ embedded = false, initialQuery, onClose }: Re
         <p className="text-gray-500 dark:text-white/60">Koi bhi topic search karo — internet se</p>
       </motion.div>
 
-      <div className="max-w-4xl mx-auto mb-6">
+      <div className="max-w-3xl mx-auto mb-6">
         {searchBar}
         {error && <p className="text-red-500 dark:text-red-400 text-sm mt-2">{error}</p>}
 
@@ -222,7 +213,10 @@ export default function Research({ embedded = false, initialQuery, onClose }: Re
             {history.map((h) => (
               <button
                 key={h}
-                onClick={() => handleSearch(h)}
+                onClick={() => {
+                  setQuery(h);
+                  setTimeout(handleSearch, 0);
+                }}
                 className="px-3 py-1.5 border border-gray-200 dark:border-white/10 rounded-full text-xs text-gray-500 dark:text-white/60 hover:bg-gray-100 dark:hover:bg-white/10 hover:text-black dark:hover:text-white transition"
               >
                 {h}
@@ -232,7 +226,7 @@ export default function Research({ embedded = false, initialQuery, onClose }: Re
         )}
       </div>
 
-      {resultBlock}
+      {resultsBlock}
 
       {!result && !loading && (
         <div className="max-w-2xl mx-auto text-center py-16 text-gray-400 dark:text-white/60">

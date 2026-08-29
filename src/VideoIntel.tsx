@@ -961,12 +961,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                   </div>
 
                   {showResearch && (
-                    <Research
-                      key={selectedVideo.id}
-                      embedded
-                      initialQuery={selectedVideo.title}
-                      onClose={() => setShowResearch(false)}
-                    />
+                    <Research key={selectedVideo.id} embedded onClose={() => setShowResearch(false)} />
                   )}
                 </motion.div>
               ) : (
