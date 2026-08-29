@@ -115,8 +115,8 @@ export default function Research({ embedded = false, initialQuery, onClose }: Re
   };
 
   const searchBar = (
-    <div className="flex gap-2">
-      <div className="flex-1 relative">
+    <div>
+      <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-white/40" />
         <input
           type="text"
@@ -127,22 +127,24 @@ export default function Research({ embedded = false, initialQuery, onClose }: Re
           className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg pl-9 pr-4 py-2.5 placeholder-gray-400 dark:placeholder-white/40 focus:outline-none focus:border-black dark:focus:border-white"
         />
       </div>
-      <button
-        onClick={() => handleSearch()}
-        disabled={loading || !query.trim()}
-        className="px-5 py-2.5 bg-black text-white dark:bg-white dark:text-black disabled:opacity-40 rounded-lg font-semibold transition"
-      >
-        {loading ? '...' : 'Search'}
-      </button>
-      {embedded && onClose && (
+      <div className="flex gap-2 mt-2">
         <button
-          onClick={onClose}
-          className="px-3 py-2.5 border border-gray-200 dark:border-white/10 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 transition"
-          aria-label="Close research panel"
+          onClick={() => handleSearch()}
+          disabled={loading || !query.trim()}
+          className="flex-1 px-5 py-2.5 bg-black text-white dark:bg-white dark:text-black disabled:opacity-40 rounded-lg font-semibold transition"
         >
-          <X className="w-4 h-4" />
+          {loading ? '...' : 'Search'}
         </button>
-      )}
+        {embedded && onClose && (
+          <button
+            onClick={onClose}
+            className="px-3 py-2.5 border border-gray-200 dark:border-white/10 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 transition"
+            aria-label="Close research panel"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        )}
+      </div>
     </div>
   );
 

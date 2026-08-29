@@ -219,12 +219,12 @@ export default function Notes({ videoTitle, videoDescription, videoId }: { video
     const data = (notes as any)[section!.key];
 
     if (typeof data === 'string') {
-      return <p className="text-white/80 leading-relaxed whitespace-pre-wrap">{data}</p>;
+      return <p className="text-gray-700 dark:text-white/80 leading-relaxed whitespace-pre-wrap">{data}</p>;
     }
     return (
       <ul className="space-y-3">
         {data.map((item: string, i: number) => (
-          <li key={i} className="text-white/80 leading-relaxed">
+          <li key={i} className="text-gray-700 dark:text-white/80 leading-relaxed">
             • {item}
           </li>
         ))}
@@ -233,10 +233,10 @@ export default function Notes({ videoTitle, videoDescription, videoId }: { video
   };
 
   return (
-    <div className="min-h-screen bg-[#030303] text-white p-4 md:p-8">
+    <div className="min-h-screen bg-white dark:bg-black text-black dark:text-white p-4 md:p-8">
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
         <h1 className="text-4xl font-bold mb-2">Deep Learning Notes</h1>
-        <p className="text-white/60">Detailed, comprehensive notes for true mastery</p>
+        <p className="text-gray-500 dark:text-white/60">Detailed, comprehensive notes for true mastery</p>
       </motion.div>
 
       <div className="max-w-4xl mx-auto mb-6">
@@ -247,12 +247,12 @@ export default function Notes({ videoTitle, videoDescription, videoId }: { video
             onChange={(e) => setTopic(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleGenerate()}
             placeholder="Topic for deep learning..."
-            className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 placeholder-white/40 focus:outline-none focus:border-purple-500/50"
+            className="flex-1 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 placeholder-gray-400 dark:placeholder-white/40 focus:outline-none focus:border-black dark:focus:border-white"
           />
           <button
             onClick={handleGenerate}
             disabled={loading || !topic.trim()}
-            className="px-6 py-3 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 rounded-xl font-semibold transition"
+            className="px-6 py-3 bg-black text-white dark:bg-white dark:text-black disabled:opacity-40 rounded-xl font-semibold transition"
           >
             {loading ? '...' : 'Deep Dive'}
           </button>
@@ -265,18 +265,18 @@ export default function Notes({ videoTitle, videoDescription, videoId }: { video
             onChange={(e) => setYoutubeUrl(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleGenerateFromVideo()}
             placeholder="Link"
-            className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 placeholder-white/40 focus:outline-none focus:border-purple-500/50"
+            className="flex-1 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 placeholder-gray-400 dark:placeholder-white/40 focus:outline-none focus:border-black dark:focus:border-white"
           />
           <button
             onClick={handleGenerateFromVideo}
             disabled={loading || !youtubeUrl.trim()}
-            className="px-6 py-3 bg-white/10 hover:bg-white/20 disabled:opacity-50 rounded-xl font-semibold transition"
+            className="px-6 py-3 border border-gray-300 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/20 disabled:opacity-40 rounded-xl font-semibold transition"
           >
             {loading ? '...' : 'From Video'}
           </button>
         </div>
 
-        {error && <p className="text-yellow-400 text-sm mt-2">{error}</p>}
+        {error && <p className="text-yellow-600 dark:text-yellow-400 text-sm mt-2">{error}</p>}
       </div>
 
       {notes && (
@@ -287,7 +287,9 @@ export default function Notes({ videoTitle, videoDescription, videoId }: { video
                 key={s.id}
                 onClick={() => setActiveSection(s.id)}
                 className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition ${
-                  activeSection === s.id ? 'bg-white text-black' : 'bg-white/5 border border-white/10 text-white/60 hover:bg-white/10'
+                  activeSection === s.id
+                    ? 'bg-black text-white dark:bg-white dark:text-black'
+                    : 'bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-500 dark:text-white/60 hover:bg-gray-100 dark:hover:bg-white/10'
                 }`}
               >
                 {s.label}
@@ -299,23 +301,23 @@ export default function Notes({ videoTitle, videoDescription, videoId }: { video
             key={activeSection}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white/5 border border-white/10 rounded-2xl p-8"
+            className="bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl p-8"
           >
             {currentVideoId && (
               <a
                 href={`https://youtube.com/watch?v=${currentVideoId}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-xs text-purple-400 hover:underline mb-3 inline-block"
+                className="text-xs underline mb-3 inline-block text-gray-500 dark:text-white/60 hover:text-black dark:hover:text-white"
               >
                 🎥 Source video dekho
               </a>
             )}
             {notes.notesSource === 'transcript' && (
-              <p className="text-xs text-white/40 mb-3">✓ Video transcript se banaye gaye notes</p>
+              <p className="text-xs text-gray-400 dark:text-white/40 mb-3">✓ Video transcript se banaye gaye notes</p>
             )}
             {notes.notesSource === 'metadata' && (
-              <p className="text-xs text-white/40 mb-3">⚠ Transcript available nahi thi — sirf title/description se banaye gaye</p>
+              <p className="text-xs text-gray-400 dark:text-white/40 mb-3">⚠ Transcript available nahi thi — sirf title/description se banaye gaye</p>
             )}
             <h2 className="text-2xl font-bold mb-4">
               {sections.find((s) => s.id === activeSection)?.label} — {notes.topic}
@@ -326,7 +328,7 @@ export default function Notes({ videoTitle, videoDescription, videoId }: { video
       )}
 
       {!notes && !loading && (
-        <div className="max-w-2xl mx-auto text-center py-16 text-white/60">
+        <div className="max-w-2xl mx-auto text-center py-16 text-gray-400 dark:text-white/60">
           <p className="text-lg mb-2">Enter a topic for comprehensive, deep learning notes</p>
           <p className="text-sm">Goes beyond basics - covers WHY, HOW, and WHERE</p>
         </div>

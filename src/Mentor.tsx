@@ -122,14 +122,14 @@ export default function Mentor() {
   };
 
   return (
-    <div className="min-h-screen bg-[#030303] text-white flex flex-col p-4 md:p-8">
+    <div className="min-h-screen bg-white dark:bg-black text-black dark:text-white flex flex-col p-4 md:p-8">
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
         <h1 className="text-4xl font-bold mb-2">🤖 AI Mentor</h1>
-        <p className="text-white/60">Ask anything, get structured guidance</p>
+        <p className="text-gray-500 dark:text-white/60">Ask anything, get structured guidance</p>
       </motion.div>
 
       {/* Chat area */}
-      <div className="flex-1 max-w-4xl mx-auto w-full bg-white/5 border border-white/10 rounded-2xl flex flex-col overflow-hidden">
+      <div className="flex-1 max-w-4xl mx-auto w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl flex flex-col overflow-hidden">
         <div className="flex-1 overflow-y-auto p-6 space-y-4" style={{ maxHeight: '60vh' }}>
           <AnimatePresence>
             {messages.map((msg) => (
@@ -142,8 +142,8 @@ export default function Mentor() {
                 <div
                   className={`max-w-[80%] p-4 rounded-2xl ${
                     msg.role === 'user'
-                      ? 'bg-purple-600 text-white'
-                      : 'bg-white/10 border border-white/10 text-white'
+                      ? 'bg-black text-white dark:bg-white dark:text-black'
+                      : 'bg-gray-100 dark:bg-white/10 border border-gray-200 dark:border-white/10 text-black dark:text-white'
                   }`}
                 >
                   <div className="text-xs opacity-60 mb-1">
@@ -155,11 +155,11 @@ export default function Mentor() {
             ))}
             {loading && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-start">
-                <div className="bg-white/10 border border-white/10 p-4 rounded-2xl">
+                <div className="bg-gray-100 dark:bg-white/10 border border-gray-200 dark:border-white/10 p-4 rounded-2xl">
                   <div className="flex gap-1">
-                    <span className="w-2 h-2 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                    <span className="w-2 h-2 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                    <span className="w-2 h-2 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                    <span className="w-2 h-2 bg-gray-400 dark:bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <span className="w-2 h-2 bg-gray-400 dark:bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <span className="w-2 h-2 bg-gray-400 dark:bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                   </div>
                 </div>
               </motion.div>
@@ -169,13 +169,13 @@ export default function Mentor() {
         </div>
 
         {/* Quick prompts */}
-        <div className="px-6 py-3 border-t border-white/5 flex gap-2 overflow-x-auto">
+        <div className="px-6 py-3 border-t border-gray-200 dark:border-white/5 flex gap-2 overflow-x-auto">
           {SUGGESTED_PROMPTS.map((p) => (
             <button
               key={p.label}
               onClick={() => sendMessage(p.prompt)}
               disabled={loading}
-              className="flex-shrink-0 px-3 py-1.5 bg-white/5 border border-white/10 rounded-full text-xs hover:bg-white/10 transition disabled:opacity-50"
+              className="flex-shrink-0 px-3 py-1.5 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-full text-xs hover:bg-gray-100 dark:hover:bg-white/10 transition disabled:opacity-50"
             >
               {p.icon} {p.label}
             </button>
@@ -183,7 +183,7 @@ export default function Mentor() {
         </div>
 
         {/* Input */}
-        <div className="p-4 border-t border-white/10 flex gap-2">
+        <div className="p-4 border-t border-gray-200 dark:border-white/10 flex gap-2">
           <input
             type="text"
             value={input}
@@ -191,12 +191,12 @@ export default function Mentor() {
             onKeyDown={(e) => e.key === 'Enter' && sendMessage(input)}
             placeholder="Ask anything..."
             disabled={loading}
-            className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 placeholder-white/40 focus:outline-none focus:border-purple-500/50"
+            className="flex-1 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-2.5 placeholder-gray-400 dark:placeholder-white/40 focus:outline-none focus:border-black dark:focus:border-white"
           />
           <button
             onClick={() => sendMessage(input)}
             disabled={loading || !input.trim()}
-            className="px-5 py-2.5 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 rounded-xl font-semibold transition"
+            className="px-5 py-2.5 bg-black text-white dark:bg-white dark:text-black disabled:opacity-40 rounded-xl font-semibold transition"
           >
             Send
           </button>
