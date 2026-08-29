@@ -180,7 +180,8 @@ export type DashboardPageId =
   | 'notes'
   | 'videos'
   | 'mentor'
-  | 'progress';
+  | 'progress'
+  | 'research';
   // ---------- Learning Style Profile ----------
 export interface LearningProfile {
   pace: number;

@@ -16,6 +16,7 @@ import type { DashboardPageId, PageConfig, UserOnboardingData, LearningProfile, 
 import Mentor from './Mentor';
 import Notes from './Notes';
 import Progress from './progress';
+import Research from './Research';
 
 interface DashboardProps {
   userData: UserOnboardingData | null;
@@ -73,6 +74,7 @@ const sidebarItems: { id: DashboardPageId; label: string }[] = [
   { id: 'videos', label: 'Videos' },
   { id: 'mentor', label: 'Mentor' },
   { id: 'progress', label: 'Progress' },
+  { id: 'research', label: 'Research' },
 ];
 
 const roleOptions = ['student', 'developer', 'researcher', 'business', 'exam', 'creator'];
@@ -610,6 +612,7 @@ export default function Dashboard({ userData, onUpdateUserData, onRegenerateRoad
         {activePage === 'mentor' && <Mentor />}
         {activePage === 'notes' && <Notes />}
         {activePage === 'progress' && <Progress goals={goals} />}
+        {activePage === 'research' && <Research />}
 
         {config && (
           <PagePlaceholder
