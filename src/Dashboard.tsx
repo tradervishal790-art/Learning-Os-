@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { ComponentType } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search } from 'lucide-react';
+import { Search, Film } from 'lucide-react';
 import PagePlaceholder from './PagePlaceholder';
 import Roadmap from './Roadmap';
 import Revision from './Revision';
 import VideoIntel from './VideoIntel';
 import BlueprintInterview from './BlueprintInterview';
+import TasteOnboarding from './TasteOnboarding';
 import { getRoadmapData, getCurrentTopic } from './roadmapData';
 import { getRevisionStats, getRevisionDataForGoals } from './revisionData';
 import { getLearningProfile, saveLearningProfile, clearLearningProfile } from './learningProfileStore';
@@ -153,6 +154,9 @@ export default function Dashboard({ userData, onUpdateUserData, onRegenerateRoad
   const [showSidebar, setShowSidebar] = useState(false);
   const [streak, setStreak] = useState(0);
   const [showLearningQuiz, setShowLearningQuiz] = useState(false);
+  // Alternative onboarding path — does NOT replace showLearningQuiz above,
+  // both remain independently reachable from the home page.
+  const [showTasteOnboarding, setShowTasteOnboarding] = useState(false);
   const [learningProfile, setLearningProfile] = useState<LearningProfile | null>(getLearningProfile);
   const [preloadedPlaylist, setPreloadedPlaylist] = useState<{ primary: Video; fallbacks: Video[]; bridge?: TopicBridge } | null>(null);
   // Which topic's saved-video slot the Videos page is currently showing —
@@ -162,6 +166,10 @@ export default function Dashboard({ userData, onUpdateUserData, onRegenerateRoad
   const [viewingTopicId, setViewingTopicId] = useState<string | null>(null);
 
   const [showSettings, setShowSettings] = useState(false);
+  // Deep-settings: the full learning-profile report is hidden by default,
+  // only rendered when the user explicitly expands it here — see the
+  // "Learning Profile Report" section inside the Settings modal below.
+  const [showFullProfileReport, setShowFullProfileReport] = useState(false);
   const [settingsName, setSettingsName] = useState(userData?.name ?? '');
   const [settingsRole, setSettingsRole] = useState(userData?.role ?? '');
   const [settingsGoal, setSettingsGoal] = useState(userData?.goal ?? '');
@@ -191,6 +199,13 @@ export default function Dashboard({ userData, onUpdateUserData, onRegenerateRoad
     setLearningProfile(profile);
     saveLearningProfile(profile);
     setShowLearningQuiz(false);
+  };
+
+  const handleTasteOnboardingComplete = (profile: LearningProfile) => {
+    // TasteOnboarding.tsx already persisted this via saveLearningProfile/
+    // mergeLearningProfile internally — this just syncs Dashboard's own
+    // state so the home page's Learning Style card reflects it immediately.
+    setLearningProfile(profile);
   };
 
   const handleClearProfile = () => {
@@ -366,6 +381,15 @@ export default function Dashboard({ userData, onUpdateUserData, onRegenerateRoad
     );
   }
 
+  if (showTasteOnboarding) {
+    return (
+      <TasteOnboarding
+        onComplete={handleTasteOnboardingComplete}
+        onClose={() => setShowTasteOnboarding(false)}
+      />
+    );
+  }
+
   const displayName = userData?.name?.trim() || 'Learner';
   const currentTopic = getCurrentTopic(getRoadmapData(activeGoalId ?? undefined));
   const revisionStats = getRevisionStats(getRevisionDataForGoals(goals));
@@ -491,7 +515,7 @@ export default function Dashboard({ userData, onUpdateUserData, onRegenerateRoad
               </span>
             </h2>
           </div>
-          <button onClick={() => setShowSettings(true)} className="px-3 md:px-4 py-2 rounded-full border border-gray-300 dark:border-white/10 text-sm hover:bg-gray-100 dark:hover:bg-white/10 transition flex-shrink-0">
+          <button onClick={() => { setShowSettings(true); setShowFullProfileReport(false); }} className="px-3 md:px-4 py-2 rounded-full border border-gray-300 dark:border-white/10 text-sm hover:bg-gray-100 dark:hover:bg-white/10 transition flex-shrink-0">
             Settings
           </button>
         </motion.div>
@@ -551,23 +575,14 @@ export default function Dashboard({ userData, onUpdateUserData, onRegenerateRoad
             >
               <h3 className="font-semibold mb-1">{learningProfile ? 'Learning Style' : 'Find Your Style'}</h3>
               <p className="text-xs text-gray-400 dark:text-white/40 mb-4">
-                {learningProfile ? 'From your assessment' : 'Short quiz for better matches'}
+                {learningProfile
+                  ? 'Profile ready — full report Settings me hai'
+                  : 'Short quiz for better matches'}
               </p>
               {learningProfile && (
-                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-500 dark:text-white/60 mb-4">
-                  <div>Pace: {learningProfile.pace}/10</div>
-                  <div>Practical: {learningProfile.theoryVsPractical}/10</div>
-                  <div>Structure: {learningProfile.structureNeed}/10</div>
-                  <div>Depth: {learningProfile.depth}/10</div>
-                  <div>Language: {learningProfile.languageComplexity}/10</div>
-                  <div>Storytelling: {learningProfile.storytelling}/10</div>
-                  <div>Repetition: {learningProfile.repetitionNeed}/10</div>
-                  <div>Reliability: {learningProfile.reliabilityScore}%</div>
-                </div>
-              )}
-              {learningProfile?.blueprintReport && (
-                <p className="text-xs text-gray-500 dark:text-white/60 leading-relaxed mb-4 border-t border-gray-200 dark:border-white/10 pt-3">
-                  {learningProfile.blueprintReport}
+                <p className="text-xs text-gray-500 dark:text-white/60 mb-4">
+                  ✓ 8 learning dimensions set — pace, depth, structure aur baaki. Settings → "Learning Profile
+                  Report" me poora breakdown dekho.
                 </p>
               )}
               <button
@@ -575,6 +590,13 @@ export default function Dashboard({ userData, onUpdateUserData, onRegenerateRoad
                 className="w-full py-2.5 rounded-xl border border-gray-300 dark:border-white/10 text-sm font-medium hover:bg-gray-100 dark:hover:bg-white/10 transition"
               >
                 {learningProfile ? 'Retake Blueprint Interview' : 'Start Blueprint Interview'}
+              </button>
+              <button
+                onClick={() => setShowTasteOnboarding(true)}
+                className="w-full mt-2 py-2.5 rounded-xl border border-gray-300 dark:border-white/10 text-sm font-medium hover:bg-gray-100 dark:hover:bg-white/10 transition flex items-center justify-center gap-2"
+              >
+                <Film className="w-4 h-4" />
+                Analyze Videos I've Watched
               </button>
               {learningProfile && (
                 <button
@@ -737,6 +759,45 @@ export default function Dashboard({ userData, onUpdateUserData, onRegenerateRoad
                     <p className="text-xs text-red-500 dark:text-red-400 mt-2">Kuch gadbad ho gayi, dobara try karo.</p>
                   )}
                 </div>
+
+                {/* Deep setting — the full learning-profile report lives here,
+                    not on the home page. Collapsed by default; only renders
+                    when the user explicitly taps to view it. */}
+                {learningProfile && (
+                  <div className="pt-2 border-t border-gray-200 dark:border-white/10">
+                    <label className="block text-xs uppercase tracking-wider text-gray-400 dark:text-white/40 mb-2 mt-4">
+                      Learning Profile Report
+                    </label>
+                    <p className="text-xs text-gray-400 dark:text-white/40 mb-3">
+                      Yeh sirf request karne par dikhta hai — home page pe sirf ek short summary hoti hai.
+                    </p>
+                    <button
+                      onClick={() => setShowFullProfileReport((v) => !v)}
+                      className="w-full py-2.5 rounded-xl border border-gray-300 dark:border-white/10 text-sm font-medium hover:bg-gray-100 dark:hover:bg-white/10 transition"
+                    >
+                      {showFullProfileReport ? 'Hide Report' : 'View Full Report'}
+                    </button>
+                    {showFullProfileReport && (
+                      <div className="mt-3">
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-500 dark:text-white/60 mb-3">
+                          <div>Pace: {learningProfile.pace}/10</div>
+                          <div>Practical: {learningProfile.theoryVsPractical}/10</div>
+                          <div>Structure: {learningProfile.structureNeed}/10</div>
+                          <div>Depth: {learningProfile.depth}/10</div>
+                          <div>Language: {learningProfile.languageComplexity}/10</div>
+                          <div>Storytelling: {learningProfile.storytelling}/10</div>
+                          <div>Repetition: {learningProfile.repetitionNeed}/10</div>
+                          <div>Reliability: {learningProfile.reliabilityScore}%</div>
+                        </div>
+                        {learningProfile.blueprintReport && (
+                          <p className="text-xs text-gray-500 dark:text-white/60 leading-relaxed border-t border-gray-200 dark:border-white/10 pt-3">
+                            {learningProfile.blueprintReport}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="p-6 pt-0">

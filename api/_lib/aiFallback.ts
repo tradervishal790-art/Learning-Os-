@@ -29,7 +29,15 @@
 // MiniMax dashboard for the current base URL and confirm your key's region.
 
 interface GeminiPart {
-  text: string;
+  text?: string;
+  // ── Added for video-taste analysis (api/analyze-taste-video.ts) ────────
+  // A YouTube URL passed as fileData — Gemini fetches the video itself
+  // server-side, no download/yt-dlp/ffmpeg needed on our end. videoMetadata
+  // trims it to a specific clip (e.g. startOffset:'0s', endOffset:'45s')
+  // so we only pay for/process a few short clips per video, not the full
+  // 45+ min. See: https://ai.google.dev/gemini-api/docs/video-understanding
+  fileData?: { fileUri: string; mimeType: string };
+  videoMetadata?: { startOffset: string; endOffset: string; fps?: number };
 }
 interface GeminiContent {
   role?: string; // 'user' | 'model'
@@ -124,10 +132,22 @@ function contentsToMinimaxMessages(
   const messages: { role: 'system' | 'user' | 'assistant'; content: string }[] = [];
   if (systemInstruction) messages.push({ role: 'system', content: systemInstruction });
   for (const c of contents) {
-    const text = c.parts.map((p) => p.text).join('\n');
+    // Only text parts carry over — fileData (video) parts have no `text`
+    // and are silently dropped here (see hasVideoParts() below, which
+    // stops generateAIText from ever routing a video request to MiniMax
+    // in the first place, so this filter is a defensive no-op in practice).
+    const text = c.parts.filter((p) => typeof p.text === 'string').map((p) => p.text).join('\n');
     messages.push({ role: c.role === 'model' ? 'assistant' : 'user', content: text });
   }
   return messages;
+}
+
+/** MiniMax's chat-completions API is text-only — it cannot accept the
+ *  fileData/videoMetadata parts used for video-taste analysis. Detect
+ *  those up front so generateAIText can skip the MiniMax attempt entirely
+ *  instead of silently sending it a request stripped of its actual content. */
+function hasVideoParts(contents: GeminiContent[]): boolean {
+  return contents.some((c) => c.parts.some((p) => !!p.fileData));
 }
 
 async function tryMinimax(params: AICallParams): Promise<{ ok: true; text: string } | { ok: false; status: number }> {
@@ -189,6 +209,19 @@ export async function generateAIText(params: AICallParams): Promise<AICallResult
     // A genuinely non-retriable Gemini error (e.g. 401 invalid key on our
     // own side) — still worth trying MiniMax rather than giving up, since
     // it's a completely separate credential/provider.
+  }
+
+  if (hasVideoParts(params.contents)) {
+    // Don't call tryMinimax at all — it would silently drop the video and
+    // either return a hallucinated answer or an unhelpful empty-content
+    // error. Fail clearly instead so the caller falls back to its own
+    // non-video path (e.g. transcript/metadata-only analysis).
+    const err = new Error(
+      `Gemini failed (status ${geminiResult.status}) and MiniMax cannot process video content — no fallback available for this request`
+    ) as Error & { geminiStatus: number; minimaxStatus: number };
+    err.geminiStatus = geminiResult.status;
+    err.minimaxStatus = 0;
+    throw err;
   }
 
   const minimaxResult = await tryMinimax(params);

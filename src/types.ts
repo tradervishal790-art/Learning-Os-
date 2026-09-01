@@ -222,6 +222,35 @@ export type ApiResult<T> =
 // ---------- Teacher-style analysis source tracking ----------
 export type AnalysisSource = 'transcript' | 'metadata-fallback';
 
+// ---------- Video-taste onboarding (TasteOnboarding.tsx) ----------
+// Alternative to the Blueprint Interview / old quiz — user submits YouTube
+// videos they've already fully watched (45+ min each), and each one is
+// analyzed for both content (teaching-style dimensions, same as
+// analyze-video.ts) and production style (music/editing/pacing, from
+// sampled clips). See api/analyze-taste-video.ts.
+export interface VideoStyleProfile {
+  music_presence: boolean;
+  music_energy: 'none' | 'low' | 'medium' | 'high';
+  visual_style: 'talking-head' | 'slides' | 'screen-recording' | 'animation' | 'mixed';
+  cut_frequency: 'low' | 'medium' | 'high';
+  on_screen_text: boolean;
+  pacing_feel: 'calm' | 'moderate' | 'energetic';
+  notes: string;
+}
+
+export interface TasteVideoResult {
+  videoId: string;
+  title: string;
+  durationSeconds: number;
+  // Raw dimension scores as returned by the API (snake_case keys, 1-10) —
+  // mapped to LearningProfile's camelCase DimensionKeys by
+  // tasteProfileScoring.ts before merging.
+  contentProfile: Record<string, any>;
+  analysisSource: AnalysisSource;
+  styleProfile: VideoStyleProfile | null;
+  styleAnalysisError?: string;
+}
+
 // ---------- localStorage cache envelopes ----------
 export interface CachedQueryExpansion {
   cacheKey: string;

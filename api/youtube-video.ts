@@ -8,6 +8,7 @@
 // the browser bundle.
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { fetchVideoMeta } from './_lib/youtubeMeta.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') {
@@ -25,24 +26,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const ytRes = await fetch(
-      `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${encodeURIComponent(id.trim())}&key=${apiKey}`
-    );
-    const data = await ytRes.json();
-
-    if (!ytRes.ok) {
-      console.error('YouTube video-meta error:', ytRes.status, data);
-      return res.status(502).json({ error: data?.error?.message || 'YouTube API error' });
-    }
-
-    const snippet = data?.items?.[0]?.snippet;
-    if (!snippet) {
+    const meta = await fetchVideoMeta(id.trim(), apiKey);
+    if (!meta) {
       return res.status(404).json({ error: 'Video not found' });
     }
 
     return res.status(200).json({
-      title: snippet.title,
-      description: snippet.description ?? '',
+      title: meta.title,
+      description: meta.description,
+      // New — additive, existing callers (Notes.tsx) just ignore these.
+      durationSeconds: meta.durationSeconds,
     });
   } catch (err: any) {
     console.error('YouTube video-meta proxy failed:', err);

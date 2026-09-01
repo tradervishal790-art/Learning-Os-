@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { generateAIText } from './_lib/aiFallback.js';
 import { tryFetchTranscript, TRANSCRIPT_CHAR_LIMIT } from './_lib/transcript.js';
+import { scoreTeachingStyle } from './_lib/teachingStyle.js';
 
 // ============================================================
 // api/analyze-video.ts
@@ -29,49 +29,16 @@ import { tryFetchTranscript, TRANSCRIPT_CHAR_LIMIT } from './_lib/transcript.js'
 // ============================================================
 
 
-const DIMENSION_PROMPT = (basis: string, sourceLabel: string) => `
-Is ${sourceLabel} ko analyze karke teacher ka teaching-style profile do, in dimensions par 1-10 scale mein score karo:
-
-1. pace (1=very slow/detailed, 10=fast/dense)
-2. theory_vs_practical (1=pure theory, 10=pure hands-on/examples)
-3. structure (1=freeform/tangential, 10=highly structured/stepwise)
-4. depth (1=surface overview, 10=deep technical rigor)
-5. language_complexity (1=simple everyday words, 10=jargon-heavy)
-6. storytelling (1=dry facts, 10=analogy/story-driven)
-7. repetition (1=says once, 10=repeats/reinforces concepts often)
-8. prerequisite_assumed (1=zero background needed, 10=assumes strong prior knowledge)
-
-Ye bhi do:
-- primary_style: [visual/verbal/example-driven/socratic/lecture]
-- ideal_for: kis tarah ke learner ke liye best fit hai (2-3 lines)
-- avoid_for: kis tarah ke learner ko struggle ho sakti hai
-
-Sirf JSON return karo, koi extra text nahi, koi markdown backticks nahi.
-
-Content:
-${basis.slice(0, TRANSCRIPT_CHAR_LIMIT)}
-`;
-
-async function scoreWithGemini(
+// scoreWithGemini here is scoreTeachingStyle from _lib/teachingStyle.ts,
+// pinned to this endpoint's existing TRANSCRIPT_CHAR_LIMIT — kept as a
+// local alias so the rest of this file (and its callers below) didn't
+// need to change at all during the extraction.
+const scoreWithGemini = (
   apiKey: string | undefined,
   minimaxApiKey: string | undefined,
   basis: string,
   sourceLabel: string
-): Promise<any | null> {
-  try {
-    const { text: rawText } = await generateAIText({
-      geminiApiKey: apiKey,
-      minimaxApiKey,
-      contents: [{ parts: [{ text: DIMENSION_PROMPT(basis, sourceLabel) }] }],
-      minimaxJsonMode: true,
-    });
-
-    const cleaned = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
-    return JSON.parse(cleaned);
-  } catch {
-    return null;
-  }
-}
+) => scoreTeachingStyle(apiKey, minimaxApiKey, basis, sourceLabel, TRANSCRIPT_CHAR_LIMIT);
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
