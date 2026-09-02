@@ -14,12 +14,13 @@ import { YoutubeTranscript } from 'youtube-transcript';
 // every caller can fall back to metadata instead of erroring out.
 // ============================================================
 
-// Raised from 8000 — that was cutting a 60-min video's transcript down to
-// roughly its first 8-10 minutes, so notes/analysis only ever covered the
-// video's opening portion. 50000 chars (~12.5k tokens) comfortably covers
-// a full 60-90 min educational video and fits well within Gemini flash's
-// context window (and MiniMax's, for the fallback path).
-export const TRANSCRIPT_CHAR_LIMIT = 50000;
+// 150000 chars (~37.5k tokens) covers a 2.5-3 hour lecture-speed video —
+// more than enough for virtually anything real, while staying well under
+// Gemini's free-tier 250K tokens/minute budget (see aiFallback.ts) and
+// keeping a single call's latency reasonable against Vercel's function
+// timeout (see vercel.json — these routes are bumped to 60s, but a huge
+// input still adds real risk of tipping over that).
+export const TRANSCRIPT_CHAR_LIMIT = 150000;
 const MIN_TRANSCRIPT_LENGTH = 50;
 
 /** Fetches and flattens a transcript. Returns null (never throws) on any
