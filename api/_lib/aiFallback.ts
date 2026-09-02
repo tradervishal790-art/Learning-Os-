@@ -79,18 +79,35 @@ const DEFAULT_GEMINI_MODEL = 'gemini-3-flash-preview';
 const DEFAULT_MINIMAX_MODEL = process.env.MINIMAX_MODEL || 'MiniMax-M3';
 const MINIMAX_URL = 'https://api.minimax.io/v1/chat/completions';
 
-/** 429 = rate limit/quota exceeded, 503 = model overloaded, 5xx = upstream
- *  failure, 400 included defensively (e.g. a generationConfig field an
- *  aliased model version doesn't support) — all worth failing over rather
- *  than hard-failing the whole request. */
-function shouldFailover(status: number): boolean {
-  return status === 429 || status === 503 || status === 400 || status >= 500;
+// ── Multi-key Gemini rotation ────────────────────────────────────────────
+// The whole point of Gemini's free tier (see DEFAULT_GEMINI_MODEL comment
+// above) is 10 RPM / 1,500 RPD / 250K TPM PER KEY. Instead of hitting that
+// ceiling and immediately falling over to MiniMax, rotate through a pool of
+// keys — each from a separate Google account, so each has its OWN
+// independent free quota. MiniMax is still the final fallback if every
+// Gemini key in the pool is exhausted/failing.
+//
+// Env vars (only VITE_GEMINI_API_KEY is required — the others are optional
+// extras; set as many as you have free-tier accounts for):
+//   VITE_GEMINI_API_KEY   — primary (existing)
+//   GEMINI_API_KEY_2      — optional backup key #2
+//   GEMINI_API_KEY_3      — optional backup key #3
+//   GEMINI_API_KEY_4      — optional backup key #4
+function getGeminiKeyPool(primary: string | undefined): string[] {
+  const keys = [
+    primary,
+    process.env.GEMINI_API_KEY_2,
+    process.env.GEMINI_API_KEY_3,
+    process.env.GEMINI_API_KEY_4,
+  ].filter((k): k is string => !!k && k.trim().length > 0);
+  // Dedup in case the same key was accidentally set in two env vars.
+  return Array.from(new Set(keys));
 }
 
 async function tryGemini(
+  apiKey: string,
   params: AICallParams
 ): Promise<{ ok: true; text: string; finishReason: string | null } | { ok: false; status: number }> {
-  if (!params.geminiApiKey) return { ok: false, status: 0 };
   const model = params.geminiModel || DEFAULT_GEMINI_MODEL;
 
   const body: Record<string, any> = { contents: params.contents };
@@ -103,7 +120,7 @@ async function tryGemini(
 
   try {
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${params.geminiApiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
       { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
     );
 
@@ -200,15 +217,22 @@ async function tryMinimax(params: AICallParams): Promise<{ ok: true; text: strin
  * try/catch already does.
  */
 export async function generateAIText(params: AICallParams): Promise<AICallResult> {
-  const geminiResult = await tryGemini(params);
-  if (geminiResult.ok) {
-    return { text: geminiResult.text, provider: 'gemini', finishReason: geminiResult.finishReason };
-  }
+  const geminiKeys = getGeminiKeyPool(params.geminiApiKey);
 
-  if (!shouldFailover(geminiResult.status) && geminiResult.status !== 0) {
-    // A genuinely non-retriable Gemini error (e.g. 401 invalid key on our
-    // own side) — still worth trying MiniMax rather than giving up, since
-    // it's a completely separate credential/provider.
+  let geminiResult: { ok: true; text: string; finishReason: string | null } | { ok: false; status: number } = {
+    ok: false,
+    status: 0,
+  };
+
+  // Try each key in the pool in order. A failure on one key (rate limit,
+  // overload, whatever) says nothing about the NEXT key — it's a
+  // completely separate account/quota — so keep going through the whole
+  // pool before giving up on Gemini entirely.
+  for (const key of geminiKeys) {
+    geminiResult = await tryGemini(key, params);
+    if (geminiResult.ok) {
+      return { text: geminiResult.text, provider: 'gemini', finishReason: geminiResult.finishReason };
+    }
   }
 
   if (hasVideoParts(params.contents)) {
