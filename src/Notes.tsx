@@ -8,7 +8,7 @@ import { motion } from 'framer-motion';
 const NOTES_STATE_STORAGE_KEY = 'learning_os_notes_state';
 
 // Per-topic cache for topic-based "Deep Dive" generations, same idea as
-// the existing per-video `deepnotes_v2_${videoId}` cache below — keyed by
+// the existing per-video `deepnotes_v3_${videoId}` cache below — keyed by
 // topic text so re-visiting the same topic (or the same video's title,
 // when embedded inside VideoIntel) loads instantly instead of re-generating.
 //
@@ -16,9 +16,13 @@ const NOTES_STATE_STORAGE_KEY = 'learning_os_notes_state';
 // into coreConcept, and exercises/criticalThinking/deepQuestions into
 // practice) — bumped so old v1-shaped cached notes don't get loaded into
 // the new UI and render broken/missing sections. Old `deepnotes_topic_*` /
-// `deepnotes_v2_${videoId}` entries are simply orphaned, not migrated.
+// `deepnotes_v3_${videoId}` entries are simply orphaned, not migrated.
+// v3: dropped `prerequisites`, added `myNotes` (transcript-grounded
+// handwritten-style notes) — bumped again so old v2-shaped cached notes
+// (missing myNotes) don't get loaded into the new UI and crash on render.
+// Old `deepnotes_v2_*` entries are simply orphaned, not migrated.
 function topicCacheKey(topic: string): string {
-  return `deepnotes_v2_topic_${topic.trim().toLowerCase()}`;
+  return `deepnotes_v3_topic_${topic.trim().toLowerCase()}`;
 }
 
 interface DeepNotesData {
@@ -186,7 +190,7 @@ export default function Notes({ videoTitle, videoDescription, videoId }: { video
     setCurrentVideoId(videoId);
 
     try {
-      const cached = localStorage.getItem(`deepnotes_v2_${videoId}`);
+      const cached = localStorage.getItem(`deepnotes_v3_${videoId}`);
       if (cached) {
         setNotes(JSON.parse(cached));
         setLoading(false);
@@ -197,7 +201,7 @@ export default function Notes({ videoTitle, videoDescription, videoId }: { video
       const context = `Title: ${meta.title}\nDescription: ${meta.description.slice(0, 500)}`;
       const deepNotes = await generateDeepNotes(meta.title, context, videoId);
 
-      localStorage.setItem(`deepnotes_v2_${videoId}`, JSON.stringify(deepNotes));
+      localStorage.setItem(`deepnotes_v3_${videoId}`, JSON.stringify(deepNotes));
       setNotes(deepNotes);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error generating notes from video');
@@ -220,8 +224,16 @@ export default function Notes({ videoTitle, videoDescription, videoId }: { video
 
   const renderContent = () => {
     if (!notes) return null;
-    const section = sections.find((s) => s.id === activeSection);
-    const data = (notes as any)[section!.key];
+    const section = sections.find((s) => s.id === activeSection) ?? sections[0];
+    const data = (notes as any)[section.key];
+
+    if (data === undefined || data === null) {
+      return (
+        <p className="text-gray-400 dark:text-white/40 text-sm">
+          Yeh section is note ke liye available nahi hai — "Deep Dive" ya "From Video" dobara chala ke fresh notes banao.
+        </p>
+      );
+    }
 
     if (typeof data === 'string') {
       if (activeSection === 'mynotes') {
@@ -242,6 +254,7 @@ export default function Notes({ videoTitle, videoDescription, videoId }: { video
       }
       return <p className="text-gray-700 dark:text-white/80 leading-relaxed whitespace-pre-wrap">{data}</p>;
     }
+    if (!Array.isArray(data)) return null;
     return (
       <ul className="space-y-3">
         {data.map((item: string, i: number) => (

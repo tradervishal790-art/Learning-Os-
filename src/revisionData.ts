@@ -50,7 +50,7 @@ const FALLBACK_DAY_TASKS: Record<number, string> = {
  */
 function getTaskForTopic(topicTitle: string, day: number): string {
   try {
-    const cacheKey = `deepnotes_v2_topic_${topicTitle.trim().toLowerCase()}`;
+    const cacheKey = `deepnotes_v3_topic_${topicTitle.trim().toLowerCase()}`;
     const cached = localStorage.getItem(cacheKey);
     if (cached) {
       const notes = JSON.parse(cached) as { learningPath?: string[] };
