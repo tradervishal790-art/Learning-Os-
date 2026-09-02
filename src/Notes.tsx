@@ -5,7 +5,11 @@ import { motion } from 'framer-motion';
 // Standalone "Notes" tab session (Dashboard renders <Notes /> with no
 // videoTitle) — persisted to localStorage so it survives switching tabs
 // AND closing/reopening the site, not just staying on the page.
-const NOTES_STATE_STORAGE_KEY = 'learning_os_notes_state';
+// v2: schema/tabs changed (myNotes replaced prerequisites, Learning Path
+// tab removed) — bumped so a stale pre-fix session (old notes shape and/or
+// an activeSection id that no longer exists) doesn't get restored and
+// crash the app again. Old `learning_os_notes_state` is simply orphaned.
+const NOTES_STATE_STORAGE_KEY = 'learning_os_notes_state_v2';
 
 // Per-topic cache for topic-based "Deep Dive" generations, same idea as
 // the existing per-video `deepnotes_v3_${videoId}` cache below — keyed by
