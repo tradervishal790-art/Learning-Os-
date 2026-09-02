@@ -56,7 +56,7 @@ Return ONLY this JSON structure:
   "summary": "1-2 line essence of the topic",
   "myNotes": "${
     notesSource === 'transcript'
-      ? `Write this section like a real student's own handwritten notes taken WHILE watching this exact video — NOT like an AI summary. Follow the video's own flow/order of explanation, in the video's own sequence. Use short fragments and phrases, not full formal sentences — skip filler words. Paraphrase in simple personal language, never copy the transcript's wording. Use natural shorthand where it fits (->, w/, eg:, imp:). Mark 3-6 truly key terms with **bold**, not everything. Structure loosely by topic shifts in the video, not a rigid template — some points one line, some a small sub-list, uneven like real notes. Add 1-2 short margin-style notes marked 'Q:' (a question to revisit) or 'Note:' (a reminder/gotcha). End with a 2-3 line 'Quick Recap' in the student's own words. No intros like 'In this video...' — just start taking notes on the content itself. Keep it a little rough, not essay-polished.`
+      ? `Write this section like a real student's own handwritten notes taken WHILE watching this exact video — NOT like an AI summary. Cover the ENTIRE video from start to end, following its own flow/order of explanation — do NOT stop after just the intro/opening portion; if the video covers many sub-topics, give each one at least a couple of lines so the notes represent the whole video, not just the first part. Use short fragments and phrases, not full formal sentences — skip filler words. Paraphrase in simple personal language, never copy the transcript's wording. Use natural shorthand where it fits (->, w/, eg:, imp:). Mark 3-6 truly key terms with **bold**, not everything. Structure loosely by topic shifts in the video, not a rigid template — some points one line, some a small sub-list, uneven like real notes. Add 1-2 short margin-style notes marked 'Q:' (a question to revisit) or 'Note:' (a reminder/gotcha). End with a 2-3 line 'Quick Recap' in the student's own words covering the video's full span. No intros like 'In this video...' — just start taking notes on the content itself. Keep it a little rough, not essay-polished.`
       : `No transcript available for this video, so write general handwritten-style study notes on the topic itself (same rough, fragment-based, personal-shorthand style as above) rather than pretending they're from a specific video.`
   }",
   "coreConcept": "ONE cohesive explanation covering: WHY this concept exists (history, problem it solved), HOW experts mentally model it, AND a concrete analogy that makes it click — woven together as one flowing explanation, not three disconnected paragraphs",
@@ -167,11 +167,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       generationConfig: {
         responseMimeType: 'application/json',
         responseSchema,
-        maxOutputTokens: 8000,
+        maxOutputTokens: 12000,
         temperature: 0.8,
       },
       minimaxJsonMode: true,
-      minimaxMaxTokens: 8000,
+      minimaxMaxTokens: 12000,
     });
 
     if (finishReason === 'MAX_TOKENS') {

@@ -14,7 +14,12 @@ import { YoutubeTranscript } from 'youtube-transcript';
 // every caller can fall back to metadata instead of erroring out.
 // ============================================================
 
-export const TRANSCRIPT_CHAR_LIMIT = 8000;
+// Raised from 8000 — that was cutting a 60-min video's transcript down to
+// roughly its first 8-10 minutes, so notes/analysis only ever covered the
+// video's opening portion. 50000 chars (~12.5k tokens) comfortably covers
+// a full 60-90 min educational video and fits well within Gemini flash's
+// context window (and MiniMax's, for the fallback path).
+export const TRANSCRIPT_CHAR_LIMIT = 50000;
 const MIN_TRANSCRIPT_LENGTH = 50;
 
 /** Fetches and flattens a transcript. Returns null (never throws) on any
