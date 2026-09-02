@@ -163,6 +163,9 @@ export default function Revision({ goals = [] }: RevisionProps) {
                       )}
                     </div>
                     <h3 className="font-semibold mb-1">{item.topic}</h3>
+                    {item.status !== 'mastered' && (
+                      <p className="text-xs text-gray-500 dark:text-white/60 mb-1">📝 {item.task}</p>
+                    )}
                     <div className="flex items-center gap-3 text-xs text-gray-400 dark:text-white/50">
                       <span>📅 {item.dueDate}</span>
                       <span>•</span>
@@ -190,7 +193,7 @@ export default function Revision({ goals = [] }: RevisionProps) {
                           onClick={() => handleMarkDone(item)}
                           className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all border bg-black text-white dark:bg-white dark:text-black border-transparent hover:opacity-80"
                         >
-                          Mark Done
+                          Done
                         </button>
                         <button
                           onClick={() => handleReviewNow(item.id)}

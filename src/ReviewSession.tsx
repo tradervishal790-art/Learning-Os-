@@ -154,7 +154,7 @@ export default function ReviewSession({ topic, onMarkDone, onClose }: ReviewSess
               onClick={onMarkDone}
               className="flex-1 py-2 rounded-lg bg-green-100 text-green-700 text-xs font-medium"
             >
-              Mark Done
+              Done
             </button>
           </div>
         </div>

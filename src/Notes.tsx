@@ -25,13 +25,19 @@ interface DeepNotesData {
   topic: string;
   notesSource?: 'transcript' | 'metadata' | 'topic-only';
   summary: string;
-  prerequisites: string;
+  // Human-style handwritten-feel notes generated straight from the video
+  // transcript (see api/generate-notes.ts) — the actual "notes on what
+  // this video said", not an AI-style summary.
+  myNotes: string;
   coreConcept: string;
   workedExamples: string[];
   misconceptions: string[];
   realWorldApps: string[];
   advancedConcepts: string[];
   practice: string[];
+  // Still generated server-side and cached here — no longer shown as its
+  // own tab, Revision.tsx now pulls the matching day's line straight from
+  // this cache (see revisionData.ts's getTaskForTopic).
   learningPath: string[];
   keyInsights: string[];
 }
@@ -202,14 +208,13 @@ export default function Notes({ videoTitle, videoDescription, videoId }: { video
 
   const sections = [
     { id: 'summary', label: 'Summary', key: 'summary' },
-    { id: 'prereq', label: 'Prerequisites', key: 'prerequisites' },
+    { id: 'mynotes', label: 'My Notes', key: 'myNotes' },
     { id: 'coreConcept', label: 'Core Concept', key: 'coreConcept' },
     { id: 'workedExamples', label: 'Worked Examples', key: 'workedExamples' },
     { id: 'misconceptions', label: 'Misconceptions', key: 'misconceptions' },
     { id: 'realworld', label: 'Real World Application', key: 'realWorldApps' },
     { id: 'advanced', label: 'Advanced', key: 'advancedConcepts' },
     { id: 'practice', label: 'Practice', key: 'practice' },
-    { id: 'path', label: 'Learning Path', key: 'learningPath' },
     { id: 'insights', label: 'Key Insights', key: 'keyInsights' },
   ];
 
@@ -219,6 +224,22 @@ export default function Notes({ videoTitle, videoDescription, videoId }: { video
     const data = (notes as any)[section!.key];
 
     if (typeof data === 'string') {
+      if (activeSection === 'mynotes') {
+        return (
+          <p
+            className="text-gray-800 dark:text-white/90 whitespace-pre-wrap"
+            style={{
+              fontFamily: "'Segoe Print', 'Bradley Hand', 'Comic Sans MS', cursive",
+              fontSize: '1.05rem',
+              lineHeight: '2.1rem',
+              backgroundImage:
+                'repeating-linear-gradient(transparent, transparent 2.05rem, rgba(120,120,120,0.25) 2.05rem, rgba(120,120,120,0.25) calc(2.05rem + 1px))',
+            }}
+          >
+            {data}
+          </p>
+        );
+      }
       return <p className="text-gray-700 dark:text-white/80 leading-relaxed whitespace-pre-wrap">{data}</p>;
     }
     return (

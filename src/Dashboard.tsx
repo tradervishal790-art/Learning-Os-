@@ -69,6 +69,34 @@ interface Blueprint {
   };
 }
 
+// Simple two-tone "bell" using Web Audio API — no audio file/asset needed,
+// so it works offline and doesn't add anything to the bundle.
+function playReminderBell() {
+  try {
+    const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    if (ctx.state === 'suspended') ctx.resume();
+    const playTone = (freq: number, startAt: number, duration: number) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.0001, ctx.currentTime + startAt);
+      gain.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime + startAt + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + startAt + duration);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime + startAt);
+      osc.stop(ctx.currentTime + startAt + duration);
+    };
+    playTone(880, 0, 0.35);
+    playTone(1108.73, 0.15, 0.4);
+  } catch {
+    // Audio blocked (autoplay policy / unsupported) — reminder banner still shows silently.
+  }
+}
+
 const sidebarItems: { id: DashboardPageId; label: string; icon?: ComponentType<{ className?: string }> }[] = [
   { id: 'dashboard', label: 'Home' },
   { id: 'roadmap', label: 'Roadmap' },
@@ -153,6 +181,9 @@ export default function Dashboard({ userData, onUpdateUserData, onRegenerateRoad
 
   const [showSidebar, setShowSidebar] = useState(false);
   const [streak, setStreak] = useState(0);
+  // Bell + sound reminder — computed once when the app/home page opens (not
+  // only on navigating into the Revision tab), so nothing due gets missed.
+  const [revisionAlert, setRevisionAlert] = useState<{ dueToday: number; overdue: number } | null>(null);
   const [showLearningQuiz, setShowLearningQuiz] = useState(false);
   // Alternative onboarding path — does NOT replace showLearningQuiz above,
   // both remain independently reachable from the home page.
@@ -186,6 +217,15 @@ export default function Dashboard({ userData, onUpdateUserData, onRegenerateRoad
 
   useEffect(() => {
     setStreak(trackAndComputeStreak());
+  }, []);
+
+  useEffect(() => {
+    const stats = getRevisionStats(getRevisionDataForGoals(goals));
+    if (stats.dueToday + stats.overdue > 0) {
+      setRevisionAlert({ dueToday: stats.dueToday, overdue: stats.overdue });
+      playReminderBell();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -522,6 +562,43 @@ export default function Dashboard({ userData, onUpdateUserData, onRegenerateRoad
 
         {activePage === 'dashboard' && (
           <div className="p-4 md:p-8 space-y-6">
+            <AnimatePresence>
+              {revisionAlert && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="p-4 rounded-2xl border border-black/10 dark:border-white/20 bg-black text-white dark:bg-white dark:text-black flex items-center gap-3 flex-wrap"
+                >
+                  <span className="text-2xl">🔔</span>
+                  <div className="flex-1 min-w-[200px]">
+                    <div className="font-semibold text-sm">
+                      {revisionAlert.overdue > 0
+                        ? `${revisionAlert.dueToday + revisionAlert.overdue} topics revise karna hai — ${revisionAlert.overdue} overdue!`
+                        : `${revisionAlert.dueToday} topics aaj revise karna hai`}
+                    </div>
+                    <div className="text-xs opacity-70">Bhoolo mat — abhi kar lo</div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setRevisionAlert(null);
+                      setActivePage('revision');
+                    }}
+                    className="px-4 py-2 rounded-full bg-white text-black dark:bg-black dark:text-white text-sm font-medium hover:opacity-80 transition whitespace-nowrap"
+                  >
+                    Revision dekho
+                  </button>
+                  <button
+                    onClick={() => setRevisionAlert(null)}
+                    aria-label="Dismiss"
+                    className="px-3 py-2 rounded-full text-sm opacity-70 hover:opacity-100 transition"
+                  >
+                    ✕
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {statsCards.map((card, i) => (
                 <motion.button

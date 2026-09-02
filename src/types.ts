@@ -92,6 +92,11 @@ export interface RevisionItem {
   status: RevisionStatus;
   difficulty: RevisionDifficulty;
   retention: number;
+  /** What to actually do on this checkpoint's day — replaces the old
+   *  standalone "Learning Path" tab in Notes.tsx. Pulled from that topic's
+   *  cached Deep Notes (grounded to the actual video) when available,
+   *  otherwise a generic spaced-repetition task for this day number. */
+  task: string;
 }
 
 // ---------- Topic-to-topic connection ("bridge") ----------

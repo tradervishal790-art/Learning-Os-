@@ -54,7 +54,11 @@ ANTI-REPETITION (critical): each of the 10 JSON sections below must add a genuin
 Return ONLY this JSON structure:
 {
   "summary": "1-2 line essence of the topic",
-  "prerequisites": "What must be known first - foundational concepts",
+  "myNotes": "${
+    notesSource === 'transcript'
+      ? `Write this section like a real student's own handwritten notes taken WHILE watching this exact video — NOT like an AI summary. Follow the video's own flow/order of explanation, in the video's own sequence. Use short fragments and phrases, not full formal sentences — skip filler words. Paraphrase in simple personal language, never copy the transcript's wording. Use natural shorthand where it fits (->, w/, eg:, imp:). Mark 3-6 truly key terms with **bold**, not everything. Structure loosely by topic shifts in the video, not a rigid template — some points one line, some a small sub-list, uneven like real notes. Add 1-2 short margin-style notes marked 'Q:' (a question to revisit) or 'Note:' (a reminder/gotcha). End with a 2-3 line 'Quick Recap' in the student's own words. No intros like 'In this video...' — just start taking notes on the content itself. Keep it a little rough, not essay-polished.`
+      : `No transcript available for this video, so write general handwritten-style study notes on the topic itself (same rough, fragment-based, personal-shorthand style as above) rather than pretending they're from a specific video.`
+  }",
   "coreConcept": "ONE cohesive explanation covering: WHY this concept exists (history, problem it solved), HOW experts mentally model it, AND a concrete analogy that makes it click — woven together as one flowing explanation, not three disconnected paragraphs",
   "workedExamples": [
     "Step-by-step mechanism illustrated through a concrete example - how it actually works, walked through",
@@ -101,7 +105,7 @@ const responseSchema = {
   type: 'OBJECT',
   properties: {
     summary: { type: 'STRING' },
-    prerequisites: { type: 'STRING' },
+    myNotes: { type: 'STRING' },
     coreConcept: { type: 'STRING' },
     workedExamples: { type: 'ARRAY', items: { type: 'STRING' } },
     misconceptions: { type: 'ARRAY', items: { type: 'STRING' } },
@@ -112,7 +116,7 @@ const responseSchema = {
     keyInsights: { type: 'ARRAY', items: { type: 'STRING' } },
   },
   required: [
-    'summary', 'prerequisites', 'coreConcept', 'workedExamples',
+    'summary', 'myNotes', 'coreConcept', 'workedExamples',
     'misconceptions', 'realWorldApps', 'advancedConcepts', 'practice',
     'learningPath', 'keyInsights',
   ],

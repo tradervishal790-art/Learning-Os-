@@ -29,6 +29,43 @@ function estimateRetention(daysPastDue: number, intervalDays: number): number {
   return Math.max(30, Math.min(98, retention));
 }
 
+// Generic fallback task per spaced-repetition checkpoint — used when the
+// topic has no cached Deep Notes yet (so nothing video-grounded exists to
+// pull from). Kept in sync with generate-notes.ts's learningPath spirit.
+const FALLBACK_DAY_TASKS: Record<number, string> = {
+  1: 'Deep read karo — samjho WHY, sirf WHAT nahi',
+  3: 'Isse 3-4 alag real examples pe apply karo',
+  7: 'Kisi ko explain karke sikhao — bina notes dekhe',
+  15: 'Advanced applications aur edge cases dhundo',
+  30: 'Related concepts se connect karo, pattern dekho',
+  60: 'Final recall check — bina dekhe pura explain karo',
+};
+
+/**
+ * Resolves what to actually DO for this topic's due checkpoint. Prefers the
+ * matching "Day N: ..." line from that topic's cached Deep Notes (Notes.tsx
+ * — grounded in the real video transcript when one was used), falling back
+ * to a generic day-based task when no notes have been generated for this
+ * topic yet.
+ */
+function getTaskForTopic(topicTitle: string, day: number): string {
+  try {
+    const cacheKey = `deepnotes_v2_topic_${topicTitle.trim().toLowerCase()}`;
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) {
+      const notes = JSON.parse(cached) as { learningPath?: string[] };
+      const match = notes.learningPath?.find((line) => line.trim().toLowerCase().startsWith(`day ${day}:`));
+      if (match) {
+        const colonIndex = match.indexOf(':');
+        return colonIndex >= 0 ? match.slice(colonIndex + 1).trim() : match.trim();
+      }
+    }
+  } catch {
+    // Corrupted/unavailable cache — fall through to generic task.
+  }
+  return FALLBACK_DAY_TASKS[day] ?? 'Is topic ko revise karo';
+}
+
 function categoryForDifficulty(difficulty: Difficulty): string {
   if (difficulty === 'Beginner') return 'Foundations';
   if (difficulty === 'Intermediate') return 'Core Concepts';
@@ -71,6 +108,7 @@ export function getRevisionData(roadmap: Topic = getRoadmapData()): RevisionItem
         status: 'mastered',
         difficulty: toRevisionDifficulty(topic.difficulty),
         retention: 100,
+        task: 'Mastered — sab checkpoints ho gaye ✓',
       });
       continue;
     }
@@ -96,6 +134,7 @@ export function getRevisionData(roadmap: Topic = getRoadmapData()): RevisionItem
       status,
       difficulty: toRevisionDifficulty(topic.difficulty),
       retention,
+      task: getTaskForTopic(topic.title, nextDay),
     });
   }
 
