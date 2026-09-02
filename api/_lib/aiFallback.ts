@@ -219,20 +219,21 @@ async function tryMinimax(params: AICallParams): Promise<{ ok: true; text: strin
 export async function generateAIText(params: AICallParams): Promise<AICallResult> {
   const geminiKeys = getGeminiKeyPool(params.geminiApiKey);
 
-  let geminiResult: { ok: true; text: string; finishReason: string | null } | { ok: false; status: number } = {
-    ok: false,
-    status: 0,
-  };
+  // Last failure status across the key pool — a plain number instead of
+  // holding onto the { ok, ... } union, since TS can't narrow that union
+  // back to the ok:false branch after a loop that reassigns it.
+  let lastGeminiStatus = 0;
 
   // Try each key in the pool in order. A failure on one key (rate limit,
   // overload, whatever) says nothing about the NEXT key — it's a
   // completely separate account/quota — so keep going through the whole
   // pool before giving up on Gemini entirely.
   for (const key of geminiKeys) {
-    geminiResult = await tryGemini(key, params);
-    if (geminiResult.ok) {
-      return { text: geminiResult.text, provider: 'gemini', finishReason: geminiResult.finishReason };
+    const result = await tryGemini(key, params);
+    if (result.ok) {
+      return { text: result.text, provider: 'gemini', finishReason: result.finishReason };
     }
+    lastGeminiStatus = result.status;
   }
 
   if (hasVideoParts(params.contents)) {
@@ -241,9 +242,9 @@ export async function generateAIText(params: AICallParams): Promise<AICallResult
     // error. Fail clearly instead so the caller falls back to its own
     // non-video path (e.g. transcript/metadata-only analysis).
     const err = new Error(
-      `Gemini failed (status ${geminiResult.status}) and MiniMax cannot process video content — no fallback available for this request`
+      `Gemini failed (status ${lastGeminiStatus}) and MiniMax cannot process video content — no fallback available for this request`
     ) as Error & { geminiStatus: number; minimaxStatus: number };
-    err.geminiStatus = geminiResult.status;
+    err.geminiStatus = lastGeminiStatus;
     err.minimaxStatus = 0;
     throw err;
   }
@@ -254,10 +255,10 @@ export async function generateAIText(params: AICallParams): Promise<AICallResult
   }
 
   const reason = params.minimaxApiKey
-    ? `Gemini failed (status ${geminiResult.status}) and MiniMax fallback also failed (status ${minimaxResult.status})`
-    : `Gemini failed (status ${geminiResult.status}) and no MINIMAX_API_KEY configured for fallback`;
+    ? `Gemini failed (status ${lastGeminiStatus}) and MiniMax fallback also failed (status ${minimaxResult.status})`
+    : `Gemini failed (status ${lastGeminiStatus}) and no MINIMAX_API_KEY configured for fallback`;
   const err = new Error(reason) as Error & { geminiStatus: number; minimaxStatus: number };
-  err.geminiStatus = geminiResult.status;
+  err.geminiStatus = lastGeminiStatus;
   err.minimaxStatus = minimaxResult.status;
   throw err;
 }
