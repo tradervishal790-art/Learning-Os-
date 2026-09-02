@@ -218,6 +218,7 @@ async function tryMinimax(params: AICallParams): Promise<{ ok: true; text: strin
  */
 export async function generateAIText(params: AICallParams): Promise<AICallResult> {
   const geminiKeys = getGeminiKeyPool(params.geminiApiKey);
+  console.log(`[aiFallback] Gemini key pool size: ${geminiKeys.length} (expect 2-4 if backup keys are set)`);
 
   // Last failure status across the key pool — a plain number instead of
   // holding onto the { ok, ... } union, since TS can't narrow that union
@@ -228,11 +229,13 @@ export async function generateAIText(params: AICallParams): Promise<AICallResult
   // overload, whatever) says nothing about the NEXT key — it's a
   // completely separate account/quota — so keep going through the whole
   // pool before giving up on Gemini entirely.
-  for (const key of geminiKeys) {
-    const result = await tryGemini(key, params);
+  for (let i = 0; i < geminiKeys.length; i++) {
+    const result = await tryGemini(geminiKeys[i], params);
     if (result.ok) {
+      console.log(`[aiFallback] Gemini key #${i + 1}/${geminiKeys.length} succeeded`);
       return { text: result.text, provider: 'gemini', finishReason: result.finishReason };
     }
+    console.warn(`[aiFallback] Gemini key #${i + 1}/${geminiKeys.length} failed (status ${result.status}) — trying next`);
     lastGeminiStatus = result.status;
   }
 
@@ -251,6 +254,7 @@ export async function generateAIText(params: AICallParams): Promise<AICallResult
 
   const minimaxResult = await tryMinimax(params);
   if (minimaxResult.ok) {
+    console.log('[aiFallback] All Gemini keys failed — MiniMax fallback succeeded');
     return { text: minimaxResult.text, provider: 'minimax', finishReason: null };
   }
 
