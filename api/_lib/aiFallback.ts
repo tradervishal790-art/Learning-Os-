@@ -76,19 +76,15 @@ export interface AICallResult {
   finishReason: string | null;
 }
 
-const DEFAULT_GEMINI_MODEL = 'gemini-3.8-flash';
-// Switched from 'gemini-3-flash-preview' (Sept 2026) — verified in AI
-// Studio's own rate-limit dashboard that both models share the EXACT same
-// free-tier quota on this project (5 RPM / 20 RPD / ~290K TPM), so there
-// was no quota cost to moving off the legacy/preview model. 3.8 Flash is
-// Google's current most-capable Flash model. If Google changes this
-// model's free-tier availability, update the string here — MiniMax
-// fallback below still covers you in the meantime.
-//
-// NOTE: the real bottleneck is RPD (requests/day) = 20 per key, not TPM —
-// far tighter than earlier assumed. This is exactly why the multi-key
-// pool (see getGeminiKeyPool below) matters: each additional key adds
-// another +20 RPD, independent of this model choice.
+const DEFAULT_GEMINI_MODEL = 'gemini-3.7-flash';
+// Switched from 'gemini-3.8-flash' (Sept 2026) — 3.8 was returning 503
+// "overloaded" errors in production, likely tighter serving capacity as a
+// freshly-released model. 3.7 Flash is the previous-generation Flash
+// model, same free-tier pricing, more established/stable capacity. If
+// this starts 503ing too, check https://aistudio.google.com/rate-limit
+// for the model dropdown's current peak-usage numbers before switching
+// again — MiniMax fallback below still covers you in the meantime
+// (assuming MINIMAX_API_KEY has an active balance — see note below).
 const DEFAULT_MINIMAX_MODEL = process.env.MINIMAX_MODEL || 'MiniMax-M3';
 const MINIMAX_URL = 'https://api.minimax.io/v1/chat/completions';
 
