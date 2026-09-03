@@ -35,6 +35,14 @@ function renderMyNotesMarkdown(raw: string) {
         </div>
       );
     }
+    const numberedMatch = trimmed.match(/^(\d+)\.\s+(.*)$/);
+    if (numberedMatch) {
+      return (
+        <div key={i} style={{ marginLeft: '1.2em' }}>
+          {numberedMatch[1]}. {renderInlineBold(numberedMatch[2], `n${i}`)}
+        </div>
+      );
+    }
     if (/^(Q:|Note:)/.test(trimmed)) {
       return (
         <div key={i} style={{ fontStyle: 'italic', opacity: 0.85 }}>
