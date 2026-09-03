@@ -2,6 +2,50 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 
+// Lightweight markdown renderer for myNotes (## headings, - bullets,
+// **bold**, blank-line paragraph breaks) — no react-markdown dependency
+// needed for this small a subset. Renders **bold** inline within any line.
+function renderInlineBold(text: string, keyPrefix: string) {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((part, i) =>
+    part.startsWith('**') && part.endsWith('**') ? (
+      <strong key={`${keyPrefix}-${i}`}>{part.slice(2, -2)}</strong>
+    ) : (
+      <span key={`${keyPrefix}-${i}`}>{part}</span>
+    )
+  );
+}
+
+function renderMyNotesMarkdown(raw: string) {
+  const lines = raw.split('\n');
+  return lines.map((line, i) => {
+    const trimmed = line.trim();
+    if (!trimmed) return <div key={i} style={{ height: '0.6em' }} />;
+    if (trimmed.startsWith('## ')) {
+      return (
+        <div key={i} style={{ fontWeight: 700, fontSize: '1.15em', marginTop: '0.5em' }}>
+          {renderInlineBold(trimmed.slice(3), `h${i}`)}
+        </div>
+      );
+    }
+    if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+      return (
+        <div key={i} style={{ marginLeft: '1.2em' }}>
+          • {renderInlineBold(trimmed.slice(2), `b${i}`)}
+        </div>
+      );
+    }
+    if (/^(Q:|Note:)/.test(trimmed)) {
+      return (
+        <div key={i} style={{ fontStyle: 'italic', opacity: 0.85 }}>
+          {renderInlineBold(trimmed, `n${i}`)}
+        </div>
+      );
+    }
+    return <div key={i}>{renderInlineBold(trimmed, `p${i}`)}</div>;
+  });
+}
+
 // Standalone "Notes" tab session (Dashboard renders <Notes /> with no
 // videoTitle) — persisted to localStorage so it survives switching tabs
 // AND closing/reopening the site, not just staying on the page.
@@ -242,18 +286,12 @@ export default function Notes({ videoTitle, videoDescription, videoId }: { video
     if (typeof data === 'string') {
       if (activeSection === 'mynotes') {
         return (
-          <p
-            className="text-gray-800 dark:text-white/90 whitespace-pre-wrap"
-            style={{
-              fontFamily: "'Segoe Print', 'Bradley Hand', 'Comic Sans MS', cursive",
-              fontSize: '1.05rem',
-              lineHeight: '2.1rem',
-              backgroundImage:
-                'repeating-linear-gradient(transparent, transparent 2.05rem, rgba(120,120,120,0.25) 2.05rem, rgba(120,120,120,0.25) calc(2.05rem + 1px))',
-            }}
+          <div
+            className="text-gray-800 dark:text-white/90"
+            style={{ fontSize: '1rem', lineHeight: '1.9rem' }}
           >
-            {data}
-          </p>
+            {renderMyNotesMarkdown(data)}
+          </div>
         );
       }
       return <p className="text-gray-700 dark:text-white/80 leading-relaxed whitespace-pre-wrap">{data}</p>;
