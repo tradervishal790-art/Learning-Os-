@@ -204,7 +204,7 @@ interface VideoIntelProps {
    *  `bridge`, when present, describes how this topic connects to the one the
    *  learner just finished — shown as a banner above the player so the new
    *  video doesn't feel like an unrelated, disconnected clip. */
-  initialPlaylist?: { primary: Video; fallbacks: Video[]; bridge?: TopicBridge } | null;
+  initialPlaylist?: { primary: Video; fallbacks: Video[]; bridge?: TopicBridge; topicQuery?: string } | null;
   /** Which goal's roadmap watch-progress (topic status, concept matching)
    *  should be attributed to — the currently open goal tab on Roadmap.
    *  Tried first, but see `allGoalIds` below for why it's not the only one. */
@@ -235,6 +235,18 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
   // client bundle. It now lives server-side only.
   const [searchQuery, setSearchQuery] = useState('');
   const [videos, setVideos] = useState<Video[]>([]);
+  // True only while showing a Roadmap/custom-playlist handoff: the left
+  // panel then shows ONE video at a time (not the whole primary+fallbacks
+  // batch) — "Next" reveals the next best-scored fallback instead of the
+  // learner picking freely from a visible list. Cleared as soon as the
+  // learner runs a manual search, which goes back to a normal browsable list.
+  const [singleSuggestionMode, setSingleSuggestionMode] = useState(false);
+  // Topic title/query behind the current handoff, used ONLY as a relevance
+  // anchor once the scored fallback pool (primary + 2 fallbacks) is
+  // exhausted — see fetchMoreVideos(). Without this, running out of
+  // fallbacks in single-suggestion mode would search on an empty
+  // searchQuery and surface unrelated videos.
+  const [topicQuery, setTopicQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
@@ -393,9 +405,14 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
   useEffect(() => {
     if (!initialPlaylist?.primary) return;
     finalizeAndSaveSession();
+    // Fallbacks are kept in state (needed for handleNextVideo's swap
+    // queue) but stay hidden from the visible list — see singleSuggestionMode
+    // below and the left-panel render.
     setVideos([initialPlaylist.primary, ...initialPlaylist.fallbacks]);
     setSelectedVideo(initialPlaylist.primary);
     setActiveBridge(initialPlaylist.bridge ?? null);
+    setSingleSuggestionMode(true);
+    setTopicQuery(initialPlaylist.topicQuery ?? '');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialPlaylist?.primary.id]);
 
@@ -567,7 +584,8 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
       if (freshVideos && freshVideos.length > 0) {
         setSelectedVideo(freshVideos[0]);
       } else {
-        setErrorMessage(`"${searchQuery}" ke liye aur naye videos nahi mile — sab dikha diye gaye.`);
+        const label = singleSuggestionMode ? topicQuery : searchQuery;
+        setErrorMessage(`"${label}" ke liye aur naye videos nahi mile — sab dikha diye gaye.`);
       }
     } finally {
       setLoadingMore(false);
@@ -603,6 +621,9 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
     setLoading(true);
     setErrorMessage('');
     nextPageTokenRef.current = null; // fresh query — start pagination over
+    // A manual search means the learner wants to browse freely — go back to
+    // a normal multi-result list instead of the single-suggestion handoff view.
+    setSingleSuggestionMode(false);
 
     try {
       const res = await fetch(
@@ -653,13 +674,24 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
    * repeat) — caller shows a "no more new videos" message in that case.
    */
   const fetchMoreVideos = async (): Promise<Video[]> => {
-    if (!searchQuery.trim()) return [];
-    // No more pages for this query — nothing fresh left to fetch.
-    if (!nextPageTokenRef.current) return [];
+    // In single-suggestion mode there's no active search box query — anchor
+    // on the roadmap topic instead, so "out of scored fallbacks" still
+    // fetches videos relevant to what the learner is actually studying,
+    // not an empty/unrelated search. A fresh topicQuery has no page token
+    // yet (its own /api/youtube-search call never ran), so that first call
+    // omits pageToken and starts at page 1; later calls reuse whatever
+    // token came back from the previous page.
+    const effectiveQuery = singleSuggestionMode ? topicQuery : searchQuery;
+    if (!effectiveQuery.trim()) return [];
+    const isFirstTopicQueryPage = singleSuggestionMode && !nextPageTokenRef.current;
+    if (!isFirstTopicQueryPage && !nextPageTokenRef.current) return []; // no more pages left
 
     try {
+      const pageParam = nextPageTokenRef.current
+        ? `&pageToken=${encodeURIComponent(nextPageTokenRef.current)}`
+        : '';
       const res = await fetch(
-        `/api/youtube-search?maxResults=12&q=${encodeURIComponent(searchQuery)}&pageToken=${encodeURIComponent(nextPageTokenRef.current)}`
+        `/api/youtube-search?maxResults=12&q=${encodeURIComponent(effectiveQuery)}${pageParam}`
       );
       const data = await res.json();
       if (!res.ok || !data.items?.length) {
@@ -790,7 +822,12 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                     <p>Search se start karo</p>
                   </div>
                 ) : (
-                  videos.map((video, i) => {
+                  // Single-suggestion mode (Roadmap/custom-playlist handoff):
+                  // only show the one currently-selected video here, not the
+                  // whole primary+fallbacks batch — the hidden fallbacks stay
+                  // in `videos` purely as handleNextVideo's swap queue, and
+                  // the "Next" button below is the only way to reach them.
+                  (singleSuggestionMode && selectedVideo ? [selectedVideo] : videos).map((video, i) => {
                     const watched = watchHistory.find((w) => w.videoId === video.id);
                     return (
                       <motion.div
@@ -901,7 +938,12 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                           disabled={loadingMore}
                           className="ml-auto flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-black text-white dark:bg-white dark:text-black hover:opacity-80 transition disabled:opacity-50"
                         >
-                          {loadingMore ? 'Naye videos dhoondh raha hoon...' : 'Next'} <SkipForward className="w-4 h-4" />
+                          {loadingMore
+                            ? 'Naye videos dhoondh raha hoon...'
+                            : singleSuggestionMode
+                              ? 'Ye sahi nahi laga? Dusra dikhao'
+                              : 'Next'}{' '}
+                          <SkipForward className="w-4 h-4" />
                         </button>
                       )}
                     </div>

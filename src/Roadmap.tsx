@@ -35,7 +35,7 @@ interface RoadmapProps {
    *  the parent which topic's OWN saved-video slot this playlist belongs to
    *  (see VideoIntel's activeTopicId) — without it, every topic in a goal
    *  shared one saved-video slot and topics could show each other's videos. */
-  onLaunchPlaylist: (payload: { primary: Video; fallbacks: Video[]; bridge?: TopicBridge; topicId: string }) => void;
+  onLaunchPlaylist: (payload: { primary: Video; fallbacks: Video[]; bridge?: TopicBridge; topicId: string; topicQuery: string }) => void;
   /** Opens the Videos page showing whatever was last searched/watched for
    *  THIS SPECIFIC topic, with no new search — the "Saved video" button. */
   onOpenSavedVideo: (topicId: string) => void;
@@ -276,6 +276,10 @@ export default function Roadmap({
         fallbacks: result.fallbacks.map(analyzedVideoToVideo),
         bridge: getBridgeForTopic(selectedTopic),
         topicId: selectedTopic.id,
+        // Used by VideoIntel to fetch a fresh, still-relevant batch once the
+        // scored fallback pool runs out (instead of falling back to an
+        // unrelated/empty generic search) — see fetchMoreVideos().
+        topicQuery: selectedTopic.title,
       });
       setSelectedTopic(null);
     } catch (err: any) {

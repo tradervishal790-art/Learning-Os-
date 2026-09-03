@@ -189,7 +189,7 @@ export default function Dashboard({ userData, onUpdateUserData, onRegenerateRoad
   // both remain independently reachable from the home page.
   const [showTasteOnboarding, setShowTasteOnboarding] = useState(false);
   const [learningProfile, setLearningProfile] = useState<LearningProfile | null>(getLearningProfile);
-  const [preloadedPlaylist, setPreloadedPlaylist] = useState<{ primary: Video; fallbacks: Video[]; bridge?: TopicBridge } | null>(null);
+  const [preloadedPlaylist, setPreloadedPlaylist] = useState<{ primary: Video; fallbacks: Video[]; bridge?: TopicBridge; topicQuery?: string } | null>(null);
   // Which topic's saved-video slot the Videos page is currently showing —
   // set whenever a topic's playlist is launched or its "Saved video" is
   // opened, so each topic keeps its own saved video instead of every topic
@@ -253,7 +253,7 @@ export default function Dashboard({ userData, onUpdateUserData, onRegenerateRoad
     setLearningProfile(null);
   };
 
-  const handleLaunchPlaylist = (payload: { primary: Video; fallbacks: Video[]; bridge?: TopicBridge; topicId: string }) => {
+  const handleLaunchPlaylist = (payload: { primary: Video; fallbacks: Video[]; bridge?: TopicBridge; topicId: string; topicQuery?: string }) => {
     setPreloadedPlaylist(payload);
     setViewingTopicId(payload.topicId);
     setActivePage('videos');
@@ -400,6 +400,7 @@ export default function Dashboard({ userData, onUpdateUserData, onRegenerateRoad
         primary: analyzedVideoToVideo(result.primary),
         fallbacks: result.fallbacks.map(analyzedVideoToVideo),
         topicId: adhocTopic.id,
+        topicQuery: trimmed,
       });
       setShowCustomPlaylist(false);
       setCustomTopic('');
