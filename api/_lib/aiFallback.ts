@@ -60,6 +60,14 @@ export interface AICallParams {
    *  prompt itself. Your existing JSON.parse + validation still catches
    *  anything malformed, same as it already does for Gemini's output. */
   minimaxJsonMode?: boolean;
+  /** Which Gemini key pool this call draws from — keeps a heavy feature
+   *  from starving a lighter one's quota. Default 'notes' if omitted.
+   *    'notes'    — generate-notes, generate-roadmap, mentor-chat,
+   *                 blueprint-interview, deep-dive-extract, analyze-video,
+   *                 analyze-taste-video (heavier, gets more keys)
+   *    'research' — research, expand-query (lighter, gets its own key so
+   *                 heavy notes/transcript usage never blocks it) */
+  keyGroup?: 'notes' | 'research';
 }
 
 export interface AICallResult {
@@ -79,29 +87,37 @@ const DEFAULT_GEMINI_MODEL = 'gemini-3-flash-preview';
 const DEFAULT_MINIMAX_MODEL = process.env.MINIMAX_MODEL || 'MiniMax-M3';
 const MINIMAX_URL = 'https://api.minimax.io/v1/chat/completions';
 
-// ── Multi-key Gemini rotation ────────────────────────────────────────────
+// ── Multi-key Gemini rotation, split by feature group ────────────────────
 // The whole point of Gemini's free tier (see DEFAULT_GEMINI_MODEL comment
 // above) is 10 RPM / 1,500 RPD / 250K TPM PER KEY. Instead of hitting that
 // ceiling and immediately falling over to MiniMax, rotate through a pool of
 // keys — each from a separate Google account, so each has its OWN
 // independent free quota. MiniMax is still the final fallback if every
-// Gemini key in the pool is exhausted/failing.
+// Gemini key in a group's pool is exhausted/failing.
 //
-// Env vars (only VITE_GEMINI_API_KEY is required — the others are optional
-// extras; set as many as you have free-tier accounts for):
-//   VITE_GEMINI_API_KEY   — primary (existing)
-//   GEMINI_API_KEY_2      — optional backup key #2
-//   GEMINI_API_KEY_3      — optional backup key #3
-//   GEMINI_API_KEY_4      — optional backup key #4
-function getGeminiKeyPool(primary: string | undefined): string[] {
-  const keys = [
-    primary,
-    process.env.GEMINI_API_KEY_2,
-    process.env.GEMINI_API_KEY_3,
-    process.env.GEMINI_API_KEY_4,
-  ].filter((k): k is string => !!k && k.trim().length > 0);
-  // Dedup in case the same key was accidentally set in two env vars.
-  return Array.from(new Set(keys));
+// Split into two groups so a heavy feature (Notes, which now sends up to
+// 150K chars of transcript) can never starve a lighter one (Research) of
+// quota, and vice versa:
+//   'notes'    — generate-notes, generate-roadmap, mentor-chat,
+//                blueprint-interview, deep-dive-extract, analyze-video,
+//                analyze-taste-video. Gets 2 keys (heavier group).
+//     VITE_GEMINI_API_KEY  — primary (existing)
+//     GEMINI_API_KEY_2     — backup
+//   'research' — research, expand-query. Gets its own dedicated key.
+//     GEMINI_API_KEY_3     — dedicated to this group
+//
+// The caller's own geminiApiKey param (whatever it read from
+// VITE_GEMINI_API_KEY itself) is always appended as a last-resort safety
+// net — so if a group's dedicated env vars aren't set yet, it still has
+// at least one key to try instead of going straight to MiniMax.
+function getGeminiKeyPool(group: 'notes' | 'research', callerKey: string | undefined): string[] {
+  const keys =
+    group === 'research'
+      ? [process.env.GEMINI_API_KEY_3, callerKey]
+      : [process.env.VITE_GEMINI_API_KEY, process.env.GEMINI_API_KEY_2, callerKey];
+  const cleaned = keys.filter((k): k is string => !!k && k.trim().length > 0);
+  // Dedup in case the same key ended up in two env vars/params.
+  return Array.from(new Set(cleaned));
 }
 
 async function tryGemini(
@@ -217,8 +233,9 @@ async function tryMinimax(params: AICallParams): Promise<{ ok: true; text: strin
  * try/catch already does.
  */
 export async function generateAIText(params: AICallParams): Promise<AICallResult> {
-  const geminiKeys = getGeminiKeyPool(params.geminiApiKey);
-  console.log(`[aiFallback] Gemini key pool size: ${geminiKeys.length} (expect 2-4 if backup keys are set)`);
+  const group = params.keyGroup ?? 'notes';
+  const geminiKeys = getGeminiKeyPool(group, params.geminiApiKey);
+  console.log(`[aiFallback] group=${group} key pool size: ${geminiKeys.length}`);
 
   // Last failure status across the key pool — a plain number instead of
   // holding onto the { ok, ... } union, since TS can't narrow that union

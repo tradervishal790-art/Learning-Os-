@@ -151,6 +151,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { text } = await generateAIText({
       geminiApiKey: apiKey,
       minimaxApiKey,
+      keyGroup: 'research',
       systemInstruction: HUMAN_RESEARCH_STYLE,
       contents: [{ parts: [{ text: query }] }],
       generationConfig: { temperature: 0.4, maxOutputTokens: 2048 },

@@ -77,6 +77,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { text: rawText } = await generateAIText({
       geminiApiKey: apiKey,
       minimaxApiKey,
+      keyGroup: 'research',
       contents: [{ parts: [{ text: QUERY_EXPANSION_PROMPT(userInput, blueprint) }] }],
       minimaxJsonMode: true,
     });
