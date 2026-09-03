@@ -76,20 +76,27 @@ export interface AICallResult {
   finishReason: string | null;
 }
 
-const DEFAULT_GEMINI_MODEL = 'gemini-3-flash-preview';
-// Pinned instead of 'gemini-flash-latest' — that alias currently points to
-// an experimental model with tighter rate limits, which was the likely
-// cause of the frequent 503 "overloaded" errors. gemini-3-flash-preview is
-// Google's current recommended free-tier default: 10 RPM / 1,500 RPD /
-// 250K TPM with NO billing account required. If Google eventually retires
-// this specific version, update the string here — MiniMax fallback below
-// still covers you in the meantime.
+const DEFAULT_GEMINI_MODEL = 'gemini-3.8-flash';
+// Switched from 'gemini-3-flash-preview' (Sept 2026) — verified in AI
+// Studio's own rate-limit dashboard that both models share the EXACT same
+// free-tier quota on this project (5 RPM / 20 RPD / ~290K TPM), so there
+// was no quota cost to moving off the legacy/preview model. 3.8 Flash is
+// Google's current most-capable Flash model. If Google changes this
+// model's free-tier availability, update the string here — MiniMax
+// fallback below still covers you in the meantime.
+//
+// NOTE: the real bottleneck is RPD (requests/day) = 20 per key, not TPM —
+// far tighter than earlier assumed. This is exactly why the multi-key
+// pool (see getGeminiKeyPool below) matters: each additional key adds
+// another +20 RPD, independent of this model choice.
 const DEFAULT_MINIMAX_MODEL = process.env.MINIMAX_MODEL || 'MiniMax-M3';
 const MINIMAX_URL = 'https://api.minimax.io/v1/chat/completions';
 
 // ── Multi-key Gemini rotation, split by feature group ────────────────────
 // The whole point of Gemini's free tier (see DEFAULT_GEMINI_MODEL comment
-// above) is 10 RPM / 1,500 RPD / 250K TPM PER KEY. Instead of hitting that
+// above) is 5 RPM / 20 RPD / ~290K TPM PER KEY (verified in AI Studio's
+// own dashboard — RPD is the real bottleneck, far tighter than TPM).
+// Instead of hitting that
 // ceiling and immediately falling over to MiniMax, rotate through a pool of
 // keys — each from a separate Google account, so each has its OWN
 // independent free quota. MiniMax is still the final fallback if every
