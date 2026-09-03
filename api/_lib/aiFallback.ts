@@ -76,15 +76,16 @@ export interface AICallResult {
   finishReason: string | null;
 }
 
-const DEFAULT_GEMINI_MODEL = 'gemini-3.7-flash';
-// Switched from 'gemini-3.8-flash' (Sept 2026) — 3.8 was returning 503
-// "overloaded" errors in production, likely tighter serving capacity as a
-// freshly-released model. 3.7 Flash is the previous-generation Flash
-// model, same free-tier pricing, more established/stable capacity. If
-// this starts 503ing too, check https://aistudio.google.com/rate-limit
-// for the model dropdown's current peak-usage numbers before switching
-// again — MiniMax fallback below still covers you in the meantime
-// (assuming MINIMAX_API_KEY has an active balance — see note below).
+const DEFAULT_GEMINI_MODEL = 'gemini-3.5-flash';
+// Switched from 'gemini-3.7-flash' (Sept 2026) — 3.7 also returned 503
+// "overloaded". 3.5 Flash is Google's GA-stable Flash model (as opposed to
+// the newer 3.6/3.7/3.8, which are still ramping up serving capacity) —
+// same free-tier pricing. If this ALSO 503s, the overload is likely
+// project/traffic-wide rather than model-specific — check
+// https://aistudio.google.com/status for a Gemini API-wide incident
+// before switching models again. MiniMax fallback below still covers you
+// in the meantime, but only once MINIMAX_API_KEY has an active balance —
+// it was returning 402 Payment Required as of this note.
 const DEFAULT_MINIMAX_MODEL = process.env.MINIMAX_MODEL || 'MiniMax-M3';
 const MINIMAX_URL = 'https://api.minimax.io/v1/chat/completions';
 
