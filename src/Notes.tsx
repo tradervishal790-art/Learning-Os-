@@ -17,14 +17,24 @@ function renderInlineBold(text: string, keyPrefix: string) {
 }
 
 function renderMyNotesMarkdown(raw: string) {
-  const lines = raw.split('\n');
+  // Defense-in-depth: if the model ever emits the literal two characters
+  // "\" + "n" as visible text instead of an actual newline (the exact bug
+  // seen in production), normalize it here rather than trusting the prompt
+  // instruction alone. Doesn't touch real newline characters — only the
+  // literal backslash-n sequence.
+  const normalized = raw.replace(/\\n/g, '\n');
+  const lines = normalized.split('\n');
   return lines.map((line, i) => {
     const trimmed = line.trim();
     if (!trimmed) return <div key={i} style={{ height: '0.6em' }} />;
-    if (trimmed.startsWith('## ')) {
+    // Defense-in-depth: the prompt tells the model never to use markdown
+    // headers, but if one slips through anyway, render it as a bold
+    // heading instead of showing raw "###" characters to the user.
+    const headingMatch = trimmed.match(/^#{1,6}\s+(.*)$/);
+    if (headingMatch) {
       return (
         <div key={i} style={{ fontWeight: 700, fontSize: '1.15em', marginTop: '0.5em' }}>
-          {renderInlineBold(trimmed.slice(3), `h${i}`)}
+          {renderInlineBold(headingMatch[1], `h${i}`)}
         </div>
       );
     }
