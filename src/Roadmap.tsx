@@ -5,7 +5,7 @@ import { hasSavedVideoForTopic } from './VideoIntel';
 import { MAX_ACTIVE_GOALS } from './goalsStore';
 import type { Topic, Video, UserOnboardingData, Goal, TopicBridge } from './types';
 import { buildCandidatePoolForConcept } from './conceptVideoPool';
-import { selectPlaylistForConcept, analyzedVideoToVideo, getLastTeacherForConcept } from './PlaylistBuilder';
+import { selectPlaylistForConceptV2, analyzedVideoToVideo, getLastTeacherForConcept } from './PlaylistBuilder';
 import { getLearningProfile } from './learningProfileStore';
 import { expandSearchQuery } from './queryExpander';
 import DeepDiveChat from './DeepDiveChat';
@@ -77,6 +77,17 @@ export default function Roadmap({
   onSwitchGoal,
 }: RoadmapProps) {
   const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null);
+  // Which teaching process is currently active for the launched playlist —
+  // only set on the 'personality_v1' path, used to decide the push-trigger
+  // behavior in handleMarkComplete/handleWatchVideos below. Control-group
+  // users always have this null, so their flow is untouched.
+  const [activeTeachingProcess, setActiveTeachingProcess] = useState<import('./personalityEngine').TeachingProcess | null>(null);
+  // Gate for Converging-type push flow: 'true' means the challenge prompt
+  // modal should render; only ever set true when pushTrigger === 'on_challenge_submit'.
+  const [showChallengePrompt, setShowChallengePrompt] = useState(false);
+  // True once the user has confirmed they attempted the challenge — lets
+  // handleMarkComplete's re-entry actually finish instead of re-prompting.
+  const [pendingChallengeCleared, setPendingChallengeCleared] = useState(false);
   const [showWhy, setShowWhy] = useState(false);
   const [playlistLoading, setPlaylistLoading] = useState(false);
   const [playlistError, setPlaylistError] = useState('');
@@ -176,11 +187,40 @@ export default function Roadmap({
   // Manual override for when the auto-detect (video watch % / keyword
   // match) doesn't cooperate — lets the learner mark a topic done and move
   // on without having to keep re-watching a video to retrigger it.
+  //
+  // PUSH-TRIGGER BRANCH (personality_v1 only): control-group users (or
+  // personality_v1 users with no active teaching process yet) fall through
+  // to the exact same immediate-finish behavior as before — nothing changes
+  // for them. For personality_v1 users with an active teaching process, the
+  // process' pushTrigger decides whether "done" advances immediately
+  // ('on_video_end'), needs the existing checklist gate ('on_checklist_complete' —
+  // same markTopicFinished call, no extra gate added here since Roadmap.tsx
+  // doesn't have a separate checklist UI yet), or should show a challenge
+  // prompt first ('on_challenge_submit') before actually finishing the topic.
   const handleMarkComplete = () => {
     if (!selectedTopic) return;
+
+    if (activeTeachingProcess?.pushTrigger === 'on_challenge_submit' && !pendingChallengeCleared) {
+      setShowChallengePrompt(true);
+      return;
+    }
+
     markTopicFinished(activeGoalId ?? undefined, selectedTopic.id, 'completed');
     setSelectedTopic(null);
+    setActiveTeachingProcess(null);
+    setShowChallengePrompt(false);
+    setPendingChallengeCleared(false);
     forceRefresh((n) => n + 1);
+  };
+
+  /** Called when the user confirms they've done the applied challenge
+   *  (Converging type). Clears the gate and re-runs handleMarkComplete
+   *  so the actual finish logic isn't duplicated. */
+  const handleChallengeSubmit = () => {
+    setPendingChallengeCleared(true);
+    setShowChallengePrompt(false);
+    // Re-run on next tick so the state update above is visible to handleMarkComplete.
+    setTimeout(() => handleMarkComplete(), 0);
   };
 
   const handleWatchVideos = async () => {
@@ -262,7 +302,7 @@ export default function Roadmap({
       }
 
       const currentTeacherId = getLastTeacherForConcept(selectedTopic.id);
-      const result = selectPlaylistForConcept(candidates, learnerProfile, currentTeacherId, {
+      const result = selectPlaylistForConceptV2(candidates, learnerProfile, currentTeacherId, {
         hours: topicHours,
         deadline: topicDeadline,
       });
@@ -270,6 +310,11 @@ export default function Roadmap({
         setPlaylistError('Playlist ban nahi payi, dobara try karo.');
         return;
       }
+
+      // 'control' variant -> teachingProcess is undefined -> this stays null,
+      // so handleMarkComplete's push-trigger branch below is a no-op for them,
+      // exactly like today.
+      setActiveTeachingProcess(result.teachingProcess ?? null);
 
       onLaunchPlaylist({
         primary: analyzedVideoToVideo(result.primary),
@@ -702,6 +747,26 @@ export default function Roadmap({
                         >
                           ✓ Maine ye already seekh liya — mark as complete
                         </button>
+                      )}
+
+                      {/* personality_v1 only, Converging type only — appears when
+                          handleMarkComplete's pushTrigger check gates completion
+                          on an applied challenge. Control-group users never see this. */}
+                      {showChallengePrompt && (
+                        <div className="mt-3 p-4 rounded-xl border border-gray-300 dark:border-white/20 bg-gray-50 dark:bg-white/5">
+                          <p className="text-sm font-medium mb-2">
+                            Pehle ek chhota applied challenge try karo, phir topic complete maaro.
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-white/50 mb-3">
+                            {activeTeachingProcess?.pushStrategy}
+                          </p>
+                          <button
+                            onClick={handleChallengeSubmit}
+                            className="w-full px-4 py-2.5 rounded-lg bg-black text-white dark:bg-white dark:text-black text-sm font-semibold transition active:scale-[0.98]"
+                          >
+                            Try kar liya — complete maaro
+                          </button>
+                        </div>
                       )}
                     </div>
                   </div>

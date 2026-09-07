@@ -1,5 +1,7 @@
 import { getEngagementSessions, getEngagementSessionsForVideo } from './engagementStore';
 import type { EngagementSession, LearningProfile, Video } from './types';
+import { getOrAssignVariant } from './experimentVariant';
+import { resolveTeachingProcessForSelection, type TeachingProcess } from './personalityEngine';
 
 // ============================================================
 // PlaylistBuilder.ts
@@ -192,6 +194,62 @@ function scoreCandidate(
   );
 }
 
+// ============================================================
+// PERSONALITY-ENGINE PATH (parallel, 'personality_v1' variant only)
+//
+// Does NOT change scoreCandidate(), WEIGHTS, or selectPlaylistForConcept()
+// above — the control group keeps running through those exact same
+// functions, untouched. This adds a small tiebreaker weight on top, used
+// only when the caller resolves to the 'personality_v1' variant.
+// ============================================================
+
+const PERSONALITY_WEIGHTS = {
+  ...WEIGHTS,
+  formatMatch: 0.15, // small nudge, not a dominant factor — dimensionMatch still leads
+};
+
+/**
+ * 0-1 score: does this video's own idealFor/primaryStyle text loosely match
+ * the teaching-process' videoStructure/presentationStyle for the learner's
+ * (derived) personality type? Deliberately a soft keyword check, not a strict
+ * field — AnalyzedVideo doesn't carry a structured VARK/style field yet, so
+ * this reuses the free-text idealFor/primaryStyle already produced by
+ * analyze-video.ts instead of inventing a new required field.
+ */
+function formatMatchScore(video: AnalyzedVideo, process: TeachingProcess): number {
+  const haystack = `${video.primaryStyle ?? ''} ${video.idealFor ?? ''}`.toLowerCase();
+  if (!haystack.trim()) return 0.5; // no style metadata on this video — neutral, don't penalize
+
+  const keywords = `${process.videoStructure} ${process.presentationStyle}`
+    .toLowerCase()
+    .split(/[^a-z]+/)
+    .filter((w) => w.length > 3);
+
+  if (keywords.length === 0) return 0.5;
+  const hits = keywords.filter((k) => haystack.includes(k)).length;
+  return Math.min(1, hits / Math.min(4, keywords.length));
+}
+
+function scoreCandidatePersonality(
+  video: AnalyzedVideo,
+  learnerDimensions: TeachingDimensions,
+  currentTeacherId: string | undefined,
+  allSessions: EngagementSession[],
+  process: TeachingProcess
+): number {
+  const dimScore = dimensionMatchScore(video.dimensions, learnerDimensions);
+  const affinityScore = teacherAffinityScore(video.teacherId, allSessions);
+  const continuity = currentTeacherId && video.teacherId === currentTeacherId ? 1 : 0;
+  const formatScore = formatMatchScore(video, process);
+
+  return (
+    PERSONALITY_WEIGHTS.dimensionMatch * dimScore +
+    PERSONALITY_WEIGHTS.teacherAffinity * affinityScore +
+    PERSONALITY_WEIGHTS.continuityBonus * continuity +
+    PERSONALITY_WEIGHTS.formatMatch * formatScore
+  );
+}
+
 // ---- Public API ----
 
 /**
@@ -295,6 +353,95 @@ export function rerankRemaining(
     }))
     .sort((a, b) => b.score - a.score)
     .map((s) => s.video);
+}
+
+// ============================================================
+// PUBLIC ENTRY POINT — variant-aware wrapper
+//
+// Roadmap.tsx should call THIS instead of selectPlaylistForConcept directly
+// going forward. It reads the sticky experiment variant and:
+//   - 'control'         -> calls selectPlaylistForConcept() exactly as before,
+//                          byte-for-byte the same behavior as today.
+//   - 'personality_v1'  -> derives the learner's personality type + teaching
+//                          process, and reranks using scoreCandidatePersonality()
+//                          (dimensionMatch + teacherAffinity + continuity + formatMatch).
+//
+// Both paths return the same PlaylistResult shape, so nothing downstream
+// (VideoIntel.tsx, analyzedVideoToVideo) needs to know which path ran.
+// The variant + resolved type are returned alongside the result so the
+// caller can tag the EngagementSession and drive push-trigger UI.
+// ============================================================
+
+export interface PlaylistResultV2 extends PlaylistResult {
+  variant: 'control' | 'personality_v1';
+  /** Only set when variant === 'personality_v1'. */
+  teachingProcess?: TeachingProcess;
+}
+
+export function selectPlaylistForConceptV2(
+  candidates: AnalyzedVideo[],
+  learnerProfile: LearningProfile,
+  currentTeacherId?: string,
+  timing?: PlaylistTiming
+): PlaylistResultV2 | null {
+  const variant = getOrAssignVariant();
+
+  if (variant === 'control') {
+    const result = selectPlaylistForConcept(candidates, learnerProfile, currentTeacherId, timing);
+    return result ? { ...result, variant: 'control' } : null;
+  }
+
+  // ---- personality_v1 path ----
+  if (candidates.length === 0) return null;
+
+  const process = resolveTeachingProcessForSelection(learnerProfile);
+  const learnerDimensions = dimensionsFromLearningProfile(learnerProfile);
+  learnerDimensions.pace = adjustPaceForUrgency(learnerDimensions.pace, timing);
+
+  const allSessions = getEngagementSessions();
+
+  const scored = candidates
+    .map((video) => ({
+      video,
+      score: scoreCandidatePersonality(video, learnerDimensions, currentTeacherId, allSessions, process),
+    }))
+    .sort((a, b) => b.score - a.score);
+
+  const best = scored[0];
+  const currentTeacherPick = scored.find((s) => s.video.teacherId === currentTeacherId);
+
+  let primary = best;
+  let teacherSwitched = currentTeacherId ? best.video.teacherId !== currentTeacherId : false;
+
+  if (
+    currentTeacherId &&
+    currentTeacherPick &&
+    currentTeacherPick.video.teacherId !== best.video.teacherId &&
+    best.score - currentTeacherPick.score < SWITCH_THRESHOLD
+  ) {
+    primary = currentTeacherPick;
+    teacherSwitched = false;
+  }
+
+  const remaining = scored.filter((s) => s.video.videoId !== primary.video.videoId);
+  const closest = remaining[0];
+  const diverse = remaining
+    .filter((s) => s.video.videoId !== closest?.video.videoId)
+    .sort(
+      (a, b) =>
+        dimensionMatchScore(a.video.dimensions, learnerDimensions) -
+        dimensionMatchScore(b.video.dimensions, learnerDimensions)
+    )[0];
+
+  const fallbacks = [closest, diverse].filter((s): s is (typeof scored)[number] => Boolean(s)).map((s) => s.video);
+
+  return {
+    primary: primary.video,
+    fallbacks,
+    teacherSwitched,
+    variant: 'personality_v1',
+    teachingProcess: process,
+  };
 }
 
 /**
