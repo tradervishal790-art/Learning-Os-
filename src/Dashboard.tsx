@@ -11,7 +11,6 @@ import TasteOnboarding from './TasteOnboarding';
 import { getRoadmapData, getCurrentTopic } from './roadmapData';
 import { getRevisionStats, getRevisionDataForGoals } from './revisionData';
 import { getLearningProfile, saveLearningProfile, clearLearningProfile } from './learningProfileStore';
-import { getCurrentUser, createProfileLockAccount, signInProfileLock, reauthenticateProfileLock, signInWithGoogleProfileLock, isGoogleAccount, reauthenticateProfileLockGoogle } from './authStore';
 import { buildCandidatePoolForConcept } from './conceptVideoPool';
 import { selectPlaylistForConcept, analyzedVideoToVideo } from './PlaylistBuilder';
 import { expandSearchQuery } from './queryExpander';
@@ -201,14 +200,9 @@ export default function Dashboard({ userData, onUpdateUserData, onRegenerateRoad
   // Deep-settings: the full learning-profile report is hidden by default,
   // only rendered when the user explicitly expands it here — see the
   // "Learning Profile Report" section inside the Settings modal below.
+  // The whole app now sits behind AuthGate.tsx's per-user login, so the
+  // deep report just needs a plain expand/collapse — no separate re-auth.
   const [showFullProfileReport, setShowFullProfileReport] = useState(false);
-  // Profile-lock gate — real Firebase Email/Password auth (see authStore.ts).
-  const [showAuthPrompt, setShowAuthPrompt] = useState(false);
-  const [authMode, setAuthMode] = useState<'create' | 'signin' | 'reauth'>('create');
-  const [authEmail, setAuthEmail] = useState('');
-  const [authPassword, setAuthPassword] = useState('');
-  const [authError, setAuthError] = useState('');
-  const [authBusy, setAuthBusy] = useState(false);
   const [settingsName, setSettingsName] = useState(userData?.name ?? '');
   const [settingsRole, setSettingsRole] = useState(userData?.role ?? '');
   const [settingsGoal, setSettingsGoal] = useState(userData?.goal ?? '');
@@ -857,149 +851,11 @@ export default function Dashboard({ userData, onUpdateUserData, onRegenerateRoad
                       Yeh sirf request karne par dikhta hai — home page pe sirf ek short summary hoti hai.
                     </p>
                     <button
-                      onClick={() => {
-                        if (showFullProfileReport) {
-                          setShowFullProfileReport(false);
-                          return;
-                        }
-                        const sessionOk = sessionStorage.getItem('learning_os_profile_unlocked') === '1';
-                        if (sessionOk && getCurrentUser()) {
-                          setShowFullProfileReport(true);
-                          return;
-                        }
-                        const savedEmail = localStorage.getItem('learning_os_profile_lock_email') ?? '';
-                        setAuthEmail(savedEmail);
-                        setAuthPassword('');
-                        setAuthError('');
-                        setAuthMode(getCurrentUser() ? 'reauth' : savedEmail ? 'signin' : 'create');
-                        setShowAuthPrompt(true);
-                      }}
+                      onClick={() => setShowFullProfileReport((v) => !v)}
                       className="w-full py-2.5 rounded-xl border border-gray-300 dark:border-white/10 text-sm font-medium hover:bg-gray-100 dark:hover:bg-white/10 transition"
                     >
                       {showFullProfileReport ? 'Hide Report' : 'View Full Report'}
                     </button>
-
-                    {showAuthPrompt && (
-                      <div className="mt-3 p-4 rounded-xl border border-gray-300 dark:border-white/10 bg-gray-50 dark:bg-white/5">
-                        <p className="text-xs text-gray-500 dark:text-white/50 mb-2">
-                          {authMode === 'create' && 'Ye report private hai — email/password set karo ya Google se continue karo.'}
-                          {authMode === 'signin' && 'Dobara sign in karo report dekhne ke liye.'}
-                          {authMode === 'reauth' && (isGoogleAccount() ? 'Confirm karo — Google se.' : 'Confirm karo — password daalo.')}
-                        </p>
-
-                        {authMode === 'reauth' && isGoogleAccount() ? (
-                          <>
-                            {authError && <p className="text-xs text-red-500 dark:text-red-400 mb-2">{authError}</p>}
-                            <div className="flex gap-2">
-                              <button
-                                disabled={authBusy}
-                                onClick={async () => {
-                                  setAuthBusy(true);
-                                  const result = await reauthenticateProfileLockGoogle();
-                                  setAuthBusy(false);
-                                  if (result.ok) {
-                                    sessionStorage.setItem('learning_os_profile_unlocked', '1');
-                                    setShowAuthPrompt(false);
-                                    setShowFullProfileReport(true);
-                                  } else {
-                                    setAuthError(result.error);
-                                  }
-                                }}
-                                className="flex-1 py-2 rounded-lg border border-gray-300 dark:border-white/10 text-sm font-medium flex items-center justify-center gap-2"
-                              >
-                                {authBusy ? '...' : 'Confirm with Google'}
-                              </button>
-                              <button onClick={() => setShowAuthPrompt(false)} className="px-4 py-2 rounded-lg border border-gray-300 dark:border-white/10 text-sm">
-                                Cancel
-                              </button>
-                            </div>
-                          </>
-                        ) : (
-                          <>
-                            {authMode !== 'reauth' && (
-                              <input
-                                type="email"
-                                value={authEmail}
-                                onChange={(e) => { setAuthEmail(e.target.value); setAuthError(''); }}
-                                placeholder="Email"
-                                className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-white/10 bg-white dark:bg-black/30 text-sm mb-2"
-                              />
-                            )}
-                            <input
-                              type="password"
-                              value={authPassword}
-                              onChange={(e) => { setAuthPassword(e.target.value); setAuthError(''); }}
-                              placeholder="Password"
-                              className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-white/10 bg-white dark:bg-black/30 text-sm mb-2"
-                            />
-                            {authError && <p className="text-xs text-red-500 dark:text-red-400 mb-2">{authError}</p>}
-                            <div className="flex gap-2">
-                              <button
-                                disabled={authBusy}
-                                onClick={async () => {
-                                  setAuthBusy(true);
-                                  let result;
-                                  if (authMode === 'create') {
-                                    result = await createProfileLockAccount(authEmail, authPassword);
-                                  } else if (authMode === 'signin') {
-                                    result = await signInProfileLock(authEmail, authPassword);
-                                  } else {
-                                    result = await reauthenticateProfileLock(authPassword);
-                                  }
-                                  setAuthBusy(false);
-                                  if (result.ok) {
-                                    if (authMode !== 'reauth') localStorage.setItem('learning_os_profile_lock_email', authEmail);
-                                    sessionStorage.setItem('learning_os_profile_unlocked', '1');
-                                    setShowAuthPrompt(false);
-                                    setShowFullProfileReport(true);
-                                  } else {
-                                    setAuthError(result.error);
-                                  }
-                                }}
-                                className="flex-1 py-2 rounded-lg bg-black text-white dark:bg-white dark:text-black text-sm font-medium disabled:opacity-50"
-                              >
-                                {authBusy ? '...' : authMode === 'create' ? 'Create & Unlock' : 'Unlock'}
-                              </button>
-                              <button
-                                onClick={() => setShowAuthPrompt(false)}
-                                className="px-4 py-2 rounded-lg border border-gray-300 dark:border-white/10 text-sm"
-                              >
-                                Cancel
-                              </button>
-                            </div>
-
-                            {authMode !== 'reauth' && (
-                              <>
-                                <div className="flex items-center gap-2 my-3">
-                                  <div className="flex-1 h-px bg-gray-300 dark:bg-white/10" />
-                                  <span className="text-[10px] text-gray-400 dark:text-white/40">OR</span>
-                                  <div className="flex-1 h-px bg-gray-300 dark:bg-white/10" />
-                                </div>
-                                <button
-                                  disabled={authBusy}
-                                  onClick={async () => {
-                                    setAuthBusy(true);
-                                    const result = await signInWithGoogleProfileLock();
-                                    setAuthBusy(false);
-                                    if (result.ok) {
-                                      sessionStorage.setItem('learning_os_profile_unlocked', '1');
-                                      localStorage.setItem('learning_os_profile_lock_email', getCurrentUser()?.email ?? '');
-                                      setShowAuthPrompt(false);
-                                      setShowFullProfileReport(true);
-                                    } else {
-                                      setAuthError(result.error);
-                                    }
-                                  }}
-                                  className="w-full py-2 rounded-lg border border-gray-300 dark:border-white/10 text-sm font-medium hover:bg-gray-100 dark:hover:bg-white/10 transition"
-                                >
-                                  Continue with Google
-                                </button>
-                              </>
-                            )}
-                          </>
-                        )}
-                      </div>
-                    )}
                     {showFullProfileReport && (
                       <div className="mt-3">
                         <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-500 dark:text-white/60 mb-3">

@@ -7,6 +7,7 @@ import {
   GoogleAuthProvider,
   EmailAuthProvider,
   onAuthStateChanged,
+  signOut,
   type User,
 } from 'firebase/auth';
 import { auth } from './firebase';
@@ -14,24 +15,27 @@ import { auth } from './firebase';
 // ============================================================
 // authStore.ts
 //
-// Real Firebase Email/Password auth, scoped for now to ONE feature: the
-// password-gate on the deep learning-profile report (see Dashboard.tsx).
-// The rest of the app stays guest/localStorage-based — this does not sign
-// the user into a full account system, it just backs the profile-lock
-// with real server-side auth instead of a local hash.
+// Real Firebase Email/Password + Google auth, gating the WHOLE app (see
+// AuthGate.tsx) — each user has their own account/password, so their
+// onboarding data, learning profile, roadmap, and engagement history are
+// only reachable after they sign in on that device.
 //
-// COST: Email/Password sign-in is on Firebase's free Spark plan up to
-// 50,000 monthly active users — this feature will not incur any charges
+// COST: Email/Password and Google sign-in are on Firebase's free Spark
+// plan up to 50,000 monthly active users — this will not incur charges
 // at this app's scale. Only phone/SMS auth is billed; we don't use it.
 //
 // SETUP REQUIRED (one-time, Firebase Console — cannot be done from code):
 //   Firebase Console -> Authentication -> Sign-in method -> enable
-//   "Email/Password" provider. If this isn't enabled, createAccount()/
-//   signIn() will fail with auth/operation-not-allowed.
+//   "Email/Password" AND "Google" providers. If either isn't enabled,
+//   the matching function below fails with auth/operation-not-allowed.
 // ============================================================
 
 export function getCurrentUser(): User | null {
   return auth.currentUser;
+}
+
+export async function signOutOfApp(): Promise<void> {
+  await signOut(auth);
 }
 
 export function onAuthChange(callback: (user: User | null) => void): () => void {
