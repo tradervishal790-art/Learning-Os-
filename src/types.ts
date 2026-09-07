@@ -165,6 +165,11 @@ export interface EngagementSession {
   feedback: FeedbackValue;
   signal: EngagementSignal;
   sessionTimestamp: string; // ISO string — when this session started
+  // Which scoring path produced the video this session watched — 'control' is the
+  // existing dimensionMatch-only PlaylistBuilder logic, 'personality_v1' is the
+  // parallel personality-type engine (personalityEngine.ts). Optional so existing
+  // stored sessions (pre-experiment) remain valid without a migration.
+  variant?: 'control' | 'personality_v1';
 }
 
 // ---------- Placeholder pages (Notes, Mentor, Progress) ----------
