@@ -4,6 +4,7 @@ import {
   reauthenticateWithCredential,
   reauthenticateWithPopup,
   signInWithPopup,
+  updateProfile,
   GoogleAuthProvider,
   EmailAuthProvider,
   onAuthStateChanged,
@@ -42,10 +43,11 @@ export function onAuthChange(callback: (user: User | null) => void): () => void 
   return onAuthStateChanged(auth, callback);
 }
 
-/** First-time setup: creates the account and signs them in immediately. */
-export async function createProfileLockAccount(email: string, password: string): Promise<{ ok: true } | { ok: false; error: string }> {
+/** First-time setup: creates the account, sets their display name, and signs them in immediately. */
+export async function createProfileLockAccount(email: string, password: string, displayName?: string): Promise<{ ok: true } | { ok: false; error: string }> {
   try {
-    await createUserWithEmailAndPassword(auth, email, password);
+    const credential = await createUserWithEmailAndPassword(auth, email, password);
+    if (displayName?.trim()) await updateProfile(credential.user, { displayName: displayName.trim() });
     return { ok: true };
   } catch (err: any) {
     return { ok: false, error: mapAuthError(err?.code) };

@@ -21,6 +21,7 @@ import {
 export default function AuthGate({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null | 'loading'>('loading');
   const [mode, setMode] = useState<'signin' | 'create'>('signin');
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -49,7 +50,7 @@ export default function AuthGate({ children }: { children: ReactNode }) {
           onClick={() => signOutOfApp()}
           className="fixed bottom-4 right-4 z-50 text-xs px-3 py-1.5 rounded-full bg-black/70 text-white/70 hover:text-white border border-white/10 backdrop-blur"
         >
-          Sign out ({user.email})
+          Sign out ({user.displayName || user.email})
         </button>
       </>
     );
@@ -60,9 +61,13 @@ export default function AuthGate({ children }: { children: ReactNode }) {
       setError('Sahi email aur kam se kam 6-character password daalo.');
       return;
     }
+    if (mode === 'create' && !name.trim()) {
+      setError('Apna naam daalo.');
+      return;
+    }
     setBusy(true);
     setError('');
-    const result = mode === 'create' ? await createAccount(email, password) : await signIn(email, password);
+    const result = mode === 'create' ? await createAccount(email, password, name) : await signIn(email, password);
     setBusy(false);
     if (!result.ok) setError(result.error);
   };
@@ -81,11 +86,30 @@ export default function AuthGate({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen flex items-center justify-center bg-black px-4">
       <div className="w-full max-w-sm">
-        <h1 className="text-2xl font-bold text-white mb-1">Learning OS</h1>
+        <div className="mb-1 flex items-baseline gap-2">
+          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-white via-purple-200 to-white bg-clip-text text-transparent">
+            Learning
+          </h1>
+          <h1
+            className="text-3xl font-bold tracking-[0.15em] uppercase text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-fuchsia-400"
+            style={{ filter: 'drop-shadow(0 0 12px rgba(139, 92, 246, 0.5))' }}
+          >
+            OS
+          </h1>
+        </div>
         <p className="text-sm text-white/50 mb-6">
           {mode === 'create' ? 'Naya account banao' : 'Apne account se sign in karo'}
         </p>
 
+        {mode === 'create' && (
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => { setName(e.target.value); setError(''); }}
+            placeholder="Naam"
+            className="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-white text-sm mb-3 outline-none focus:border-white/30"
+          />
+        )}
         <input
           type="email"
           value={email}
@@ -127,7 +151,7 @@ export default function AuthGate({ children }: { children: ReactNode }) {
         </button>
 
         <button
-          onClick={() => { setMode(mode === 'create' ? 'signin' : 'create'); setError(''); }}
+          onClick={() => { setMode(mode === 'create' ? 'signin' : 'create'); setError(''); setName(''); }}
           className="w-full text-center text-xs text-white/40 hover:text-white/70"
         >
           {mode === 'create' ? 'Pehle se account hai? Sign in karo' : 'Naya user ho? Account banao'}
