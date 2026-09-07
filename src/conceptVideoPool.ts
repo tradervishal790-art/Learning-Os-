@@ -246,6 +246,26 @@ async function getAnalyzedProfile(candidate: CandidateMeta): Promise<GeminiProfi
 }
 
 /**
+ * Looks up a video's already-analyzed TeachingDimensions from the shared
+ * analysis cache, keyed by videoId. Returns null if this video has never
+ * been analyzed in this browser (shouldn't happen for anything the user
+ * actually watched, since it must have gone through getAnalyzedProfile()
+ * to appear in a playlist in the first place).
+ *
+ * Used by implicitProfileUpdate.ts to recover "what kind of teaching style
+ * was this video" when reacting to a past EngagementSession, without
+ * re-calling Gemini or threading dimensions through every call site.
+ */
+export function getCachedVideoDimensions(videoId: string): TeachingDimensions | null {
+  const cache = readCache<CachedVideoAnalysis>(ANALYSIS_CACHE_KEY);
+  const entry = cache[videoId];
+  if (!entry?.profile) return null;
+  const { pace, theory_vs_practical, structure, depth, language_complexity, storytelling, repetition, prerequisite_assumed } =
+    entry.profile;
+  return { pace, theory_vs_practical, structure, depth, language_complexity, storytelling, repetition, prerequisite_assumed };
+}
+
+/**
  * Main entry point: given a roadmap Topic (or adhoc custom topic), returns
  * ready-to-rank AnalyzedVideo[] pool. Accepts optional expandedQueries[]
  * — when provided, YouTube is hit multiple times with merged results; when

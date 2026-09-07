@@ -4,6 +4,8 @@ import { Search, Play, CheckCircle, ThumbsUp, ThumbsDown, SkipForward } from 'lu
 import type { Video, VideoWatchData, WatchHistoryEntry, EngagementSession, FeedbackValue, Topic, TopicBridge } from './types';
 import { withComputedSignal } from './engagementScoring';
 import { upsertEngagementSession } from './engagementStore';
+import { getLearningProfile } from './learningProfileStore';
+import { maybeUpdateProfileFromEngagement } from './implicitProfileUpdate';
 import { getRoadmapData, saveRoadmapData } from './roadmapData';
 import Notes from './Notes';
 import Research from './Research';
@@ -403,6 +405,12 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
     if (!sessionRef.current) return;
     const completeSession = withComputedSignal(sessionRef.current);
     upsertEngagementSession(completeSession);
+
+    // Rolling-window implicit profile update — silent, no UI notification
+    // by design (see /areas/learning-os.md). No-ops until enough consistent
+    // positive signals exist in the recent window.
+    const profile = getLearningProfile();
+    if (profile) maybeUpdateProfileFromEngagement(profile);
   };
 
   useEffect(() => {

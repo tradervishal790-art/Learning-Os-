@@ -246,9 +246,23 @@ export function selectPlaylistForConcept(
 
   const remaining = scored.filter((s) => s.video.videoId !== primary.video.videoId);
 
+  // Fallback #1: next-best match (same logic as before).
+  // Fallback #2: deliberately the most DIFFERENT teaching style available,
+  // not another close match. Without this, all 3 videos reinforce the same
+  // trait-cluster and a selection here can never tell us the profile was
+  // wrong — it only ever confirms it. See /areas/learning-os.md decision:
+  // "occasional diverse-type video deliberately included to avoid
+  // filter-bubble bias".
+  const closest = remaining[0];
+  const diverse = remaining
+    .filter((s) => s.video.videoId !== closest?.video.videoId)
+    .sort((a, b) => dimensionMatchScore(a.video.dimensions, learnerDimensions) - dimensionMatchScore(b.video.dimensions, learnerDimensions))[0];
+
+  const fallbacks = [closest, diverse].filter((s): s is (typeof scored)[number] => Boolean(s)).map((s) => s.video);
+
   return {
     primary: primary.video,
-    fallbacks: remaining.slice(0, 2).map((s) => s.video),
+    fallbacks,
     teacherSwitched,
   };
 }
