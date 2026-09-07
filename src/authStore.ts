@@ -111,6 +111,13 @@ export async function reauthenticateProfileLockGoogle(): Promise<{ ok: true } | 
 }
 
 function mapAuthError(code?: string): string {
+  const known = mapKnownAuthError(code);
+  // Always append the raw code — generic messages hide the real cause;
+  // the user can act on 'auth/unauthorized-domain' etc. directly.
+  return code ? `${known} (${code})` : known;
+}
+
+function mapKnownAuthError(code?: string): string {
   switch (code) {
     case 'auth/email-already-in-use':
       return 'Ye email pehle se registered hai — sign in karo.';
@@ -125,6 +132,12 @@ function mapAuthError(code?: string): string {
       return 'Ye email registered nahi hai.';
     case 'auth/operation-not-allowed':
       return 'Email/Password sign-in Firebase Console me enable nahi hai.';
+    case 'auth/unauthorized-domain':
+      return 'Ye website domain Firebase Console me authorized nahi hai.';
+    case 'auth/popup-blocked':
+      return 'Browser ne popup block kar diya — popup allow karo aur dobara try karo.';
+    case 'auth/popup-closed-by-user':
+      return 'Google popup band ho gaya sign-in complete hone se pehle.';
     default:
       return 'Kuch gadbad ho gayi, dobara try karo.';
   }

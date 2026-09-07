@@ -72,7 +72,10 @@ export default function AuthGate({ children }: { children: ReactNode }) {
     setError('');
     const result = await signInWithGoogle();
     setBusy(false);
-    if (!result.ok) setError(result.error);
+    if (!result.ok) {
+      console.error('Google sign-in failed:', result.error);
+      setError(result.error);
+    }
   };
 
   return (
