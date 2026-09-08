@@ -107,10 +107,27 @@ export interface RevisionItem {
 // own `why.connect` (already written with exactly this purpose in mind
 // by generate-roadmap.ts, previously only shown buried inside the topic
 // modal's "Why" tab).
+/** Small set of transcript-derived anchors used to verify a bridge is
+ *  real (see api/verify-bridge.ts, api/_lib/bridgeVerify.ts). Defined here
+ *  too (structurally identical, kept independent) so bridgeConnectorStore.ts
+ *  doesn't need to import across the src/api boundary. */
+export interface ConnectorFacts {
+  topicTitle: string;
+  facts: string[];
+}
+
 export interface TopicBridge {
   fromTopicTitle: string;
   toTopicTitle: string;
   connectText: string;
+  /** Set once api/verify-bridge.ts has actually checked the two videos'
+   *  real transcript content against each other — undefined means "not
+   *  verified yet / verification skipped", NOT "verified false". When
+   *  true, connectText above has already been replaced with Gemini's
+   *  verifiedConnectText; when false, connectText is left as the original
+   *  pre-written (unverified) claim from generate-roadmap.ts, since no
+   *  real transcript-backed connection was found. */
+  verified?: boolean;
 }
 
 // ---------- Video Intelligence ----------

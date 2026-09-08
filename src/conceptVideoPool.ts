@@ -41,6 +41,12 @@ interface GeminiProfile extends TeachingDimensions {
   primary_style?: string;
   ideal_for?: string;
   avoid_for?: string;
+  // Piggybacked onto this SAME Gemini call (see api/_lib/teachingStyle.ts's
+  // DIMENSION_PROMPT) — costs zero extra API calls / near-zero extra tokens,
+  // since the transcript is already being sent here for the 8-dimension
+  // scoring. Used for bridge verification (see getCachedConnectorFacts
+  // below) instead of re-sending the transcript later.
+  connector_facts?: string[];
 }
 
 interface CachedVideoAnalysis {
@@ -263,6 +269,21 @@ export function getCachedVideoDimensions(videoId: string): TeachingDimensions | 
   const { pace, theory_vs_practical, structure, depth, language_complexity, storytelling, repetition, prerequisite_assumed } =
     entry.profile;
   return { pace, theory_vs_practical, structure, depth, language_complexity, storytelling, repetition, prerequisite_assumed };
+}
+
+/**
+ * Looks up a video's already-cached connector_facts (see GeminiProfile
+ * above) — zero extra API/token cost, since these were extracted during
+ * this same video's original analyze-video.ts call, whenever that
+ * happened. Returns null if this video was never analyzed in this browser,
+ * or if analysis predates connector_facts being added to the prompt.
+ * Used by Roadmap.tsx to verify a bridge WITHOUT re-sending either video's
+ * transcript — only these small cached fact-lists get sent to Gemini.
+ */
+export function getCachedConnectorFacts(videoId: string): string[] | null {
+  const cache = readCache<CachedVideoAnalysis>(ANALYSIS_CACHE_KEY);
+  const facts = cache[videoId]?.profile?.connector_facts;
+  return facts && facts.length > 0 ? facts : null;
 }
 
 /**

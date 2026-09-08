@@ -24,6 +24,7 @@ Ye bhi do:
 - primary_style: [visual/verbal/example-driven/socratic/lecture]
 - ideal_for: kis tarah ke learner ke liye best fit hai (2-3 lines)
 - avoid_for: kis tarah ke learner ko struggle ho sakti hai
+- connector_facts: is content se 3-6 chhote factual anchors (specific terms/concepts/ideas jo koi AGLA topic build kar sakta hai) — is transcript ko dobara kabhi nahi bhejna padega, isliye yahi extract kar do abhi
 
 Sirf JSON return karo, koi extra text nahi, koi markdown backticks nahi.
 

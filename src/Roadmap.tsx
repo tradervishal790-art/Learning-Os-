@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getRoadmapData, getRoadmapProgress, markTopicFinished } from './roadmapData';
-import { hasSavedVideoForTopic } from './VideoIntel';
+import { hasSavedVideoForTopic, getSavedVideoIdForTopic } from './VideoIntel';
 import { MAX_ACTIVE_GOALS } from './goalsStore';
 import type { Topic, Video, UserOnboardingData, Goal, TopicBridge } from './types';
-import { buildCandidatePoolForConcept } from './conceptVideoPool';
+import { buildCandidatePoolForConcept, getCachedConnectorFacts } from './conceptVideoPool';
 import { selectPlaylistForConceptV2, analyzedVideoToVideo, getLastTeacherForConcept } from './PlaylistBuilder';
 import { getLearningProfile } from './learningProfileStore';
 import { expandSearchQuery } from './queryExpander';
@@ -184,6 +184,56 @@ export default function Roadmap({
     };
   };
 
+  /**
+   * Upgrades a pre-written bridge (generate-roadmap.ts's `why.connect` claim,
+   * never actually checked against real video content) into a verified one,
+   * by comparing the previous topic's watched video and the just-selected
+   * next video's ALREADY-CACHED connector_facts (see conceptVideoPool.ts —
+   * piggybacked onto each video's original analyze-video.ts call, zero
+   * extra transcript tokens). Only ONE small API call happens here, and
+   * only when both videos' facts are already available; otherwise the
+   * pre-written bridge is kept exactly as-is (verified stays undefined,
+   * not false — "not checked" is not the same as "checked and wrong").
+   */
+  const tryVerifyBridge = async (topic: Topic, nextVideoId: string): Promise<TopicBridge | undefined> => {
+    const bridge = getBridgeForTopic(topic);
+    if (!bridge) return undefined;
+
+    const previousTopic = getPreviousTopic(topic);
+    if (!previousTopic) return bridge;
+
+    const previousVideoId = getSavedVideoIdForTopic(activeGoalId ?? undefined, previousTopic.id);
+    if (!previousVideoId) return bridge; // learner never actually watched a video for the previous topic
+
+    const previousFacts = getCachedConnectorFacts(previousVideoId);
+    const nextFacts = getCachedConnectorFacts(nextVideoId);
+    if (!previousFacts || !nextFacts) return bridge; // one or both predate connector_facts / weren't cached
+
+    try {
+      const res = await fetch('/api/verify-bridge', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          previous: { topicTitle: previousTopic.title, facts: previousFacts },
+          next: { topicTitle: topic.title, facts: nextFacts },
+          fallbackConnectText: bridge.connectText,
+        }),
+      });
+      if (!res.ok) return bridge;
+      const verification = (await res.json()) as { connected: boolean; verifiedConnectText: string | null };
+
+      if (verification.connected && verification.verifiedConnectText) {
+        return { ...bridge, connectText: verification.verifiedConnectText, verified: true };
+      }
+      // Checked, but Gemini didn't find a real connection — surface this
+      // as verified: false so the UI can choose to hide/soften an unproven
+      // claim rather than silently keep showing it as if it were solid.
+      return { ...bridge, verified: false };
+    } catch {
+      return bridge; // network/API failure — keep the unverified claim, never block the learner over this
+    }
+  };
+
   // Manual override for when the auto-detect (video watch % / keyword
   // match) doesn't cooperate — lets the learner mark a topic done and move
   // on without having to keep re-watching a video to retrigger it.
@@ -316,10 +366,14 @@ export default function Roadmap({
       // exactly like today.
       setActiveTeachingProcess(result.teachingProcess ?? null);
 
+      // One small fact-vs-fact API call (see tryVerifyBridge) — not a
+      // transcript re-send — so this doesn't meaningfully delay launch.
+      const bridge = await tryVerifyBridge(selectedTopic, result.primary.videoId);
+
       onLaunchPlaylist({
         primary: analyzedVideoToVideo(result.primary),
         fallbacks: result.fallbacks.map(analyzedVideoToVideo),
-        bridge: getBridgeForTopic(selectedTopic),
+        bridge,
         topicId: selectedTopic.id,
       });
       setSelectedTopic(null);

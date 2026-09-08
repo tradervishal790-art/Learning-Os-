@@ -53,6 +53,21 @@ export function hasSavedVideoForTopic(goalId: string | undefined, topicId: strin
   }
 }
 
+/** The actual videoId a learner watched/selected for this topic, if any —
+ *  used by Roadmap.tsx to verify a bridge against the PREVIOUS topic's
+ *  real watched video (via conceptVideoPool.ts's getCachedConnectorFacts,
+ *  keyed by this same videoId) instead of just its title. */
+export function getSavedVideoIdForTopic(goalId: string | undefined, topicId: string): string | null {
+  try {
+    const saved = localStorage.getItem(getSearchStateKey(goalId, topicId));
+    if (!saved) return null;
+    const parsed = JSON.parse(saved) as PersistedSearchState;
+    return parsed.selectedVideoId ?? null;
+  } catch {
+    return null;
+  }
+}
+
 interface PersistedSearchState {
   searchQuery: string;
   videos: Video[];
@@ -844,7 +859,13 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
             <div className="lg:col-span-2">
               {selectedVideo ? (
                 <motion.div key={selectedVideo.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-                  {activeBridge && selectedVideo.id === initialPlaylist?.primary?.id && (
+                  {/* verified === false means Gemini actually checked the two videos'
+                      real content and found no genuine connection — showing the
+                      original unproven claim in that case would be worse than
+                      showing nothing, so it's suppressed rather than displayed
+                      softened. verified === undefined ("not checked") still shows
+                      normally, same as before this feature existed. */}
+                  {activeBridge && activeBridge.verified !== false && selectedVideo.id === initialPlaylist?.primary?.id && (
                     <div className="flex items-start gap-2 p-4 rounded-xl border border-gray-300 dark:border-white/20 bg-gray-50 dark:bg-white/5">
                       <span className="text-lg leading-none">🔗</span>
                       <div className="flex-1 min-w-0">
@@ -852,6 +873,11 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                           <span>{activeBridge.fromTopicTitle}</span>
                           <span>→</span>
                           <span className="text-black dark:text-white font-medium">{activeBridge.toTopicTitle}</span>
+                          {activeBridge.verified === true && (
+                            <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded-full bg-black text-white dark:bg-white dark:text-black">
+                              verified
+                            </span>
+                          )}
                         </div>
                         <p className="text-sm text-gray-600 dark:text-white/70 leading-relaxed">{activeBridge.connectText}</p>
                       </div>
