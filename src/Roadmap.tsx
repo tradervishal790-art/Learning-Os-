@@ -9,6 +9,7 @@ import { selectPlaylistForConceptV2, analyzedVideoToVideo, getLastTeacherForConc
 import { getLearningProfile } from './learningProfileStore';
 import { expandSearchQuery } from './queryExpander';
 import DeepDiveChat from './DeepDiveChat';
+import HintBubble from './HintBubble';
 
 const statusConfig: Record<Topic['status'], { label: string; bg: string; border: string; text: string; icon: string }> = {
   mastered: { label: 'Mastered', bg: 'bg-gray-50 dark:bg-white/5', border: 'border-gray-200 dark:border-white/10', text: 'text-gray-600 dark:text-white/70', icon: '⭐' },
@@ -635,6 +636,7 @@ export default function Roadmap({
       </motion.div>
 
       {/* Topic list */}
+      <HintBubble id="roadmap" text="Your topics are ordered foundation-first — follow the order for best results." />
       <div className="space-y-3">
         {roadmap.children?.map((topic, i) => {
           const status = statusConfig[topic.status];
@@ -755,6 +757,8 @@ export default function Roadmap({
                       const bridge = getBridgeForTopic(selectedTopic);
                       if (!bridge) return null;
                       return (
+                        <>
+                        <HintBubble id="bridge" text="This shows how the last topic connects to this one." />
                         <div className="p-4 rounded-xl border border-gray-300 dark:border-white/20 bg-gray-50 dark:bg-white/5">
                           <div className="flex items-center gap-2 mb-2 text-xs text-gray-400 dark:text-white/40">
                             <span>{bridge.fromTopicTitle}</span>
@@ -766,6 +770,7 @@ export default function Roadmap({
                             <p className="text-sm text-gray-600 dark:text-white/70 leading-relaxed">{bridge.connectText}</p>
                           </div>
                         </div>
+                        </>
                       );
                     })()}
 

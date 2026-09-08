@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import HintBubble from './HintBubble';
 
 interface Message {
   id: string;
@@ -127,6 +128,10 @@ export default function Mentor() {
         <h1 className="text-4xl font-bold mb-2">🤖 AI Mentor</h1>
         <p className="text-gray-500 dark:text-white/60">Ask anything, get structured guidance</p>
       </motion.div>
+
+      <div className="max-w-4xl mx-auto w-full">
+        <HintBubble id="mentor" text="Stuck? Ask here — it knows what you're learning right now." />
+      </div>
 
       {/* Chat area */}
       <div className="flex-1 max-w-4xl mx-auto w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl flex flex-col overflow-hidden">

@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { getLearningProfile, saveLearningProfile, mergeLearningProfile } from './learningProfileStore';
 import { averageTasteSignals, buildFreshProfileFromTaste } from './tasteProfileScoring';
 import type { LearningProfile, TasteVideoResult } from './types';
+import HintBubble from './HintBubble';
 
 // ============================================================
 // TasteOnboarding.tsx
@@ -168,6 +169,7 @@ export default function TasteOnboarding({ onComplete, onClose }: TasteOnboarding
         <AnimatePresence mode="wait">
           {phase === 'form' && (
             <motion.div key="form" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <HintBubble id="video-providing" text="Share a video you've fully watched (45+ min) — we'll learn your style from it." />
               <h3 className="text-base md:text-lg font-semibold mb-1 leading-snug">
                 Wo videos do jo aap pehle se pura dekh chuke ho
               </h3>

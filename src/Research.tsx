@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Search, X } from 'lucide-react';
+import HintBubble from './HintBubble';
 
 interface SerpResult {
   title: string;
@@ -205,6 +206,7 @@ export default function Research({ embedded = false, onClose }: ResearchProps) {
       </motion.div>
 
       <div className="max-w-3xl mx-auto mb-6">
+        <HintBubble id="research" text="Deeper reading on this topic, only if you want to go further." />
         {searchBar}
         {error && <p className="text-red-500 dark:text-red-400 text-sm mt-2">{error}</p>}
 

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { LearningProfile, QuizAnswer, QuizAnswerValue } from './types';
+import HintBubble from './HintBubble';
 import { computeLearningProfile } from './learningProfileScoring.ts';
 
 // ============================================================
@@ -188,6 +189,7 @@ export default function LearningQuiz({ onComplete }: { onComplete: (profile: Lea
   return (
     <div className="min-h-screen bg-[#030303] text-white flex items-center justify-center p-4 md:p-8">
       <div className="w-full max-w-2xl">
+        <HintBubble id="test" text="Answer honestly — this shapes which videos we pick for you." />
         <div className="mb-8">
           <div className="flex justify-between text-xs text-white/50 mb-2">
             <span>Learning Style Assessment</span>

@@ -20,6 +20,7 @@ import Mentor from './Mentor';
 import Notes from './Notes';
 import Progress from './progress';
 import Research from './Research';
+import HintBubble from './HintBubble';
 
 interface DashboardProps {
   userData: UserOnboardingData | null;
@@ -844,6 +845,7 @@ export default function Dashboard({ userData, onUpdateUserData, onRegenerateRoad
                     when the user explicitly taps to view it. */}
                 {learningProfile && (
                   <div className="pt-2 border-t border-gray-200 dark:border-white/10">
+                    <HintBubble id="learning-profile" text="Your full learning profile lives here — tap to view it." />
                     <label className="block text-xs uppercase tracking-wider text-gray-400 dark:text-white/40 mb-2 mt-4">
                       Learning Profile Report
                     </label>
