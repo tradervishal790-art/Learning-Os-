@@ -363,6 +363,7 @@ export default function Roadmap({
           <span className="text-2xl">🗺️</span>
           <h1 className="text-2xl md:text-4xl font-bold">Your Roadmap</h1>
         </div>
+        <p className="text-sm text-gray-500 dark:text-white/60">Foundation-first order — follow it for best results</p>
       </motion.div>
 
       {/* Goal tabs — up to MAX_ACTIVE_GOALS active goals at once */}
@@ -606,7 +607,6 @@ export default function Roadmap({
       </motion.div>
 
       {/* Topic list */}
-      <HintBubble id="roadmap" text="Your topics are ordered foundation-first — follow the order for best results." />
       <div className="space-y-3">
         {roadmap.children?.map((topic, i) => {
           const status = statusConfig[topic.status];
@@ -747,7 +747,7 @@ export default function Roadmap({
                     <div className="p-4 rounded-xl border border-gray-200 dark:border-white/10">
                       <button
                         onClick={() => setShowDeepDive(true)}
-                        className="w-full text-left px-3 py-3 rounded-lg border border-purple-300/30 dark:border-purple-500/20 bg-purple-50 dark:bg-purple-500/5 text-sm text-purple-700 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-500/10 active:scale-[0.99] transition mb-3"
+                        className="w-full text-left px-3 py-3 rounded-lg border border-gray-200 dark:border-white/20 bg-gray-50 dark:bg-white/5 text-sm text-black dark:text-white hover:bg-gray-100 dark:hover:bg-white/10 active:scale-[0.99] transition mb-3"
                       >
                         🔍 2 quick sawaal poochu? Better matched videos milenge (optional)
                       </button>

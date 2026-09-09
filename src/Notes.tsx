@@ -1,7 +1,6 @@
 /// <reference types="vite/client" />
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import HintBubble from './HintBubble';
 
 // Lightweight markdown renderer for myNotes (## headings, - bullets,
 // **bold**, blank-line paragraph breaks) — no react-markdown dependency
@@ -331,12 +330,8 @@ export default function Notes({ videoTitle, videoDescription, videoId }: { video
     <div className="min-h-screen bg-white dark:bg-black text-black dark:text-white p-4 md:p-8">
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
         <h1 className="text-4xl font-bold mb-2">Deep Learning Notes</h1>
-        <p className="text-gray-500 dark:text-white/60">Detailed, comprehensive notes for true mastery</p>
+        <p className="text-gray-500 dark:text-white/60">Auto-generated from the video — edit anything, they're yours</p>
       </motion.div>
-
-      <div className="max-w-4xl mx-auto">
-        <HintBubble id="notes" text="Auto-generated notes from the video — edit anything, they're yours." />
-      </div>
 
       <div className="max-w-4xl mx-auto mb-6">
         <div className="flex gap-2">

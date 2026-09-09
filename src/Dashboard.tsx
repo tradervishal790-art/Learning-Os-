@@ -544,7 +544,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
     <>
       <div className="mb-10 flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold bg-gradient-to-r from-purple-500 via-pink-500 to-orange-400 bg-clip-text text-transparent">Learning OS</h1>
+          <h1 className="text-xl font-bold text-black dark:text-white">Learning OS</h1>
           <p className="text-xs text-gray-400 dark:text-white/40 mt-1">v1.0 - Beta</p>
         </div>
         <button onClick={() => setShowSidebar(false)} className="md:hidden w-8 h-8 rounded-full border border-gray-200 dark:border-white/10 flex items-center justify-center">X</button>
@@ -570,11 +570,11 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
       </nav>
       <div className="mt-auto pt-6 border-t border-gray-200 dark:border-white/10">
         <div className="flex items-center gap-3 px-2">
-          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400 flex items-center justify-center text-sm font-bold text-white flex-shrink-0">
+          <div className="w-9 h-9 rounded-full bg-black dark:bg-white flex items-center justify-center text-sm font-bold text-white dark:text-black flex-shrink-0">
             {displayName.charAt(0).toUpperCase()}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-sm font-medium bg-gradient-to-r from-purple-500 via-pink-500 to-orange-400 bg-clip-text text-transparent truncate">{displayName}</div>
+            <div className="text-sm font-medium text-black dark:text-white truncate">{displayName}</div>
             <div className="text-xs text-gray-400 dark:text-white/40 truncate">{userData?.role ? userData.role : 'Learner'}</div>
           </div>
         </div>
@@ -625,7 +625,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
             </button>
             <h2 className="text-lg md:text-2xl font-bold truncate">
               {getGreeting()},{' '}
-              <span className="bg-gradient-to-r from-purple-500 via-pink-500 to-orange-400 bg-clip-text text-transparent">
+              <span className="text-black dark:text-white">
                 {displayName}
               </span>
             </h2>
@@ -847,7 +847,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                     type="text"
                     value={settingsName}
                     onChange={(e) => setSettingsName(e.target.value)}
-                    className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-2.5 focus:outline-none focus:border-purple-500/50"
+                    className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-2.5 focus:outline-none focus:border-black dark:focus:border-white"
                   />
                 </div>
 
@@ -1010,7 +1010,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                     placeholder="e.g., Django basics"
                     autoFocus
                     disabled={customLoading}
-                    className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-purple-500/50 disabled:opacity-50"
+                    className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-black dark:focus:border-white disabled:opacity-50"
                   />
                 </div>
 

@@ -129,7 +129,7 @@ export default function ReviewSession({ topic, onMarkDone, onClose }: ReviewSess
           onKeyDown={(e) => e.key === 'Enter' && send()}
           disabled={loading}
           placeholder="Apna jawab yahan likho..."
-          className="flex-1 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-purple-500/50"
+          className="flex-1 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-black dark:focus:border-white"
         />
         <button
           onClick={send}

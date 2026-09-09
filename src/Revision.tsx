@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import HintBubble from './HintBubble';
 import { getRevisionStats, getRevisionDataForGoals } from './revisionData';
 import { markDayReviewed } from './revisionstore';
 import { markTopicFinished } from './roadmapData';
@@ -72,9 +71,8 @@ export default function Revision({ goals = [] }: RevisionProps) {
           <span className="text-2xl">🔄</span>
           <h1 className="text-3xl md:text-4xl font-bold">Revision</h1>
         </div>
+        <p className="text-sm text-gray-500 dark:text-white/60 mt-1">Comes back to you on a schedule — 1, 3, 7, 15, 30, 60 days</p>
       </motion.div>
-
-      <HintBubble id="revision" text="Comes back to you on a schedule — 1, 3, 7, 15, 30, 60 days." />
 
       {/* Top stats */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.5 }} className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">

@@ -38,9 +38,9 @@ export default function HintBubble({ id, text }: HintBubbleProps) {
   };
 
   return (
-    <div className="flex items-start gap-2 p-3 mb-3 rounded-xl border border-purple-300/30 dark:border-purple-500/20 bg-purple-50 dark:bg-purple-500/5">
+    <div className="flex items-start gap-2 p-3 mb-3 rounded-xl border border-gray-200 dark:border-white/20 bg-gray-50 dark:bg-white/5">
       <span className="text-base leading-none mt-0.5">💡</span>
-      <p className="flex-1 text-sm text-purple-700 dark:text-purple-300 leading-relaxed">{text}</p>
+      <p className="flex-1 text-sm text-black dark:text-white leading-relaxed">{text}</p>
       <div className="flex items-center gap-2 flex-shrink-0">
         <button
           onClick={dismiss}

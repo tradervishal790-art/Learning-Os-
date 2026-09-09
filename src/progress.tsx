@@ -1,6 +1,5 @@
 import { motion } from 'framer-motion';
 import type { Goal } from './types';
-import HintBubble from './HintBubble';
 import {
   getStreakStats,
   getCompletionStats,
@@ -46,9 +45,8 @@ export default function Progress({ goals = [] }: ProgressProps) {
           <span className="text-2xl">📊</span>
           <h1 className="text-3xl md:text-4xl font-bold">Progress</h1>
         </div>
+        <p className="text-sm text-gray-500 dark:text-white/60 mt-1">Your real stats — streak, watch time, weak spots</p>
       </motion.div>
-
-      <HintBubble id="progress" text="Your real stats — streak, watch time, weak spots." />
 
       {/* Top stats */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.5 }} className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-8">

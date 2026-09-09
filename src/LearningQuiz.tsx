@@ -180,10 +180,10 @@ export default function LearningQuiz({ onComplete }: { onComplete: (profile: Lea
 
   const progressPercent = Math.round((step / TOTAL_STEPS) * 100);
   const optionColors = [
-    'hover:bg-purple-600/20 hover:border-purple-500/50',
-    'hover:bg-blue-600/20 hover:border-blue-500/50',
-    'hover:bg-cyan-600/20 hover:border-cyan-500/50',
-    'hover:bg-pink-600/20 hover:border-pink-500/50',
+    'hover:bg-black/5 dark:hover:bg-white/10 hover:border-black dark:hover:border-white',
+    'hover:bg-black/5 dark:hover:bg-white/10 hover:border-black dark:hover:border-white',
+    'hover:bg-black/5 dark:hover:bg-white/10 hover:border-black dark:hover:border-white',
+    'hover:bg-black/5 dark:hover:bg-white/10 hover:border-black dark:hover:border-white',
   ];
 
   return (
@@ -199,7 +199,7 @@ export default function LearningQuiz({ onComplete }: { onComplete: (profile: Lea
           </div>
           <div className="w-full bg-white/10 rounded-full h-1.5">
             <motion.div
-              className="h-full bg-gradient-to-r from-purple-500 via-blue-400 to-pink-500 rounded-full"
+              className="h-full bg-black dark:bg-white rounded-full"
               animate={{ width: `${progressPercent}%` }}
               transition={{ duration: 0.4, ease: 'easeOut' }}
             />
@@ -217,7 +217,7 @@ export default function LearningQuiz({ onComplete }: { onComplete: (profile: Lea
               className="bg-white/5 border border-white/10 rounded-2xl p-6 md:p-8"
             >
               {currentQuestion.section === 'consistency' && (
-                <span className="inline-block mb-3 text-xs font-medium tracking-wide uppercase text-purple-300/70 bg-purple-500/10 border border-purple-500/20 rounded-full px-3 py-1">
+                <span className="inline-block mb-3 text-xs font-medium tracking-wide uppercase text-white/70 bg-white/10 border border-white/20 rounded-full px-3 py-1">
                   Quick check
                 </span>
               )}
@@ -249,7 +249,7 @@ export default function LearningQuiz({ onComplete }: { onComplete: (profile: Lea
               transition={{ duration: 0.3 }}
               className="bg-white/5 border border-white/10 rounded-2xl p-6 md:p-8"
             >
-              <span className="inline-block mb-3 text-xs font-medium tracking-wide uppercase text-pink-300/70 bg-pink-500/10 border border-pink-500/20 rounded-full px-3 py-1">
+              <span className="inline-block mb-3 text-xs font-medium tracking-wide uppercase text-white/70 bg-white/10 border border-white/20 rounded-full px-3 py-1">
                 Last one
               </span>
               <h2 className="text-xl md:text-2xl font-semibold mb-2 leading-snug">{HONESTY_QUESTION.prompt}</h2>

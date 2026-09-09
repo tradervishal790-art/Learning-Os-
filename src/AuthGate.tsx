@@ -87,13 +87,10 @@ export default function AuthGate({ children }: { children: ReactNode }) {
     <div className="min-h-screen flex items-center justify-center bg-black px-4">
       <div className="w-full max-w-sm">
         <div className="mb-1 flex items-baseline gap-2">
-          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-white via-purple-200 to-white bg-clip-text text-transparent">
+          <h1 className="text-3xl font-bold tracking-tight text-white">
             Learning
           </h1>
-          <h1
-            className="text-3xl font-bold tracking-[0.15em] uppercase text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-fuchsia-400"
-            style={{ filter: 'drop-shadow(0 0 12px rgba(139, 92, 246, 0.5))' }}
-          >
+          <h1 className="text-3xl font-bold tracking-[0.15em] uppercase text-white">
             OS
           </h1>
         </div>
