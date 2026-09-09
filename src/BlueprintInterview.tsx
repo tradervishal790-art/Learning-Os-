@@ -157,7 +157,7 @@ export default function BlueprintInterview({
             {phase === 'answering' && (
               <div className="mt-2 h-1 bg-gray-200 dark:bg-white/10 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-black dark:bg-white transition-all duration-300"
+                  className="h-full bg-purple-500 transition-all duration-300"
                   style={{ width: `${((currentIndex + 1) / totalQuestions) * 100}%` }}
                 />
               </div>
@@ -189,9 +189,9 @@ export default function BlueprintInterview({
                     <button
                       key={opt.key}
                       onClick={() => handleSelect(opt.text)}
-                      className="w-full text-left px-4 py-3 rounded-xl border border-gray-200 dark:border-white/10 hover:border-black dark:hover:border-white hover:bg-gray-50 dark:hover:bg-white/10 transition text-sm leading-relaxed"
+                      className="w-full text-left px-4 py-3 rounded-xl border border-gray-200 dark:border-white/10 hover:border-purple-400 hover:bg-purple-50 dark:hover:bg-purple-500/10 transition text-sm leading-relaxed"
                     >
-                      <span className="font-semibold text-black dark:text-white mr-2">{opt.key}.</span>
+                      <span className="font-semibold text-purple-500 mr-2">{opt.key}.</span>
                       {opt.text}
                     </button>
                   ))}
@@ -211,9 +211,9 @@ export default function BlueprintInterview({
           {phase === 'analyzing' && (
             <div className="flex flex-col items-center justify-center py-12 gap-3">
               <div className="flex gap-1">
-                <span className="w-2.5 h-2.5 bg-black dark:bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                <span className="w-2.5 h-2.5 bg-black dark:bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                <span className="w-2.5 h-2.5 bg-black dark:bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                <span className="w-2.5 h-2.5 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                <span className="w-2.5 h-2.5 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                <span className="w-2.5 h-2.5 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
               </div>
               <p className="text-xs text-gray-400 dark:text-white/40">Aapke jawabon ko deeply analyze kar rahe hain...</p>
             </div>
@@ -223,12 +223,12 @@ export default function BlueprintInterview({
             {phase === 'done' && resultProfile && (
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
                 {/* Mind score ring + radar */}
-                <div className="p-4 rounded-xl border border-gray-200 dark:border-white/20 bg-gray-50 dark:bg-white/5">
+                <div className="p-4 rounded-xl border border-purple-300/30 dark:border-purple-500/20 bg-purple-50/50 dark:bg-purple-500/5">
                   <div className="flex items-center justify-between mb-2">
-                    <p className="text-xs font-semibold text-black dark:text-white">🔮 Your Mind Map</p>
+                    <p className="text-xs font-semibold text-purple-700 dark:text-purple-300">🔮 Your Mind Map</p>
                     <div className="text-right">
                       <p className="text-[10px] text-gray-400 dark:text-white/40 uppercase tracking-wide">Mind Score</p>
-                      <p className="text-lg font-bold text-black dark:text-white">
+                      <p className="text-lg font-bold text-purple-600 dark:text-purple-300">
                         {Math.round(
                           (DIMENSION_ORDER.reduce((sum, d) => sum + (resultProfile[d.key] as number), 0) /
                             DIMENSION_ORDER.length) *
@@ -259,7 +259,7 @@ export default function BlueprintInterview({
                           </span>
                           <div className="flex-1 h-1.5 rounded-full bg-gray-200 dark:bg-white/10 overflow-hidden">
                             <div
-                              className="h-full rounded-full bg-black dark:bg-white transition-all duration-500"
+                              className="h-full rounded-full bg-purple-500 transition-all duration-500"
                               style={{ width: `${score * 10}%` }}
                             />
                           </div>
@@ -281,8 +281,8 @@ export default function BlueprintInterview({
                 </div>
 
                 {/* Written report */}
-                <div className="p-4 rounded-xl border border-gray-200 dark:border-white/20 bg-gray-50 dark:bg-white/5">
-                  <h3 className="text-sm font-semibold mb-2 text-black dark:text-white">
+                <div className="p-4 rounded-xl border border-purple-300/30 dark:border-purple-500/20 bg-purple-50 dark:bg-purple-500/5">
+                  <h3 className="text-sm font-semibold mb-2 text-purple-700 dark:text-purple-300">
                     📋 Aapka Learning Blueprint
                   </h3>
                   <p className="text-sm text-gray-700 dark:text-white/80 leading-relaxed whitespace-pre-wrap">

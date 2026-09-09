@@ -8,6 +8,7 @@ import {
   signInWithGoogleProfileLock as signInWithGoogle,
   signOutOfApp,
 } from './authStore';
+import { loadSavedTheme } from './ThemeContext';
 
 // ============================================================
 // AuthGate.tsx
@@ -16,6 +17,11 @@ import {
 // renders until a user is signed in — each user has their OWN account
 // (email+password or Google), so their data on this device is only
 // reachable by them. Free on Firebase's Spark plan (see authStore.ts).
+//
+// This renders BEFORE ThemeProvider (see main.tsx), so it applies the
+// same saved-theme-or-device-preference class to <html> itself on
+// mount, then uses plain black/white + Tailwind `dark:` classes —
+// light or dark depending on the device, never forced to one.
 // ============================================================
 
 export default function AuthGate({ children }: { children: ReactNode }) {
@@ -32,9 +38,18 @@ export default function AuthGate({ children }: { children: ReactNode }) {
     return unsubscribe;
   }, []);
 
+  // Apply the device/saved theme to <html> immediately — ThemeProvider
+  // (inside App) hasn't mounted yet at this point, so without this the
+  // login screen would render before the dark/light class is set.
+  useEffect(() => {
+    const root = document.documentElement;
+    if (loadSavedTheme() === 'dark') root.classList.add('dark');
+    else root.classList.remove('dark');
+  }, []);
+
   if (user === 'loading') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-black text-white/60 text-sm">
+      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-black text-black/60 dark:text-white/60 text-sm">
         Loading...
       </div>
     );
@@ -48,7 +63,7 @@ export default function AuthGate({ children }: { children: ReactNode }) {
             replaces the app's previous "no login" state entirely. */}
         <button
           onClick={() => signOutOfApp()}
-          className="fixed bottom-4 right-4 z-50 text-xs px-3 py-1.5 rounded-full bg-black/70 text-white/70 hover:text-white border border-white/10 backdrop-blur"
+          className="fixed bottom-4 right-4 z-50 text-xs px-3 py-1.5 rounded-full bg-white/70 dark:bg-black/70 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white border border-black/10 dark:border-white/10 backdrop-blur"
         >
           Sign out ({user.displayName || user.email})
         </button>
@@ -84,17 +99,17 @@ export default function AuthGate({ children }: { children: ReactNode }) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-black px-4">
+    <div className="min-h-screen flex items-center justify-center bg-white dark:bg-black px-4">
       <div className="w-full max-w-sm">
         <div className="mb-1 flex items-baseline gap-2">
-          <h1 className="text-3xl font-bold tracking-tight text-white">
+          <h1 className="text-3xl font-bold tracking-tight text-black dark:text-white">
             Learning
           </h1>
-          <h1 className="text-3xl font-bold tracking-[0.15em] uppercase text-white">
+          <h1 className="text-3xl font-bold tracking-[0.15em] uppercase text-black dark:text-white">
             OS
           </h1>
         </div>
-        <p className="text-sm text-white/50 mb-6">
+        <p className="text-sm text-black/50 dark:text-white/50 mb-6">
           {mode === 'create' ? 'Naya account banao' : 'Apne account se sign in karo'}
         </p>
 
@@ -104,7 +119,7 @@ export default function AuthGate({ children }: { children: ReactNode }) {
             value={name}
             onChange={(e) => { setName(e.target.value); setError(''); }}
             placeholder="Naam"
-            className="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-white text-sm mb-3 outline-none focus:border-white/30"
+            className="w-full px-4 py-3 rounded-xl border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 text-black dark:text-white text-sm mb-3 outline-none focus:border-black/30 dark:focus:border-white/30"
           />
         )}
         <input
@@ -112,7 +127,7 @@ export default function AuthGate({ children }: { children: ReactNode }) {
           value={email}
           onChange={(e) => { setEmail(e.target.value); setError(''); }}
           placeholder="Email"
-          className="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-white text-sm mb-3 outline-none focus:border-white/30"
+          className="w-full px-4 py-3 rounded-xl border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 text-black dark:text-white text-sm mb-3 outline-none focus:border-black/30 dark:focus:border-white/30"
         />
         <input
           type="password"
@@ -120,36 +135,36 @@ export default function AuthGate({ children }: { children: ReactNode }) {
           onChange={(e) => { setPassword(e.target.value); setError(''); }}
           placeholder="Password"
           onKeyDown={(e) => e.key === 'Enter' && submit()}
-          className="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-white text-sm mb-3 outline-none focus:border-white/30"
+          className="w-full px-4 py-3 rounded-xl border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 text-black dark:text-white text-sm mb-3 outline-none focus:border-black/30 dark:focus:border-white/30"
         />
 
-        {error && <p className="text-xs text-red-400 mb-3">{error}</p>}
+        {error && <p className="text-xs text-red-500 dark:text-red-400 mb-3">{error}</p>}
 
         <button
           disabled={busy}
           onClick={submit}
-          className="w-full py-3 rounded-xl bg-white text-black text-sm font-semibold disabled:opacity-50 mb-3"
+          className="w-full py-3 rounded-xl bg-black text-white dark:bg-white dark:text-black text-sm font-semibold disabled:opacity-50 mb-3"
         >
           {busy ? '...' : mode === 'create' ? 'Create Account' : 'Sign In'}
         </button>
 
         <div className="flex items-center gap-2 my-3">
-          <div className="flex-1 h-px bg-white/10" />
-          <span className="text-[10px] text-white/30">OR</span>
-          <div className="flex-1 h-px bg-white/10" />
+          <div className="flex-1 h-px bg-black/10 dark:bg-white/10" />
+          <span className="text-[10px] text-black/30 dark:text-white/30">OR</span>
+          <div className="flex-1 h-px bg-black/10 dark:bg-white/10" />
         </div>
 
         <button
           disabled={busy}
           onClick={google}
-          className="w-full py-3 rounded-xl border border-white/10 text-white text-sm font-medium hover:bg-white/5 mb-4"
+          className="w-full py-3 rounded-xl border border-black/10 dark:border-white/10 text-black dark:text-white text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 mb-4"
         >
           Continue with Google
         </button>
 
         <button
           onClick={() => { setMode(mode === 'create' ? 'signin' : 'create'); setError(''); setName(''); }}
-          className="w-full text-center text-xs text-white/40 hover:text-white/70"
+          className="w-full text-center text-xs text-black/40 dark:text-white/40 hover:text-black/70 dark:hover:text-white/70"
         >
           {mode === 'create' ? 'Pehle se account hai? Sign in karo' : 'Naya user ho? Account banao'}
         </button>

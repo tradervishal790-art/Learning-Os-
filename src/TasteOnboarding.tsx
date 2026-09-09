@@ -188,7 +188,7 @@ export default function TasteOnboarding({ onComplete, onClose }: TasteOnboarding
                         value={entry.url}
                         onChange={(e) => updateEntry(entry.id, { url: e.target.value })}
                         placeholder="https://youtube.com/watch?v=..."
-                        className="flex-1 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg px-3 py-2 text-sm placeholder-gray-400 dark:placeholder-white/40 focus:outline-none focus:border-black dark:focus:border-white"
+                        className="flex-1 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg px-3 py-2 text-sm placeholder-gray-400 dark:placeholder-white/40 focus:outline-none focus:border-purple-500/50"
                       />
                       {entries.length > MIN_VIDEOS && (
                         <button
@@ -256,7 +256,7 @@ export default function TasteOnboarding({ onComplete, onClose }: TasteOnboarding
                         {entry.status === 'done' && '✅'}
                         {entry.status === 'error' && '⚠️'}
                         {entry.status === 'analyzing' && (
-                          <span className="inline-block w-2 h-2 bg-black dark:bg-white rounded-full animate-pulse" />
+                          <span className="inline-block w-2 h-2 bg-purple-500 rounded-full animate-pulse" />
                         )}
                         {entry.status === 'pending' && '⏳'}
                       </span>

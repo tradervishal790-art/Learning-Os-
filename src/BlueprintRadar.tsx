@@ -5,9 +5,9 @@ import type { LearningProfile } from './types';
 //
 // Pure-SVG radar/spider chart for the 8 LearningProfile dimensions —
 // visually inspired by LifeQuest's Mind Map radar, but themed to
-// Learning-OS's actual palette (pure black/white, full dark-mode
-// support via Tailwind `dark:` classes) instead of LifeQuest's dark
-// neon purple/blue theme. No chart.js dependency —
+// Learning-OS's actual palette (white/black base + purple-500 accent,
+// full dark-mode support via Tailwind `dark:` classes) instead of
+// LifeQuest's dark neon purple/blue theme. No chart.js dependency —
 // built with trig + <polygon>, so it's ~100 lines and adds nothing to
 // the bundle.
 // ============================================================
@@ -81,11 +81,11 @@ export default function BlueprintRadar({ profile, size = 260 }: { profile: Learn
       })}
 
       {/* Data area */}
-      <polygon points={dataPolygon} className="fill-black/15 dark:fill-white/20 stroke-black dark:stroke-white" strokeWidth={2} />
+      <polygon points={dataPolygon} fill="rgb(168 85 247 / 0.18)" stroke="rgb(168 85 247)" strokeWidth={2} />
 
       {/* Data points */}
       {dataPoints.map((p, i) => (
-        <circle key={i} cx={p.x} cy={p.y} r={3} className="fill-black dark:fill-white" />
+        <circle key={i} cx={p.x} cy={p.y} r={3} fill="rgb(168 85 247)" />
       ))}
 
       {/* Axis labels */}

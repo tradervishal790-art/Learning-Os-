@@ -23,7 +23,7 @@ export default function Sphere() {
     // Sphere
     const geometry = new THREE.IcosahedronGeometry(2, 1);
     const material = new THREE.MeshBasicMaterial({
-      color: 0xffffff,
+      color: 0x8b5cf6,
       wireframe: true,
       transparent: true,
       opacity: 0.6,
@@ -34,7 +34,7 @@ export default function Sphere() {
     // Points
     const pointsGeometry = new THREE.IcosahedronGeometry(2, 1);
     const pointsMaterial = new THREE.PointsMaterial({
-      color: 0xe5e5e5,
+      color: 0xa855f7,
       size: 0.05,
       transparent: true,
       opacity: 0.9,

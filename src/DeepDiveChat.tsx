@@ -118,7 +118,7 @@ export default function DeepDiveChat({ onComplete, onClose }: DeepDiveChatProps)
                 rows={4}
                 placeholder="Apna jawab yahan likho..."
                 autoFocus={false}
-                className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 text-base md:text-sm placeholder-gray-400 dark:placeholder-white/40 focus:outline-none focus:border-black dark:focus:border-white mb-4 resize-none"
+                className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 text-base md:text-sm placeholder-gray-400 dark:placeholder-white/40 focus:outline-none focus:border-purple-500/50 mb-4 resize-none"
               />
               <button
                 onClick={handleNext}
@@ -133,9 +133,9 @@ export default function DeepDiveChat({ onComplete, onClose }: DeepDiveChatProps)
           {phase === 'processing' && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-8 text-center">
               <div className="flex justify-center gap-1 mb-3">
-                <span className="w-2 h-2 bg-black dark:bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                <span className="w-2 h-2 bg-black dark:bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                <span className="w-2 h-2 bg-black dark:bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                <span className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                <span className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                <span className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
               </div>
               <p className="text-sm text-gray-500 dark:text-white/50">Profile update ho raha hai...</p>
             </motion.div>

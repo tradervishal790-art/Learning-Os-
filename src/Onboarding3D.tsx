@@ -109,7 +109,7 @@ export default function Onboarding3D({ onComplete }: Onboarding3DProps) {
             onKeyDown={(e) => e.key === 'Enter' && canProceed() && next()}
             placeholder="Naam likho"
             autoFocus
-            className="w-full text-center bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-xl text-white placeholder-white/30 focus:outline-none focus:border-white/50"
+            className="w-full text-center bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-xl text-white placeholder-white/30 focus:outline-none focus:border-purple-500/50"
           />
         </div>
       );
@@ -142,10 +142,10 @@ export default function Onboarding3D({ onComplete }: Onboarding3DProps) {
               }}
               className={`relative p-6 rounded-2xl border transition-all duration-300 overflow-hidden ${
                 isSelected
-                  ? 'bg-white/20 border-white/50'
+                  ? 'bg-purple-500/20 border-purple-500/50'
                   : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20'
               }`}
-              style={isSelected ? { boxShadow: '0 0 40px rgba(255, 255, 255, 0.3)' } : {}}
+              style={isSelected ? { boxShadow: '0 0 40px rgba(139, 92, 246, 0.4)' } : {}}
             >
               <div className="text-5xl mb-3">{option.icon ?? option.flag}</div>
               <div className="text-white font-medium text-sm">{option.label}</div>
@@ -153,9 +153,9 @@ export default function Onboarding3D({ onComplete }: Onboarding3DProps) {
                 <motion.div
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
-                  className="absolute top-3 right-3 w-6 h-6 rounded-full bg-white flex items-center justify-center"
+                  className="absolute top-3 right-3 w-6 h-6 rounded-full bg-purple-500 flex items-center justify-center"
                 >
-                  <svg className="w-3 h-3 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                   </svg>
                 </motion.div>
@@ -171,7 +171,7 @@ export default function Onboarding3D({ onComplete }: Onboarding3DProps) {
     <div className="min-h-screen bg-[#030303] flex flex-col relative overflow-hidden">
       <div
         className="absolute inset-0 pointer-events-none"
-        style={{ background: 'radial-gradient(circle at center, rgba(255, 255, 255, 0.08) 0%, transparent 60%)' }}
+        style={{ background: 'radial-gradient(circle at center, rgba(139, 92, 246, 0.1) 0%, transparent 60%)' }}
       />
 
       <div className="relative w-full px-6 pt-8 z-10">
@@ -186,7 +186,7 @@ export default function Onboarding3D({ onComplete }: Onboarding3DProps) {
           </div>
           <div className="h-1 bg-white/5 rounded-full overflow-hidden">
             <motion.div
-              className="h-full bg-white"
+              className="h-full bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500"
               initial={{ width: 0 }}
               animate={{ width: `${((step + 1) / stepTitles.length) * 100}%` }}
               transition={{ duration: 0.6, ease: 'easeInOut' }}

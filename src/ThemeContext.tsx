@@ -14,10 +14,18 @@ const ThemeContext = createContext<ThemeContextValue>({
   toggleTheme: () => {},
 });
 
-function loadSavedTheme(): ThemeMode {
+export function loadSavedTheme(): ThemeMode {
   try {
     const saved = localStorage.getItem(THEME_STORAGE_KEY);
-    return saved === 'light' ? 'light' : 'dark';
+    if (saved === 'light' || saved === 'dark') return saved;
+  } catch {
+    // storage unavailable — fall through to system preference
+  }
+  // No explicit choice saved yet — follow the device's OS-level
+  // light/dark setting instead of forcing one.
+  try {
+    if (window.matchMedia?.('(prefers-color-scheme: dark)').matches) return 'dark';
+    return 'light';
   } catch {
     return 'dark';
   }

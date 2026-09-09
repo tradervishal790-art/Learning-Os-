@@ -322,7 +322,7 @@ function App() {
                 initial="hidden"
                 animate="visible"
                 variants={wordAnimation}
-                className="inline-block text-white"
+                className="inline-block bg-gradient-to-r from-white via-purple-200 to-white bg-clip-text text-transparent"
               >
                 Learn
               </motion.span>{' '}
@@ -331,7 +331,7 @@ function App() {
                 initial="hidden"
                 animate="visible"
                 variants={wordAnimation}
-                className="inline-block text-white"
+                className="inline-block bg-gradient-to-r from-purple-400 via-blue-400 to-purple-400 bg-clip-text text-transparent"
               >
                 How
               </motion.span>
@@ -342,7 +342,7 @@ function App() {
                 initial="hidden"
                 animate="visible"
                 variants={wordAnimation}
-                className="inline-block text-white"
+                className="inline-block bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-400 bg-clip-text text-transparent"
               >
                 You
               </motion.span>{' '}
@@ -351,7 +351,7 @@ function App() {
                 initial="hidden"
                 animate="visible"
                 variants={wordAnimation}
-                className="inline-block text-white"
+                className="inline-block bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 bg-clip-text text-transparent"
               >
                 Think
               </motion.span>
@@ -392,7 +392,7 @@ function App() {
 
             <button
               onClick={() => setShowDemo(true)}
-              className="group px-8 py-3.5 rounded-full bg-white/5 backdrop-blur-md border border-white/10 text-white font-medium text-sm tracking-wide transition-all duration-300 hover:bg-white/10 hover:border-white/50"
+              className="group px-8 py-3.5 rounded-full bg-white/5 backdrop-blur-md border border-white/10 text-white font-medium text-sm tracking-wide transition-all duration-300 hover:bg-white/10 hover:border-purple-400/50"
             >
               <span className="flex items-center gap-2">
                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
@@ -444,7 +444,7 @@ function App() {
                       transition={{ delay: i * 0.1, duration: 0.4 }}
                       className="flex items-start gap-4 p-4 rounded-2xl bg-white/5 border border-white/10"
                     >
-                      <div className="w-12 h-12 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center text-2xl flex-shrink-0">
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/30 flex items-center justify-center text-2xl flex-shrink-0">
                         {step.icon}
                       </div>
                       <div>
