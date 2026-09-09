@@ -243,7 +243,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   // both remain independently reachable from the home page.
   const [showTasteOnboarding, setShowTasteOnboarding] = useState(false);
   const [learningProfile, setLearningProfile] = useState<LearningProfile | null>(getLearningProfile);
-  const [preloadedPlaylist, setPreloadedPlaylist] = useState<{ primary: Video; fallbacks: Video[]; bridge?: TopicBridge } | null>(null);
+  const [preloadedPlaylist, setPreloadedPlaylist] = useState<{ primary: Video; fallbacks: Video[]; bridge?: TopicBridge; previousVideoId?: string | null } | null>(null);
   // Which topic's saved-video slot the Videos page is currently showing —
   // set whenever a topic's playlist is launched or its "Saved video" is
   // opened, so each topic keeps its own saved video instead of every topic
@@ -309,7 +309,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
     setLearningProfile(null);
   };
 
-  const handleLaunchPlaylist = (payload: { primary: Video; fallbacks: Video[]; bridge?: TopicBridge; topicId: string }) => {
+  const handleLaunchPlaylist = (payload: { primary: Video; fallbacks: Video[]; bridge?: TopicBridge; previousVideoId?: string | null; topicId: string }) => {
     setPreloadedPlaylist(payload);
     setViewingTopicId(payload.topicId);
     setActivePage('videos');

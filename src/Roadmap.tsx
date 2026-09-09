@@ -4,7 +4,7 @@ import { getRoadmapData, getRoadmapProgress, markTopicFinished } from './roadmap
 import { hasSavedVideoForTopic, getSavedVideoIdForTopic } from './VideoIntel';
 import { MAX_ACTIVE_GOALS } from './goalsStore';
 import type { Topic, Video, UserOnboardingData, Goal, TopicBridge } from './types';
-import { buildCandidatePoolForConcept, getCachedConnectorFacts } from './conceptVideoPool';
+import { buildCandidatePoolForConcept } from './conceptVideoPool';
 import { selectPlaylistForConceptV2, analyzedVideoToVideo, getLastTeacherForConcept } from './PlaylistBuilder';
 import { getLearningProfile } from './learningProfileStore';
 import { expandSearchQuery } from './queryExpander';
@@ -36,7 +36,7 @@ interface RoadmapProps {
    *  the parent which topic's OWN saved-video slot this playlist belongs to
    *  (see VideoIntel's activeTopicId) — without it, every topic in a goal
    *  shared one saved-video slot and topics could show each other's videos. */
-  onLaunchPlaylist: (payload: { primary: Video; fallbacks: Video[]; bridge?: TopicBridge; topicId: string }) => void;
+  onLaunchPlaylist: (payload: { primary: Video; fallbacks: Video[]; bridge?: TopicBridge; previousVideoId?: string | null; topicId: string }) => void;
   /** Opens the Videos page showing whatever was last searched/watched for
    *  THIS SPECIFIC topic, with no new search — the "Saved video" button. */
   onOpenSavedVideo: (topicId: string) => void;
@@ -186,53 +186,19 @@ export default function Roadmap({
   };
 
   /**
-   * Upgrades a pre-written bridge (generate-roadmap.ts's `why.connect` claim,
-   * never actually checked against real video content) into a verified one,
-   * by comparing the previous topic's watched video and the just-selected
-   * next video's ALREADY-CACHED connector_facts (see conceptVideoPool.ts —
-   * piggybacked onto each video's original analyze-video.ts call, zero
-   * extra transcript tokens). Only ONE small API call happens here, and
-   * only when both videos' facts are already available; otherwise the
-   * pre-written bridge is kept exactly as-is (verified stays undefined,
-   * not false — "not checked" is not the same as "checked and wrong").
+   * Resolves the previous topic's ACTUALLY-watched videoId, if any, so
+   * VideoIntel.tsx can verify the bridge against whichever video the
+   * learner ends up picking for the next topic — primary or a fallback —
+   * instead of this file assuming primary upfront. No API call happens
+   * here; VideoIntel.tsx's verifyBridgeForVideo() does the one small
+   * fact-vs-fact call, re-run every time the learner picks a different
+   * video from the list. See conceptVideoPool.ts's getCachedConnectorFacts
+   * for why that call never re-sends either transcript.
    */
-  const tryVerifyBridge = async (topic: Topic, nextVideoId: string): Promise<TopicBridge | undefined> => {
-    const bridge = getBridgeForTopic(topic);
-    if (!bridge) return undefined;
-
+  const getPreviousWatchedVideoId = (topic: Topic): string | null => {
     const previousTopic = getPreviousTopic(topic);
-    if (!previousTopic) return bridge;
-
-    const previousVideoId = getSavedVideoIdForTopic(activeGoalId ?? undefined, previousTopic.id);
-    if (!previousVideoId) return bridge; // learner never actually watched a video for the previous topic
-
-    const previousFacts = getCachedConnectorFacts(previousVideoId);
-    const nextFacts = getCachedConnectorFacts(nextVideoId);
-    if (!previousFacts || !nextFacts) return bridge; // one or both predate connector_facts / weren't cached
-
-    try {
-      const res = await fetch('/api/verify-bridge', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          previous: { topicTitle: previousTopic.title, facts: previousFacts },
-          next: { topicTitle: topic.title, facts: nextFacts },
-          fallbackConnectText: bridge.connectText,
-        }),
-      });
-      if (!res.ok) return bridge;
-      const verification = (await res.json()) as { connected: boolean; verifiedConnectText: string | null };
-
-      if (verification.connected && verification.verifiedConnectText) {
-        return { ...bridge, connectText: verification.verifiedConnectText, verified: true };
-      }
-      // Checked, but Gemini didn't find a real connection — surface this
-      // as verified: false so the UI can choose to hide/soften an unproven
-      // claim rather than silently keep showing it as if it were solid.
-      return { ...bridge, verified: false };
-    } catch {
-      return bridge; // network/API failure — keep the unverified claim, never block the learner over this
-    }
+    if (!previousTopic) return null;
+    return getSavedVideoIdForTopic(activeGoalId ?? undefined, previousTopic.id);
   };
 
   // Manual override for when the auto-detect (video watch % / keyword
@@ -367,14 +333,18 @@ export default function Roadmap({
       // exactly like today.
       setActiveTeachingProcess(result.teachingProcess ?? null);
 
-      // One small fact-vs-fact API call (see tryVerifyBridge) — not a
-      // transcript re-send — so this doesn't meaningfully delay launch.
-      const bridge = await tryVerifyBridge(selectedTopic, result.primary.videoId);
+      // No API call here anymore — VideoIntel.tsx verifies against whichever
+      // video the learner actually ends up picking (primary or fallback).
+      // This file only hands over the unverified claim + the previous
+      // topic's watched videoId so that re-check can happen there.
+      const bridge = getBridgeForTopic(selectedTopic);
+      const previousVideoId = getPreviousWatchedVideoId(selectedTopic);
 
       onLaunchPlaylist({
         primary: analyzedVideoToVideo(result.primary),
         fallbacks: result.fallbacks.map(analyzedVideoToVideo),
         bridge,
+        previousVideoId,
         topicId: selectedTopic.id,
       });
       setSelectedTopic(null);

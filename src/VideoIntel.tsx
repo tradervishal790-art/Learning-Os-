@@ -10,6 +10,7 @@ import { getRoadmapData, saveRoadmapData } from './roadmapData';
 import Notes from './Notes';
 import Research from './Research';
 import HintBubble from './HintBubble';
+import { getCachedConnectorFacts } from './conceptVideoPool';
 
 declare global {
   interface Window {
@@ -222,7 +223,7 @@ interface VideoIntelProps {
    *  `bridge`, when present, describes how this topic connects to the one the
    *  learner just finished — shown as a banner above the player so the new
    *  video doesn't feel like an unrelated, disconnected clip. */
-  initialPlaylist?: { primary: Video; fallbacks: Video[]; bridge?: TopicBridge } | null;
+  initialPlaylist?: { primary: Video; fallbacks: Video[]; bridge?: TopicBridge; previousVideoId?: string | null } | null;
   /** Which goal's roadmap watch-progress (topic status, concept matching)
    *  should be attributed to — the currently open goal tab on Roadmap.
    *  Tried first, but see `allGoalIds` below for why it's not the only one. */
@@ -405,6 +406,46 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedVideo]);
 
+  // Verifies (or re-verifies) the bridge banner against whichever video is
+  // ACTUALLY selected — primary or a fallback — instead of always assuming
+  // primary. Facts for both videos are already cached for free (see
+  // conceptVideoPool.ts's getCachedConnectorFacts, piggybacked onto each
+  // video's original analyze-video.ts call), so this is one small
+  // fact-vs-fact call, never a transcript re-send. If either side's facts
+  // aren't cached, falls back to the original pre-written (unverified)
+  // bridge claim — same as before this feature existed.
+  const verifyBridgeForVideo = async (video: Video) => {
+    const baseBridge = initialPlaylist?.bridge;
+    const previousVideoId = initialPlaylist?.previousVideoId;
+    setActiveBridge(baseBridge ?? null);
+    if (!baseBridge || !previousVideoId) return;
+
+    const previousFacts = getCachedConnectorFacts(previousVideoId);
+    const nextFacts = getCachedConnectorFacts(video.id);
+    if (!previousFacts || !nextFacts) return; // keep the unverified baseBridge
+
+    try {
+      const res = await fetch('/api/verify-bridge', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          previous: { topicTitle: baseBridge.fromTopicTitle, facts: previousFacts },
+          next: { topicTitle: baseBridge.toTopicTitle, facts: nextFacts },
+          fallbackConnectText: baseBridge.connectText,
+        }),
+      });
+      if (!res.ok) return;
+      const verification = (await res.json()) as { connected: boolean; verifiedConnectText: string | null };
+      if (verification.connected && verification.verifiedConnectText) {
+        setActiveBridge({ ...baseBridge, connectText: verification.verifiedConnectText, verified: true });
+      } else {
+        setActiveBridge({ ...baseBridge, verified: false });
+      }
+    } catch {
+      // network/API failure — keep the unverified baseBridge, never block the learner
+    }
+  };
+
   // Preload a ranked playlist handed off from Roadmap ("Watch videos").
   // Keyed on the primary video's id so a fresh handoff (even for the same topic
   // revisited later) re-triggers, but re-renders of the parent don't loop this.
@@ -413,7 +454,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
     finalizeAndSaveSession();
     setVideos([initialPlaylist.primary, ...initialPlaylist.fallbacks]);
     setSelectedVideo(initialPlaylist.primary);
-    setActiveBridge(initialPlaylist.bridge ?? null);
+    void verifyBridgeForVideo(initialPlaylist.primary);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialPlaylist?.primary.id]);
 
@@ -828,10 +869,9 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                         onClick={() => {
                           finalizeAndSaveSession();
                           setSelectedVideo(video);
-                          // Manually picking a video from the list is the
-                          // learner overriding the auto-picked primary — the
-                          // topic-to-topic bridge no longer applies to it.
-                          if (video.id !== initialPlaylist?.primary?.id) setActiveBridge(null);
+                          // Verify against WHICHEVER video the learner actually
+                          // picked — primary or fallback — not always primary.
+                          void verifyBridgeForVideo(video);
                         }}
                         className={`p-3 rounded-lg cursor-pointer transition border ${
                           selectedVideo?.id === video.id
@@ -868,8 +908,10 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                       original unproven claim in that case would be worse than
                       showing nothing, so it's suppressed rather than displayed
                       softened. verified === undefined ("not checked") still shows
-                      normally, same as before this feature existed. */}
-                  {activeBridge && activeBridge.verified !== false && selectedVideo.id === initialPlaylist?.primary?.id && (
+                      normally, same as before this feature existed. Shown for
+                      whichever video is actually selected — primary or fallback —
+                      since verifyBridgeForVideo now re-checks on every pick. */}
+                  {activeBridge && activeBridge.verified !== false && (
                     <div className="flex items-start gap-2 p-4 rounded-xl border border-gray-300 dark:border-white/20 bg-gray-50 dark:bg-white/5">
                       <span className="text-lg leading-none">🔗</span>
                       <div className="flex-1 min-w-0">
