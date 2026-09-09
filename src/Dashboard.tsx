@@ -21,6 +21,46 @@ import Notes from './Notes';
 import Progress from './progress';
 import Research from './Research';
 import HintBubble from './HintBubble';
+import Onborda from './Onborda';
+import { OnbordaProvider, useOnborda } from './OnbordaContext';
+import OnbordaCard from './OnbordaCard';
+import type { Tour } from './onbordaTypes';
+import { hasSeenTour, markTourSeen } from './tourStore';
+
+// Guided spotlight tour for first-time users — see Onborda.tsx for how this
+// engine works (ported from uixmat/onborda, MIT). Each `selector` below
+// must match an `id` added on the actual sidebar/nav element it targets.
+const DASHBOARD_TOUR: Tour[] = [
+  {
+    tour: 'dashboard-intro',
+    steps: [
+      {
+        title: 'Roadmap',
+        content: 'Yahan aapke topics order me hain — foundation-first, isi order me follow karna best rahega.',
+        selector: '#onborda-nav-roadmap',
+        side: 'right',
+      },
+      {
+        title: 'Revision',
+        content: 'Jo topics due hain revise karne ke liye, wo yahan dikhte hain.',
+        selector: '#onborda-nav-revision',
+        side: 'right',
+      },
+      {
+        title: 'Progress',
+        content: 'Apni streak aur overall progress yahan track kar sakte ho.',
+        selector: '#onborda-nav-progress',
+        side: 'right',
+      },
+      {
+        title: 'Settings',
+        content: 'Yahan se apna profile aur preferences badal sakte ho.',
+        selector: '#onborda-settings-button',
+        side: 'left',
+      },
+    ],
+  },
+];
 
 interface DashboardProps {
   userData: UserOnboardingData | null;
@@ -150,7 +190,20 @@ function trackAndComputeStreak(): number {
   return streak;
 }
 
-export default function Dashboard({ userData, onUpdateUserData, onRegenerateRoadmap, onGenerateForSubject, roadmapVersion, lastRoadmapError, goals, activeGoalId, onAddGoal, onEndGoal, onSwitchGoal }: DashboardProps) {
+function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGenerateForSubject, roadmapVersion, lastRoadmapError, goals, activeGoalId, onAddGoal, onEndGoal, onSwitchGoal }: DashboardProps) {
+  const { startOnborda } = useOnborda();
+
+  // Auto-start the guided tour once, for a first-time learner only.
+  useEffect(() => {
+    if (!hasSeenTour('dashboard-intro')) {
+      const t = setTimeout(() => {
+        startOnborda('dashboard-intro');
+        markTourSeen('dashboard-intro');
+      }, 800);
+      return () => clearTimeout(t);
+    }
+  }, [startOnborda]);
+
   const { theme, toggleTheme } = useTheme();
   const [activePage, setActivePageRaw] = useState<DashboardPageId>('dashboard');
   // Every in-app page change pushes a browser/PWA history entry, and the
@@ -483,6 +536,7 @@ export default function Dashboard({ userData, onUpdateUserData, onRegenerateRoad
         {sidebarItems.map((item, i) => (
           <motion.button
             key={item.id}
+            id={`onborda-nav-${item.id}`}
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.1 + i * 0.05, duration: 0.4 }}
@@ -512,6 +566,7 @@ export default function Dashboard({ userData, onUpdateUserData, onRegenerateRoad
   );
 
   return (
+    <Onborda steps={DASHBOARD_TOUR} cardComponent={OnbordaCard}>
     <div className="min-h-screen bg-white dark:bg-black flex text-black dark:text-white">
       <aside className="hidden md:flex w-64 border-r border-gray-200 dark:border-white/10 p-6 flex-col flex-shrink-0">
         {SidebarContent}
@@ -558,7 +613,7 @@ export default function Dashboard({ userData, onUpdateUserData, onRegenerateRoad
               </span>
             </h2>
           </div>
-          <button onClick={() => { setShowSettings(true); setShowFullProfileReport(false); }} className="px-3 md:px-4 py-2 rounded-full border border-gray-300 dark:border-white/10 text-sm hover:bg-gray-100 dark:hover:bg-white/10 transition flex-shrink-0">
+          <button id="onborda-settings-button" onClick={() => { setShowSettings(true); setShowFullProfileReport(false); }} className="px-3 md:px-4 py-2 rounded-full border border-gray-300 dark:border-white/10 text-sm hover:bg-gray-100 dark:hover:bg-white/10 transition flex-shrink-0">
             Settings
           </button>
         </motion.div>
@@ -1032,5 +1087,14 @@ export default function Dashboard({ userData, onUpdateUserData, onRegenerateRoad
         )}
       </AnimatePresence>
     </div>
+    </Onborda>
+  );
+}
+
+export default function Dashboard(props: DashboardProps) {
+  return (
+    <OnbordaProvider>
+      <DashboardInner {...props} />
+    </OnbordaProvider>
   );
 }
