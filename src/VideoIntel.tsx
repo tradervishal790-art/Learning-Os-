@@ -11,6 +11,8 @@ import Notes from './Notes';
 import Research from './Research';
 import HintBubble from './HintBubble';
 import { getCachedConnectorFacts } from './conceptVideoPool';
+import { useOnborda } from './OnbordaContext';
+import { hasSeenTour, markTourSeen } from './tourStore';
 
 declare global {
   interface Window {
@@ -243,6 +245,7 @@ interface VideoIntelProps {
 }
 
 export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicId, allGoalIds }: VideoIntelProps = {}) {
+  const { startOnborda } = useOnborda();
   // Every active goal, active-tab first (checked first so ties resolve in
   // the learner's favor) — deduped in case activeGoalId is also in the list.
   const goalIdsToCheck = Array.from(
@@ -455,6 +458,18 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
     setVideos([initialPlaylist.primary, ...initialPlaylist.fallbacks]);
     setSelectedVideo(initialPlaylist.primary);
     void verifyBridgeForVideo(initialPlaylist.primary);
+
+    // First time a learner ever gets a 3-video (primary + fallbacks) picker,
+    // explain that all 3 teach the SAME concept in different styles — pick
+    // one, not all three — before it reads as a bug ("why 3 of the same
+    // thing?"). See personalityEngine.ts for why there are always 3.
+    if (initialPlaylist.fallbacks.length > 0 && !hasSeenTour('video-picker-intro')) {
+      const t = setTimeout(() => {
+        startOnborda('video-picker-intro');
+        markTourSeen('video-picker-intro');
+      }, 500);
+      return () => clearTimeout(t);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialPlaylist?.primary.id]);
 
@@ -863,6 +878,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                     return (
                       <motion.div
                         key={video.id}
+                        id={i === 0 ? 'onborda-video-primary' : i === 1 ? 'onborda-video-fallback' : undefined}
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: i * 0.04 }}

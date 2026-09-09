@@ -60,6 +60,23 @@ const DASHBOARD_TOUR: Tour[] = [
       },
     ],
   },
+  {
+    tour: 'video-picker-intro',
+    steps: [
+      {
+        title: 'Ye 3 videos — same topic hai',
+        content: 'Teenon video ek hi concept sikhate hain, bas alag teaching style me (pace, examples, structure). Sirf ek chunkar dekhna hai jo aapko sabse suit kare — teeno dekhne ki zaroorat nahi.',
+        selector: '#onborda-video-primary',
+        side: 'right',
+      },
+      {
+        title: 'Alag style, wahi concept',
+        content: 'Ye doosra option hai — agar pehla wala suit na kare, to isse try kar sakte ho. Same cheez, bas presentation different.',
+        selector: '#onborda-video-fallback',
+        side: 'right',
+      },
+    ],
+  },
 ];
 
 interface DashboardProps {
