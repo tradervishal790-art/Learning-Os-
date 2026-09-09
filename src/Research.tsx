@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Search, X } from 'lucide-react';
 import HintBubble from './HintBubble';
+import { getUserLanguage } from './languagePreference';
 
 interface SerpResult {
   title: string;
@@ -35,7 +36,7 @@ async function runResearch(query: string): Promise<ResearchResponse> {
   const response = await fetch('/api/research', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ query }),
+    body: JSON.stringify({ query, language: getUserLanguage() }),
   });
 
   const data = await response.json().catch(() => ({}));

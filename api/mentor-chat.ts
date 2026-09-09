@@ -8,14 +8,16 @@
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { generateAIText } from './_lib/aiFallback.js';
+import { languageInstruction } from './_lib/language.js';
 
 interface HistoryMessage {
   role: 'user' | 'mentor';
   content: string;
 }
 
-const buildSystemInstructions = (topic: string) => `Aap ek expert AI Mentor hain jo Hinglish (Hindi + English mix) mein sikhaate hain.
+const buildSystemInstructions = (topic: string, language: string | undefined) => `Aap ek expert AI Mentor hain.
 Current topic: ${topic}
+${languageInstruction(language)}
 
 Tone & Respect Rules:
 - User ko hamesha "aap" se address karein, "tu/tum" kabhi use na karein
@@ -24,7 +26,7 @@ Tone & Respect Rules:
 - Har response mein user ke effort ko acknowledge karein jab appropriate ho
 
 Content Rules:
-- Hinglish mein naturally jawab dein, robotic mat lagein
+- Naturally jawab dein, robotic mat lagein
 - Concepts ko real-world analogies se samjhaayein
 - Bold important terms
 - Response concise rakhein (max 150-200 words) — lekin jo bhi likhein, use POORA complete karein, adhoori sentence mein mat chhodein
@@ -36,10 +38,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'POST only' });
   }
 
-  const { userMessage, context, history } = (req.body ?? {}) as {
+  const { userMessage, context, history, language } = (req.body ?? {}) as {
     userMessage?: string;
     context?: string;
     history?: HistoryMessage[];
+    language?: string;
   };
 
   if (!userMessage?.trim()) {
@@ -65,7 +68,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { text } = await generateAIText({
       geminiApiKey: apiKey,
       minimaxApiKey,
-      systemInstruction: buildSystemInstructions(topic),
+      systemInstruction: buildSystemInstructions(topic, language),
       contents,
       generationConfig: { maxOutputTokens: 2048, temperature: 0.7 },
     });

@@ -15,6 +15,7 @@
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { generateAIText } from './_lib/aiFallback.js';
+import { languageInstruction } from './_lib/language.js';
 
 interface AnswerPayload {
   questionId: string;
@@ -33,7 +34,7 @@ const DIMENSION_KEYS = [
   'priorKnowledgeComfort',
 ] as const;
 
-const SYSTEM_INSTRUCTIONS = `Tum ek expert learning-psychology analyst ho. Tumhe ek student ke 11 multiple-choice answers diye jaayenge (poora question + jo option unhone chuna). Tumhara kaam hai in answers ko DEEPLY cross-analyze karke in 8 dimensions ko 1-10 scale par accurately nikalna:
+const buildSystemInstructions = (language: string | undefined) => `Tum ek expert learning-psychology analyst ho. Tumhe ek student ke 11 multiple-choice answers diye jaayenge (poora question + jo option unhone chuna). Tumhara kaam hai in answers ko DEEPLY cross-analyze karke in 8 dimensions ko 1-10 scale par accurately nikalna:
 
 - pace (1=slow/thorough, 10=fast/skim)
 - theoryVsPractical (1=theory-first, 10=practical/hands-on-first)
@@ -56,7 +57,7 @@ Sirf answers ke actual content se dimensions nikaalo — options ka surface keyw
 TONE — report likhte waqt hamesha respectful "aap" form use karo (jaise "aap", "aapka", "aapko"). Informal "tum", "tera", "tu" bilkul use mat karo.
 
 Response — SIRF valid JSON, koi markdown fence nahi, koi extra text nahi:
-{"report":"student ke liye ek warm, personal, paragraph-form likha hua report — 4-6 sentences, Hinglish mein, jaise ek mentor apne student ko unke baare mein bata raha ho, jisme unki learning style ke key traits mention ho","dimensions":{"pace":N,"theoryVsPractical":N,"structureNeed":N,"depth":N,"languageComplexity":N,"storytelling":N,"repetitionNeed":N,"priorKnowledgeComfort":N},"reliabilityScore":N,"selfReportedHonesty":"honest"}`;
+{"report":"student ke liye ek warm, personal, paragraph-form likha hua report — 4-6 sentences, jaise ek mentor apne student ko unke baare mein bata raha ho, jisme unki learning style ke key traits mention ho. ${languageInstruction(language)}","dimensions":{"pace":N,"theoryVsPractical":N,"structureNeed":N,"depth":N,"languageComplexity":N,"storytelling":N,"repetitionNeed":N,"priorKnowledgeComfort":N},"reliabilityScore":N,"selfReportedHonesty":"honest"}`;
 
 function parseGeminiJson(rawText: string): any | null {
   try {
@@ -83,7 +84,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'POST only' });
   }
 
-  const { answers } = (req.body ?? {}) as { answers?: AnswerPayload[] };
+  const { answers, language } = (req.body ?? {}) as { answers?: AnswerPayload[]; language?: string };
   if (!Array.isArray(answers) || answers.length === 0) {
     return res.status(400).json({ error: 'answers array required' });
   }
@@ -102,7 +103,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { text: rawText, finishReason: rawFinishReason } = await generateAIText({
       geminiApiKey: apiKey,
       minimaxApiKey,
-      systemInstruction: SYSTEM_INSTRUCTIONS,
+      systemInstruction: buildSystemInstructions(language),
       contents: [{ role: 'user', parts: [{ text: `Student ke jawab:\n\n${answersBlock}` }] }],
       generationConfig: {
         maxOutputTokens: 2048,

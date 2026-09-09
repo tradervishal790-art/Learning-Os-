@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { generateAIText } from './_lib/aiFallback.js';
+import { languageInstruction } from './_lib/language.js';
 
 // ============================================================
 // api/generate-roadmap.ts
@@ -56,13 +57,6 @@ function normalizeDifficulty(value: unknown): Difficulty {
     if (match) return match;
   }
   return 'Beginner';
-}
-
-function languageInstruction(language: string): string {
-  const normalized = language.toLowerCase();
-  if (normalized === 'hindi') return 'Sab kuch Hindi (Devanagari) mein likho.';
-  if (normalized === 'hinglish') return 'Sab kuch Hinglish (Hindi-English mix, jaise students aapas mein baat karte hain) mein likho.';
-  return 'Write everything in clear English.';
 }
 
 // ---- Deadline -> days (same buckets used across the UI / PlaylistBuilder.ts) ----

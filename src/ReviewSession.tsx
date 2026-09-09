@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getUserLanguage } from './languagePreference';
 
 // Reuses the same server proxy Mentor.tsx already calls — no new API
 // endpoint needed. We just scope the conversation to one topic and ask
@@ -12,7 +13,7 @@ async function callMentorChat(
   const response = await fetch('/api/mentor-chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ userMessage, context, history: history.slice(-6) }),
+    body: JSON.stringify({ userMessage, context, history: history.slice(-6), language: getUserLanguage() }),
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data?.error || `Error ${response.status}`);

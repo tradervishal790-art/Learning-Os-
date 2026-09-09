@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import HintBubble from './HintBubble';
+import { getUserLanguage } from './languagePreference';
 
 // Lightweight markdown renderer for myNotes (## headings, - bullets,
 // **bold**, blank-line paragraph breaks) — no react-markdown dependency
@@ -124,7 +125,7 @@ async function generateDeepNotes(topic: string, videoContext?: string, videoId?:
   const response = await fetch('/api/generate-notes', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ topic, videoContext, videoId }),
+    body: JSON.stringify({ topic, videoContext, videoId, language: getUserLanguage() }),
   });
 
   const data = await response.json().catch(() => ({}));

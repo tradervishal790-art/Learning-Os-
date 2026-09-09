@@ -4,6 +4,7 @@ import type { LearningProfile } from './types';
 import { BLUEPRINT_QUESTIONS } from './blueprintQuestions';
 import BlueprintRadar, { DIMENSION_ORDER } from './BlueprintRadar';
 import { getGrade, getVerdict } from './blueprintGrading';
+import { getUserLanguage } from './languagePreference';
 
 // ============================================================
 // BlueprintInterview.tsx — v2
@@ -30,7 +31,7 @@ async function callAnalysisApi(answers: AnswerRecord[]): Promise<any> {
   const response = await fetch('/api/blueprint-interview', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ answers }),
+    body: JSON.stringify({ answers, language: getUserLanguage() }),
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data?.error || `Analysis error ${response.status}`);

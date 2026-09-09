@@ -21,6 +21,7 @@
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { generateAIText } from './_lib/aiFallback.js';
+import { languageInstruction } from './_lib/language.js';
 
 interface ResearchResult {
   title: string;
@@ -35,7 +36,7 @@ const SNIPPET_MAX_LEN = 240;
 // text — even though the UI now shows it broken up as short snippets
 // instead of one essay, this still keeps each snippet reading like a real
 // sentence a person wrote, not chatbot filler.
-const HUMAN_RESEARCH_STYLE = `Tum ek insaan ho jisne abhi is topic pe khud internet khangaal ke padha hai, aur apne kisi dost/colleague ko seedha bata rahe ho jo samajhna chahta hai. Hinglish mein likho, natural bolchaal wali tone mein — jaise koi likha hua notes nahi, seedha samjha raha ho.
+const humanResearchStyle = (language: string | undefined) => `Tum ek insaan ho jisne abhi is topic pe khud internet khangaal ke padha hai, aur apne kisi dost/colleague ko seedha bata rahe ho jo samajhna chahta hai. ${languageInstruction(language)} Natural bolchaal wali tone mein likho — jaise koi likha hua notes nahi, seedha samjha raha ho.
 
 Sakht mana hai:
 - "Based on my research", "I hope this helps", "In conclusion", "Certainly!", "Great question", "As we can see", "It's important to note that", "Overall" jaise koi bhi AI-typical opener/closer/filler phrase — inn sab ko poori tarah avoid karo
@@ -54,10 +55,10 @@ function truncate(text: string, max: number): string {
   return trimmed.slice(0, max).replace(/\s+\S*$/, '') + '…';
 }
 
-async function groundedGeminiSearch(query: string, apiKey: string): Promise<ResearchResult[] | null> {
+async function groundedGeminiSearch(query: string, apiKey: string, language: string | undefined): Promise<ResearchResult[] | null> {
   const body = {
     contents: [{ role: 'user', parts: [{ text: query }] }],
-    system_instruction: { parts: [{ text: HUMAN_RESEARCH_STYLE }] },
+    system_instruction: { parts: [{ text: humanResearchStyle(language) }] },
     tools: [{ googleSearch: {} }],
     generationConfig: { temperature: 0.75, maxOutputTokens: 2048 },
   };
@@ -122,7 +123,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'POST only' });
   }
 
-  const { query } = (req.body ?? {}) as { query?: string };
+  const { query, language } = (req.body ?? {}) as { query?: string; language?: string };
   if (!query?.trim()) {
     return res.status(400).json({ error: 'query required' });
   }
@@ -136,7 +137,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Primary: Gemini with live Google Search grounding.
   if (apiKey) {
     try {
-      const results = await groundedGeminiSearch(query, apiKey);
+      const results = await groundedGeminiSearch(query, apiKey, language);
       if (results) {
         return res.status(200).json({ results, grounded: true });
       }
@@ -152,7 +153,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       geminiApiKey: apiKey,
       minimaxApiKey,
       keyGroup: 'research',
-      systemInstruction: HUMAN_RESEARCH_STYLE,
+      systemInstruction: humanResearchStyle(language),
       contents: [{ parts: [{ text: query }] }],
       generationConfig: { temperature: 0.4, maxOutputTokens: 2048 },
     });

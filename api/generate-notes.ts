@@ -35,10 +35,12 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { generateAIText } from './_lib/aiFallback.js';
 import { tryFetchTranscript, TRANSCRIPT_CHAR_LIMIT } from './_lib/transcript.js';
+import { languageInstruction } from './_lib/language.js';
 
 type NotesSource = 'transcript' | 'metadata' | 'topic-only';
 
-const buildPrompt = (topic: string, basis: string | undefined, notesSource: NotesSource) => `Generate DEEP, comprehensive study notes for "${topic}" in Hinglish (Hindi + English mix).
+const buildPrompt = (topic: string, basis: string | undefined, notesSource: NotesSource, language: string | undefined) => `Generate DEEP, comprehensive study notes for "${topic}".
+${languageInstruction(language)}
 ${basis ? (notesSource === 'transcript' ? `Video transcript:\n${basis}` : `Video context: ${basis}`) : ''}
 
 ${
@@ -137,10 +139,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'POST only' });
   }
 
-  const { topic, videoContext, videoId } = (req.body ?? {}) as {
+  const { topic, videoContext, videoId, language } = (req.body ?? {}) as {
     topic?: string;
     videoContext?: string;
     videoId?: string;
+    language?: string;
   };
   if (!topic?.trim()) {
     return res.status(400).json({ error: 'topic required' });
@@ -173,7 +176,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { text, finishReason } = await generateAIText({
       geminiApiKey: apiKey,
       minimaxApiKey,
-      contents: [{ role: 'user', parts: [{ text: buildPrompt(topic, basis, notesSource) }] }],
+      contents: [{ role: 'user', parts: [{ text: buildPrompt(topic, basis, notesSource, language) }] }],
       generationConfig: {
         responseMimeType: 'application/json',
         responseSchema,

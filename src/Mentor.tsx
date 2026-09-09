@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import HintBubble from './HintBubble';
+import { getUserLanguage } from './languagePreference';
 
 interface Message {
   id: string;
@@ -39,6 +40,7 @@ async function generateMentorResponse(
         userMessage,
         context,
         history: history.slice(-6).map((m) => ({ role: m.role, content: m.content })),
+        language: getUserLanguage(),
       }),
     });
 
