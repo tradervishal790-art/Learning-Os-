@@ -12,6 +12,7 @@ import { getRoadmapData, getCurrentTopic } from './roadmapData';
 import { getRevisionStats, getRevisionDataForGoals } from './revisionData';
 import { getLearningProfile, saveLearningProfile, clearLearningProfile } from './learningProfileStore';
 import { getEngagementSessions } from './engagementStore';
+import { pushToCloud, pullFromCloud } from './cloudSync';
 import { buildCandidatePoolForConcept } from './conceptVideoPool';
 import { selectPlaylistForConcept, analyzedVideoToVideo } from './PlaylistBuilder';
 import { expandSearchQuery } from './queryExpander';
@@ -183,6 +184,27 @@ const pageConfigs: Partial<Record<DashboardPageId, PageConfig>> = {};
 const ACTIVE_DAYS_STORAGE_KEY = 'learning_os_active_days';
 const TOPIC_TIMING_STORAGE_KEY = 'learning_os_topic_timing';
 
+/**
+ * Called once on sign-in (see AuthGate.tsx) to pull the active-days streak
+ * down from Firestore if this device has none yet — otherwise a genuine
+ * multi-day streak would appear to reset to 0 on a new device.
+ */
+export async function hydrateActiveDaysFromCloud(): Promise<void> {
+  try {
+    if (localStorage.getItem(ACTIVE_DAYS_STORAGE_KEY)) return; // already has local data
+  } catch {
+    return;
+  }
+  const cloud = await pullFromCloud<string[]>('activeDays');
+  if (cloud && cloud.length > 0) {
+    try {
+      localStorage.setItem(ACTIVE_DAYS_STORAGE_KEY, JSON.stringify(cloud));
+    } catch {
+      // Best-effort.
+    }
+  }
+}
+
 function trackAndComputeStreak(): number {
   const todayKey = new Date().toISOString().slice(0, 10);
   let activeDays: string[] = [];
@@ -195,6 +217,10 @@ function trackAndComputeStreak(): number {
   if (!activeDays.includes(todayKey)) {
     activeDays.push(todayKey);
     localStorage.setItem(ACTIVE_DAYS_STORAGE_KEY, JSON.stringify(activeDays));
+    // Cross-device streak sync — best-effort, mirrors the pattern used by
+    // learningProfileStore.ts/goalsStore.ts/etc. Only pushed when a NEW day
+    // is actually added, not on every render, to avoid redundant writes.
+    void pushToCloud('activeDays', activeDays);
   }
   const activeSet = new Set(activeDays);
   let streak = 0;
@@ -585,23 +611,42 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
         <button onClick={() => setShowSidebar(false)} className="md:hidden w-8 h-8 rounded-full border border-gray-200 dark:border-white/10 flex items-center justify-center">X</button>
       </div>
       <nav className="space-y-1 flex-1">
-        {sidebarItems.map((item, i) => (
-          <motion.button
-            key={item.id}
-            id={`onborda-nav-${item.id}`}
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.1 + i * 0.05, duration: 0.4 }}
-            onClick={() => {
-              setActivePage(item.id);
-              setShowSidebar(false);
-            }}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${activePage === item.id ? 'bg-black text-white dark:bg-white dark:text-black' : 'text-gray-500 dark:text-white/50 hover:text-black dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5'}`}
-          >
-            {item.icon && <item.icon className="w-4 h-4" />}
-            {item.label}
-          </motion.button>
-        ))}
+        {sidebarItems.map((item, i) => {
+          // Progressive disclosure: Revision/Notes/Videos/Progress only make
+          // sense once a roadmap exists (they're all built around topics).
+          // Locking them until then stops a new user from landing on an
+          // empty "Progress" or "Revision" page with zero context on their
+          // very first visit — Dashboard/Roadmap/Mentor/Research stay open
+          // always since they're useful even with no roadmap yet.
+          const isLocked = ['revision', 'notes', 'videos', 'progress'].includes(item.id) && !hasRoadmap;
+          return (
+            <motion.button
+              key={item.id}
+              id={`onborda-nav-${item.id}`}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.1 + i * 0.05, duration: 0.4 }}
+              onClick={() => {
+                // Locked items redirect to Roadmap instead of opening an
+                // empty page — nudges toward the actual next step rather
+                // than silently doing nothing.
+                setActivePage(isLocked ? 'roadmap' : item.id);
+                setShowSidebar(false);
+              }}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
+                isLocked
+                  ? 'text-gray-300 dark:text-white/20 hover:text-gray-400 dark:hover:text-white/30'
+                  : activePage === item.id
+                  ? 'bg-black text-white dark:bg-white dark:text-black'
+                  : 'text-gray-500 dark:text-white/50 hover:text-black dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5'
+              }`}
+            >
+              {item.icon && <item.icon className="w-4 h-4" />}
+              <span className="flex-1 text-left">{item.label}</span>
+              {isLocked && <span className="text-xs">🔒</span>}
+            </motion.button>
+          );
+        })}
       </nav>
       <div className="mt-auto pt-6 border-t border-gray-200 dark:border-white/10">
         <div className="flex items-center gap-3 px-2">

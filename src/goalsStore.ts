@@ -14,8 +14,10 @@
 // ============================================================
 
 import type { Goal, GoalStatus, UserOnboardingData } from './types';
+import { pushToCloud, pullFromCloud } from './cloudSync';
 
 const GOALS_STORAGE_KEY = 'learning_os_goals';
+const CLOUD_KEY = 'goals';
 export const MAX_ACTIVE_GOALS = 2;
 
 function load(): Goal[] {
@@ -29,11 +31,36 @@ function load(): Goal[] {
   }
 }
 
+/** Read-only accessor for other modules (e.g. AuthGate's hydration
+ *  orchestration) that need the raw saved goal list without pulling in
+ *  UserOnboardingData just to call getGoals(). */
+export function getSavedGoals(): Goal[] {
+  return load();
+}
+
 export function saveGoals(goals: Goal[]): void {
   try {
     localStorage.setItem(GOALS_STORAGE_KEY, JSON.stringify(goals));
   } catch {
     // Storage full/unavailable — non-critical, just won't persist.
+  }
+  void pushToCloud(CLOUD_KEY, goals);
+}
+
+/**
+ * Called once on sign-in (see AuthGate.tsx), BEFORE the roadmap/revision
+ * hydration steps that depend on knowing which goal ids exist. Pulls the
+ * goal list down from Firestore if this device doesn't have one yet.
+ */
+export async function hydrateGoalsFromCloud(): Promise<void> {
+  if (load().length > 0) return; // this device already has goals — don't clobber it
+  const cloud = await pullFromCloud<Goal[]>(CLOUD_KEY);
+  if (cloud && cloud.length > 0) {
+    try {
+      localStorage.setItem(GOALS_STORAGE_KEY, JSON.stringify(cloud));
+    } catch {
+      // Best-effort.
+    }
   }
 }
 
