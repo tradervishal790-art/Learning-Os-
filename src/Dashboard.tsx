@@ -11,6 +11,7 @@ import TasteOnboarding from './TasteOnboarding';
 import { getRoadmapData, getCurrentTopic } from './roadmapData';
 import { getRevisionStats, getRevisionDataForGoals } from './revisionData';
 import { getLearningProfile, saveLearningProfile, clearLearningProfile } from './learningProfileStore';
+import { getEngagementSessions } from './engagementStore';
 import { buildCandidatePoolForConcept } from './conceptVideoPool';
 import { selectPlaylistForConcept, analyzedVideoToVideo } from './PlaylistBuilder';
 import { expandSearchQuery } from './queryExpander';
@@ -507,6 +508,40 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   const currentTopic = getCurrentTopic(getRoadmapData(activeGoalId ?? undefined));
   const revisionStats = getRevisionStats(getRevisionDataForGoals(goals));
 
+  // ---------- "Get Started" checklist (new-user guidance) ----------
+  // New users land on a Dashboard with 8 sidebar sections and no clear
+  // "do this first" signal. This computes the 3 steps that actually
+  // matter in the right order — each check reads real existing state
+  // (no new store needed), so it disappears on its own once genuinely
+  // done, and never lies about progress.
+  const hasLearningProfile = learningProfile !== null;
+  const hasRoadmap = goals.length > 0;
+  const hasWatchedVideo = getEngagementSessions().length > 0;
+  const onboardingSteps = [
+    {
+      done: hasLearningProfile,
+      title: 'Apna learning style set karo',
+      subtitle: 'Short AI interview — better video matches milenge',
+      action: () => setShowLearningQuiz(true),
+      cta: 'Start',
+    },
+    {
+      done: hasRoadmap,
+      title: 'Apna roadmap banao',
+      subtitle: 'Topics ka sahi order — kya pehle seekhna hai',
+      action: () => setActivePage('roadmap'),
+      cta: 'Generate',
+    },
+    {
+      done: hasWatchedVideo,
+      title: 'Pehla video dekho',
+      subtitle: 'Roadmap ke pehle topic se shuru karo',
+      action: () => setActivePage('videos'),
+      cta: 'Watch',
+    },
+  ];
+  const showOnboardingChecklist = onboardingSteps.some((s) => !s.done);
+
   const getGreeting = () => {
     const hour = new Date().getHours();
     if (hour < 12) return 'Good Morning';
@@ -637,6 +672,53 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
 
         {activePage === 'dashboard' && (
           <div className="p-4 md:p-8 space-y-6">
+            {showOnboardingChecklist && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="p-5 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5"
+              >
+                <h3 className="font-semibold mb-1">Shuru karo</h3>
+                <p className="text-xs text-gray-400 dark:text-white/40 mb-4">
+                  Ye 3 steps follow karo — is order me best result milega
+                </p>
+                <div className="space-y-2">
+                  {onboardingSteps.map((step, i) => (
+                    <div
+                      key={step.title}
+                      className={`flex items-center gap-3 p-3 rounded-xl border ${
+                        step.done
+                          ? 'border-gray-200 dark:border-white/10 opacity-50'
+                          : 'border-gray-300 dark:border-white/20'
+                      }`}
+                    >
+                      <div
+                        className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0 ${
+                          step.done
+                            ? 'bg-black text-white dark:bg-white dark:text-black'
+                            : 'border border-gray-300 dark:border-white/30 text-gray-400 dark:text-white/40'
+                        }`}
+                      >
+                        {step.done ? '✓' : i + 1}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium truncate">{step.title}</div>
+                        <div className="text-xs text-gray-400 dark:text-white/40 truncate">{step.subtitle}</div>
+                      </div>
+                      {!step.done && (
+                        <button
+                          onClick={step.action}
+                          className="px-3 py-1.5 rounded-full bg-black text-white dark:bg-white dark:text-black text-xs font-medium hover:opacity-80 transition flex-shrink-0"
+                        >
+                          {step.cta}
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+
             <AnimatePresence>
               {revisionAlert && (
                 <motion.div
