@@ -16,6 +16,11 @@ export interface DemoStep {
   description: string;
 }
 
+export interface DashboardTourStep {
+  title: string;
+  content: string;
+}
+
 export interface TranslationShape {
   landing: {
     getStarted: string;
@@ -42,6 +47,39 @@ export interface TranslationShape {
     continue: string;
     start: string;
     stepOf: string; // e.g., "Step {0} of {1}"
+  };
+  dashboard: {
+    sidebar: {
+      home: string;
+      roadmap: string;
+      revision: string;
+      notes: string;
+      videos: string;
+      mentor: string;
+      progress: string;
+      research: string;
+    };
+    greeting: {
+      morning: string;
+      afternoon: string;
+      evening: string;
+      night: string;
+    };
+    /** DASHBOARD_TOUR's two Onborda tours: dashboard-intro (4 steps) then
+     *  video-picker-intro (2 steps) — order matches DASHBOARD_TOUR exactly. */
+    tour: {
+      dashboardIntro: [DashboardTourStep, DashboardTourStep, DashboardTourStep, DashboardTourStep];
+      videoPickerIntro: [DashboardTourStep, DashboardTourStep];
+    };
+    checklist: {
+      heading: string;
+      subheading: string;
+      steps: [
+        { title: string; subtitle: string; cta: string },
+        { title: string; subtitle: string; cta: string },
+        { title: string; subtitle: string; cta: string },
+      ];
+    };
   };
 }
 
@@ -116,6 +154,76 @@ export const translations: Record<Locale, TranslationShape> = {
       start: 'Start →',
       stepOf: 'Step {0} of {1}',
     },
+    dashboard: {
+      sidebar: {
+        home: 'Home',
+        roadmap: 'Roadmap',
+        revision: 'Revision',
+        notes: 'Notes',
+        videos: 'Videos',
+        mentor: 'Mentor',
+        progress: 'Progress',
+        research: 'Research',
+      },
+      greeting: {
+        morning: 'Good Morning',
+        afternoon: 'Good Afternoon',
+        evening: 'Good Evening',
+        night: 'Good Night',
+      },
+      tour: {
+        dashboardIntro: [
+          {
+            title: 'Roadmap',
+            content: 'Your topics are ordered here — foundation-first. Following this order works best.',
+          },
+          {
+            title: 'Revision',
+            content: 'Topics that are due for revision show up here.',
+          },
+          {
+            title: 'Progress',
+            content: 'Track your streak and overall progress here.',
+          },
+          {
+            title: 'Settings',
+            content: 'Change your profile and preferences from here.',
+          },
+        ],
+        videoPickerIntro: [
+          {
+            title: 'These 3 videos — same topic',
+            content:
+              'All three videos teach the same concept, just in a different teaching style (pace, examples, structure). Pick whichever one suits you best — you don\u2019t need to watch all three.',
+          },
+          {
+            title: 'Different style, same concept',
+            content: 'This is the second option — try it if the first one didn\u2019t suit you. Same content, different presentation.',
+          },
+        ],
+      },
+      checklist: {
+        heading: 'Get Started',
+        subheading: 'Follow these 3 steps in order for the best result',
+        steps: [
+          {
+            title: 'Set your learning style',
+            subtitle: 'A short AI interview — you\u2019ll get better video matches',
+            cta: 'Start',
+          },
+          {
+            title: 'Build your roadmap',
+            subtitle: 'The right order for topics — what to learn first',
+            cta: 'Generate',
+          },
+          {
+            title: 'Watch your first video',
+            subtitle: 'Start with the first topic on your roadmap',
+            cta: 'Watch',
+          },
+        ],
+      },
+    },
   },
 
   hi: {
@@ -188,6 +296,76 @@ export const translations: Record<Locale, TranslationShape> = {
       start: 'शुरू करें →',
       stepOf: 'Step {0} का {1}',
     },
+    dashboard: {
+      sidebar: {
+        home: 'होम',
+        roadmap: 'रोडमैप',
+        revision: 'रिवीज़न',
+        notes: 'नोट्स',
+        videos: 'वीडियो',
+        mentor: 'मेंटर',
+        progress: 'प्रगति',
+        research: 'रिसर्च',
+      },
+      greeting: {
+        morning: 'सुप्रभात',
+        afternoon: 'शुभ दोपहर',
+        evening: 'शुभ संध्या',
+        night: 'शुभ रात्रि',
+      },
+      tour: {
+        dashboardIntro: [
+          {
+            title: 'रोडमैप',
+            content: 'यहां आपके टॉपिक सही क्रम में हैं — पहले बुनियादी बातें। इसी क्रम में सीखना सबसे बेहतर रहेगा।',
+          },
+          {
+            title: 'रिवीज़न',
+            content: 'जिन टॉपिक को रिवाइज़ करना है, वे यहां दिखते हैं।',
+          },
+          {
+            title: 'प्रगति',
+            content: 'अपनी स्ट्रीक और कुल प्रगति यहां देख सकते हैं।',
+          },
+          {
+            title: 'सेटिंग्स',
+            content: 'यहां से अपनी प्रोफ़ाइल और प्राथमिकताएं बदल सकते हैं।',
+          },
+        ],
+        videoPickerIntro: [
+          {
+            title: 'ये 3 वीडियो — एक ही टॉपिक',
+            content:
+              'तीनों वीडियो एक ही कॉन्सेप्ट सिखाते हैं, बस अलग तरीके से (गति, उदाहरण, संरचना)। जो आपको सबसे सही लगे, बस वही चुनकर देखें — तीनों देखने की ज़रूरत नहीं।',
+          },
+          {
+            title: 'अलग तरीका, वही कॉन्सेप्ट',
+            content: 'यह दूसरा विकल्प है — अगर पहला वाला सही न लगे, तो इसे आज़मा सकते हैं। बात वही है, बस पेश करने का तरीका अलग है।',
+          },
+        ],
+      },
+      checklist: {
+        heading: 'शुरू करें',
+        subheading: 'सबसे अच्छे नतीजे के लिए इन 3 चरणों को इसी क्रम में पूरा करें',
+        steps: [
+          {
+            title: 'अपनी लर्निंग स्टाइल सेट करें',
+            subtitle: 'एक छोटा AI इंटरव्यू — बेहतर वीडियो मैच मिलेंगे',
+            cta: 'शुरू करें',
+          },
+          {
+            title: 'अपना रोडमैप बनाएं',
+            subtitle: 'टॉपिक का सही क्रम — पहले क्या सीखना है',
+            cta: 'बनाएं',
+          },
+          {
+            title: 'पहला वीडियो देखें',
+            subtitle: 'रोडमैप के पहले टॉपिक से शुरू करें',
+            cta: 'देखें',
+          },
+        ],
+      },
+    },
   },
 
   hinglish: {
@@ -259,6 +437,76 @@ export const translations: Record<Locale, TranslationShape> = {
       continue: 'Aage Badho →',
       start: 'Shuru Karo →',
       stepOf: 'Step {0} of {1}',
+    },
+    dashboard: {
+      sidebar: {
+        home: 'Home',
+        roadmap: 'Roadmap',
+        revision: 'Revision',
+        notes: 'Notes',
+        videos: 'Videos',
+        mentor: 'Mentor',
+        progress: 'Progress',
+        research: 'Research',
+      },
+      greeting: {
+        morning: 'Good Morning',
+        afternoon: 'Good Afternoon',
+        evening: 'Good Evening',
+        night: 'Good Night',
+      },
+      tour: {
+        dashboardIntro: [
+          {
+            title: 'Roadmap',
+            content: 'Yahan aapke topics order me hain — foundation-first, isi order me follow karna best rahega.',
+          },
+          {
+            title: 'Revision',
+            content: 'Jo topics due hain revise karne ke liye, wo yahan dikhte hain.',
+          },
+          {
+            title: 'Progress',
+            content: 'Apni streak aur overall progress yahan track kar sakte ho.',
+          },
+          {
+            title: 'Settings',
+            content: 'Yahan se apna profile aur preferences badal sakte ho.',
+          },
+        ],
+        videoPickerIntro: [
+          {
+            title: 'Ye 3 videos — same topic hai',
+            content:
+              'Teenon video ek hi concept sikhate hain, bas alag teaching style me (pace, examples, structure). Sirf ek chunkar dekhna hai jo aapko sabse suit kare — teeno dekhne ki zaroorat nahi.',
+          },
+          {
+            title: 'Alag style, wahi concept',
+            content: 'Ye doosra option hai — agar pehla wala suit na kare, to isse try kar sakte ho. Same cheez, bas presentation different.',
+          },
+        ],
+      },
+      checklist: {
+        heading: 'Shuru karo',
+        subheading: 'Ye 3 steps follow karo — is order me best result milega',
+        steps: [
+          {
+            title: 'Apna learning style set karo',
+            subtitle: 'Short AI interview — better video matches milenge',
+            cta: 'Start',
+          },
+          {
+            title: 'Apna roadmap banao',
+            subtitle: 'Topics ka sahi order — kya pehle seekhna hai',
+            cta: 'Generate',
+          },
+          {
+            title: 'Pehla video dekho',
+            subtitle: 'Roadmap ke pehle topic se shuru karo',
+            cta: 'Watch',
+          },
+        ],
+      },
     },
   },
 };
