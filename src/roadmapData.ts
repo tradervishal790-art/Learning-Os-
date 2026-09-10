@@ -1,4 +1,5 @@
 import type { Topic } from './types';
+import { pushToCloud, pullFromCloud } from './cloudSync';
 
 // Re-export Topic so existing `import { roadmapData, type Topic } from './roadmapData'`
 // statements elsewhere in the app keep working without changes.
@@ -35,6 +36,12 @@ function storageKeyFor(goalId?: string): string {
   return goalId && goalId !== 'primary' ? `${GENERATED_ROADMAP_STORAGE_KEY}:${goalId}` : GENERATED_ROADMAP_STORAGE_KEY;
 }
 
+/** Firestore doc key for a given goal's roadmap — mirrors storageKeyFor's
+ *  'primary' aliasing so cross-device sync lines up with the local key. */
+function cloudKeyFor(goalId?: string): string {
+  return `roadmap:${goalId && goalId !== 'primary' ? goalId : 'primary'}`;
+}
+
 /** Reads the AI-generated roadmap for a given goal (or the legacy/primary
  *  roadmap if no goalId is passed) saved to localStorage after onboarding. */
 export function getRoadmapData(goalId?: string): Topic {
@@ -56,6 +63,32 @@ export function saveRoadmapData(goalId: string | undefined, roadmap: Topic): voi
     localStorage.setItem(storageKeyFor(goalId), JSON.stringify(roadmap));
   } catch {
     // Storage full/unavailable — non-critical, just won't persist.
+  }
+  void pushToCloud(cloudKeyFor(goalId), roadmap);
+}
+
+/**
+ * Called once on sign-in (see AuthGate.tsx), once per goal id — after
+ * hydrateGoalsFromCloud() has populated the goal list, so the caller knows
+ * which goal ids to hydrate a roadmap for. Skips any goal that already has
+ * a locally-saved roadmap on this device.
+ */
+export async function hydrateRoadmapDataFromCloud(goalId?: string): Promise<void> {
+  const hasLocal = (() => {
+    try {
+      return localStorage.getItem(storageKeyFor(goalId)) !== null;
+    } catch {
+      return false;
+    }
+  })();
+  if (hasLocal) return;
+  const cloud = await pullFromCloud<Topic>(cloudKeyFor(goalId));
+  if (cloud && cloud.id && Array.isArray(cloud.children)) {
+    try {
+      localStorage.setItem(storageKeyFor(goalId), JSON.stringify(cloud));
+    } catch {
+      // Best-effort.
+    }
   }
 }
 

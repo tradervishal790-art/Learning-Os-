@@ -10,6 +10,10 @@ import {
 } from './authStore';
 import { loadSavedTheme } from './ThemeContext';
 import { hydrateLearningProfileFromCloud } from './learningProfileStore';
+import { hydrateGoalsFromCloud, getSavedGoals } from './goalsStore';
+import { hydrateRoadmapDataFromCloud } from './roadmapData';
+import { hydrateRevisionFromCloud } from './revisionstore';
+import { hydrateActiveDaysFromCloud } from './Dashboard';
 
 // ============================================================
 // AuthGate.tsx
@@ -41,11 +45,24 @@ export default function AuthGate({ children }: { children: ReactNode }) {
         // localStorage BEFORE letting <App> mount — App.tsx reads
         // localStorage synchronously in its useState initializers on
         // first render, so hydrating after that would be too late and
-        // a new device would flash "no profile" even though the cloud
-        // has one. Best-effort: hydrateLearningProfileFromCloud() never
-        // throws, so a slow/offline network just means it resolves with
-        // nothing changed, not a stuck loading screen.
-        void hydrateLearningProfileFromCloud().finally(() => setUser(u));
+        // a new device would flash "no data" even though the cloud has
+        // it. Order matters: goals must hydrate first, because the
+        // roadmap hydration step needs to know which goal ids exist.
+        // Every step is best-effort (never throws), so a slow/offline
+        // network just means it resolves with nothing changed, not a
+        // stuck loading screen.
+        void (async () => {
+          await hydrateLearningProfileFromCloud();
+          await hydrateGoalsFromCloud();
+          const goals = getSavedGoals();
+          if (goals.length > 0) {
+            await Promise.all(goals.map((g) => hydrateRoadmapDataFromCloud(g.id)));
+          } else {
+            await hydrateRoadmapDataFromCloud(undefined); // legacy single-roadmap users
+          }
+          await hydrateRevisionFromCloud();
+          await hydrateActiveDaysFromCloud();
+        })().finally(() => setUser(u));
       } else {
         setUser(u);
       }
