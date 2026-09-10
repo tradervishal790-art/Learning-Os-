@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { UserOnboardingData } from './types';
 import { getCurrentUser } from './authStore';
+import { useTranslation } from './i18n/LanguageContext';
 
 interface Onboarding3DProps {
   onComplete: (data: UserOnboardingData) => void;
@@ -11,15 +12,7 @@ interface CardOption {
   id: string;
   label: string;
   icon?: string;
-  flag?: string;
 }
-
-const stepTitles = [
-  { title: 'Who are you?', subtitle: 'Pick one' },
-  { title: 'Your goal?', subtitle: 'Pick one' },
-  { title: 'Language', subtitle: 'Pick one' },
-  { title: 'Your name', subtitle: 'Type it' },
-];
 
 // Helper: random starting positions (off-screen sides) for the card entrance animation
 const getStartPosition = (index: number, _total: number) => {
@@ -36,40 +29,52 @@ const getStartPosition = (index: number, _total: number) => {
   return positions[index % positions.length];
 };
 
-const roles: CardOption[] = [
-  { id: 'student', label: 'Student', icon: '🎓' },
-  { id: 'developer', label: 'Developer', icon: '💻' },
-  { id: 'researcher', label: 'Researcher', icon: '🔬' },
-  { id: 'business', label: 'Business', icon: '💼' },
-  { id: 'exam', label: 'Competitive Exam', icon: '📚' },
-  { id: 'creator', label: 'Creator', icon: '🎨' },
-];
+// NOTE: This flow is intentionally English-only. The language-selection
+// step (Hindi/English/Hinglish) has been removed — only the Landing page,
+// this Onboarding flow, and the Demo modal have an i18n system wired up
+// so far (see src/i18n/), while the rest of the app (Dashboard, Roadmap,
+// VideoIntel, Notes, etc.) is still hardcoded English. Letting the user
+// pick a language here that the rest of the app doesn't honor yet would
+// leave them stuck with a half-translated experience, so the picker is
+// disabled and UserOnboardingData.language is fixed to 'english' until
+// every screen is translated.
+const FIXED_LANGUAGE = 'english';
 
-const goals: CardOption[] = [
-  { id: 'job', label: 'Get a Job', icon: '🚀' },
-  { id: 'skill', label: 'Learn a Skill', icon: '⚡' },
-  { id: 'research', label: 'Research', icon: '🧠' },
-  { id: 'startup', label: 'Build a Startup', icon: '💡' },
-  { id: 'curiosity', label: 'Curiosity', icon: '🔍' },
-  { id: 'mastery', label: 'Mastery', icon: '👑' },
-  { id: 'teaching', label: 'Teaching', icon: '📖' },
-];
+const roleIcons: Record<string, string> = {
+  student: '🎓',
+  developer: '💻',
+  researcher: '🔬',
+  business: '💼',
+  exam: '📚',
+  creator: '🎨',
+};
+const roleOrder = ['student', 'developer', 'researcher', 'business', 'exam', 'creator'];
 
-const languages: CardOption[] = [
-  { id: 'hindi', label: 'Hindi', flag: '🇮🇳' },
-  { id: 'english', label: 'English', flag: '🇬🇧' },
-  { id: 'hinglish', label: 'Hinglish', flag: '✨' },
-  { id: 'any', label: 'No Preference', flag: '🌍' },
-];
+const goalIcons: Record<string, string> = {
+  job: '🚀',
+  skill: '⚡',
+  research: '🧠',
+  startup: '💡',
+  curiosity: '🔍',
+  mastery: '👑',
+  teaching: '📖',
+};
+const goalOrder = ['job', 'skill', 'research', 'startup', 'curiosity', 'mastery', 'teaching'];
 
 export default function Onboarding3D({ onComplete }: Onboarding3DProps) {
+  const t = useTranslation();
+  // 3 steps only: role, goal, name. (Language step removed — see FIXED_LANGUAGE above.)
+  const stepTitles = [t.onboarding.stepTitles[0], t.onboarding.stepTitles[1], t.onboarding.stepTitles[3]];
+  const roles: CardOption[] = roleOrder.map((id) => ({ id, label: t.onboarding.roles[id], icon: roleIcons[id] }));
+  const goals: CardOption[] = goalOrder.map((id) => ({ id, label: t.onboarding.goals[id], icon: goalIcons[id] }));
+
   const [step, setStep] = useState(0);
   // Prefill from the name entered at signup (Firebase displayName), so
   // the user isn't asked to type it twice — they can still edit it here.
   const [data, setData] = useState<UserOnboardingData>({
   role: '',
   goal: '',
-  language: '',
+  language: FIXED_LANGUAGE,
   name: getCurrentUser()?.displayName ?? '',
   hours: 0,
   deadline: 'none',
@@ -90,13 +95,12 @@ export default function Onboarding3D({ onComplete }: Onboarding3DProps) {
   const canProceed = () => {
     if (step === 0) return data.role !== '';
     if (step === 1) return data.goal !== '';
-    if (step === 2) return data.language !== '';
-    if (step === 3) return data.name.trim() !== '';
+    if (step === 2) return data.name.trim() !== '';
     return false;
   };
 
   const renderCards = () => {
-    if (step === 3) {
+    if (step === 2) {
       return (
         <div className="max-w-sm mx-auto">
           <motion.input
@@ -107,7 +111,7 @@ export default function Onboarding3D({ onComplete }: Onboarding3DProps) {
             value={data.name}
             onChange={(e) => setData({ ...data, name: e.target.value })}
             onKeyDown={(e) => e.key === 'Enter' && canProceed() && next()}
-            placeholder="Naam likho"
+            placeholder={t.onboarding.namePlaceholder}
             autoFocus
             className="w-full text-center bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-xl text-white placeholder-white/30 focus:outline-none focus:border-purple-500/50"
           />
@@ -115,17 +119,15 @@ export default function Onboarding3D({ onComplete }: Onboarding3DProps) {
       );
     }
 
-    const options: CardOption[] = step === 0 ? roles : step === 1 ? goals : languages;
-    const isGrid = step === 2;
+    const options: CardOption[] = step === 0 ? roles : goals;
 
     return (
-      <div className={isGrid ? 'grid grid-cols-2 md:grid-cols-4 gap-4' : 'grid grid-cols-2 md:grid-cols-3 gap-4'}>
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         {options.map((option, i) => {
           const start = getStartPosition(i, options.length);
           const isSelected =
             (step === 0 && data.role === option.id) ||
-            (step === 1 && data.goal === option.id) ||
-            (step === 2 && data.language === option.id);
+            (step === 1 && data.goal === option.id);
 
           return (
             <motion.button
@@ -138,7 +140,6 @@ export default function Onboarding3D({ onComplete }: Onboarding3DProps) {
               onClick={() => {
                 if (step === 0) setData({ ...data, role: option.id });
                 else if (step === 1) setData({ ...data, goal: option.id });
-                else if (step === 2) setData({ ...data, language: option.id });
               }}
               className={`relative p-6 rounded-2xl border transition-all duration-300 overflow-hidden ${
                 isSelected
@@ -147,7 +148,7 @@ export default function Onboarding3D({ onComplete }: Onboarding3DProps) {
               }`}
               style={isSelected ? { boxShadow: '0 0 40px rgba(139, 92, 246, 0.4)' } : {}}
             >
-              <div className="text-5xl mb-3">{option.icon ?? option.flag}</div>
+              <div className="text-5xl mb-3">{option.icon}</div>
               <div className="text-white font-medium text-sm">{option.label}</div>
               {isSelected && (
                 <motion.div
@@ -178,7 +179,7 @@ export default function Onboarding3D({ onComplete }: Onboarding3DProps) {
         <div className="max-w-2xl mx-auto">
           <div className="flex justify-between items-center mb-3">
             <span className="text-xs uppercase tracking-[0.2em] text-white/40">
-              Step {step + 1} of {stepTitles.length}
+              {t.onboarding.stepOf.replace('{0}', String(step + 1)).replace('{1}', String(stepTitles.length))}
             </span>
             <span className="text-xs text-white/40">
               {Math.round(((step + 1) / stepTitles.length) * 100)}%
@@ -225,7 +226,7 @@ export default function Onboarding3D({ onComplete }: Onboarding3DProps) {
               step === 0 ? 'opacity-0 pointer-events-none' : 'text-white/60 hover:text-white'
             }`}
           >
-            ← Back
+            {t.onboarding.back}
           </motion.button>
 
           <motion.button
@@ -238,7 +239,7 @@ export default function Onboarding3D({ onComplete }: Onboarding3DProps) {
             }`}
             style={canProceed() ? { boxShadow: '0 0 30px rgba(139, 92, 246, 0.4)' } : {}}
           >
-            {step === stepTitles.length - 1 ? 'Start →' : 'Continue →'}
+            {step === stepTitles.length - 1 ? t.onboarding.start : t.onboarding.continue}
           </motion.button>
         </div>
       </div>

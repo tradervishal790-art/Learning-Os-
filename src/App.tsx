@@ -10,6 +10,7 @@ import { trackOnboardingComplete } from './firebase';
 import { getLearningProfile } from './learningProfileStore';
 import { saveRoadmapData } from './roadmapData';
 import { getGoals, getActiveGoals, addGoal, endGoal as endGoalInStore, updateGoal, saveGoals, MAX_ACTIVE_GOALS } from './goalsStore';
+import { useTranslation } from './i18n/LanguageContext';
 type Page = 'landing' | 'onboarding' | 'dashboard';
 
 const ONBOARDING_STORAGE_KEY = 'learning_os_onboarding_data';
@@ -26,29 +27,6 @@ const wordAnimation = {
   }),
 };
 
-// Content for the "Watch Demo" walkthrough modal — a lightweight explainer
-// in place of an actual demo video, so the button has a real, specific purpose.
-const demoSteps = [
-  {
-    icon: '🎯',
-    title: '1. Tell us who you are',
-    description:
-      'A short onboarding captures your role, goal, preferred language, and your name.',
-  },
-  {
-    icon: '🗺️',
-    title: '2. Get a roadmap',
-    description:
-      'Instead of a generic course list, you get a topic sequence built around your goal — with a "WHY layer" explaining why each topic matters.',
-  },
-  {
-    icon: '🔄',
-    title: '3. Learn, watch, retain',
-    description:
-      'Video Intel tracks what you actually watch and understand. The Revision Engine schedules spaced repetition (Day 1, 3, 7, 15, 30, 60) so concepts stick.',
-  },
-];
-
 function loadSavedOnboardingData(): UserOnboardingData | null {
   try {
     const saved = localStorage.getItem(ONBOARDING_STORAGE_KEY);
@@ -59,6 +37,8 @@ function loadSavedOnboardingData(): UserOnboardingData | null {
 }
 
 function App() {
+  const t = useTranslation();
+  const demoSteps = t.demo.steps;
   const [page, setPage] = useState<Page>('landing');
   const [userData, setUserData] = useState<UserOnboardingData | null>(loadSavedOnboardingData);
   const [showDemo, setShowDemo] = useState(false);
@@ -324,7 +304,7 @@ function App() {
                 variants={wordAnimation}
                 className="inline-block bg-gradient-to-r from-white via-purple-200 to-white bg-clip-text text-transparent"
               >
-                Learn
+                {t.landing.heroWords[0]}
               </motion.span>{' '}
               <motion.span
                 custom={1}
@@ -333,7 +313,7 @@ function App() {
                 variants={wordAnimation}
                 className="inline-block bg-gradient-to-r from-purple-400 via-blue-400 to-purple-400 bg-clip-text text-transparent"
               >
-                How
+                {t.landing.heroWords[1]}
               </motion.span>
             </span>
             <span className="block">
@@ -344,7 +324,7 @@ function App() {
                 variants={wordAnimation}
                 className="inline-block bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-400 bg-clip-text text-transparent"
               >
-                You
+                {t.landing.heroWords[2]}
               </motion.span>{' '}
               <motion.span
                 custom={3}
@@ -353,7 +333,7 @@ function App() {
                 variants={wordAnimation}
                 className="inline-block bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 bg-clip-text text-transparent"
               >
-                Think
+                {t.landing.heroWords[3]}
               </motion.span>
             </span>
           </h1>
@@ -364,7 +344,7 @@ function App() {
             transition={{ delay: 0.8, duration: 0.8 }}
             className="mt-8 max-w-2xl text-base md:text-lg text-white/60 leading-relaxed"
           >
-            A learning system that adapts to your mind — not the other way around.
+            {t.landing.tagline}
           </motion.p>
 
           <motion.div
@@ -378,7 +358,7 @@ function App() {
               className="group relative px-8 py-3.5 rounded-full bg-white text-black font-semibold text-sm tracking-wide overflow-hidden transition-all duration-300 hover:scale-105"
             >
               <span className="relative z-10 flex items-center gap-2">
-                {userData ? 'Dashboard' : 'Get Started'}
+                {userData ? t.landing.dashboard : t.landing.getStarted}
                 <svg
                   className="w-4 h-4 transition-transform group-hover:translate-x-1"
                   fill="none"
@@ -398,7 +378,7 @@ function App() {
                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M8 5v14l11-7z" />
                 </svg>
-                Demo
+                {t.landing.demo}
               </span>
             </button>
           </motion.div>
@@ -424,8 +404,8 @@ function App() {
               >
                 <div className="p-6 border-b border-white/5 flex items-center justify-between">
                   <div>
-                    <h2 className="text-2xl font-bold text-white">How It Works</h2>
-                    <p className="text-sm text-white/50 mt-1">Three steps from sign-up to mastery</p>
+                    <h2 className="text-2xl font-bold text-white">{t.demo.title}</h2>
+                    <p className="text-sm text-white/50 mt-1">{t.demo.subtitle}</p>
                   </div>
                   <button
                     onClick={() => setShowDemo(false)}
@@ -463,7 +443,7 @@ function App() {
                     }}
                     className="w-full px-6 py-3 rounded-full bg-white text-black font-semibold text-sm hover:scale-[1.02] transition-transform"
                   >
-                    {userData ? 'Dashboard →' : 'Start →'}
+                    {userData ? t.demo.dashboardCta : t.demo.startCta}
                   </button>
                 </div>
               </motion.div>
