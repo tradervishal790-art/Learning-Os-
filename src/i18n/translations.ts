@@ -81,6 +81,55 @@ export interface TranslationShape {
       ];
     };
   };
+  roadmap: {
+    header: { title: string; subtitle: string };
+    goalTabs: {
+      newGoal: string;
+      addGoal: string;
+      maxGoalsNote: string; // "{0}" = MAX_ACTIVE_GOALS
+      endGoal: string;
+    };
+    endGoalModal: {
+      title: string;
+      body: string; // "{0}" = roadmap title
+      cancel: string;
+      confirm: string;
+    };
+    stats: { progress: string; done: string; inProgress: string; estTime: string };
+    noActiveGoal: string;
+    generateForm: {
+      label: string;
+      placeholder: string;
+      generateCta: string;
+      generatingCta: string;
+      examLabel: string;
+      examOptional: string;
+      examPlaceholder: string;
+      examHint: string;
+      weeklyTimeLabel: string;
+      weeklyTimeHint: string;
+      timeLimitLabel: string;
+      deadlineLabel: string;
+      generateFailed: string;
+    };
+    statusLabels: { mastered: string; completed: string; learning: string; locked: string };
+    examWeightage: Record<'high' | 'medium' | 'low', string>;
+    step: string; // "{0}" = step number
+    topicModal: {
+      overviewTab: string;
+      whyTab: string;
+      whatYoullLearn: string;
+      bridgeHint: string;
+      deepDiveCta: string;
+      watchVideosCta: string;
+      searchingCta: string;
+      savedVideoCta: string;
+      markCompleteCta: string;
+      challengeTitle: string;
+      challengeCta: string;
+      whyItems: { learn: string; connect: string; system: string; risk: string };
+    };
+  };
 }
 
 export const translations: Record<Locale, TranslationShape> = {
@@ -222,6 +271,60 @@ export const translations: Record<Locale, TranslationShape> = {
             cta: 'Watch',
           },
         ],
+      },
+    },
+    roadmap: {
+      header: { title: 'Your Roadmap', subtitle: 'Foundation-first order — follow it for best results' },
+      goalTabs: {
+        newGoal: 'New Goal',
+        addGoal: '+ Add Goal',
+        maxGoalsNote: 'Max {0} goals at once — end one to start a new one.',
+        endGoal: 'End this goal',
+      },
+      endGoalModal: {
+        title: 'End this goal?',
+        body: '"{0}" will end — progress stays safe, and a slot frees up for a new goal.',
+        cancel: 'Cancel',
+        confirm: 'End Goal',
+      },
+      stats: { progress: 'Progress', done: 'Done', inProgress: 'In Progress', estTime: 'Est. Time' },
+      noActiveGoal: 'No active goal. Tap "+ Add Goal" above to start a new one.',
+      generateForm: {
+        label: 'What do you want to learn?',
+        placeholder: 'What do you want to learn?',
+        generateCta: 'Generate Roadmap',
+        generatingCta: 'Generating roadmap...',
+        examLabel: 'For a specific exam/board?',
+        examOptional: '(optional)',
+        examPlaceholder: 'e.g. CBSE Class 10, JEE, NEET — leave blank for general learning',
+        examHint: "If you tell us, the roadmap will follow that exam's syllabus order and marks-weightage.",
+        weeklyTimeLabel: 'Weekly time available',
+        weeklyTimeHint: "This makes the roadmap's topics and depth accurate to your available time.",
+        timeLimitLabel: 'Time limit',
+        deadlineLabel: 'Deadline',
+        generateFailed: "Couldn't generate the roadmap — try again.",
+      },
+      statusLabels: { mastered: 'Mastered', completed: 'Done', learning: 'In Progress', locked: 'Locked' },
+      examWeightage: { high: 'High weightage', medium: 'Medium weightage', low: 'Low weightage' },
+      step: 'STEP {0}',
+      topicModal: {
+        overviewTab: 'Overview',
+        whyTab: 'Why',
+        whatYoullLearn: "What you'll learn",
+        bridgeHint: 'This shows how the last topic connects to this one.',
+        deepDiveCta: '🔍 2 quick questions? Get better matched videos (optional)',
+        watchVideosCta: 'Watch videos',
+        searchingCta: 'Searching...',
+        savedVideoCta: 'Saved video',
+        markCompleteCta: '✓ I already know this — mark as complete',
+        challengeTitle: 'Try a small applied challenge first, then mark the topic complete.',
+        challengeCta: 'Tried it — mark complete',
+        whyItems: {
+          learn: 'Why learn this?',
+          connect: 'How does it connect?',
+          system: 'What system does it belong to?',
+          risk: "What if you don't learn it?",
+        },
       },
     },
   },
@@ -366,6 +469,60 @@ export const translations: Record<Locale, TranslationShape> = {
         ],
       },
     },
+    roadmap: {
+      header: { title: 'आपका रोडमैप', subtitle: 'पहले बुनियाद — सबसे अच्छे नतीजे के लिए इसी क्रम में चलें' },
+      goalTabs: {
+        newGoal: 'नया लक्ष्य',
+        addGoal: '+ लक्ष्य जोड़ें',
+        maxGoalsNote: 'एक साथ अधिकतम {0} लक्ष्य — नया शुरू करने के लिए एक को समाप्त करें।',
+        endGoal: 'यह लक्ष्य समाप्त करें',
+      },
+      endGoalModal: {
+        title: 'यह लक्ष्य समाप्त करें?',
+        body: '"{0}" समाप्त हो जाएगा — प्रगति सुरक्षित रहेगी, और नए लक्ष्य के लिए जगह खाली हो जाएगी।',
+        cancel: 'रद्द करें',
+        confirm: 'लक्ष्य समाप्त करें',
+      },
+      stats: { progress: 'प्रगति', done: 'पूरा', inProgress: 'जारी है', estTime: 'अनुमानित समय' },
+      noActiveGoal: 'कोई सक्रिय लक्ष्य नहीं है। नया शुरू करने के लिए ऊपर "+ लक्ष्य जोड़ें" दबाएं।',
+      generateForm: {
+        label: 'क्या सीखना है?',
+        placeholder: 'आप क्या सीखना चाहते हैं?',
+        generateCta: 'रोडमैप बनाएं',
+        generatingCta: 'रोडमैप बन रहा है...',
+        examLabel: 'किसी खास परीक्षा/बोर्ड के लिए?',
+        examOptional: '(वैकल्पिक)',
+        examPlaceholder: 'जैसे CBSE कक्षा 10, JEE, NEET — सामान्य पढ़ाई के लिए खाली छोड़ें',
+        examHint: 'बताने पर रोडमैप उस परीक्षा के सिलेबस-क्रम और अंक-भार (weightage) के हिसाब से बनेगा।',
+        weeklyTimeLabel: 'साप्ताहिक उपलब्ध समय',
+        weeklyTimeHint: 'इससे रोडमैप के टॉपिक और उनकी गहराई आपके उपलब्ध समय के हिसाब से सटीक बनती है।',
+        timeLimitLabel: 'समय सीमा',
+        deadlineLabel: 'डेडलाइन',
+        generateFailed: 'रोडमैप नहीं बन पाया — दोबारा कोशिश करें।',
+      },
+      statusLabels: { mastered: 'महारत', completed: 'पूरा', learning: 'जारी है', locked: 'लॉक्ड' },
+      examWeightage: { high: 'ज़्यादा वेटेज', medium: 'मध्यम वेटेज', low: 'कम वेटेज' },
+      step: 'चरण {0}',
+      topicModal: {
+        overviewTab: 'ओवरव्यू',
+        whyTab: 'क्यों',
+        whatYoullLearn: 'आप क्या सीखेंगे',
+        bridgeHint: 'यह दिखाता है कि पिछला टॉपिक इससे कैसे जुड़ता है।',
+        deepDiveCta: '🔍 2 छोटे सवाल पूछूं? बेहतर मैच वाले वीडियो मिलेंगे (वैकल्पिक)',
+        watchVideosCta: 'वीडियो देखें',
+        searchingCta: 'ढूंढ रहा हूं...',
+        savedVideoCta: 'सेव किया वीडियो',
+        markCompleteCta: '✓ मुझे यह पहले से आता है — पूरा हुआ मार्क करें',
+        challengeTitle: 'पहले एक छोटा applied challenge करें, फिर टॉपिक पूरा मार्क करें।',
+        challengeCta: 'कोशिश कर ली — पूरा मार्क करें',
+        whyItems: {
+          learn: 'यह क्यों सीखें?',
+          connect: 'यह कैसे जुड़ता है?',
+          system: 'यह किस सिस्टम का हिस्सा है?',
+          risk: 'अगर यह न सीखा तो?',
+        },
+      },
+    },
   },
 
   hinglish: {
@@ -506,6 +663,60 @@ export const translations: Record<Locale, TranslationShape> = {
             cta: 'Watch',
           },
         ],
+      },
+    },
+    roadmap: {
+      header: { title: 'Your Roadmap', subtitle: 'Foundation-first order — follow it for best results' },
+      goalTabs: {
+        newGoal: 'Naya Goal',
+        addGoal: '+ Add Goal',
+        maxGoalsNote: 'Max {0} goals ek saath — koi ek end karo naya start karne ke liye.',
+        endGoal: 'End this goal',
+      },
+      endGoalModal: {
+        title: 'Ye goal end karein?',
+        body: '"{0}" end ho jayega — progress safe rahega, aur slot free ho jayega naye goal ke liye.',
+        cancel: 'Cancel',
+        confirm: 'End Goal',
+      },
+      stats: { progress: 'Progress', done: 'Done', inProgress: 'In Progress', estTime: 'Est. Time' },
+      noActiveGoal: 'Koi active goal nahi hai. Upar "+ Add Goal" dabao naya goal shuru karne ke liye.',
+      generateForm: {
+        label: 'Kya seekhna hai?',
+        placeholder: 'Aap kya seekhna chahte ho?',
+        generateCta: 'Generate Roadmap',
+        generatingCta: 'Roadmap ban raha hai...',
+        examLabel: 'Kisi specific exam/board ke liye?',
+        examOptional: '(optional)',
+        examPlaceholder: 'jaise CBSE Class 10, JEE, NEET — khaali chhodo agar general learning hai',
+        examHint: 'Bataoge to roadmap us exam ke syllabus-order aur marks-weightage ke hisaab se banega.',
+        weeklyTimeLabel: 'Weekly time available',
+        weeklyTimeHint: 'Isse roadmap ke topics aur unki depth aapke available time ke hisaab se accurate banti hai.',
+        timeLimitLabel: 'Time limit',
+        deadlineLabel: 'Deadline',
+        generateFailed: 'Roadmap generate nahi ho paaya — dobara try karo.',
+      },
+      statusLabels: { mastered: 'Mastered', completed: 'Done', learning: 'In Progress', locked: 'Locked' },
+      examWeightage: { high: 'High weightage', medium: 'Medium weightage', low: 'Low weightage' },
+      step: 'STEP {0}',
+      topicModal: {
+        overviewTab: 'Overview',
+        whyTab: 'Why',
+        whatYoullLearn: "What you'll learn",
+        bridgeHint: 'This shows how the last topic connects to this one.',
+        deepDiveCta: '🔍 2 quick sawaal poochu? Better matched videos milenge (optional)',
+        watchVideosCta: 'Watch videos',
+        searchingCta: 'Dhundh raha hoon...',
+        savedVideoCta: 'Saved video',
+        markCompleteCta: '✓ Maine ye already seekh liya — mark as complete',
+        challengeTitle: 'Pehle ek chhota applied challenge try karo, phir topic complete maaro.',
+        challengeCta: 'Try kar liya — complete maaro',
+        whyItems: {
+          learn: 'Why learn this?',
+          connect: 'How does it connect?',
+          system: 'What system does it belong to?',
+          risk: "What if you don't learn it?",
+        },
       },
     },
   },
