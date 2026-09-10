@@ -9,6 +9,7 @@ import {
   signOutOfApp,
 } from './authStore';
 import { loadSavedTheme } from './ThemeContext';
+import { hydrateLearningProfileFromCloud } from './learningProfileStore';
 
 // ============================================================
 // AuthGate.tsx
@@ -34,7 +35,21 @@ export default function AuthGate({ children }: { children: ReactNode }) {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = onAuthChange((u) => setUser(u));
+    const unsubscribe = onAuthChange((u) => {
+      if (u) {
+        // CROSS-DEVICE SYNC: pull this account's cloud data down into
+        // localStorage BEFORE letting <App> mount — App.tsx reads
+        // localStorage synchronously in its useState initializers on
+        // first render, so hydrating after that would be too late and
+        // a new device would flash "no profile" even though the cloud
+        // has one. Best-effort: hydrateLearningProfileFromCloud() never
+        // throws, so a slow/offline network just means it resolves with
+        // nothing changed, not a stuck loading screen.
+        void hydrateLearningProfileFromCloud().finally(() => setUser(u));
+      } else {
+        setUser(u);
+      }
+    });
     return unsubscribe;
   }, []);
 

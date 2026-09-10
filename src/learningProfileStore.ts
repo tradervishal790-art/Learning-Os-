@@ -1,5 +1,6 @@
 import type { LearningProfile } from './types';
 import type { DeepDiveSignals, DimensionKey } from './deepDiveScoring';
+import { pushToCloud, pullFromCloud, deleteFromCloud } from './cloudSync';
 
 // ============================================================
 // learningProfileStore.ts
@@ -9,9 +10,17 @@ import type { DeepDiveSignals, DimensionKey } from './deepDiveScoring';
 // extracted here so Roadmap.tsx (and anything else building a
 // personalized playlist) can read it too, without duplicating the key
 // or the parsing logic.
+//
+// CROSS-DEVICE SYNC: localStorage stays the synchronous source of truth
+// (every existing caller of getLearningProfile()/saveLearningProfile()
+// is untouched). On top of that, saves also fire a best-effort Firestore
+// write (see cloudSync.ts), and hydrateLearningProfileFromCloud() — called
+// once on sign-in from AuthGate.tsx — pulls the cloud copy down into
+// localStorage on a device that doesn't have it yet.
 // ============================================================
 
 const LEARNING_PROFILE_STORAGE_KEY = 'learning_os_learning_profile';
+const CLOUD_KEY = 'learningProfile';
 
 // New deep-dive signals are BLENDED into the existing profile, not
 // overwritten — one optional conversation shouldn't flip the whole
@@ -33,6 +42,34 @@ export function saveLearningProfile(profile: LearningProfile): void {
   } catch {
     // Storage full or unavailable — best-effort, not a critical failure.
   }
+  // Fire-and-forget cloud sync — caller doesn't await this, so save stays
+  // instant/synchronous for the UI. If it fails (offline, signed out),
+  // localStorage above already has the data.
+  void pushToCloud(CLOUD_KEY, profile);
+}
+
+/**
+ * Called once on sign-in (see AuthGate.tsx) to pull this user's profile
+ * down from Firestore into localStorage — the step that actually makes
+ * the profile show up on a NEW device/browser instead of only ever being
+ * visible on the device it was created on.
+ *
+ * Deliberately does NOT overwrite a newer local profile: if this device
+ * already has a profile (e.g. user retook the Blueprint Interview while
+ * briefly offline), the local copy wins and gets re-pushed up instead —
+ * last-write-wins by "device already has data", not by timestamp, to
+ * keep this a simple v1.
+ */
+export async function hydrateLearningProfileFromCloud(): Promise<void> {
+  if (getLearningProfile()) return; // this device already has a profile — don't clobber it
+  const cloudProfile = await pullFromCloud<LearningProfile>(CLOUD_KEY);
+  if (cloudProfile) {
+    try {
+      localStorage.setItem(LEARNING_PROFILE_STORAGE_KEY, JSON.stringify(cloudProfile));
+    } catch {
+      // Best-effort.
+    }
+  }
 }
 
 /**
@@ -47,6 +84,7 @@ export function clearLearningProfile(): void {
   } catch {
     // Best-effort.
   }
+  void deleteFromCloud(CLOUD_KEY);
 }
 
 /**
