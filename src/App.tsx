@@ -231,7 +231,8 @@ function App() {
     subject: string,
     hours: number,
     deadlineDays: number,
-    deadlineLabel: string
+    deadlineLabel: string,
+    examType?: string
   ): Promise<boolean> => {
     const trimmed = subject.trim();
     if (!trimmed || !userData) return false;
@@ -246,6 +247,7 @@ function App() {
       hours,
       deadline: deadlineLabel,
       deadlineDays,
+      examType,
     };
 
     // Only the primary goal mirrors into userData/onboarding storage (role,
@@ -259,6 +261,7 @@ function App() {
       hours,
       deadline: deadlineLabel,
       deadlineDays,
+      examType,
     });
     setGoals(updatedGoals);
 

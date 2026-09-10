@@ -19,6 +19,11 @@ export interface UserOnboardingData {
    *  string bucket when present — lets the time-budget calc be precise
    *  instead of snapping to one of 5 fixed presets. */
   deadlineDays?: number;
+  /** Optional exam/board this goal is being prepared for (e.g. "CBSE Class 10",
+   *  "JEE", "NEET") — when set, generate-roadmap.ts asks the AI to order/weight
+   *  topics by that exam's syllabus and marks-weightage instead of a generic
+   *  best-effort sequence. Undefined/empty means "no specific exam". */
+  examType?: string;
 }
 
 
@@ -38,6 +43,10 @@ export interface Goal {
   status: GoalStatus;
   createdAt: string;
   endedAt?: string;
+  /** Same exam/board field as UserOnboardingData.examType, but per-goal since
+   *  a user can run one exam-prep goal alongside one general-learning goal
+   *  at the same time (MAX_ACTIVE_GOALS = 2). */
+  examType?: string;
 }
 
 // ---------- Playlist timing (moved out of onboarding, asked at playlist-creation time) ----------
@@ -69,6 +78,10 @@ export interface Topic {
   children?: Topic[];
   /** Short lowercase keywords/phrases used to match this topic against watched video titles. */
   topicKeywords?: string[];
+  /** Only set when the parent Goal has an examType — how much this topic
+   *  matters for that exam's marks/weightage, so exam-mode learners can see
+   *  what to prioritize under time pressure. Absent for non-exam goals. */
+  examWeightage?: 'high' | 'medium' | 'low';
   /** ISO timestamp of when this topic's status first became 'learning' —
    *  the anchor date the Revision engine schedules Day 1/3/7/15/30/60
    *  spaced-repetition checkpoints from. Absent for topics never started. */
