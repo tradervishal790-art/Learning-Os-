@@ -80,6 +80,81 @@ export interface TranslationShape {
         { title: string; subtitle: string; cta: string },
       ];
     };
+    home: {
+      statsCards: {
+        goal: string;
+        pickTopic: string;
+        openRoadmap: string;
+        revision: string;
+        dueSuffix: string; // "{0} due"
+        overdueSuffix: string; // "{0} overdue"
+        caughtUp: string;
+        streak: string;
+        day: string;
+        days: string;
+        keepGoing: string;
+        startToday: string;
+      };
+      suggestion: { label: string; customCta: string; watchCta: string };
+      learningStyleCard: {
+        titleReady: string;
+        titleNotReady: string;
+        subtitleReady: string;
+        subtitleNotReady: string;
+        detailReady: string;
+        retakeCta: string;
+        startCta: string;
+        analyzeVideosCta: string;
+      };
+    };
+  };
+  settingsModal: {
+    title: string;
+    theme: string;
+    nameLabel: string;
+    roleLabel: string;
+    topicLabel: string;
+    topicPlaceholder: string;
+    languageLabel: string;
+    roadmapSection: {
+      label: string;
+      hint: string;
+      regenerateCta: string;
+      regeneratingCta: string;
+      successMsg: string;
+      errorMsg: string;
+    };
+    learningProfileSection: {
+      label: string;
+      hint: string;
+      hintBubble: string;
+      viewCta: string;
+      hideCta: string;
+      dims: {
+        pace: string;
+        practical: string;
+        structure: string;
+        depth: string;
+        language: string;
+        storytelling: string;
+        repetition: string;
+        reliability: string;
+      };
+    };
+    saveCta: string;
+    deadlineNone: string;
+  };
+  customPlaylistModal: {
+    title: string;
+    topicLabel: string;
+    topicPlaceholder: string;
+    hoursLabel: string;
+    deadlineLabel: string;
+    quickLabel: string;
+    loadingCta: string;
+    noProfileHint: string;
+    generateCta: string;
+    generatingCta: string;
   };
   roadmap: {
     header: { title: string; subtitle: string };
@@ -385,6 +460,82 @@ export const translations: Record<Locale, TranslationShape> = {
           },
         ],
       },
+      home: {
+        statsCards: {
+          goal: 'Goal',
+          pickTopic: 'Pick a topic',
+          openRoadmap: 'Open roadmap',
+          revision: 'Revision',
+          dueSuffix: '{0} due',
+          overdueSuffix: '{0} overdue',
+          caughtUp: 'Caught up',
+          streak: 'Streak',
+          day: 'day',
+          days: 'days',
+          keepGoing: 'Keep going',
+          startToday: 'Start today',
+        },
+        suggestion: { label: 'Suggestion', customCta: 'Custom', watchCta: 'Watch' },
+        learningStyleCard: {
+          titleReady: 'Learning Style',
+          titleNotReady: 'Find Your Style',
+          subtitleReady: 'Profile ready — full report is in Settings',
+          subtitleNotReady: 'Short quiz for better matches',
+          detailReady:
+            '✓ 8 learning dimensions set — pace, depth, structure and more. See the full breakdown in Settings → "Learning Profile Report".',
+          retakeCta: 'Retake Blueprint Interview',
+          startCta: 'Start Blueprint Interview',
+          analyzeVideosCta: "Analyze Videos I've Watched",
+        },
+      },
+    },
+    settingsModal: {
+      title: 'Settings',
+      theme: 'Theme',
+      nameLabel: 'Name',
+      roleLabel: 'Role',
+      topicLabel: 'Subject / Topic',
+      topicPlaceholder: 'What do you want to learn?',
+      languageLabel: 'Language',
+      roadmapSection: {
+        label: 'Roadmap',
+        hint: "The roadmap is generated once. If topics feel too broad or you've changed your learning style, regenerate it.",
+        regenerateCta: 'Regenerate Roadmap',
+        regeneratingCta: 'Regenerating...',
+        successMsg: 'New roadmap generated.',
+        errorMsg: 'Something went wrong, try again.',
+      },
+      learningProfileSection: {
+        label: 'Learning Profile Report',
+        hint: 'This only shows when requested — the home page just has a short summary.',
+        hintBubble: 'Your full learning profile lives here — tap to view it.',
+        viewCta: 'View Full Report',
+        hideCta: 'Hide Report',
+        dims: {
+          pace: 'Pace',
+          practical: 'Practical',
+          structure: 'Structure',
+          depth: 'Depth',
+          language: 'Language',
+          storytelling: 'Storytelling',
+          repetition: 'Repetition',
+          reliability: 'Reliability',
+        },
+      },
+      saveCta: 'Save',
+      deadlineNone: 'None',
+    },
+    customPlaylistModal: {
+      title: 'Custom Playlist',
+      topicLabel: 'Topic',
+      topicPlaceholder: 'e.g., Django basics',
+      hoursLabel: 'Hours / week',
+      deadlineLabel: 'Deadline',
+      quickLabel: 'Quick:',
+      loadingCta: 'Finding videos...',
+      noProfileHint: 'Complete the quiz first for better matches',
+      generateCta: 'Generate',
+      generatingCta: 'Generating...',
     },
     roadmap: {
       header: { title: 'Your Roadmap', subtitle: 'Foundation-first order — follow it for best results' },
@@ -710,6 +861,82 @@ export const translations: Record<Locale, TranslationShape> = {
           },
         ],
       },
+      home: {
+        statsCards: {
+          goal: 'लक्ष्य',
+          pickTopic: 'टॉपिक चुनें',
+          openRoadmap: 'रोडमैप खोलें',
+          revision: 'रिवीज़न',
+          dueSuffix: '{0} देय',
+          overdueSuffix: '{0} बकाया',
+          caughtUp: 'सब पूरा',
+          streak: 'स्ट्रीक',
+          day: 'दिन',
+          days: 'दिन',
+          keepGoing: 'चलते रहें',
+          startToday: 'आज शुरू करें',
+        },
+        suggestion: { label: 'सुझाव', customCta: 'कस्टम', watchCta: 'देखें' },
+        learningStyleCard: {
+          titleReady: 'लर्निंग स्टाइल',
+          titleNotReady: 'अपनी स्टाइल जानें',
+          subtitleReady: 'प्रोफ़ाइल तैयार है — पूरी रिपोर्ट Settings में है',
+          subtitleNotReady: 'बेहतर मैच के लिए छोटा क्विज़',
+          detailReady:
+            '✓ 8 लर्निंग डाइमेंशन सेट हैं — पेस, गहराई, संरचना और बाकी। पूरा ब्रेकडाउन Settings → "Learning Profile Report" में देखें।',
+          retakeCta: 'ब्लूप्रिंट इंटरव्यू दोबारा लें',
+          startCta: 'ब्लूप्रिंट इंटरव्यू शुरू करें',
+          analyzeVideosCta: 'देखे गए वीडियो एनालाइज़ करें',
+        },
+      },
+    },
+    settingsModal: {
+      title: 'सेटिंग्स',
+      theme: 'थीम',
+      nameLabel: 'नाम',
+      roleLabel: 'भूमिका',
+      topicLabel: 'विषय / टॉपिक',
+      topicPlaceholder: 'आप क्या सीखना चाहते हैं?',
+      languageLabel: 'भाषा',
+      roadmapSection: {
+        label: 'रोडमैप',
+        hint: 'रोडमैप सिर्फ एक बार बनता है। अगर टॉपिक बहुत broad लग रहे हैं या लर्निंग स्टाइल बदली है, तो दोबारा बनाएं।',
+        regenerateCta: 'रोडमैप दोबारा बनाएं',
+        regeneratingCta: 'बन रहा है...',
+        successMsg: 'नया रोडमैप बन गया।',
+        errorMsg: 'कुछ गड़बड़ हो गई, दोबारा कोशिश करें।',
+      },
+      learningProfileSection: {
+        label: 'लर्निंग प्रोफ़ाइल रिपोर्ट',
+        hint: 'यह सिर्फ मांगने पर दिखती है — होम पेज पर सिर्फ छोटा सारांश होता है।',
+        hintBubble: 'आपकी पूरी लर्निंग प्रोफ़ाइल यहां है — देखने के लिए टैप करें।',
+        viewCta: 'पूरी रिपोर्ट देखें',
+        hideCta: 'रिपोर्ट छुपाएं',
+        dims: {
+          pace: 'गति',
+          practical: 'व्यावहारिक',
+          structure: 'संरचना',
+          depth: 'गहराई',
+          language: 'भाषा',
+          storytelling: 'कहानी शैली',
+          repetition: 'दोहराव',
+          reliability: 'विश्वसनीयता',
+        },
+      },
+      saveCta: 'सेव करें',
+      deadlineNone: 'कोई नहीं',
+    },
+    customPlaylistModal: {
+      title: 'कस्टम प्लेलिस्ट',
+      topicLabel: 'टॉपिक',
+      topicPlaceholder: 'जैसे, Django basics',
+      hoursLabel: 'घंटे / सप्ताह',
+      deadlineLabel: 'डेडलाइन',
+      quickLabel: 'क्विक:',
+      loadingCta: 'वीडियो ढूंढ रहा हूं...',
+      noProfileHint: 'बेहतर मैच के लिए पहले क्विज़ पूरा करें',
+      generateCta: 'बनाएं',
+      generatingCta: 'बन रहा है...',
     },
     roadmap: {
       header: { title: 'आपका रोडमैप', subtitle: 'पहले बुनियाद — सबसे अच्छे नतीजे के लिए इसी क्रम में चलें' },
@@ -1033,6 +1260,82 @@ export const translations: Record<Locale, TranslationShape> = {
           },
         ],
       },
+      home: {
+        statsCards: {
+          goal: 'Goal',
+          pickTopic: 'Pick a topic',
+          openRoadmap: 'Open roadmap',
+          revision: 'Revision',
+          dueSuffix: '{0} due',
+          overdueSuffix: '{0} overdue',
+          caughtUp: 'Caught up',
+          streak: 'Streak',
+          day: 'day',
+          days: 'days',
+          keepGoing: 'Keep going',
+          startToday: 'Start today',
+        },
+        suggestion: { label: 'Suggestion', customCta: 'Custom', watchCta: 'Watch' },
+        learningStyleCard: {
+          titleReady: 'Learning Style',
+          titleNotReady: 'Find Your Style',
+          subtitleReady: 'Profile ready — full report Settings me hai',
+          subtitleNotReady: 'Short quiz for better matches',
+          detailReady:
+            '✓ 8 learning dimensions set — pace, depth, structure aur baaki. Settings → "Learning Profile Report" me poora breakdown dekho.',
+          retakeCta: 'Retake Blueprint Interview',
+          startCta: 'Start Blueprint Interview',
+          analyzeVideosCta: "Analyze Videos I've Watched",
+        },
+      },
+    },
+    settingsModal: {
+      title: 'Settings',
+      theme: 'Theme',
+      nameLabel: 'Name',
+      roleLabel: 'Role',
+      topicLabel: 'Subject / Topic',
+      topicPlaceholder: 'Aap kya seekhna chahte ho?',
+      languageLabel: 'Language',
+      roadmapSection: {
+        label: 'Roadmap',
+        hint: 'Roadmap sirf ek baar banta hai. Agar topics bahut broad lag rahe hain ya learning style change kiya hai, dobara generate karo.',
+        regenerateCta: 'Regenerate Roadmap',
+        regeneratingCta: 'Regenerating...',
+        successMsg: 'Naya roadmap ban gaya.',
+        errorMsg: 'Kuch gadbad ho gayi, dobara try karo.',
+      },
+      learningProfileSection: {
+        label: 'Learning Profile Report',
+        hint: 'Yeh sirf request karne par dikhta hai — home page pe sirf ek short summary hoti hai.',
+        hintBubble: 'Your full learning profile lives here — tap to view it.',
+        viewCta: 'View Full Report',
+        hideCta: 'Hide Report',
+        dims: {
+          pace: 'Pace',
+          practical: 'Practical',
+          structure: 'Structure',
+          depth: 'Depth',
+          language: 'Language',
+          storytelling: 'Storytelling',
+          repetition: 'Repetition',
+          reliability: 'Reliability',
+        },
+      },
+      saveCta: 'Save',
+      deadlineNone: 'None',
+    },
+    customPlaylistModal: {
+      title: 'Custom Playlist',
+      topicLabel: 'Topic',
+      topicPlaceholder: 'e.g., Django basics',
+      hoursLabel: 'Hours / week',
+      deadlineLabel: 'Deadline',
+      quickLabel: 'Quick:',
+      loadingCta: 'Dhundh raha hoon...',
+      noProfileHint: 'Pehle quiz complete karo for better matches',
+      generateCta: 'Generate',
+      generatingCta: 'Generating...',
     },
     roadmap: {
       header: { title: 'Your Roadmap', subtitle: 'Foundation-first order — follow it for best results' },
