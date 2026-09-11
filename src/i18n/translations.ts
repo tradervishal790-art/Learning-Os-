@@ -177,6 +177,30 @@ export interface TranslationShape {
     metadataSourceNote: string;
     emptyState: { title: string; subtitle: string };
   };
+  videos: {
+    header: { title: string; subtitle: string };
+    searchPlaceholder: string;
+    searchCta: string;
+    noResultsYet: string;
+    backToVideo: string;
+    score: string; // "{0}" = score number
+    helpfulCta: string;
+    notForMeCta: string;
+    nextCta: string;
+    loadingNextCta: string;
+    watchProgress: { title: string; watched: string; pauses: string; rewinds: string; speed: string; complete: string };
+    deepNotesCta: string;
+    researchCta: string;
+    selectVideoPrompt: string;
+    verifiedBadge: string;
+    dismissAria: string;
+    errors: {
+      noMoreVideos: string; // "{0}" = search query
+      searchSomethingFirst: string;
+      noVideosFound: string;
+      searchFailed: string;
+    };
+  };
 }
 
 export const translations: Record<Locale, TranslationShape> = {
@@ -422,6 +446,37 @@ export const translations: Record<Locale, TranslationShape> = {
       emptyState: {
         title: 'Enter a topic for comprehensive, deep learning notes',
         subtitle: 'Goes beyond basics - covers WHY, HOW, and WHERE',
+      },
+    },
+    videos: {
+      header: { title: '📺 Videos', subtitle: 'Search • Watch • Personalized recommendations' },
+      searchPlaceholder: 'Search videos...',
+      searchCta: 'Search',
+      noResultsYet: 'Start with a search',
+      backToVideo: '← Back to Video',
+      score: 'Score: {0}/100',
+      helpfulCta: 'Helpful',
+      notForMeCta: 'Not for me',
+      nextCta: 'Next',
+      loadingNextCta: 'Finding new videos...',
+      watchProgress: {
+        title: 'Watch Progress',
+        watched: 'Watched',
+        pauses: 'Pauses:',
+        rewinds: 'Rewinds:',
+        speed: 'Speed:',
+        complete: 'Complete:',
+      },
+      deepNotesCta: 'Deep Notes',
+      researchCta: 'Research',
+      selectVideoPrompt: 'Select a video to watch',
+      verifiedBadge: 'verified',
+      dismissAria: 'Dismiss',
+      errors: {
+        noMoreVideos: 'No more new videos for "{0}" — you\u2019ve seen them all.',
+        searchSomethingFirst: 'Search for something first',
+        noVideosFound: 'No videos found, try searching something else',
+        searchFailed: 'Search failed, check console',
       },
     },
   },
@@ -670,6 +725,37 @@ export const translations: Record<Locale, TranslationShape> = {
         subtitle: 'बेसिक्स से आगे — WHY, HOW और WHERE कवर करता है',
       },
     },
+    videos: {
+      header: { title: '📺 वीडियो', subtitle: 'खोजें • देखें • व्यक्तिगत सुझाव' },
+      searchPlaceholder: 'वीडियो खोजें...',
+      searchCta: 'खोजें',
+      noResultsYet: 'खोजकर शुरू करें',
+      backToVideo: '← वीडियो पर वापस जाएं',
+      score: 'स्कोर: {0}/100',
+      helpfulCta: 'मददगार',
+      notForMeCta: 'मेरे लिए नहीं',
+      nextCta: 'अगला',
+      loadingNextCta: 'नए वीडियो ढूंढ रहा हूं...',
+      watchProgress: {
+        title: 'देखने की प्रगति',
+        watched: 'देखा गया',
+        pauses: 'रुका:',
+        rewinds: 'पीछे किया:',
+        speed: 'स्पीड:',
+        complete: 'पूरा:',
+      },
+      deepNotesCta: 'डीप नोट्स',
+      researchCta: 'रिसर्च',
+      selectVideoPrompt: 'देखने के लिए एक वीडियो चुनें',
+      verifiedBadge: 'सत्यापित',
+      dismissAria: 'बंद करें',
+      errors: {
+        noMoreVideos: '"{0}" के लिए और नए वीडियो नहीं मिले — सभी दिखाए जा चुके हैं।',
+        searchSomethingFirst: 'पहले कुछ खोजें',
+        noVideosFound: 'कोई वीडियो नहीं मिला, कुछ और खोजें',
+        searchFailed: 'खोज विफल हुई, कंसोल जांचें',
+      },
+    },
   },
 
   hinglish: {
@@ -914,6 +1000,37 @@ export const translations: Record<Locale, TranslationShape> = {
       emptyState: {
         title: 'Enter a topic for comprehensive, deep learning notes',
         subtitle: 'Goes beyond basics - covers WHY, HOW, and WHERE',
+      },
+    },
+    videos: {
+      header: { title: '📺 Videos', subtitle: 'Search • Watch • Personalized recommendations' },
+      searchPlaceholder: 'Search videos...',
+      searchCta: 'Search',
+      noResultsYet: 'Search se start karo',
+      backToVideo: '← Back to Video',
+      score: 'Score: {0}/100',
+      helpfulCta: 'Helpful',
+      notForMeCta: 'Not for me',
+      nextCta: 'Next',
+      loadingNextCta: 'Naye videos dhoondh raha hoon...',
+      watchProgress: {
+        title: 'Watch Progress',
+        watched: 'Watched',
+        pauses: 'Pauses:',
+        rewinds: 'Rewinds:',
+        speed: 'Speed:',
+        complete: 'Complete:',
+      },
+      deepNotesCta: 'Deep Notes',
+      researchCta: 'Research',
+      selectVideoPrompt: 'Video select karo dekhne ke liye',
+      verifiedBadge: 'verified',
+      dismissAria: 'Dismiss',
+      errors: {
+        noMoreVideos: '"{0}" ke liye aur naye videos nahi mile — sab dikha diye gaye.',
+        searchSomethingFirst: 'Kuch search karo pehle',
+        noVideosFound: 'Koi video nahi mila, kuch aur search karo',
+        searchFailed: 'Search fail hui, console check karo',
       },
     },
   },
