@@ -233,6 +233,16 @@ export interface TranslationShape {
     retentionDetail: { title: string; dueToday: string; overdue: string; mastered: string };
     weakAreas: { title: string; noneFound: string };
   };
+  research: {
+    header: { title: string; subtitle: string };
+    searchPlaceholder: string;
+    searchCta: string;
+    notGroundedNote: string;
+    genericError: string;
+    embedded: { title: string; hint: string };
+    closeAria: string;
+    emptyState: { title: string; subtitle: string };
+  };
 }
 
 export const translations: Record<Locale, TranslationShape> = {
@@ -548,6 +558,17 @@ export const translations: Record<Locale, TranslationShape> = {
       retentionDetail: { title: '📉 Retention', dueToday: 'Due Today', overdue: 'Overdue', mastered: 'Mastered' },
       weakAreas: { title: '⚠️ Weak Areas', noneFound: 'No weak topics found — everything is going well.' },
     },
+    research: {
+      header: { title: 'Research', subtitle: 'Search any topic — from the internet, for deeper reading' },
+      searchPlaceholder: 'What do you want to know?',
+      searchCta: 'Search',
+      notGroundedNote:
+        "Couldn't find a live search source this time — the answer below is from general knowledge, double-check it for anything current",
+      genericError: 'Research failed',
+      embedded: { title: 'Research (alongside the video)', hint: 'Search for anything — the video keeps playing.' },
+      closeAria: 'Close research panel',
+      emptyState: { title: 'Search any topic', subtitle: 'You can also open this alongside a video — from the Videos page' },
+    },
   },
 
   hi: {
@@ -860,6 +881,16 @@ export const translations: Record<Locale, TranslationShape> = {
       masteryHeatmap: { title: '🧠 महारत हीटमैप', legendWeak: 'कमजोर', legendOk: 'ठीक', legendStrong: 'मजबूत' },
       retentionDetail: { title: '📉 रिटेंशन', dueToday: 'आज देय', overdue: 'बकाया', mastered: 'महारत' },
       weakAreas: { title: '⚠️ कमजोर टॉपिक', noneFound: 'कोई कमजोर टॉपिक नहीं मिला — सब कुछ ठीक चल रहा है।' },
+    },
+    research: {
+      header: { title: 'रिसर्च', subtitle: 'कोई भी टॉपिक खोजें — इंटरनेट से, गहराई से पढ़ने के लिए' },
+      searchPlaceholder: 'क्या जानना है?',
+      searchCta: 'खोजें',
+      notGroundedNote: 'इस बार लाइव सर्च सोर्स नहीं मिला — नीचे दिया जवाब सामान्य जानकारी से है, हाल की किसी बात के लिए दोबारा जांच लें',
+      genericError: 'रिसर्च नहीं हो पाई',
+      embedded: { title: 'रिसर्च (वीडियो के साथ-साथ)', hint: 'कुछ भी खोजें — वीडियो चलती रहेगी।' },
+      closeAria: 'रिसर्च पैनल बंद करें',
+      emptyState: { title: 'कोई भी टॉपिक खोजें', subtitle: 'वीडियो देखते हुए भी इसे साथ में खोल सकते हैं — Videos पेज से' },
     },
   },
 
@@ -1174,6 +1205,17 @@ export const translations: Record<Locale, TranslationShape> = {
       masteryHeatmap: { title: '🧠 Mastery Heatmap', legendWeak: 'Weak', legendOk: 'OK', legendStrong: 'Strong' },
       retentionDetail: { title: '📉 Retention', dueToday: 'Due Today', overdue: 'Overdue', mastered: 'Mastered' },
       weakAreas: { title: '⚠️ Weak Areas', noneFound: 'Koi weak topic nahi mila — sab theek chal raha hai.' },
+    },
+    research: {
+      header: { title: 'Research', subtitle: 'Koi bhi topic search karo — internet se, deeper reading ke liye' },
+      searchPlaceholder: 'Kya jaanna hai?',
+      searchCta: 'Search',
+      notGroundedNote:
+        'Live search source nahi mila is baar — neeche wala jawab general knowledge se hai, current cheezon ke liye double-check kar lena',
+      genericError: 'Research failed',
+      embedded: { title: 'Research (video ke saath saath)', hint: 'Kuch bhi search karo — video chalti rahegi.' },
+      closeAria: 'Close research panel',
+      emptyState: { title: 'Koi bhi topic search karo', subtitle: 'Video dekhte hue side mein bhi khol sakte ho — Videos page se' },
     },
   },
 };
