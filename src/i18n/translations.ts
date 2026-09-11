@@ -130,6 +130,27 @@ export interface TranslationShape {
       whyItems: { learn: string; connect: string; system: string; risk: string };
     };
   };
+  revision: {
+    header: { title: string; subtitle: string };
+    stats: { dueToday: string; overdue: string; mastered: string; retention: string };
+    filters: { all: string; dueToday: string; overdue: string; upcoming: string; mastered: string };
+    difficultyLabels: { easy: string; medium: string; hard: string };
+    card: {
+      day: string;
+      reviewingNow: string;
+      retentionLabel: string; // "{0}" = percent
+      doneLabel: string;
+      doneCta: string;
+      reviewNowCta: string;
+      reviewingCta: string;
+    };
+    emptyState: {
+      noRevisionTitle: string;
+      noRevisionBody: string;
+      allCaughtUpTitle: string;
+      allCaughtUpBody: string;
+    };
+  };
 }
 
 export const translations: Record<Locale, TranslationShape> = {
@@ -325,6 +346,27 @@ export const translations: Record<Locale, TranslationShape> = {
           system: 'What system does it belong to?',
           risk: "What if you don't learn it?",
         },
+      },
+    },
+    revision: {
+      header: { title: 'Revision', subtitle: 'Comes back to you on a schedule — 1, 3, 7, 15, 30, 60 days' },
+      stats: { dueToday: 'Due Today', overdue: 'Overdue', mastered: 'Mastered', retention: 'Retention' },
+      filters: { all: 'All', dueToday: 'Due Today', overdue: 'Overdue', upcoming: 'Upcoming', mastered: 'Mastered' },
+      difficultyLabels: { easy: 'Easy', medium: 'Medium', hard: 'Hard' },
+      card: {
+        day: 'Day',
+        reviewingNow: 'Reviewing now',
+        retentionLabel: 'Retention: {0}%',
+        doneLabel: '✓ Done',
+        doneCta: 'Done',
+        reviewNowCta: 'Review Now',
+        reviewingCta: 'Reviewing…',
+      },
+      emptyState: {
+        noRevisionTitle: 'No revisions yet',
+        noRevisionBody: 'Start a topic on your roadmap or watch a video — a revision schedule will build itself here.',
+        allCaughtUpTitle: 'All caught up!',
+        allCaughtUpBody: 'No items in this category right now.',
       },
     },
   },
@@ -523,6 +565,27 @@ export const translations: Record<Locale, TranslationShape> = {
         },
       },
     },
+    revision: {
+      header: { title: 'रिवीज़न', subtitle: '1, 3, 7, 15, 30, 60 दिन के शेड्यूल पर वापस आता है' },
+      stats: { dueToday: 'आज देय', overdue: 'बकाया', mastered: 'महारत', retention: 'रिटेंशन' },
+      filters: { all: 'सभी', dueToday: 'आज देय', overdue: 'बकाया', upcoming: 'आने वाला', mastered: 'महारत' },
+      difficultyLabels: { easy: 'आसान', medium: 'मध्यम', hard: 'कठिन' },
+      card: {
+        day: 'दिन',
+        reviewingNow: 'अभी रिव्यू हो रहा है',
+        retentionLabel: 'रिटेंशन: {0}%',
+        doneLabel: '✓ पूरा हुआ',
+        doneCta: 'पूरा हुआ',
+        reviewNowCta: 'अभी रिव्यू करें',
+        reviewingCta: 'रिव्यू हो रहा है…',
+      },
+      emptyState: {
+        noRevisionTitle: 'अभी कोई रिवीज़न नहीं',
+        noRevisionBody: 'रोडमैप में कोई टॉपिक शुरू करें या कोई वीडियो देखें — रिवीज़न शेड्यूल अपने आप यहां बन जाएगा।',
+        allCaughtUpTitle: 'सब कुछ पूरा हो गया!',
+        allCaughtUpBody: 'इस श्रेणी में अभी कोई आइटम नहीं है।',
+      },
+    },
   },
 
   hinglish: {
@@ -717,6 +780,27 @@ export const translations: Record<Locale, TranslationShape> = {
           system: 'What system does it belong to?',
           risk: "What if you don't learn it?",
         },
+      },
+    },
+    revision: {
+      header: { title: 'Revision', subtitle: 'Comes back to you on a schedule — 1, 3, 7, 15, 30, 60 days' },
+      stats: { dueToday: 'Due Today', overdue: 'Overdue', mastered: 'Mastered', retention: 'Retention' },
+      filters: { all: 'All', dueToday: 'Due Today', overdue: 'Overdue', upcoming: 'Upcoming', mastered: 'Mastered' },
+      difficultyLabels: { easy: 'Easy', medium: 'Medium', hard: 'Hard' },
+      card: {
+        day: 'Day',
+        reviewingNow: 'Reviewing now',
+        retentionLabel: 'Retention: {0}%',
+        doneLabel: '✓ Done',
+        doneCta: 'Done',
+        reviewNowCta: 'Review Now',
+        reviewingCta: 'Reviewing…',
+      },
+      emptyState: {
+        noRevisionTitle: 'Abhi koi revision nahi',
+        noRevisionBody: 'Roadmap mein koi topic start karo ya video dekho — revision schedule yahin apne aap ban jayega.',
+        allCaughtUpTitle: 'All caught up!',
+        allCaughtUpBody: 'No items in this category right now.',
       },
     },
   },
