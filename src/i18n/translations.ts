@@ -151,6 +151,32 @@ export interface TranslationShape {
       allCaughtUpBody: string;
     };
   };
+  notes: {
+    header: { title: string; subtitle: string };
+    topicPlaceholder: string;
+    deepDiveCta: string;
+    linkPlaceholder: string;
+    fromVideoCta: string;
+    invalidUrlError: string;
+    genericGenerateError: string;
+    genericVideoGenerateError: string;
+    sections: {
+      summary: string;
+      myNotes: string;
+      coreConcept: string;
+      workedExamples: string;
+      misconceptions: string;
+      realWorldApp: string;
+      advanced: string;
+      practice: string;
+      insights: string;
+    };
+    sectionUnavailable: string;
+    sourceVideoLink: string;
+    transcriptSourceNote: string;
+    metadataSourceNote: string;
+    emptyState: { title: string; subtitle: string };
+  };
 }
 
 export const translations: Record<Locale, TranslationShape> = {
@@ -367,6 +393,35 @@ export const translations: Record<Locale, TranslationShape> = {
         noRevisionBody: 'Start a topic on your roadmap or watch a video — a revision schedule will build itself here.',
         allCaughtUpTitle: 'All caught up!',
         allCaughtUpBody: 'No items in this category right now.',
+      },
+    },
+    notes: {
+      header: { title: 'Deep Learning Notes', subtitle: "Auto-generated from the video — edit anything, they're yours" },
+      topicPlaceholder: 'Topic for deep learning...',
+      deepDiveCta: 'Deep Dive',
+      linkPlaceholder: 'Link',
+      fromVideoCta: 'From Video',
+      invalidUrlError: 'Invalid YouTube URL',
+      genericGenerateError: 'Error generating notes',
+      genericVideoGenerateError: 'Error generating notes from video',
+      sections: {
+        summary: 'Summary',
+        myNotes: 'My Notes',
+        coreConcept: 'Core Concept',
+        workedExamples: 'Worked Examples',
+        misconceptions: 'Misconceptions',
+        realWorldApp: 'Real World Application',
+        advanced: 'Advanced',
+        practice: 'Practice',
+        insights: 'Key Insights',
+      },
+      sectionUnavailable: 'This section isn\u2019t available for this note yet — run "Deep Dive" or "From Video" again to generate fresh notes.',
+      sourceVideoLink: '🎥 Watch source video',
+      transcriptSourceNote: '✓ Notes generated from the video transcript',
+      metadataSourceNote: '⚠ Transcript wasn\u2019t available — generated from title/description only',
+      emptyState: {
+        title: 'Enter a topic for comprehensive, deep learning notes',
+        subtitle: 'Goes beyond basics - covers WHY, HOW, and WHERE',
       },
     },
   },
@@ -586,6 +641,35 @@ export const translations: Record<Locale, TranslationShape> = {
         allCaughtUpBody: 'इस श्रेणी में अभी कोई आइटम नहीं है।',
       },
     },
+    notes: {
+      header: { title: 'डीप लर्निंग नोट्स', subtitle: 'वीडियो से अपने आप बनते हैं — कुछ भी बदलो, ये तुम्हारे अपने हैं' },
+      topicPlaceholder: 'डीप लर्निंग के लिए टॉपिक...',
+      deepDiveCta: 'डीप डाइव',
+      linkPlaceholder: 'लिंक',
+      fromVideoCta: 'वीडियो से',
+      invalidUrlError: 'गलत YouTube लिंक',
+      genericGenerateError: 'नोट्स बनाने में गलती हुई',
+      genericVideoGenerateError: 'वीडियो से नोट्स बनाने में गलती हुई',
+      sections: {
+        summary: 'सारांश',
+        myNotes: 'मेरे नोट्स',
+        coreConcept: 'मुख्य कॉन्सेप्ट',
+        workedExamples: 'हल किए उदाहरण',
+        misconceptions: 'गलतफहमियां',
+        realWorldApp: 'असल दुनिया में उपयोग',
+        advanced: 'एडवांस्ड',
+        practice: 'अभ्यास',
+        insights: 'मुख्य बातें',
+      },
+      sectionUnavailable: 'यह सेक्शन अभी इस नोट के लिए उपलब्ध नहीं है — नए नोट्स बनाने के लिए "डीप डाइव" या "वीडियो से" फिर से चलाएं।',
+      sourceVideoLink: '🎥 मूल वीडियो देखें',
+      transcriptSourceNote: '✓ ये नोट्स वीडियो की ट्रांसक्रिप्ट से बनाए गए हैं',
+      metadataSourceNote: '⚠ ट्रांसक्रिप्ट उपलब्ध नहीं थी — सिर्फ टाइटल/डिस्क्रिप्शन से बनाए गए',
+      emptyState: {
+        title: 'गहराई से सीखने के लिए एक टॉपिक डालें',
+        subtitle: 'बेसिक्स से आगे — WHY, HOW और WHERE कवर करता है',
+      },
+    },
   },
 
   hinglish: {
@@ -801,6 +885,35 @@ export const translations: Record<Locale, TranslationShape> = {
         noRevisionBody: 'Roadmap mein koi topic start karo ya video dekho — revision schedule yahin apne aap ban jayega.',
         allCaughtUpTitle: 'All caught up!',
         allCaughtUpBody: 'No items in this category right now.',
+      },
+    },
+    notes: {
+      header: { title: 'Deep Learning Notes', subtitle: "Auto-generated from the video — edit anything, they're yours" },
+      topicPlaceholder: 'Topic for deep learning...',
+      deepDiveCta: 'Deep Dive',
+      linkPlaceholder: 'Link',
+      fromVideoCta: 'From Video',
+      invalidUrlError: 'Invalid YouTube URL',
+      genericGenerateError: 'Error generating notes',
+      genericVideoGenerateError: 'Error generating notes from video',
+      sections: {
+        summary: 'Summary',
+        myNotes: 'My Notes',
+        coreConcept: 'Core Concept',
+        workedExamples: 'Worked Examples',
+        misconceptions: 'Misconceptions',
+        realWorldApp: 'Real World Application',
+        advanced: 'Advanced',
+        practice: 'Practice',
+        insights: 'Key Insights',
+      },
+      sectionUnavailable: 'Yeh section is note ke liye available nahi hai — "Deep Dive" ya "From Video" dobara chala ke fresh notes banao.',
+      sourceVideoLink: '🎥 Source video dekho',
+      transcriptSourceNote: '✓ Video transcript se banaye gaye notes',
+      metadataSourceNote: '⚠ Transcript available nahi thi — sirf title/description se banaye gaye',
+      emptyState: {
+        title: 'Enter a topic for comprehensive, deep learning notes',
+        subtitle: 'Goes beyond basics - covers WHY, HOW, and WHERE',
       },
     },
   },
