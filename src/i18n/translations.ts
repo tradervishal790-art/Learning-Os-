@@ -190,6 +190,16 @@ export interface TranslationShape {
      *  intent to score 8 learning dimensions. */
     questions: { id: string; text: string; options: { key: string; text: string }[] }[];
   };
+  blueprintVerdicts: {
+    pace: { high: string; mid: string; low: string };
+    theoryVsPractical: { high: string; mid: string; low: string };
+    structureNeed: { high: string; mid: string; low: string };
+    depth: { high: string; mid: string; low: string };
+    languageComplexity: { high: string; mid: string; low: string };
+    storytelling: { high: string; mid: string; low: string };
+    repetitionNeed: { high: string; mid: string; low: string };
+    priorKnowledgeComfort: { high: string; mid: string; low: string };
+  };
   roadmap: {
     header: { title: string; subtitle: string };
     goalTabs: {
@@ -837,6 +847,48 @@ export const translations: Record<Locale, TranslationShape> = {
           ],
         },
       ],
+    },
+    blueprintVerdicts: {
+      pace: {
+        high: "You're a fast-paced learner — you skim long content and grasp the essence quickly.",
+        mid: 'Your pace is balanced — not too slow, not too fast.',
+        low: 'You need thorough, slow-paced content — things get missed when rushed.',
+      },
+      theoryVsPractical: {
+        high: 'You learn hands-on — doing first, then understanding, is your style.',
+        mid: 'A mix of theory and practical works for you.',
+        low: 'You need solid theory first — confidence in practice comes only after that.',
+      },
+      structureNeed: {
+        high: 'You need clear, step-by-step structure — flexible/random content confuses you.',
+        mid: "A bit of structure helps, but full rigidity isn't necessary.",
+        low: "You're a flexible learner — you don't need much structure.",
+      },
+      depth: {
+        high: "You like getting to the root cause — surface-level explanations don't satisfy you.",
+        mid: 'You go into depth when needed, not always.',
+        low: 'Surface-level understanding is enough for you — deep-diving slows your pace.',
+      },
+      languageComplexity: {
+        high: "Technical jargon isn't a problem for you — you're comfortable with complex vocabulary.",
+        mid: 'Some jargon is fine, but too much technical language can confuse you.',
+        low: 'You need things explained in simple, everyday language — you keep your distance from jargon.',
+      },
+      storytelling: {
+        high: 'Real-life stories and analogies make concepts stick permanently in your mind.',
+        mid: "Stories help, but aren't necessary everywhere.",
+        low: 'You prefer direct, to-the-point explanations — stories can distract you.',
+      },
+      repetitionNeed: {
+        high: "You need multiple revisions for deep clarity — reading once isn't enough.",
+        mid: "A bit of revision helps, but you don't need much.",
+        low: 'Once you understand something, you rarely need to revise it again.',
+      },
+      priorKnowledgeComfort: {
+        high: 'You learn quickly by connecting new topics to what you already know.',
+        mid: 'You sometimes connect to prior knowledge, not always.',
+        low: "You prefer a fresh start — connecting to prior knowledge doesn't feel necessary to you.",
+      },
     },
     roadmap: {
       header: { title: 'Your Roadmap', subtitle: 'Foundation-first order — follow it for best results' },
@@ -1503,6 +1555,48 @@ export const translations: Record<Locale, TranslationShape> = {
         },
       ],
     },
+    blueprintVerdicts: {
+      pace: {
+        high: 'आप फास्ट-पेस्ड लर्नर हैं — लंबी चीज़ों को स्किम करके सीधे essence पकड़ लेते हैं।',
+        mid: 'आपका पेस बैलेंस्ड है — न बहुत स्लो, न बहुत फास्ट।',
+        low: 'आपको थोरो, स्लो-पेस्ड कंटेंट चाहिए — जल्दी में चीज़ें छूट जाती हैं।',
+      },
+      theoryVsPractical: {
+        high: 'आप हैंड्स-ऑन सीखते हैं — पहले करके देखना, फिर समझना आपका स्टाइल है।',
+        mid: 'थ्योरी और प्रैक्टिकल दोनों का मिक्स आपके लिए काम करता है।',
+        low: 'आपको पहले ठोस थ्योरी चाहिए, उसके बाद ही प्रैक्टिकल में कॉन्फिडेंस आता है।',
+      },
+      structureNeed: {
+        high: 'आपको क्लियर, स्टेप-बाय-स्टेप स्ट्रक्चर चाहिए — फ्लेक्सिबल/रैंडम कंटेंट कन्फ्यूज़ करता है।',
+        mid: 'थोड़ा स्ट्रक्चर मददगार है, लेकिन पूरी रिजिडिटी ज़रूरी नहीं।',
+        low: 'आप फ्लेक्सिबल लर्नर हैं — स्ट्रक्चर की ज़्यादा ज़रूरत नहीं पड़ती।',
+      },
+      depth: {
+        high: 'आपको रूट-कॉज़ तक जाना पसंद है — सरफेस-लेवल एक्सप्लेनेशन संतुष्ट नहीं करता।',
+        mid: 'आप ज़रूरत के हिसाब से गहराई में जाते हैं, हमेशा नहीं।',
+        low: 'सरफेस-लेवल समझ आपके लिए काफी है — गहराई में जाने से पेस स्लो होता है।',
+      },
+      languageComplexity: {
+        high: 'टेक्निकल जार्गन से आपको प्रॉब्लम नहीं — कॉम्प्लेक्स वोकैबुलरी के साथ कम्फर्टेबल हैं।',
+        mid: 'थोड़ा जार्गन चलता है, लेकिन बहुत टेक्निकल भाषा कन्फ्यूज़ कर सकती है।',
+        low: 'आपको सिंपल, रोज़मर्रा की भाषा में समझाया जाना चाहिए — जार्गन से दूरी रखते हैं।',
+      },
+      storytelling: {
+        high: 'रियल-लाइफ स्टोरीज़ और एनालॉजीज़ से कॉन्सेप्ट आपके दिमाग में हमेशा के लिए बैठ जाते हैं।',
+        mid: 'स्टोरीज़ मदद करती हैं, लेकिन हर जगह ज़रूरी नहीं।',
+        low: 'आपको डायरेक्ट, टू-द-पॉइंट एक्सप्लेनेशन पसंद है — स्टोरीज़ से डिस्ट्रैक्ट हो सकते हैं।',
+      },
+      repetitionNeed: {
+        high: 'आपको गहरी क्लैरिटी के लिए कई बार रिवीज़न चाहिए — एक बार पढ़ना काफी नहीं।',
+        mid: 'थोड़ा रिवीज़न मददगार होता है, लेकिन ज़्यादा ज़रूरत नहीं।',
+        low: 'एक बार समझ लिया तो दोबारा रिवाइज़ करने की ज़रूरत कम ही पड़ती है।',
+      },
+      priorKnowledgeComfort: {
+        high: 'नए टॉपिक्स को पुरानी नॉलेज से कनेक्ट करके आप जल्दी सीखते हैं।',
+        mid: 'कभी-कभी पूर्व ज्ञान से कनेक्ट करते हैं, हमेशा नहीं।',
+        low: 'आपको फ्रेश स्टार्ट पसंद है — पुरानी नॉलेज से कनेक्ट करना ज़रूरी नहीं लगता।',
+      },
+    },
     roadmap: {
       header: { title: 'आपका रोडमैप', subtitle: 'पहले बुनियाद — सबसे अच्छे नतीजे के लिए इसी क्रम में चलें' },
       goalTabs: {
@@ -2165,6 +2259,48 @@ export const translations: Record<Locale, TranslationShape> = {
           ],
         },
       ],
+    },
+    blueprintVerdicts: {
+      pace: {
+        high: 'Aap fast-paced learner hain — lambi cheezein skim karke seedha essence pakadte hain.',
+        mid: 'Aapka pace balanced hai — na bahut slow, na bahut fast.',
+        low: 'Aapko thorough, slow-paced content chahiye — jaldi mein cheezein miss ho jaati hain.',
+      },
+      theoryVsPractical: {
+        high: 'Aap hands-on seekhte hain — pehle karke dekhna, phir samajhna aapka style hai.',
+        mid: 'Theory aur practical dono ka mix aapke liye kaam karta hai.',
+        low: 'Aapko pehle solid theory chahiye, uske baad hi practical mein confidence aata hai.',
+      },
+      structureNeed: {
+        high: 'Aapko clear, step-by-step structure chahiye — flexible/random content confuse karta hai.',
+        mid: 'Thoda structure helpful hai, lekin poori rigidity zaroori nahi.',
+        low: 'Aap flexible learner hain — structure ki zyada zaroorat nahi padti.',
+      },
+      depth: {
+        high: 'Aapko root-cause tak jaana pasand hai — surface-level explanation satisfy nahi karta.',
+        mid: 'Aap zaroorat ke hisaab se depth mein jaate hain, hamesha nahi.',
+        low: 'Surface-level understanding aapke liye kaafi hai — deep-diving se pace slow hoti hai.',
+      },
+      languageComplexity: {
+        high: 'Technical jargon se aapko problem nahi — comfortable hain complex vocabulary ke saath.',
+        mid: 'Kuch jargon chalta hai, lekin bahut technical language confuse kar sakti hai.',
+        low: 'Aapko simple, everyday language mein samjhaya jaana chahiye — jargon se dooriyan.',
+      },
+      storytelling: {
+        high: 'Real-life stories aur analogies se concepts aapke mind mein permanently baith jaate hain.',
+        mid: 'Stories help karti hain, lekin zaroori nahi har jagah.',
+        low: 'Aapko direct, to-the-point explanation pasand hai — stories se distract ho sakte hain.',
+      },
+      repetitionNeed: {
+        high: 'Aapko multiple revisions chahiye deep clarity ke liye — ek baar padhna kaafi nahi.',
+        mid: 'Thoda revision helpful hota hai, lekin zyada zaroorat nahi.',
+        low: 'Ek baar samajh liya to dobara revise karne ki zaroorat kam hi padti hai.',
+      },
+      priorKnowledgeComfort: {
+        high: 'Naye topics ko purani knowledge se connect karke aap jaldi seekhte hain.',
+        mid: 'Kabhi kabhi prior knowledge se connect karte hain, hamesha nahi.',
+        low: 'Aapko fresh start pasand hai — purani knowledge se connect karna zaroori nahi lagta.',
+      },
     },
     roadmap: {
       header: { title: 'Your Roadmap', subtitle: 'Foundation-first order — follow it for best results' },
