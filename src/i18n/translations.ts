@@ -165,6 +165,31 @@ export interface TranslationShape {
     questions: { id: string; prompt: string; options: { key: string; text: string }[] }[];
     honestyQuestion: { prompt: string; options: { value: string; label: string }[] };
   };
+  blueprintInterview: {
+    headerTitle: string;
+    progress: { complete: string; analyzing: string; questionOf: string }; // "{0}/{1}"
+    backCta: string;
+    analyzingText: string;
+    resultSection: { mindMapTitle: string; mindScoreLabel: string; reportTitle: string };
+    errorRetryCta: string;
+    genericError: string;
+    doneCta: string;
+    dimensionLabels: {
+      pace: string;
+      practical: string;
+      structure: string;
+      depth: string;
+      language: string;
+      storytelling: string;
+      repetition: string;
+      priorKnowledge: string;
+    };
+    /** SAFETY: this text IS bundled into the Gemini grading prompt (see
+     *  api/blueprint-interview.ts) — translate for exact meaning, never
+     *  word-for-word, since Gemini reads the selected option's semantic
+     *  intent to score 8 learning dimensions. */
+    questions: { id: string; text: string; options: { key: string; text: string }[] }[];
+  };
   roadmap: {
     header: { title: string; subtitle: string };
     goalTabs: {
@@ -673,6 +698,145 @@ export const translations: Record<Locale, TranslationShape> = {
           { value: 'D', label: "Don't want to answer" },
         ],
       },
+    },
+    blueprintInterview: {
+      headerTitle: '🧭 AI Blueprint Interview',
+      progress: { complete: 'Complete!', analyzing: 'Analyzing your answers...', questionOf: 'Question {0} / {1}' },
+      backCta: '← Previous question',
+      analyzingText: 'Deeply analyzing your answers...',
+      resultSection: {
+        mindMapTitle: '🔮 Your Mind Map',
+        mindScoreLabel: 'Mind Score',
+        reportTitle: '📋 Your Learning Blueprint',
+      },
+      errorRetryCta: '🔄 Try again',
+      genericError: 'Analysis failed.',
+      doneCta: 'Done',
+      dimensionLabels: {
+        pace: 'Pace',
+        practical: 'Practical',
+        structure: 'Structure',
+        depth: 'Depth',
+        language: 'Language',
+        storytelling: 'Storytelling',
+        repetition: 'Repetition',
+        priorKnowledge: 'Prior Knowledge',
+      },
+      questions: [
+        {
+          id: 'q1',
+          text: 'You need to learn a completely new skill — what do you naturally do first?',
+          options: [
+            { key: 'A', text: 'I look for the best video or resource — a visual explanation makes it click right away' },
+            { key: 'B', text: 'I dive straight into a small task — things become clear as I do it' },
+            { key: 'C', text: 'I understand the full structure first — moving systematically feels better' },
+            { key: 'D', text: "I talk to someone experienced — what you learn from real experience isn't in books" },
+          ],
+        },
+        {
+          id: 'q2',
+          text: "Despite a lot of effort, the result wasn't what you expected — what do you do?",
+          options: [
+            { key: 'A', text: 'I analyze deeply — I look for the exact point where something was missed' },
+            { key: 'B', text: 'I take a bit of space — coming back with a clear mind is more effective' },
+            { key: 'C', text: 'I immediately try a different approach — keeping momentum matters' },
+            { key: 'D', text: 'I talk to someone I trust — an outside perspective helps' },
+          ],
+        },
+        {
+          id: 'q3',
+          text: "While studying a topic, you come across something that won't be directly useful — what do you do?",
+          options: [
+            { key: 'A', text: "I stop and understand it — moving ahead with incomplete understanding doesn't suit me" },
+            { key: 'B', text: "I note it down — I'll come back to it when it's relevant" },
+            { key: 'C', text: 'I start exploring it more deeply — curiosity takes me there' },
+            { key: 'D', text: "I keep the focus on the goal — whatever's directly useful comes first" },
+          ],
+        },
+        {
+          id: 'q4',
+          text: 'You need to make an important decision and the information is incomplete — you?',
+          options: [
+            { key: 'A', text: 'I gather more data first — an informed decision is better' },
+            { key: 'B', text: 'I look at past patterns — what similar situations suggested' },
+            { key: 'C', text: 'I decide with the best available information — the perfect moment never comes' },
+            { key: 'D', text: "I get a trusted person's perspective — it covers my blind spots" },
+          ],
+        },
+        {
+          id: 'q5',
+          text: "You can't understand a complex concept — which approach works for you?",
+          options: [
+            { key: 'A', text: 'I connect it to real life — "it\u2019s just like..." makes things click' },
+            { key: 'B', text: 'I make a visual flow — seeing it as a diagram makes it clear' },
+            { key: 'C', text: 'I experiment myself — the theory settles in after being hands-on' },
+            { key: 'D', text: 'I read it multiple times — repetition brings deep clarity' },
+          ],
+        },
+        {
+          id: 'q6',
+          text: "You're studying a deep topic for 2 hours — what naturally happens after 45 minutes?",
+          options: [
+            { key: 'A', text: "I'm in the flow — staying focused comes naturally, I lose track of time" },
+            { key: 'B', text: 'I take a short mental break — I come back recharged, productivity stays better' },
+            { key: 'C', text: 'I switch topics — variety keeps my energy up' },
+            { key: 'D', text: "I've already made good progress — I work at an efficient pace" },
+          ],
+        },
+        {
+          id: 'q7',
+          text: "What's the ideal format for learning something new, for you?",
+          options: [
+            { key: 'A', text: 'Focused short videos — concise, to the point, respects my time' },
+            { key: 'B', text: 'A detailed, comprehensive video — getting the full picture in one place feels better' },
+            { key: 'C', text: 'Written content — reading at my own pace is more effective for me' },
+            { key: 'D', text: 'Project-based learning — learning by building directly feels natural' },
+          ],
+        },
+        {
+          id: 'q8',
+          text: 'A teacher in a video uses technical jargon without explaining it — what do you do?',
+          options: [
+            {
+              key: 'A',
+              text: "I immediately pause and look up the word's meaning — moving ahead without understanding doesn't feel right",
+            },
+            { key: 'B', text: "I figure out the meaning from context and keep going — jargon isn't a problem" },
+            { key: 'C', text: 'I find a simpler resource that explains it in easy language' },
+            { key: 'D', text: 'I note down those words and clarify all of them together later' },
+          ],
+        },
+        {
+          id: 'q9',
+          text: 'Someone explained a new concept to you through a real-life story or analogy — how does that feel?',
+          options: [
+            { key: 'A', text: 'Very helpful — the story makes the concept stick forever' },
+            { key: 'B', text: 'Somewhat helpful, but I prefer a direct technical/clear definition' },
+            { key: 'C', text: "Depends — it only helps if the story is genuinely relevant, otherwise it feels like a waste of time" },
+            { key: 'D', text: 'The story stays in memory but not the actual concept — so I avoid these' },
+          ],
+        },
+        {
+          id: 'q10',
+          text: 'A week after learning a difficult concept, how often do you naturally revise it?',
+          options: [
+            { key: 'A', text: "Once I've understood it well, I don't need to revisit it" },
+            { key: 'B', text: 'I definitely revise 2-3 times, only then confidence comes' },
+            { key: 'C', text: 'I only revise when I actually need to use it, otherwise not' },
+            { key: 'D', text: 'I make notes and glance at them from time to time' },
+          ],
+        },
+        {
+          id: 'q11',
+          text: "When starting a new topic, if it's related to something you already know — what do you do?",
+          options: [
+            { key: 'A', text: 'I connect it right away — "this is just like that" — makes the new thing easier to learn' },
+            { key: 'B', text: 'I set aside the old knowledge and start completely fresh, to avoid confusion' },
+            { key: 'C', text: "I connect a little but don't depend on it too much — case by case" },
+            { key: 'D', text: "I need to revise the old concept first, otherwise the new one doesn't make sense" },
+          ],
+        },
+      ],
     },
     roadmap: {
       header: { title: 'Your Roadmap', subtitle: 'Foundation-first order — follow it for best results' },
@@ -1203,6 +1367,142 @@ export const translations: Record<Locale, TranslationShape> = {
         ],
       },
     },
+    blueprintInterview: {
+      headerTitle: '🧭 AI ब्लूप्रिंट इंटरव्यू',
+      progress: { complete: 'पूरा हुआ!', analyzing: 'आपके जवाबों को एनालाइज़ किया जा रहा है...', questionOf: 'सवाल {0} / {1}' },
+      backCta: '← पिछला सवाल',
+      analyzingText: 'आपके जवाबों को गहराई से एनालाइज़ कर रहे हैं...',
+      resultSection: {
+        mindMapTitle: '🔮 आपका माइंड मैप',
+        mindScoreLabel: 'माइंड स्कोर',
+        reportTitle: '📋 आपका लर्निंग ब्लूप्रिंट',
+      },
+      errorRetryCta: '🔄 फिर कोशिश करें',
+      genericError: 'एनालिसिस फेल हो गया।',
+      doneCta: 'पूरा हुआ',
+      dimensionLabels: {
+        pace: 'गति',
+        practical: 'व्यावहारिक',
+        structure: 'संरचना',
+        depth: 'गहराई',
+        language: 'भाषा',
+        storytelling: 'कहानी शैली',
+        repetition: 'दोहराव',
+        priorKnowledge: 'पूर्व ज्ञान',
+      },
+      questions: [
+        {
+          id: 'q1',
+          text: 'आपको बिल्कुल नई स्किल सीखनी है — पहले आप नैचुरली क्या करते हैं?',
+          options: [
+            { key: 'A', text: 'सबसे अच्छा वीडियो या रिसोर्स ढूंढता/ढूंढती हूं — विज़ुअल एक्सप्लेनेशन से सीधे समझ आ जाता है' },
+            { key: 'B', text: 'सीधे एक छोटा काम try करता/करती हूं — करते-करते चीज़ें क्लियर होती हैं' },
+            { key: 'C', text: 'पहले पूरा स्ट्रक्चर समझता/समझती हूं — सिस्टेमेटिकली आगे बढ़ना बेहतर लगता है' },
+            { key: 'D', text: 'किसी एक्सपीरियंस्ड इंसान से बात करता/करती हूं — रियल एक्सपीरियंस से जो सीखा वो किताबों में नहीं मिलता' },
+          ],
+        },
+        {
+          id: 'q2',
+          text: 'बहुत मेहनत के बाद भी रिज़ल्ट expected नहीं आया — आप क्या करते हैं?',
+          options: [
+            { key: 'A', text: 'डीप्ली एनालाइज़ करता/करती हूं — एग्ज़ैक्ट पॉइंट ढूंढता/ढूंढती हूं जहां चीज़ मिस हुई' },
+            { key: 'B', text: 'थोड़ा स्पेस लेता/लेती हूं — क्लियर माइंड से वापस आना ज़्यादा इफेक्टिव होता है' },
+            { key: 'C', text: 'तुरंत अलग अप्रोच try करता/करती हूं — मोमेंटम बनाना ज़रूरी है' },
+            { key: 'D', text: 'किसी trusted इंसान से बात करता/करती हूं — बाहर का perspective मददगार होता है' },
+          ],
+        },
+        {
+          id: 'q3',
+          text: 'कोई टॉपिक पढ़ते वक्त एक ऐसी चीज़ मिली जो सीधे काम नहीं आएगी — आप क्या करते हैं?',
+          options: [
+            { key: 'A', text: 'रुककर समझता/समझती हूं — अधूरी समझ के साथ आगे बढ़ना सूट नहीं करता' },
+            { key: 'B', text: 'नोट करता/करती हूं — रिलेवेंट टाइम पे वापस आऊंगा/आऊंगी' },
+            { key: 'C', text: 'उस चीज़ को गहराई से एक्सप्लोर करना शुरू करता/करती हूं — क्यूरियोसिटी मुझे ले जाती है' },
+            { key: 'D', text: 'फोकस गोल पे रखता/रखती हूं — जो सीधे काम आए वो पहले' },
+          ],
+        },
+        {
+          id: 'q4',
+          text: 'एक ज़रूरी फैसला लेना है और इनफॉर्मेशन इनकम्प्लीट है — आप?',
+          options: [
+            { key: 'A', text: 'पहले और डेटा गैदर करता/करती हूं — इन्फॉर्म्ड डिसीज़न बेहतर होता है' },
+            { key: 'B', text: 'पुराने पैटर्न देखता/देखती हूं — मिलती-जुलती स्थितियों ने क्या सुझाया' },
+            { key: 'C', text: 'जो भी इन्फॉर्मेशन available है उसी से डिसाइड करता/करती हूं — परफेक्ट टाइमिंग कभी नहीं आती' },
+            { key: 'D', text: 'किसी trusted इंसान का perspective लेता/लेती हूं — ब्लाइंड स्पॉट्स कवर हो जाते हैं' },
+          ],
+        },
+        {
+          id: 'q5',
+          text: 'कोई कॉम्प्लेक्स कॉन्सेप्ट समझ नहीं आ रहा — कौन सा अप्रोच आपके लिए काम करता है?',
+          options: [
+            { key: 'A', text: 'रियल लाइफ से कनेक्ट करता/करती हूं — "यह बिल्कुल ऐसा है जैसे..." से चीज़ें क्लिक करती हैं' },
+            { key: 'B', text: 'विज़ुअल फ्लो बना लेता/लेती हूं — डायग्राम में देखा तो क्लियर हो जाता है' },
+            { key: 'C', text: 'खुद एक्सपेरिमेंट करता/करती हूं — हैंड्स-ऑन होने के बाद थ्योरी सेटल होती है' },
+            { key: 'D', text: 'कई बार पढ़ता/पढ़ती हूं — रिपीटिशन से गहरी क्लैरिटी आती है' },
+          ],
+        },
+        {
+          id: 'q6',
+          text: '2 घंटे का डीप टॉपिक पढ़ रहे हैं — 45 मिनट बाद नैचुरली क्या होता है?',
+          options: [
+            { key: 'A', text: 'फ्लो में हूं — फोकस्ड रहना मुझे आता है, टाइम का पता नहीं चलता' },
+            { key: 'B', text: 'छोटा मेंटल ब्रेक लेता/लेती हूं — रीचार्ज करके वापस आता/आती हूं, प्रोडक्टिविटी बेहतर रहती है' },
+            { key: 'C', text: 'टॉपिक स्विच करता/करती हूं — वैरायटी से मेरी एनर्जी मेंटेन रहती है' },
+            { key: 'D', text: 'काफी प्रोग्रेस कर चुका/चुकी हूं — एफिशिएंट पेस में काम करता/करती हूं' },
+          ],
+        },
+        {
+          id: 'q7',
+          text: 'कोई नई चीज़ सीखने के लिए आपके लिए आइडियल फॉर्मेट कौन सा है?',
+          options: [
+            { key: 'A', text: 'फोकस्ड शॉर्ट वीडियो — कॉन्साइज़, टू द पॉइंट, टाइम का रिस्पेक्ट' },
+            { key: 'B', text: 'डिटेल्ड कॉम्प्रिहेंसिव वीडियो — एक जगह पूरी पिक्चर मिलना बेहतर लगता है' },
+            { key: 'C', text: 'लिखित कंटेंट — अपनी पेस पर पढ़ना मेरे लिए ज़्यादा इफेक्टिव है' },
+            { key: 'D', text: 'प्रोजेक्ट-बेस्ड लर्निंग — सीधे बनाते हुए सीखना नैचुरल लगता है' },
+          ],
+        },
+        {
+          id: 'q8',
+          text: 'कोई टीचर वीडियो में टेक्निकल जार्गन यूज़ कर रहा है बिना एक्सप्लेन किए — आप क्या करते हैं?',
+          options: [
+            { key: 'A', text: 'तुरंत रुककर वर्ड का मतलब सर्च करता/करती हूं — बिना समझे आगे बढ़ना सही नहीं लगता' },
+            { key: 'B', text: 'कॉन्टेक्स्ट से ही मतलब निकाल लेता/लेती हूं और आगे बढ़ता/बढ़ती रहता/रहती हूं — जार्गन से प्रॉब्लम नहीं होती' },
+            { key: 'C', text: 'सिंपलर रिसोर्स ढूंढ लेता/लेती हूं जहां आसान भाषा में समझाया हो' },
+            { key: 'D', text: 'उन वर्ड्स को नोट कर लेता/लेती हूं, बाद में एक साथ सबको क्लैरिफाई करता/करती हूं' },
+          ],
+        },
+        {
+          id: 'q9',
+          text: 'किसी ने एक नया कॉन्सेप्ट आपको रियल-लाइफ स्टोरी या एनालॉजी के ज़रिए समझाया — आपको कैसा लगता है?',
+          options: [
+            { key: 'A', text: 'बहुत हेल्पफुल — स्टोरी से कॉन्सेप्ट हमेशा के लिए याद रह जाता है' },
+            { key: 'B', text: 'थोड़ा हेल्पफुल है, लेकिन मैं सीधे टेक्निकल/क्लियर डेफिनिशन प्रेफर करता/करती हूं' },
+            { key: 'C', text: 'डिपेंड करता है — अगर स्टोरी genuinely रिलेवेंट है तभी काम आती है, वरना टाइम वेस्ट लगता है' },
+            { key: 'D', text: 'स्टोरी याद रह जाती है लेकिन एक्चुअल कॉन्सेप्ट नहीं — इसलिए मैं ऐसी चीज़ें अवॉइड करता/करती हूं' },
+          ],
+        },
+        {
+          id: 'q10',
+          text: 'एक मुश्किल कॉन्सेप्ट सीखने के एक हफ्ते बाद, आप उसे नैचुरली कितनी बार रिवाइज़ करते हैं?',
+          options: [
+            { key: 'A', text: 'एक बार अच्छे से समझ लिया तो दोबारा ज़रूरत नहीं पड़ती' },
+            { key: 'B', text: '2-3 बार ज़रूर रिवाइज़ करता/करती हूं, तभी कॉन्फिडेंस आता है' },
+            { key: 'C', text: 'सिर्फ जब एक्चुअली यूज़ करना हो तब रिवाइज़ करता/करती हूं, वरना नहीं' },
+            { key: 'D', text: 'नोट्स बना लेता/लेती हूं और बीच-बीच में ग्लांस मारता/मारती रहता/रहती हूं' },
+          ],
+        },
+        {
+          id: 'q11',
+          text: 'नया टॉपिक शुरू करते वक्त, अगर वो किसी पुरानी चीज़ से रिलेटेड है जो आप पहले से जानते हैं — आप क्या करते हैं?',
+          options: [
+            { key: 'A', text: 'तुरंत कनेक्ट करता/करती हूं — "यह तो उस जैसा ही है" — नया सीखना आसान हो जाता है' },
+            { key: 'B', text: 'पुरानी नॉलेज को साइड रखकर बिल्कुल फ्रेश स्टार्ट करता/करती हूं, कन्फ्यूज़न से बचने के लिए' },
+            { key: 'C', text: 'थोड़ा कनेक्ट करता/करती हूं लेकिन ज़्यादा डिपेंडेंट नहीं होता — केस बाय केस' },
+            { key: 'D', text: 'मुझे पुराना कॉन्सेप्ट पहले रिवाइज़ करना पड़ता है, वरना नया समझ नहीं आता' },
+          ],
+        },
+      ],
+    },
     roadmap: {
       header: { title: 'आपका रोडमैप', subtitle: 'पहले बुनियाद — सबसे अच्छे नतीजे के लिए इसी क्रम में चलें' },
       goalTabs: {
@@ -1729,6 +2029,142 @@ export const translations: Record<Locale, TranslationShape> = {
           { value: 'D', label: 'Answer nahi dena chahta/chahti' },
         ],
       },
+    },
+    blueprintInterview: {
+      headerTitle: '🧭 AI Blueprint Interview',
+      progress: { complete: 'Complete!', analyzing: 'Analyzing your answers...', questionOf: 'Sawaal {0} / {1}' },
+      backCta: '← Pichla sawaal',
+      analyzingText: 'Aapke jawabon ko deeply analyze kar rahe hain...',
+      resultSection: {
+        mindMapTitle: '🔮 Your Mind Map',
+        mindScoreLabel: 'Mind Score',
+        reportTitle: '📋 Aapka Learning Blueprint',
+      },
+      errorRetryCta: '🔄 Phir try karein',
+      genericError: 'Analysis fail ho gaya.',
+      doneCta: 'Done',
+      dimensionLabels: {
+        pace: 'Pace',
+        practical: 'Practical',
+        structure: 'Structure',
+        depth: 'Depth',
+        language: 'Language',
+        storytelling: 'Storytelling',
+        repetition: 'Repetition',
+        priorKnowledge: 'Prior Knowledge',
+      },
+      questions: [
+        {
+          id: 'q1',
+          text: 'Koi bilkul nayi skill sikhni hai — pehle aap naturally kya karte hain?',
+          options: [
+            { key: 'A', text: 'Best video ya resource dhundta/dhundti hoon — visual explanation se seedha samajh aata hai' },
+            { key: 'B', text: 'Seedha ek chota kaam try karta/karti hoon — karte karte cheezein clear hoti hain' },
+            { key: 'C', text: 'Poora structure samajhta/samajhti hoon pehle — systematically move karna better lagta hai' },
+            { key: 'D', text: 'Kisi experienced insaan se baat karta/karti hoon — real experience se jo seekha woh books mein nahi milta' },
+          ],
+        },
+        {
+          id: 'q2',
+          text: 'Bahut mehnat ke baad bhi result expected nahi aaya — aap kya karte hain?',
+          options: [
+            { key: 'A', text: 'Deeply analyze karta/karti hoon — exact point dhundta/dhundti hoon jahan cheez miss hui' },
+            { key: 'B', text: 'Thoda space leta/leti hoon — clear mind se wapas aana zyada effective hota hai' },
+            { key: 'C', text: 'Immediately different approach try karta/karti hoon — momentum banana zaroori hai' },
+            { key: 'D', text: 'Trusted insaan se baat karta/karti hoon — outside perspective helpful hota hai' },
+          ],
+        },
+        {
+          id: 'q3',
+          text: 'Koi topic padhte waqt ek aisi cheez mili jo seedha kaam nahi aayegi — aap kya karte hain?',
+          options: [
+            { key: 'A', text: 'Ruk ke samajhta/samajhti hoon — adhoori samajh ke saath aage badhna suit nahi karta' },
+            { key: 'B', text: 'Note karta/karti hoon — relevant time pe wapas aaunga/aaungi' },
+            { key: 'C', text: 'Us cheez ko deeper explore karna shuru karta/karti hoon — curiosity mujhe le jaati hai' },
+            { key: 'D', text: 'Focus goal pe rakhta/rakhti hoon — jo seedha kaam aaye woh pehle' },
+          ],
+        },
+        {
+          id: 'q4',
+          text: 'Important decision lena ho aur information incomplete ho — aap?',
+          options: [
+            { key: 'A', text: 'Pehle aur data gather karta/karti hoon — informed decision better hota hai' },
+            { key: 'B', text: 'Past patterns dekhta/dekhti hoon — similar situations ne kya suggest kiya' },
+            { key: 'C', text: 'Best available information se decide karta/karti hoon — perfect timing kabhi nahi aata' },
+            { key: 'D', text: 'Kisi trusted insaan ka perspective leta/leti hoon — blind spots cover hote hain' },
+          ],
+        },
+        {
+          id: 'q5',
+          text: 'Koi complex concept samajh nahi aa raha — kaunsa approach aapke liye kaam karta hai?',
+          options: [
+            { key: 'A', text: 'Real life se connect karta/karti hoon — "yeh bilkul aise hai jaise..." se cheezein click karti hain' },
+            { key: 'B', text: 'Visual flow bana leta/leti hoon — diagram mein dekha toh clear ho jaata hai' },
+            { key: 'C', text: 'Khud experiment karta/karti hoon — hands-on hone ke baad theory settle hoti hai' },
+            { key: 'D', text: 'Multiple baar padhta/padhti hoon — repetition se deep clarity aati hai' },
+          ],
+        },
+        {
+          id: 'q6',
+          text: '2 ghante ka deep topic padh rahe hain — 45 minute baad naturally kya hota hai?',
+          options: [
+            { key: 'A', text: 'Flow mein hoon — focused rehna mujhe aata hai, time pata nahi chalta' },
+            { key: 'B', text: 'Short mental break leta/leti hoon — recharge karke wapas aata/aati hoon, productivity better rehti hai' },
+            { key: 'C', text: 'Topic switch karta/karti hoon — variety se energy maintain rehti hai meri' },
+            { key: 'D', text: 'Kaafi progress kar chuka/chuki hoon — efficient pace mein kaam karta/karti hoon' },
+          ],
+        },
+        {
+          id: 'q7',
+          text: 'Koi nayi cheez seekhne ke liye ideal format kaunsa hai aapke liye?',
+          options: [
+            { key: 'A', text: 'Focused short videos — concise, to the point, time ki respect' },
+            { key: 'B', text: 'Detailed comprehensive video — ek jagah poora picture milna better lagta hai' },
+            { key: 'C', text: 'Written content — apni pace pe padhna zyada effective hai mere liye' },
+            { key: 'D', text: 'Project-based learning — seedha banate hue sikhna natural lagta hai' },
+          ],
+        },
+        {
+          id: 'q8',
+          text: 'Koi teacher video mein technical jargon use kar raha hai bina explain kiye — aap kya karte hain?',
+          options: [
+            { key: 'A', text: 'Turant ruk ke word ka matlab search karta/karti hoon — bina samjhe aage badhna sahi nahi lagta' },
+            { key: 'B', text: 'Context se hi matlab nikal leta/leti hoon aur aage badhta/badhti rehta/rehti hoon — jargon se problem nahi hoti' },
+            { key: 'C', text: 'Simpler resource dhoondh leta/leti hoon jahan easy language mein samjhaya ho' },
+            { key: 'D', text: 'Un words ko note kar leta/leti hoon, baad mein ek saath sabko clarify karta/karti hoon' },
+          ],
+        },
+        {
+          id: 'q9',
+          text: 'Kisi ne ek naya concept aapko real-life story ya analogy ke through samjhaya — aapko kaisa lagta hai?',
+          options: [
+            { key: 'A', text: 'Bahut helpful — story se concept hamesha ke liye yaad reh jaata hai' },
+            { key: 'B', text: 'Thoda helpful hai, lekin main directly technical/clear definition prefer karta/karti hoon' },
+            { key: 'C', text: 'Depends — agar story genuinely relevant hai tabhi kaam aati hai, warna time waste lagta hai' },
+            { key: 'D', text: 'Story yaad reh jaati hai lekin actual concept nahi — isliye main aisi cheezein avoid karta/karti hoon' },
+          ],
+        },
+        {
+          id: 'q10',
+          text: 'Ek mushkil concept seekhne ke ek hafte baad, aap usse naturally kitni baar revise karte hain?',
+          options: [
+            { key: 'A', text: 'Ek baar acche se samajh liya toh dobara zaroorat nahi padti' },
+            { key: 'B', text: '2-3 baar zaroor revise karta/karti hoon, tabhi confidence aata hai' },
+            { key: 'C', text: 'Sirf jab actually use karna ho tab revise karta/karti hoon, warna nahi' },
+            { key: 'D', text: 'Notes bana leta/leti hoon aur beech-beech mein glance maarta/maarti rehta/rehti hoon' },
+          ],
+        },
+        {
+          id: 'q11',
+          text: 'Naya topic start karte waqt, agar wo kisi purani cheez se related hai jo aap already jaante hain — aap kya karte hain?',
+          options: [
+            { key: 'A', text: 'Turant connect karta/karti hoon — "yeh toh us jaisa hi hai" — naya seekhna aasaan ho jaata hai' },
+            { key: 'B', text: 'Purani knowledge ko side rakh ke bilkul fresh start karta/karti hoon, confusion se bachne ke liye' },
+            { key: 'C', text: 'Thoda connect karta/karti hoon lekin zyada dependent nahi hota — case by case' },
+            { key: 'D', text: 'Mujhe purana concept pehle revise karna padta hai, warna naya samajh nahi aata' },
+          ],
+        },
+      ],
     },
     roadmap: {
       header: { title: 'Your Roadmap', subtitle: 'Foundation-first order — follow it for best results' },
