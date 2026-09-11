@@ -200,6 +200,19 @@ export interface TranslationShape {
     repetitionNeed: { high: string; mid: string; low: string };
     priorKnowledgeComfort: { high: string; mid: string; low: string };
   };
+  authErrors: {
+    sessionExpired: string;
+    emailAlreadyInUse: string;
+    weakPassword: string;
+    invalidEmail: string;
+    wrongPassword: string;
+    userNotFound: string;
+    operationNotAllowed: string;
+    unauthorizedDomain: string;
+    popupBlocked: string;
+    popupClosedByUser: string;
+    genericAuthError: string;
+  };
   roadmap: {
     header: { title: string; subtitle: string };
     goalTabs: {
@@ -889,6 +902,19 @@ export const translations: Record<Locale, TranslationShape> = {
         mid: 'You sometimes connect to prior knowledge, not always.',
         low: "You prefer a fresh start — connecting to prior knowledge doesn't feel necessary to you.",
       },
+    },
+    authErrors: {
+      sessionExpired: "Couldn't find your session, please sign in again.",
+      emailAlreadyInUse: 'This email is already registered — please sign in.',
+      weakPassword: 'Password must be at least 6 characters.',
+      invalidEmail: "That email isn't in a valid format.",
+      wrongPassword: 'Incorrect password.',
+      userNotFound: "This email isn't registered.",
+      operationNotAllowed: "Email/Password sign-in isn't enabled in the Firebase Console.",
+      unauthorizedDomain: "This website domain isn't authorized in the Firebase Console.",
+      popupBlocked: 'Your browser blocked the popup — allow popups and try again.',
+      popupClosedByUser: 'The Google popup was closed before sign-in completed.',
+      genericAuthError: 'Something went wrong, please try again.',
     },
     roadmap: {
       header: { title: 'Your Roadmap', subtitle: 'Foundation-first order — follow it for best results' },
@@ -1597,6 +1623,19 @@ export const translations: Record<Locale, TranslationShape> = {
         low: 'आपको फ्रेश स्टार्ट पसंद है — पुरानी नॉलेज से कनेक्ट करना ज़रूरी नहीं लगता।',
       },
     },
+    authErrors: {
+      sessionExpired: 'सेशन नहीं मिल पा रहा, दोबारा साइन इन करें।',
+      emailAlreadyInUse: 'यह ईमेल पहले से रजिस्टर्ड है — साइन इन करें।',
+      weakPassword: 'पासवर्ड कम से कम 6 अक्षरों का होना चाहिए।',
+      invalidEmail: 'ईमेल सही फॉर्मेट में नहीं है।',
+      wrongPassword: 'गलत पासवर्ड।',
+      userNotFound: 'यह ईमेल रजिस्टर्ड नहीं है।',
+      operationNotAllowed: 'Email/Password साइन-इन Firebase Console में enable नहीं है।',
+      unauthorizedDomain: 'यह वेबसाइट डोमेन Firebase Console में authorized नहीं है।',
+      popupBlocked: 'ब्राउज़र ने पॉपअप ब्लॉक कर दिया — पॉपअप allow करें और दोबारा कोशिश करें।',
+      popupClosedByUser: 'Google पॉपअप बंद हो गया साइन-इन पूरा होने से पहले।',
+      genericAuthError: 'कुछ गड़बड़ हो गई, दोबारा कोशिश करें।',
+    },
     roadmap: {
       header: { title: 'आपका रोडमैप', subtitle: 'पहले बुनियाद — सबसे अच्छे नतीजे के लिए इसी क्रम में चलें' },
       goalTabs: {
@@ -2301,6 +2340,19 @@ export const translations: Record<Locale, TranslationShape> = {
         mid: 'Kabhi kabhi prior knowledge se connect karte hain, hamesha nahi.',
         low: 'Aapko fresh start pasand hai — purani knowledge se connect karna zaroori nahi lagta.',
       },
+    },
+    authErrors: {
+      sessionExpired: 'Session mil nahi rahi, dobara sign in karo.',
+      emailAlreadyInUse: 'Ye email pehle se registered hai — sign in karo.',
+      weakPassword: 'Password kam se kam 6 characters ka hona chahiye.',
+      invalidEmail: 'Email sahi format me nahi hai.',
+      wrongPassword: 'Galat password.',
+      userNotFound: 'Ye email registered nahi hai.',
+      operationNotAllowed: 'Email/Password sign-in Firebase Console me enable nahi hai.',
+      unauthorizedDomain: 'Ye website domain Firebase Console me authorized nahi hai.',
+      popupBlocked: 'Browser ne popup block kar diya — popup allow karo aur dobara try karo.',
+      popupClosedByUser: 'Google popup band ho gaya sign-in complete hone se pehle.',
+      genericAuthError: 'Kuch gadbad ho gayi, dobara try karo.',
     },
     roadmap: {
       header: { title: 'Your Roadmap', subtitle: 'Foundation-first order — follow it for best results' },
