@@ -103,7 +103,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       geminiApiKey: apiKey,
       minimaxApiKey,
       systemInstruction: SYSTEM_INSTRUCTIONS,
-      contents: [{ role: 'user', parts: [{ text: `Student ke jawab:\n\n${answersBlock}` }] }],
+      contents: [{ role: 'user', parts: [{ text: `Student's answers:\n\n${answersBlock}` }] }],
       generationConfig: {
         maxOutputTokens: 2048,
         temperature: 0.6,
@@ -125,8 +125,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const truncated = finishReason === 'MAX_TOKENS';
       return res.status(502).json({
         error: truncated
-          ? 'Response bahut lamba ho gaya tha (cut off). Phir se try karein. 🔄'
-          : 'Response samajh nahi aaya, phir se try karein. 🔄',
+          ? 'The response got too long (cut off). Please try again. 🔄'
+          : 'Could not understand the response, please try again. 🔄',
       });
     }
 
@@ -143,6 +143,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   } catch (err: any) {
     console.error('Blueprint analysis proxy failed:', err);
-    return res.status(500).json({ error: 'Network error aaya. Internet check karein aur phir try karein. 🔄' });
+    return res.status(500).json({ error: 'A network error occurred. Please check your internet and try again. 🔄' });
   }
 }

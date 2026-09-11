@@ -73,6 +73,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).json({ text, finishReason: null });
   } catch (err: any) {
     console.error('Mentor chat proxy failed:', err);
-    return res.status(500).json({ error: 'Kuch gadbad ho gayi (Gemini aur MiniMax dono fail hue). Thodi der mein phir try karein. 🔄' });
+    return res.status(500).json({ error: 'Something went wrong (both Gemini and MiniMax failed). Please try again in a bit. 🔄' });
   }
 }

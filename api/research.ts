@@ -39,7 +39,7 @@ const HUMAN_RESEARCH_STYLE = `Tum ek insaan ho jisne abhi is topic pe khud inter
 
 Sakht mana hai:
 - "Based on my research", "I hope this helps", "In conclusion", "Certainly!", "Great question", "As we can see", "It's important to note that", "Overall" jaise koi bhi AI-typical opener/closer/filler phrase — inn sab ko poori tarah avoid karo
-- Robotic intro jaise "Yahaan hai ek summary" ya "Is topic ke baare mein" — seedha content se shuru karo
+- No robotic intro like "Here is a summary" or "About this topic" — start directly with the content
 - Generic hedging ("it depends", "there are many factors") bina kisi specific fact ke — agar hedge karna hai to WHY bhi batao
 
 Karna hai:
@@ -157,7 +157,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       generationConfig: { temperature: 0.4, maxOutputTokens: 2048 },
     });
     return res.status(200).json({
-      results: [{ title: 'Live source nahi mila', url: '', snippet: text.trim() }],
+      results: [{ title: 'No live source found', url: '', snippet: text.trim() }],
       grounded: false,
     });
   } catch (err: any) {

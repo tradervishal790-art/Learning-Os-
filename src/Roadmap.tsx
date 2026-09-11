@@ -540,7 +540,7 @@ export default function Roadmap({
                 type="text"
                 value={examTypeInput}
                 onChange={(e) => setExamTypeInput(e.target.value)}
-                placeholder="jaise CBSE Class 10, JEE, NEET — khaali chhodo agar general learning hai"
+                placeholder="e.g. CBSE Class 10, JEE, NEET — leave blank for general learning"
                 className="w-full px-4 py-2.5 rounded-lg text-sm border border-gray-200 dark:border-white/10 bg-white dark:bg-black/30 focus:outline-none focus:border-black dark:focus:border-white"
               />
               <p className="text-[11px] text-gray-400 dark:text-white/40 mt-1.5">
