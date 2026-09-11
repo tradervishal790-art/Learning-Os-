@@ -92,7 +92,7 @@ export function getActiveGoals(goals: Goal[]): Goal[] {
 }
 
 /** Adds a new empty goal (no roadmap yet — Roadmap.tsx's existing
- *  "Kya seekhna hai?" empty-state form fills it in). Caller must check
+ *  "What do you want to learn?" empty-state form fills it in). Caller must check
  *  getActiveGoals().length < MAX_ACTIVE_GOALS before calling this. */
 export function addGoal(goals: Goal[], partial: Partial<Goal> = {}): { goals: Goal[]; goal: Goal } {
   const goal: Goal = {

@@ -33,12 +33,12 @@ function estimateRetention(daysPastDue: number, intervalDays: number): number {
 // topic has no cached Deep Notes yet (so nothing video-grounded exists to
 // pull from). Kept in sync with generate-notes.ts's learningPath spirit.
 const FALLBACK_DAY_TASKS: Record<number, string> = {
-  1: 'Deep read karo — samjho WHY, sirf WHAT nahi',
-  3: 'Isse 3-4 alag real examples pe apply karo',
-  7: 'Kisi ko explain karke sikhao — bina notes dekhe',
-  15: 'Advanced applications aur edge cases dhundo',
-  30: 'Related concepts se connect karo, pattern dekho',
-  60: 'Final recall check — bina dekhe pura explain karo',
+  1: 'Do a deep read — understand the WHY, not just the WHAT',
+  3: 'Apply it to 3-4 different real examples',
+  7: 'Teach it to someone — without looking at your notes',
+  15: 'Look up advanced applications and edge cases',
+  30: 'Connect it to related concepts, spot the pattern',
+  60: 'Final recall check — explain it fully from memory',
 };
 
 /**
@@ -63,7 +63,7 @@ function getTaskForTopic(topicTitle: string, day: number): string {
   } catch {
     // Corrupted/unavailable cache — fall through to generic task.
   }
-  return FALLBACK_DAY_TASKS[day] ?? 'Is topic ko revise karo';
+  return FALLBACK_DAY_TASKS[day] ?? 'Revise this topic';
 }
 
 function categoryForDifficulty(difficulty: Difficulty): string {

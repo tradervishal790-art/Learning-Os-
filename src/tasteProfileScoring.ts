@@ -79,6 +79,6 @@ export function buildFreshProfileFromTaste(signals: DeepDiveSignals, videoCount:
     reliabilityScore: Math.min(95, 60 + videoCount * 5),
     selfReportedHonesty: 'honest',
     completedAt: new Date().toISOString(),
-    blueprintReport: `${videoCount} pehle-se-dekhe-hue video(s) ke content analysis se banaya gaya profile.`,
+    blueprintReport: `Profile built from content analysis of ${videoCount} previously-watched video(s).`,
   };
 }

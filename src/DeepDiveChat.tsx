@@ -58,14 +58,14 @@ export default function DeepDiveChat({ onComplete, onClose }: DeepDiveChatProps)
 
       if (!signals) {
         setPhase('error');
-        setErrorMsg('Response samajh nahi aaya, phir se try karo ya skip karo.');
+        setErrorMsg('Could not understand the response, try again or skip.');
         return;
       }
 
       const existingProfile = getLearningProfile();
       if (!existingProfile) {
         setPhase('error');
-        setErrorMsg('Pehle quiz complete karo.');
+        setErrorMsg('Complete the quiz first.');
         return;
       }
 
@@ -73,7 +73,7 @@ export default function DeepDiveChat({ onComplete, onClose }: DeepDiveChatProps)
       onComplete(merged);
     } catch (err: any) {
       setPhase('error');
-      setErrorMsg(err.message || 'Kuch gadbad ho gayi.');
+      setErrorMsg(err.message || 'Something went wrong.');
     }
   };
 
@@ -109,14 +109,14 @@ export default function DeepDiveChat({ onComplete, onClose }: DeepDiveChatProps)
           {phase === 'asking' && (
             <motion.div key={step} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
               <div className="text-xs text-gray-400 dark:text-white/40 mb-2">
-                Sawaal {step + 1} / {DEEP_DIVE_QUESTIONS.length}
+                Question {step + 1} / {DEEP_DIVE_QUESTIONS.length}
               </div>
               <h3 className="text-base md:text-lg font-semibold mb-4 leading-snug">{DEEP_DIVE_QUESTIONS[step]}</h3>
               <textarea
                 value={currentAnswer}
                 onChange={(e) => setCurrentAnswer(e.target.value)}
                 rows={4}
-                placeholder="Apna jawab yahan likho..."
+                placeholder="Type your answer here..."
                 autoFocus={false}
                 className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 text-base md:text-sm placeholder-gray-400 dark:placeholder-white/40 focus:outline-none focus:border-purple-500/50 mb-4 resize-none"
               />
@@ -137,7 +137,7 @@ export default function DeepDiveChat({ onComplete, onClose }: DeepDiveChatProps)
                 <span className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
                 <span className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
               </div>
-              <p className="text-sm text-gray-500 dark:text-white/50">Profile update ho raha hai...</p>
+              <p className="text-sm text-gray-500 dark:text-white/50">Updating profile...</p>
             </motion.div>
           )}
 

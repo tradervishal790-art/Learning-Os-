@@ -33,7 +33,7 @@ interface ReviewSessionProps {
 }
 
 // Self-graded recall check (Anki-style) — after at least one Q&A exchange,
-// the learner honestly rates how well they recalled it. "Bhool gaya" does
+// the learner honestly rates how well they recalled it. "Try Again Later" does
 // NOT mark the checkpoint done, so it stays due/overdue and they can retry.
 export default function ReviewSession({ topic, onMarkDone, onClose }: ReviewSessionProps) {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -53,7 +53,7 @@ export default function ReviewSession({ topic, onMarkDone, onClose }: ReviewSess
         const reply = await callMentorChat('Generate a short quiz (1-2 questions) on this topic to test my recall.', topic, []);
         setMessages([{ id: 'm1', role: 'mentor', content: reply }]);
       } catch (err: any) {
-        setMessages([{ id: 'm1', role: 'mentor', content: `Quiz load nahi hua: ${err.message}` }]);
+        setMessages([{ id: 'm1', role: 'mentor', content: `Quiz failed to load: ${err.message}` }]);
       } finally {
         setLoading(false);
       }
@@ -128,7 +128,7 @@ export default function ReviewSession({ topic, onMarkDone, onClose }: ReviewSess
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && send()}
           disabled={loading}
-          placeholder="Apna jawab yahan likho..."
+          placeholder="Type your answer here..."
           className="flex-1 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-purple-500/50"
         />
         <button
@@ -142,7 +142,7 @@ export default function ReviewSession({ topic, onMarkDone, onClose }: ReviewSess
 
       {exchanged && (
         <div>
-          <p className="text-xs text-gray-400 mb-2">Honestly, kaisa recall hua?</p>
+          <p className="text-xs text-gray-400 mb-2">Honestly, how well did you recall it?</p>
           <div className="flex gap-2">
             <button
               onClick={onClose}

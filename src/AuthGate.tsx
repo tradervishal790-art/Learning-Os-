@@ -105,11 +105,11 @@ export default function AuthGate({ children }: { children: ReactNode }) {
 
   const submit = async () => {
     if (!email || password.length < 6) {
-      setError('Sahi email aur kam se kam 6-character password daalo.');
+      setError('Enter a valid email and a password with at least 6 characters.');
       return;
     }
     if (mode === 'create' && !name.trim()) {
-      setError('Apna naam daalo.');
+      setError('Please enter your name.');
       return;
     }
     setBusy(true);
@@ -142,7 +142,7 @@ export default function AuthGate({ children }: { children: ReactNode }) {
           </h1>
         </div>
         <p className="text-sm text-black/50 dark:text-white/50 mb-6">
-          {mode === 'create' ? 'Naya account banao' : 'Apne account se sign in karo'}
+          {mode === 'create' ? 'Create a new account' : 'Sign in to your account'}
         </p>
 
         {mode === 'create' && (
@@ -150,7 +150,7 @@ export default function AuthGate({ children }: { children: ReactNode }) {
             type="text"
             value={name}
             onChange={(e) => { setName(e.target.value); setError(''); }}
-            placeholder="Naam"
+            placeholder="Name"
             className="w-full px-4 py-3 rounded-xl border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 text-black dark:text-white text-sm mb-3 outline-none focus:border-black/30 dark:focus:border-white/30"
           />
         )}
@@ -198,7 +198,7 @@ export default function AuthGate({ children }: { children: ReactNode }) {
           onClick={() => { setMode(mode === 'create' ? 'signin' : 'create'); setError(''); setName(''); }}
           className="w-full text-center text-xs text-black/40 dark:text-white/40 hover:text-black/70 dark:hover:text-white/70"
         >
-          {mode === 'create' ? 'Pehle se account hai? Sign in karo' : 'Naya user ho? Account banao'}
+          {mode === 'create' ? 'Already have an account? Sign in' : 'New here? Create an account'}
         </button>
       </div>
     </div>

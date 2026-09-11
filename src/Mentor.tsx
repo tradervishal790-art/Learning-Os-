@@ -45,23 +45,23 @@ async function generateMentorResponse(
 
     if (!response.ok) {
       console.error('Mentor chat API error:', response.status, data);
-      return data?.error || `Kuch gadbad ho gayi (${response.status}). Thodi der mein phir try karein. 🔄`;
+      return data?.error || `Something went wrong (${response.status}). Please try again in a bit. 🔄`;
     }
 
     if (!data?.text) {
-      return 'Response nahi mil paaya, phir se try karein. 🔄';
+      return 'Could not get a response, please try again. 🔄';
     }
 
     // Let the user know explicitly if a response still got cut off,
     // instead of silently showing an incomplete sentence.
     if (data.finishReason === 'MAX_TOKENS') {
-      return data.text + '\n\n_(⚠️ Response lambi thi aur beech mein kat gayi — "Deep dive" ki jagah chhota sawaal poochhein)_';
+      return data.text + '\n\n_(⚠️ The response was long and got cut off midway — try asking a shorter question instead of "Deep dive")_';
     }
 
     return data.text;
   } catch (error) {
     console.error('Mentor chat fetch failed:', error);
-    return 'Network error aaya. Internet check karein aur phir try karein. 🔄';
+    return 'A network error occurred. Please check your internet and try again. 🔄';
   }
 }
 
@@ -71,7 +71,7 @@ export default function Mentor() {
       id: '1',
       role: 'mentor',
       content:
-        'Namaste! Main aapka AI Mentor hoon. 🙏\n\nAap mujhse kuch bhi poochh sakte hain:\n• Concepts explain karwana\n• Real-world analogies\n• Quiz lena\n• Project ideas\n• Common mistakes\n\nNeeche suggestions try karein, ya apna question type karein!',
+        'Hi! I\'m your AI Mentor. 🙏\n\nYou can ask me anything:\n• Get concepts explained\n• Real-world analogies\n• Take a quiz\n• Project ideas\n• Common mistakes\n\nTry a suggestion below, or type your own question!',
       timestamp: new Date(),
     },
   ]);

@@ -71,7 +71,7 @@ export async function signInProfileLock(email: string, password: string): Promis
  */
 export async function reauthenticateProfileLock(password: string): Promise<{ ok: true } | { ok: false; error: string }> {
   const user = auth.currentUser;
-  if (!user?.email) return { ok: false, error: 'Session mil nahi rahi, dobara sign in karo.' };
+  if (!user?.email) return { ok: false, error: 'Session not found, please sign in again.' };
   try {
     const credential = EmailAuthProvider.credential(user.email, password);
     await reauthenticateWithCredential(user, credential);
@@ -103,7 +103,7 @@ export function isGoogleAccount(): boolean {
 /** Step-up confirmation for a Google-based account — re-shows the Google popup instead of asking a password. */
 export async function reauthenticateProfileLockGoogle(): Promise<{ ok: true } | { ok: false; error: string }> {
   const user = auth.currentUser;
-  if (!user) return { ok: false, error: 'Session mil nahi rahi, dobara sign in karo.' };
+  if (!user) return { ok: false, error: 'Session not found, please sign in again.' };
   try {
     await reauthenticateWithPopup(user, new GoogleAuthProvider());
     return { ok: true };
@@ -122,25 +122,25 @@ function mapAuthError(code?: string): string {
 function mapKnownAuthError(code?: string): string {
   switch (code) {
     case 'auth/email-already-in-use':
-      return 'Ye email pehle se registered hai — sign in karo.';
+      return 'This email is already registered — please sign in.';
     case 'auth/weak-password':
-      return 'Password kam se kam 6 characters ka hona chahiye.';
+      return 'Password must be at least 6 characters.';
     case 'auth/invalid-email':
-      return 'Email sahi format me nahi hai.';
+      return 'Email is not in a valid format.';
     case 'auth/wrong-password':
     case 'auth/invalid-credential':
-      return 'Galat password.';
+      return 'Incorrect password.';
     case 'auth/user-not-found':
-      return 'Ye email registered nahi hai.';
+      return 'This email is not registered.';
     case 'auth/operation-not-allowed':
-      return 'Email/Password sign-in Firebase Console me enable nahi hai.';
+      return 'Email/Password sign-in is not enabled in the Firebase Console.';
     case 'auth/unauthorized-domain':
-      return 'Ye website domain Firebase Console me authorized nahi hai.';
+      return 'This website domain is not authorized in the Firebase Console.';
     case 'auth/popup-blocked':
-      return 'Browser ne popup block kar diya — popup allow karo aur dobara try karo.';
+      return 'Your browser blocked the popup — allow popups and try again.';
     case 'auth/popup-closed-by-user':
-      return 'Google popup band ho gaya sign-in complete hone se pehle.';
+      return 'The Google popup closed before sign-in could complete.';
     default:
-      return 'Kuch gadbad ho gayi, dobara try karo.';
+      return 'Something went wrong, please try again.';
   }
 }

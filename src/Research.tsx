@@ -127,7 +127,7 @@ export default function Research({ embedded = false, onClose }: ResearchProps) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-          placeholder="Kya jaanna hai?"
+          placeholder="What do you want to know?"
           autoFocus={embedded}
           className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg pl-9 pr-4 py-2.5 placeholder-gray-400 dark:placeholder-white/40 focus:outline-none focus:border-black dark:focus:border-white"
         />
@@ -159,7 +159,7 @@ export default function Research({ embedded = false, onClose }: ResearchProps) {
     <div className={embedded ? 'mt-4 space-y-4' : 'max-w-3xl mx-auto space-y-5'}>
       {!result.grounded && (
         <p className="text-xs text-gray-400 dark:text-white/40">
-          Live search source nahi mila is baar — neeche wala jawab general knowledge se hai, current cheezon ke liye double-check kar lena
+          No live search source found this time — the answer below is from general knowledge, so double-check it for anything current
         </p>
       )}
       {result.results.map((r, i) => (
@@ -183,13 +183,13 @@ export default function Research({ embedded = false, onClose }: ResearchProps) {
       <div className="bg-white dark:bg-black border border-gray-200 dark:border-white/10 rounded-xl p-4">
         <div className="flex items-center gap-2 mb-3">
           <Search className="w-4 h-4" />
-          <h3 className="font-semibold text-sm">Research (video ke saath saath)</h3>
+          <h3 className="font-semibold text-sm">Research (alongside your video)</h3>
         </div>
         {searchBar}
         {error && <p className="text-red-500 dark:text-red-400 text-sm mt-2">{error}</p>}
         {resultsBlock}
         {!result && !loading && (
-          <p className="text-sm text-gray-400 dark:text-white/40 mt-4">Kuch bhi search karo — video chalti rahegi.</p>
+          <p className="text-sm text-gray-400 dark:text-white/40 mt-4">Search for anything — the video will keep playing.</p>
         )}
       </div>
     );
@@ -201,7 +201,7 @@ export default function Research({ embedded = false, onClose }: ResearchProps) {
         <h1 className="text-4xl font-bold mb-2 flex items-center gap-3">
           <Search className="w-8 h-8" /> Research
         </h1>
-        <p className="text-gray-500 dark:text-white/60">Koi bhi topic search karo — internet se, deeper reading ke liye</p>
+        <p className="text-gray-500 dark:text-white/60">Search any topic — from the internet, for deeper reading</p>
       </motion.div>
 
       <div className="max-w-3xl mx-auto mb-6">
@@ -231,8 +231,8 @@ export default function Research({ embedded = false, onClose }: ResearchProps) {
       {!result && !loading && (
         <div className="max-w-2xl mx-auto text-center py-16 text-gray-400 dark:text-white/60">
           <Search className="w-12 h-12 mx-auto mb-3 opacity-30" />
-          <p className="text-lg mb-2">Koi bhi topic search karo</p>
-          <p className="text-sm">Video dekhte hue side mein bhi khol sakte ho — Videos page se</p>
+          <p className="text-lg mb-2">Search any topic</p>
+          <p className="text-sm">You can also open this alongside a video — from the Videos page</p>
         </div>
       )}
     </div>

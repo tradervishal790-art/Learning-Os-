@@ -346,7 +346,7 @@ export async function buildCandidatePoolForConcept(
     // BOTH AI paths (transcript-based AND metadata-fallback) failed for
     // every single candidate — near-certainly Gemini + MiniMax both down
     // or unconfigured server-side, not "no good videos exist". Previously
-    // this meant the learner saw "koi achhi video nahi mili" even though
+    // this meant the learner saw "no good video found" even though
     // YouTube search worked fine and real candidates DID come back — the
     // AI-analysis step failing shouldn't be able to hide search results
     // that actually exist. Fall back to a neutral, unranked profile built
@@ -354,7 +354,7 @@ export async function buildCandidatePoolForConcept(
     // something usable; PlaylistBuilder's ranking will just be less
     // personalized for this one request.
     console.warn(
-      `[conceptVideoPool] YouTube ne ${candidates.length} videos diye "${topic.title}" ke liye, lekin sabka analysis fail ho gaya (both transcript and metadata-fallback failed for every candidate) — neutral fallback profile use kar rahe hain.`
+      `[conceptVideoPool] YouTube returned ${candidates.length} videos for "${topic.title}", but analysis failed for all of them (both transcript and metadata-fallback failed for every candidate) — using a neutral fallback profile.`
     );
     return candidates.map((c) => ({
       videoId: c.videoId,

@@ -245,7 +245,7 @@ export default function Roadmap({
 
     const learnerProfile = getLearningProfile();
     if (!learnerProfile) {
-      setPlaylistError('Pehle Learning Style Quiz complete karo.');
+      setPlaylistError('Complete the Learning Style Quiz first.');
       return;
     }
 
@@ -314,7 +314,7 @@ export default function Roadmap({
 
       const candidates = await buildCandidatePoolForConcept(selectedTopic, queries, userData?.language, true);
       if (candidates.length === 0) {
-        setPlaylistError('Koi achhi video nahi mili. Thodi der baad try karo.');
+        setPlaylistError('No good video found. Please try again in a bit.');
         return;
       }
 
@@ -324,7 +324,7 @@ export default function Roadmap({
         deadline: topicDeadline,
       });
       if (!result) {
-        setPlaylistError('Playlist ban nahi payi, dobara try karo.');
+        setPlaylistError('Playlist could not be built, please try again.');
         return;
       }
 
@@ -349,7 +349,7 @@ export default function Roadmap({
       });
       setSelectedTopic(null);
     } catch (err: any) {
-      setPlaylistError(err.message || 'Kuch gadbad ho gayi.');
+      setPlaylistError(err.message || 'Something went wrong.');
     } finally {
       setPlaylistLoading(false);
     }
@@ -397,7 +397,7 @@ export default function Roadmap({
           </button>
         ) : (
           <span className="text-[11px] text-gray-400 dark:text-white/40 px-1">
-            Max {MAX_ACTIVE_GOALS} goals ek saath — koi ek end karo naya start karne ke liye.
+            Max {MAX_ACTIVE_GOALS} goals at once — end one to start a new one.
           </span>
         )}
 
@@ -428,9 +428,9 @@ export default function Roadmap({
               className="bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-white/10 rounded-2xl max-w-sm w-full p-6 text-black dark:text-white"
               onClick={(e) => e.stopPropagation()}
             >
-              <h3 className="text-lg font-bold mb-2">Ye goal end karein?</h3>
+              <h3 className="text-lg font-bold mb-2">End this goal?</h3>
               <p className="text-sm text-gray-500 dark:text-white/50 mb-5">
-                "{roadmap.title}" end ho jayega — progress safe rahega, aur slot free ho jayega naye goal ke liye.
+                "{roadmap.title}" will be ended — your progress stays safe, and a slot frees up for a new goal.
               </p>
               <div className="flex gap-3">
                 <button
@@ -503,13 +503,13 @@ export default function Roadmap({
 
         {hasNoRoadmap && !activeGoalId && (
           <div className="mt-5 p-5 rounded-xl border border-dashed border-gray-300 dark:border-white/20 text-center text-sm text-gray-500 dark:text-white/50">
-            Koi active goal nahi hai. Upar "+ Add Goal" dabao naya goal shuru karne ke liye.
+            No active goal. Tap "+ Add Goal" above to start a new one.
           </div>
         )}
 
         {hasNoRoadmap && activeGoalId && onGenerateForSubject && (
           <div className="mt-5 p-5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5">
-            <label className="block text-sm font-semibold mb-2">Kya seekhna hai?</label>
+            <label className="block text-sm font-semibold mb-2">What do you want to learn?</label>
             <div className="flex flex-col sm:flex-row gap-3">
               <input
                 type="text"
@@ -525,7 +525,7 @@ export default function Roadmap({
                 disabled={generating || !subjectInput.trim()}
                 className="px-5 py-2.5 rounded-lg text-sm font-medium bg-black text-white dark:bg-white dark:text-black hover:opacity-80 transition disabled:opacity-40 flex-shrink-0"
               >
-                {generating ? 'Roadmap ban raha hai...' : 'Generate Roadmap'}
+                {generating ? 'Building your roadmap...' : 'Generate Roadmap'}
               </button>
             </div>
 
@@ -550,7 +550,7 @@ export default function Roadmap({
                 <span>40 hrs</span>
               </div>
               <p className="text-[11px] text-gray-400 dark:text-white/40 mt-1.5">
-                Isse roadmap ke topics aur unki depth aapke available time ke hisaab se accurate banti hai.
+                This makes the roadmap's topics and depth more accurate for the time you actually have.
               </p>
             </div>
 
@@ -594,7 +594,7 @@ export default function Roadmap({
 
             {generateFailed && (
               <div className="mt-3">
-                <p className="text-xs text-red-600 dark:text-red-400">Roadmap generate nahi ho paaya — dobara try karo.</p>
+                <p className="text-xs text-red-600 dark:text-red-400">Could not generate the roadmap — please try again.</p>
                 {lastRoadmapError && (
                   <p className="text-[11px] font-mono text-red-500/70 dark:text-red-400/60 mt-1 break-all">
                     {lastRoadmapError}
@@ -784,7 +784,7 @@ export default function Roadmap({
                       {showChallengePrompt && (
                         <div className="mt-3 p-4 rounded-xl border border-gray-300 dark:border-white/20 bg-gray-50 dark:bg-white/5">
                           <p className="text-sm font-medium mb-2">
-                            Pehle ek chhota applied challenge try karo, phir topic complete maaro.
+                            Try a small applied challenge first, then mark the topic complete.
                           </p>
                           <p className="text-xs text-gray-500 dark:text-white/50 mb-3">
                             {activeTeachingProcess?.pushStrategy}
