@@ -213,6 +213,57 @@ export interface TranslationShape {
     popupClosedByUser: string;
     genericAuthError: string;
   };
+  authScreen: {
+    signOutBtn: string; // "Sign out ({0})"
+    subtitleCreate: string;
+    subtitleSignin: string;
+    namePlaceholder: string;
+    emailPlaceholder: string;
+    passwordPlaceholder: string;
+    createAccountCta: string;
+    signInCta: string;
+    orDivider: string;
+    googleCta: string;
+    switchToSignin: string;
+    switchToCreate: string;
+    validationEmailPassword: string;
+    validationName: string;
+  };
+  errorBoundary: { title: string; body: string; reloadCta: string; clearDataCta: string };
+  deepDiveChat: {
+    badge: string;
+    questionOf: string; // "{0} / {1}"
+    answerPlaceholder: string;
+    submitCta: string;
+    nextCta: string;
+    processingText: string;
+    closeCta: string;
+    errors: { noResponse: string; noProfile: string; generic: string };
+  };
+  /** SAFETY: bundled into the deep-dive Gemini extraction prompt (see
+   *  deepDiveScoring.ts buildExtractionPrompt) — the user answers freely
+   *  in whatever language they type, so only the question wording needs
+   *  faithful translation here. */
+  deepDiveQuestions: [string, string, string];
+  tasteOnboarding: {
+    badge: string;
+    formTitle: string;
+    formSubtitle: string; // "{0}" = min videos, "{1}" = min duration
+    urlPlaceholder: string;
+    watchedCheckbox: string;
+    linkNotRecognized: string;
+    addAnotherCta: string;
+    analyzeCta: string; // "Analyze {0} Videos"
+    validationHint: string;
+    analyzingText: string;
+    videoFallbackLabel: string; // "Video {0}"
+    doneTitle: string;
+    doneSubtitle: string; // "{0}" = count, "{1}" = "" or "s"
+    doneCta: string;
+    retryCta: string;
+    errors: { noneAnalyzed: string };
+  };
+  revisionTasks: { day1: string; day3: string; day7: string; day15: string; day30: string; day60: string; fallback: string };
   roadmap: {
     header: { title: string; subtitle: string };
     goalTabs: {
@@ -915,6 +966,75 @@ export const translations: Record<Locale, TranslationShape> = {
       popupBlocked: 'Your browser blocked the popup — allow popups and try again.',
       popupClosedByUser: 'The Google popup was closed before sign-in completed.',
       genericAuthError: 'Something went wrong, please try again.',
+    },
+    authScreen: {
+      signOutBtn: 'Sign out ({0})',
+      subtitleCreate: 'Create a new account',
+      subtitleSignin: 'Sign in to your account',
+      namePlaceholder: 'Name',
+      emailPlaceholder: 'Email',
+      passwordPlaceholder: 'Password',
+      createAccountCta: 'Create Account',
+      signInCta: 'Sign In',
+      orDivider: 'OR',
+      googleCta: 'Continue with Google',
+      switchToSignin: 'Already have an account? Sign in',
+      switchToCreate: 'New user? Create an account',
+      validationEmailPassword: 'Enter a valid email and a password of at least 6 characters.',
+      validationName: 'Enter your name.',
+    },
+    errorBoundary: {
+      title: 'Something went wrong',
+      body: "The app ran into an error. Try reloading — if the problem persists, clear local data and reload (your progress/roadmap won't come back, so try just reloading first).",
+      reloadCta: 'Reload',
+      clearDataCta: 'Clear local data and reload',
+    },
+    deepDiveChat: {
+      badge: 'Deep Dive · Optional',
+      questionOf: '{0} / {1}',
+      answerPlaceholder: 'Type your answer here...',
+      submitCta: 'Submit',
+      nextCta: 'Next',
+      processingText: 'Updating your profile...',
+      closeCta: 'Close',
+      errors: {
+        noResponse: "Couldn't understand the response, try again or skip.",
+        noProfile: 'Complete the quiz first.',
+        generic: 'Something went wrong.',
+      },
+    },
+    deepDiveQuestions: [
+      'Tell us about a recent topic that was hard to understand — what exactly was the problem?',
+      'When a concept "clicks" well for you, what does that moment feel like? Give an example.',
+      "If you had to start a completely new subject tomorrow that you know nothing about — what would your very first step be?",
+    ],
+    tasteOnboarding: {
+      badge: 'Video Taste · Alternative to quiz',
+      formTitle: "Give us videos you've already watched in full",
+      formSubtitle:
+        'At least {0} videos, each {1}+ min long — on any topic. This way your learning style is understood from real videos, not a quiz.',
+      urlPlaceholder: 'https://youtube.com/watch?v=...',
+      watchedCheckbox: "I've watched this video in full",
+      linkNotRecognized: "(couldn't recognize this link)",
+      addAnotherCta: '+ Add another video',
+      analyzeCta: 'Analyze {0} Videos',
+      validationHint: 'Each video needs a valid link and "watched in full" checked.',
+      analyzingText: 'Analyzing videos — this will take a moment...',
+      videoFallbackLabel: 'Video {0}',
+      doneTitle: 'Profile updated',
+      doneSubtitle: 'Built from analyzing {0} video{1}',
+      doneCta: 'Done',
+      retryCta: 'Try Again',
+      errors: { noneAnalyzed: "Couldn't analyze any videos. Check the links and try again." },
+    },
+    revisionTasks: {
+      day1: 'Deep read it — understand WHY, not just WHAT',
+      day3: 'Apply it to 3-4 different real examples',
+      day7: 'Teach it to someone — without looking at notes',
+      day15: 'Find advanced applications and edge cases',
+      day30: 'Connect it to related concepts, spot the pattern',
+      day60: 'Final recall check — explain it fully without looking',
+      fallback: 'Revise this topic',
     },
     roadmap: {
       header: { title: 'Your Roadmap', subtitle: 'Foundation-first order — follow it for best results' },
@@ -1636,6 +1756,74 @@ export const translations: Record<Locale, TranslationShape> = {
       popupClosedByUser: 'Google पॉपअप बंद हो गया साइन-इन पूरा होने से पहले।',
       genericAuthError: 'कुछ गड़बड़ हो गई, दोबारा कोशिश करें।',
     },
+    authScreen: {
+      signOutBtn: 'साइन आउट ({0})',
+      subtitleCreate: 'नया अकाउंट बनाएं',
+      subtitleSignin: 'अपने अकाउंट से साइन इन करें',
+      namePlaceholder: 'नाम',
+      emailPlaceholder: 'ईमेल',
+      passwordPlaceholder: 'पासवर्ड',
+      createAccountCta: 'अकाउंट बनाएं',
+      signInCta: 'साइन इन',
+      orDivider: 'या',
+      googleCta: 'Google से जारी रखें',
+      switchToSignin: 'पहले से अकाउंट है? साइन इन करें',
+      switchToCreate: 'नए यूज़र हैं? अकाउंट बनाएं',
+      validationEmailPassword: 'सही ईमेल और कम से कम 6 अक्षरों का पासवर्ड डालें।',
+      validationName: 'अपना नाम डालें।',
+    },
+    errorBoundary: {
+      title: 'कुछ गलत हो गया',
+      body: 'ऐप में एक एरर आ गई। रीलोड try करें — अगर प्रॉब्लम बनी रहे तो लोकल डेटा क्लियर करके रीलोड करें (प्रोग्रेस/रोडमैप वापस नहीं मिलेगा, इसलिए पहले सिर्फ रीलोड try करें)।',
+      reloadCta: 'रीलोड',
+      clearDataCta: 'लोकल डेटा क्लियर करके रीलोड करें',
+    },
+    deepDiveChat: {
+      badge: 'डीप डाइव · वैकल्पिक',
+      questionOf: '{0} / {1}',
+      answerPlaceholder: 'अपना जवाब यहां लिखें...',
+      submitCta: 'सबमिट करें',
+      nextCta: 'अगला',
+      processingText: 'प्रोफ़ाइल अपडेट हो रही है...',
+      closeCta: 'बंद करें',
+      errors: {
+        noResponse: 'जवाब समझ नहीं आया, फिर से कोशिश करें या स्किप करें।',
+        noProfile: 'पहले क्विज़ पूरा करें।',
+        generic: 'कुछ गड़बड़ हो गई।',
+      },
+    },
+    deepDiveQuestions: [
+      'कोई हाल का टॉपिक बताइए जो आपको समझने में दिक्कत हुई — एग्ज़ैक्ट प्रॉब्लम क्या थी?',
+      'जब कोई कॉन्सेप्ट अच्छे से "क्लिक" हो जाता है आपके लिए, वो मोमेंट कैसा होता है? एक उदाहरण दीजिए।',
+      'कल से एक बिल्कुल नया सब्जेक्ट शुरू करना हो जिसमें कुछ पता नहीं — सबसे पहला कदम क्या लेंगे?',
+    ],
+    tasteOnboarding: {
+      badge: 'वीडियो टेस्ट · क्विज़ का विकल्प',
+      formTitle: 'वो वीडियो दें जो आप पहले से पूरे देख चुके हैं',
+      formSubtitle: 'कम से कम {0} वीडियो, हर एक {1}+ मिनट का — किसी भी टॉपिक पे। इससे आपकी लर्निंग स्टाइल क्विज़ से नहीं, असली वीडियो से समझी जाती है।',
+      urlPlaceholder: 'https://youtube.com/watch?v=...',
+      watchedCheckbox: 'मैंने यह वीडियो पूरा देखा है',
+      linkNotRecognized: '(लिंक समझ नहीं आया)',
+      addAnotherCta: '+ एक और वीडियो जोड़ें',
+      analyzeCta: '{0} वीडियो एनालाइज़ करें',
+      validationHint: 'हर वीडियो के लिए लिंक वैलिड हो और "पूरा देखा है" चेक्ड हो।',
+      analyzingText: 'वीडियो एनालाइज़ हो रहे हैं — थोड़ा समय लगेगा...',
+      videoFallbackLabel: 'वीडियो {0}',
+      doneTitle: 'प्रोफ़ाइल अपडेट हो गई',
+      doneSubtitle: '{0} वीडियो{1} के एनालिसिस से बनाया गया',
+      doneCta: 'पूरा हुआ',
+      retryCta: 'फिर कोशिश करें',
+      errors: { noneAnalyzed: 'कोई भी वीडियो एनालाइज़ नहीं हो पाया। लिंक चेक करके फिर कोशिश करें।' },
+    },
+    revisionTasks: {
+      day1: 'गहराई से पढ़ो — समझो WHY, सिर्फ WHAT नहीं',
+      day3: 'इसे 3-4 अलग रियल उदाहरणों पर अप्लाई करो',
+      day7: 'किसी को समझाकर सिखाओ — बिना नोट्स देखे',
+      day15: 'एडवांस्ड एप्लिकेशन्स और एज केसेस ढूंढो',
+      day30: 'रिलेटेड कॉन्सेप्ट्स से कनेक्ट करो, पैटर्न देखो',
+      day60: 'फाइनल रिकॉल चेक — बिना देखे पूरा एक्सप्लेन करो',
+      fallback: 'इस टॉपिक को रिवाइज़ करो',
+    },
     roadmap: {
       header: { title: 'आपका रोडमैप', subtitle: 'पहले बुनियाद — सबसे अच्छे नतीजे के लिए इसी क्रम में चलें' },
       goalTabs: {
@@ -2353,6 +2541,75 @@ export const translations: Record<Locale, TranslationShape> = {
       popupBlocked: 'Browser ne popup block kar diya — popup allow karo aur dobara try karo.',
       popupClosedByUser: 'Google popup band ho gaya sign-in complete hone se pehle.',
       genericAuthError: 'Kuch gadbad ho gayi, dobara try karo.',
+    },
+    authScreen: {
+      signOutBtn: 'Sign out ({0})',
+      subtitleCreate: 'Naya account banao',
+      subtitleSignin: 'Apne account se sign in karo',
+      namePlaceholder: 'Naam',
+      emailPlaceholder: 'Email',
+      passwordPlaceholder: 'Password',
+      createAccountCta: 'Create Account',
+      signInCta: 'Sign In',
+      orDivider: 'OR',
+      googleCta: 'Continue with Google',
+      switchToSignin: 'Pehle se account hai? Sign in karo',
+      switchToCreate: 'Naya user ho? Account banao',
+      validationEmailPassword: 'Sahi email aur kam se kam 6-character password daalo.',
+      validationName: 'Apna naam daalo.',
+    },
+    errorBoundary: {
+      title: 'Kuch galat ho gaya',
+      body: 'App mein ek error aa gaya. Reload try karo — agar problem rahe toh local data clear karke reload karo (progress/roadmap wapas nahi milega, isliye pehle sirf reload try karo).',
+      reloadCta: 'Reload',
+      clearDataCta: 'Local data clear karke reload karo',
+    },
+    deepDiveChat: {
+      badge: 'Deep Dive · Optional',
+      questionOf: 'Sawaal {0} / {1}',
+      answerPlaceholder: 'Apna jawab yahan likho...',
+      submitCta: 'Submit',
+      nextCta: 'Next',
+      processingText: 'Profile update ho raha hai...',
+      closeCta: 'Close',
+      errors: {
+        noResponse: 'Response samajh nahi aaya, phir se try karo ya skip karo.',
+        noProfile: 'Pehle quiz complete karo.',
+        generic: 'Kuch gadbad ho gayi.',
+      },
+    },
+    deepDiveQuestions: [
+      'Koi recent topic bataiye jo aapko samajhne mein dikkat hui — kya problem thi exactly?',
+      'Jab koi concept achhe se "click" ho jaata hai aapke liye, wo moment kaisa hota hai? Ek example dijiye.',
+      'Kal se ek bilkul naya subject start karna ho jisme kuch pata nahi — sabse pehla step kya lenge?',
+    ],
+    tasteOnboarding: {
+      badge: 'Video Taste · Alternative to quiz',
+      formTitle: 'Wo videos do jo aap pehle se pura dekh chuke ho',
+      formSubtitle:
+        'Kam se kam {0} videos, har ek {1}+ min ka — kisi bhi topic pe. Isse aapka learning style quiz se nahi, real videos se samjha jaata hai.',
+      urlPlaceholder: 'https://youtube.com/watch?v=...',
+      watchedCheckbox: 'Maine yeh video pura dekha hai',
+      linkNotRecognized: '(link samajh nahi aaya)',
+      addAnotherCta: '+ Ek aur video add karo',
+      analyzeCta: 'Analyze {0} Videos',
+      validationHint: 'Har video ke liye link valid ho aur "pura dekha hai" checked ho.',
+      analyzingText: 'Videos analyze ho rahe hain — thoda time lagega...',
+      videoFallbackLabel: 'Video {0}',
+      doneTitle: 'Profile update ho gaya',
+      doneSubtitle: '{0} video{1} ke analysis se banaya gaya',
+      doneCta: 'Done',
+      retryCta: 'Phir Try Karo',
+      errors: { noneAnalyzed: 'Koi bhi video analyze nahi ho paaya. Links check karke phir try karo.' },
+    },
+    revisionTasks: {
+      day1: 'Deep read karo — samjho WHY, sirf WHAT nahi',
+      day3: 'Isse 3-4 alag real examples pe apply karo',
+      day7: 'Kisi ko explain karke sikhao — bina notes dekhe',
+      day15: 'Advanced applications aur edge cases dhundo',
+      day30: 'Related concepts se connect karo, pattern dekho',
+      day60: 'Final recall check — bina dekhe pura explain karo',
+      fallback: 'Is topic ko revise karo',
     },
     roadmap: {
       header: { title: 'Your Roadmap', subtitle: 'Foundation-first order — follow it for best results' },
