@@ -45,6 +45,10 @@ interface UserOnboardingData {
    *  priority over the coarse `deadline` string bucket when present. */
   deadlineDays?: number;
   learningProfile?: LearningProfileInput;
+  /** Optional exam/board (e.g. "CBSE Class 10", "JEE", "NEET") — when set,
+   *  the prompt asks for syllabus-ordered, weightage-aware topics instead
+   *  of a generic best-effort sequence. See examInstruction() below. */
+  examType?: string;
 }
 
 type Difficulty = 'Beginner' | 'Intermediate' | 'Advanced';
@@ -63,6 +67,19 @@ function languageInstruction(language: string): string {
   if (normalized === 'hindi') return 'Sab kuch Hindi (Devanagari) mein likho.';
   if (normalized === 'hinglish') return 'Sab kuch Hinglish (Hindi-English mix, jaise students aapas mein baat karte hain) mein likho.';
   return 'Write everything in clear English.';
+}
+
+/** When the goal is tied to a specific exam/board, the roadmap should follow
+ *  THAT syllabus's structure and prioritize by marks-weightage — not just a
+ *  generic "logical order for the subject" sequence. Empty when no exam is set. */
+function examInstruction(examType?: string): string {
+  const trimmed = examType?.trim();
+  if (!trimmed) return '';
+  return `
+EXAM-MODE — is learner ka goal "${trimmed}" ke liye specifically prepare karna hai, generic self-study nahi:
+- Topics ka order us exam ke official/standard syllabus ki sequence follow kare, na ki sirf subject ka "logical" order — agar dono alag hon, syllabus order ko priority do.
+- Har topic ke liye "examWeightage" field bhi do — "high" agar ye topic us exam mein typically zyada marks/questions cover karta hai, "medium" ya "low" agar kam. Ye learner ko batayega time-pressure mein kya pehle karna hai.
+- Kisi bhi topic ko syllabus se bahar mat le jao (off-syllabus depth mat do) jab tak learner ne khud aisa na maanga ho.`;
 }
 
 // ---- Deadline -> days (same buckets used across the UI / PlaylistBuilder.ts) ----
@@ -138,6 +155,7 @@ Ek learner ke liye ek personalized, sequential learning roadmap banao, in detail
 ${learningStyleInstruction(data.learningProfile)}
 
 ${languageInstruction(data.language)}
+${examInstruction(data.examType)}
 
 IMPORTANT — topic granularity (time-budget based):
 Is learner ke paas total ~${totalHours} hours hain. Har topic learner ke liye roughly ${hoursPerTopic} hours ka honा chahiye (video watching + practice included) — na usse kaafi zyada, na kaafi kam.
@@ -173,7 +191,7 @@ Sirf JSON return karo, is EXACT shape mein, koi extra text ya markdown backticks
       "description": "2-3 lines",
       "estimatedTime": "jaise '${hoursPerTopic} hours' ya '1 week'",
       "difficulty": "Beginner" | "Intermediate" | "Advanced",
-      "topicKeywords": ["keyword1", "keyword2"],
+      "topicKeywords": ["keyword1", "keyword2"],${data.examType?.trim() ? `\n      "examWeightage": "high" | "medium" | "low",` : ''}
       "why": {
         "learn": "yeh kyun seekhna chahiye",
         "connect": "yeh baaki topics/system se kaise connect hota hai",
@@ -256,6 +274,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       topicKeywords: Array.isArray(t.topicKeywords)
         ? t.topicKeywords.filter((k: unknown) => typeof k === 'string').map((k: string) => k.toLowerCase())
         : [],
+      ...(t.examWeightage === 'high' || t.examWeightage === 'medium' || t.examWeightage === 'low'
+        ? { examWeightage: t.examWeightage }
+        : {}),
     }));
 
     const roadmap = {

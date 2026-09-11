@@ -50,7 +50,8 @@ interface RoadmapProps {
     subject: string,
     hours: number,
     deadlineDays: number,
-    deadlineLabel: string
+    deadlineLabel: string,
+    examType?: string
   ) => Promise<boolean>;
   /** Actual server/network error from the last generation attempt (e.g.
    *  missing API key, Gemini quota, bad JSON) — shown under the form so the
@@ -96,6 +97,7 @@ export default function Roadmap({
   const [topicDeadline, setTopicDeadline] = useState('');
   const [showDeepDive, setShowDeepDive] = useState(false);
   const [subjectInput, setSubjectInput] = useState('');
+  const [examTypeInput, setExamTypeInput] = useState('');
   const [hoursInput, setHoursInput] = useState(10);
   const [deadlineUnit, setDeadlineUnit] = useState<'day' | 'week' | 'month'>('week');
   const [deadlineValue, setDeadlineValue] = useState(4); // matches 'week' default range below
@@ -148,7 +150,8 @@ export default function Roadmap({
       subjectInput.trim(),
       hoursInput,
       deadlineDays,
-      DEADLINE_UNIT_CONFIG[deadlineUnit].label(deadlineValue)
+      DEADLINE_UNIT_CONFIG[deadlineUnit].label(deadlineValue),
+      examTypeInput.trim() || undefined
     );
     if (!success) setGenerateFailed(true);
     setGenerating(false);
@@ -530,6 +533,22 @@ export default function Roadmap({
             </div>
 
             <div className="mt-4">
+              <label className="block text-sm font-semibold mb-2">
+                Kisi specific exam/board ke liye? <span className="font-normal text-gray-400 dark:text-white/40">(optional)</span>
+              </label>
+              <input
+                type="text"
+                value={examTypeInput}
+                onChange={(e) => setExamTypeInput(e.target.value)}
+                placeholder="jaise CBSE Class 10, JEE, NEET — khaali chhodo agar general learning hai"
+                className="w-full px-4 py-2.5 rounded-lg text-sm border border-gray-200 dark:border-white/10 bg-white dark:bg-black/30 focus:outline-none focus:border-black dark:focus:border-white"
+              />
+              <p className="text-[11px] text-gray-400 dark:text-white/40 mt-1.5">
+                Bataoge to roadmap us exam ke syllabus-order aur marks-weightage ke hisaab se banega.
+              </p>
+            </div>
+
+            <div className="mt-4">
               <div className="flex items-center justify-between mb-2">
                 <label className="text-sm font-semibold">Weekly time available</label>
                 <span className="text-sm font-mono px-2 py-0.5 rounded-md bg-black text-white dark:bg-white dark:text-black">
@@ -634,6 +653,20 @@ export default function Roadmap({
                     <span className={`text-[10px] uppercase tracking-wider ${difficultyConfig[topic.difficulty]}`}>
                       • {topic.difficulty}
                     </span>
+                    {topic.examWeightage && (
+                      <span
+                        className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded ${
+                          topic.examWeightage === 'high'
+                            ? 'bg-red-500/10 text-red-500'
+                            : topic.examWeightage === 'medium'
+                            ? 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400'
+                            : 'bg-gray-500/10 text-gray-400'
+                        }`}
+                        title="Exam weightage"
+                      >
+                        {topic.examWeightage} weightage
+                      </span>
+                    )}
                   </div>
                   <h3 className="font-semibold mb-1 text-sm md:text-base">{topic.title}</h3>
                   <p className="text-xs md:text-sm text-gray-500 dark:text-white/50 line-clamp-1">{topic.description}</p>
