@@ -223,6 +223,16 @@ export interface TranslationShape {
       network: string;
     };
   };
+  progress: {
+    header: { title: string; subtitle: string };
+    stats: { completion: string; streak: string; totalWatchTime: string; retention: string };
+    completionBar: { topicsDone: string; inProgress: string }; // "{0}/{1}" and "{0}"
+    emptyState: { title: string; body: string };
+    timeTracking: { title: string; last7Days: string }; // "{0}" = minutes
+    masteryHeatmap: { title: string; legendWeak: string; legendOk: string; legendStrong: string };
+    retentionDetail: { title: string; dueToday: string; overdue: string; mastered: string };
+    weakAreas: { title: string; noneFound: string };
+  };
 }
 
 export const translations: Record<Locale, TranslationShape> = {
@@ -525,6 +535,19 @@ export const translations: Record<Locale, TranslationShape> = {
         network: 'A network error occurred. Please check your internet and try again. 🔄',
       },
     },
+    progress: {
+      header: { title: 'Progress', subtitle: 'Your real stats — streak, watch time, weak spots' },
+      stats: { completion: 'Completion', streak: 'Streak', totalWatchTime: 'Total Watch Time', retention: 'Retention' },
+      completionBar: { topicsDone: '{0}/{1} topics done', inProgress: '{0} in progress' },
+      emptyState: {
+        title: 'Nothing to track yet',
+        body: 'Start a topic from your roadmap — progress will start showing up here automatically.',
+      },
+      timeTracking: { title: '⏱ Time Tracking', last7Days: 'Last 7 days: {0} min' },
+      masteryHeatmap: { title: '🧠 Mastery Heatmap', legendWeak: 'Weak', legendOk: 'OK', legendStrong: 'Strong' },
+      retentionDetail: { title: '📉 Retention', dueToday: 'Due Today', overdue: 'Overdue', mastered: 'Mastered' },
+      weakAreas: { title: '⚠️ Weak Areas', noneFound: 'No weak topics found — everything is going well.' },
+    },
   },
 
   hi: {
@@ -824,6 +847,19 @@ export const translations: Record<Locale, TranslationShape> = {
         truncatedSuffix: '\n\n_(⚠️ जवाब लंबा था और बीच में कट गया — "गहराई से" की जगह छोटा सवाल पूछें)_',
         network: 'नेटवर्क में गड़बड़ आई। इंटरनेट जांचें और फिर कोशिश करें। 🔄',
       },
+    },
+    progress: {
+      header: { title: 'प्रगति', subtitle: 'आपके असली आंकड़े — स्ट्रीक, वॉच टाइम, कमजोर टॉपिक' },
+      stats: { completion: 'पूर्णता', streak: 'स्ट्रीक', totalWatchTime: 'कुल वॉच टाइम', retention: 'रिटेंशन' },
+      completionBar: { topicsDone: '{0}/{1} टॉपिक पूरे', inProgress: '{0} जारी हैं' },
+      emptyState: {
+        title: 'अभी ट्रैक करने को कुछ नहीं है',
+        body: 'रोडमैप से कोई टॉपिक शुरू करें — प्रगति अपने आप यहां दिखनी शुरू हो जाएगी।',
+      },
+      timeTracking: { title: '⏱ टाइम ट्रैकिंग', last7Days: 'पिछले 7 दिन: {0} मिनट' },
+      masteryHeatmap: { title: '🧠 महारत हीटमैप', legendWeak: 'कमजोर', legendOk: 'ठीक', legendStrong: 'मजबूत' },
+      retentionDetail: { title: '📉 रिटेंशन', dueToday: 'आज देय', overdue: 'बकाया', mastered: 'महारत' },
+      weakAreas: { title: '⚠️ कमजोर टॉपिक', noneFound: 'कोई कमजोर टॉपिक नहीं मिला — सब कुछ ठीक चल रहा है।' },
     },
   },
 
@@ -1125,6 +1161,19 @@ export const translations: Record<Locale, TranslationShape> = {
           '\n\n_(⚠️ Response lambi thi aur beech mein kat gayi — "Deep dive" ki jagah chhota sawaal poochhein)_',
         network: 'Network error aaya. Internet check karein aur phir try karein. 🔄',
       },
+    },
+    progress: {
+      header: { title: 'Progress', subtitle: 'Your real stats — streak, watch time, weak spots' },
+      stats: { completion: 'Completion', streak: 'Streak', totalWatchTime: 'Total Watch Time', retention: 'Retention' },
+      completionBar: { topicsDone: '{0}/{1} topics done', inProgress: '{0} in progress' },
+      emptyState: {
+        title: 'Abhi kuch track karne ko nahi hai',
+        body: 'Roadmap se koi topic start karo — progress yahin apne aap dikhna shuru ho jayega.',
+      },
+      timeTracking: { title: '⏱ Time Tracking', last7Days: 'Last 7 days: {0} min' },
+      masteryHeatmap: { title: '🧠 Mastery Heatmap', legendWeak: 'Weak', legendOk: 'OK', legendStrong: 'Strong' },
+      retentionDetail: { title: '📉 Retention', dueToday: 'Due Today', overdue: 'Overdue', mastered: 'Mastered' },
+      weakAreas: { title: '⚠️ Weak Areas', noneFound: 'Koi weak topic nahi mila — sab theek chal raha hai.' },
     },
   },
 };
