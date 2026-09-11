@@ -201,6 +201,28 @@ export interface TranslationShape {
       searchFailed: string;
     };
   };
+  mentor: {
+    header: { title: string; subtitle: string };
+    welcomeMessage: string;
+    suggestedPrompts: [
+      { icon: string; label: string; prompt: string },
+      { icon: string; label: string; prompt: string },
+      { icon: string; label: string; prompt: string },
+      { icon: string; label: string; prompt: string },
+      { icon: string; label: string; prompt: string },
+      { icon: string; label: string; prompt: string },
+    ];
+    youLabel: string;
+    mentorLabel: string;
+    inputPlaceholder: string;
+    sendCta: string;
+    errors: {
+      generic: string; // "{0}" = HTTP status
+      noResponse: string;
+      truncatedSuffix: string;
+      network: string;
+    };
+  };
 }
 
 export const translations: Record<Locale, TranslationShape> = {
@@ -477,6 +499,30 @@ export const translations: Record<Locale, TranslationShape> = {
         searchSomethingFirst: 'Search for something first',
         noVideosFound: 'No videos found, try searching something else',
         searchFailed: 'Search failed, check console',
+      },
+    },
+    mentor: {
+      header: { title: '🤖 AI Mentor', subtitle: "Stuck? Ask here — it knows what you're learning right now" },
+      welcomeMessage:
+        "Hello! I'm your AI Mentor. 🙏\n\nYou can ask me anything:\n• Explain concepts\n• Real-world analogies\n• Take a quiz\n• Project ideas\n• Common mistakes\n\nTry a suggestion below, or type your own question!",
+      suggestedPrompts: [
+        { icon: '💡', label: 'Explain simply', prompt: 'Explain this concept simply' },
+        { icon: '🧠', label: 'Deep dive', prompt: 'Explain this in depth with examples' },
+        { icon: '🎯', label: 'Real analogy', prompt: 'Give me a real-world analogy' },
+        { icon: '📝', label: 'Quiz me', prompt: 'Generate a quiz on this topic' },
+        { icon: '🛠️', label: 'Project idea', prompt: 'Suggest a mini project' },
+        { icon: '🐛', label: 'Find mistake', prompt: 'What are common mistakes?' },
+      ],
+      youLabel: '👤 You',
+      mentorLabel: '🤖 Mentor',
+      inputPlaceholder: 'Ask anything...',
+      sendCta: 'Send',
+      errors: {
+        generic: 'Something went wrong ({0}). Please try again in a bit. 🔄',
+        noResponse: "Couldn't get a response, please try again. 🔄",
+        truncatedSuffix:
+          '\n\n_(⚠️ The response was long and got cut off — try asking a shorter question instead of "Deep dive")_',
+        network: 'A network error occurred. Please check your internet and try again. 🔄',
       },
     },
   },
@@ -756,6 +802,29 @@ export const translations: Record<Locale, TranslationShape> = {
         searchFailed: 'खोज विफल हुई, कंसोल जांचें',
       },
     },
+    mentor: {
+      header: { title: '🤖 AI मेंटर', subtitle: 'अटक गए? यहां पूछें — इसे पता है आप अभी क्या सीख रहे हैं' },
+      welcomeMessage:
+        'नमस्ते! मैं आपका AI मेंटर हूं। 🙏\n\nआप मुझसे कुछ भी पूछ सकते हैं:\n• कॉन्सेप्ट समझाना\n• असल दुनिया की मिसालें\n• क्विज़ लेना\n• प्रोजेक्ट आइडिया\n• आम गलतियां\n\nनीचे दिए सुझाव आज़माएं, या अपना सवाल टाइप करें!',
+      suggestedPrompts: [
+        { icon: '💡', label: 'आसानी से समझाओ', prompt: 'यह कॉन्सेप्ट आसान भाषा में समझाओ' },
+        { icon: '🧠', label: 'गहराई से', prompt: 'इसे उदाहरणों के साथ विस्तार से समझाओ' },
+        { icon: '🎯', label: 'असल मिसाल', prompt: 'मुझे इसकी असल दुनिया की मिसाल दो' },
+        { icon: '📝', label: 'क्विज़ लो', prompt: 'इस टॉपिक पर एक क्विज़ बनाओ' },
+        { icon: '🛠️', label: 'प्रोजेक्ट आइडिया', prompt: 'एक छोटा प्रोजेक्ट सुझाओ' },
+        { icon: '🐛', label: 'गलती पकड़ो', prompt: 'इसमें आम गलतियां क्या होती हैं?' },
+      ],
+      youLabel: '👤 आप',
+      mentorLabel: '🤖 मेंटर',
+      inputPlaceholder: 'कुछ भी पूछें...',
+      sendCta: 'भेजें',
+      errors: {
+        generic: 'कुछ गड़बड़ हो गई ({0})। थोड़ी देर में फिर कोशिश करें। 🔄',
+        noResponse: 'जवाब नहीं मिल पाया, फिर से कोशिश करें। 🔄',
+        truncatedSuffix: '\n\n_(⚠️ जवाब लंबा था और बीच में कट गया — "गहराई से" की जगह छोटा सवाल पूछें)_',
+        network: 'नेटवर्क में गड़बड़ आई। इंटरनेट जांचें और फिर कोशिश करें। 🔄',
+      },
+    },
   },
 
   hinglish: {
@@ -1031,6 +1100,30 @@ export const translations: Record<Locale, TranslationShape> = {
         searchSomethingFirst: 'Kuch search karo pehle',
         noVideosFound: 'Koi video nahi mila, kuch aur search karo',
         searchFailed: 'Search fail hui, console check karo',
+      },
+    },
+    mentor: {
+      header: { title: '🤖 AI Mentor', subtitle: "Stuck? Ask here — it knows what you're learning right now" },
+      welcomeMessage:
+        'Namaste! Main aapka AI Mentor hoon. 🙏\n\nAap mujhse kuch bhi poochh sakte hain:\n• Concepts explain karwana\n• Real-world analogies\n• Quiz lena\n• Project ideas\n• Common mistakes\n\nNeeche suggestions try karein, ya apna question type karein!',
+      suggestedPrompts: [
+        { icon: '💡', label: 'Explain simply', prompt: 'Explain this concept simply' },
+        { icon: '🧠', label: 'Deep dive', prompt: 'Explain this in depth with examples' },
+        { icon: '🎯', label: 'Real analogy', prompt: 'Give me a real-world analogy' },
+        { icon: '📝', label: 'Quiz me', prompt: 'Generate a quiz on this topic' },
+        { icon: '🛠️', label: 'Project idea', prompt: 'Suggest a mini project' },
+        { icon: '🐛', label: 'Find mistake', prompt: 'What are common mistakes?' },
+      ],
+      youLabel: '👤 You',
+      mentorLabel: '🤖 Mentor',
+      inputPlaceholder: 'Ask anything...',
+      sendCta: 'Send',
+      errors: {
+        generic: 'Kuch gadbad ho gayi ({0}). Thodi der mein phir try karein. 🔄',
+        noResponse: 'Response nahi mil paaya, phir se try karein. 🔄',
+        truncatedSuffix:
+          '\n\n_(⚠️ Response lambi thi aur beech mein kat gayi — "Deep dive" ki jagah chhota sawaal poochhein)_',
+        network: 'Network error aaya. Internet check karein aur phir try karein. 🔄',
       },
     },
   },
