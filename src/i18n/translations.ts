@@ -156,6 +156,15 @@ export interface TranslationShape {
     generateCta: string;
     generatingCta: string;
   };
+  learningQuiz: {
+    assessmentLabel: string;
+    quickCheckBadge: string;
+    lastOneBadge: string;
+    hintText: string;
+    honestNote: string;
+    questions: { id: string; prompt: string; options: { key: string; text: string }[] }[];
+    honestyQuestion: { prompt: string; options: { value: string; label: string }[] };
+  };
   roadmap: {
     header: { title: string; subtitle: string };
     goalTabs: {
@@ -536,6 +545,134 @@ export const translations: Record<Locale, TranslationShape> = {
       noProfileHint: 'Complete the quiz first for better matches',
       generateCta: 'Generate',
       generatingCta: 'Generating...',
+    },
+    learningQuiz: {
+      assessmentLabel: 'Learning Style Assessment',
+      quickCheckBadge: 'Quick check',
+      lastOneBadge: 'Last one',
+      hintText: 'Answer honestly — this shapes which videos we pick for you.',
+      honestNote: 'No answer is wrong — just be honest.',
+      questions: [
+        {
+          id: 'q1_pace',
+          prompt: 'You need to learn a new topic in one hour for an exam. Which video would you pick?',
+          options: [
+            { key: 'A', text: 'A medium-length video that gives some context, then the core points' },
+            { key: 'B', text: "A detailed 45-min video — explains everything, but you might not get time to finish it" },
+            { key: 'C', text: "A fast 15-min video — straight to the core points, but no clarity if a doubt comes up" },
+            { key: 'D', text: 'A short written summary instead of a video — quick to finish' },
+          ],
+        },
+        {
+          id: 'q2_theory_practical',
+          prompt: 'Which teacher would you pick to learn a new concept?',
+          options: [
+            { key: 'A', text: 'A bit of theory, then straight into an example — a mix of both' },
+            { key: 'B', text: 'Gives you the formula/method directly — you start working right away, figure out the "why" yourself' },
+            { key: 'C', text: 'Explains the full "why" first — you\u2019ll feel confident, but it\u2019ll take longer to start' },
+            { key: 'D', text: 'Only gives practice problems, no explanation — learn by trial and error' },
+          ],
+        },
+        {
+          id: 'q3_structure',
+          prompt: 'You need to pick content for a group study session.',
+          options: [
+            { key: 'A', text: 'A fixed-order playlist — everyone follows the same sequence, no flexibility' },
+            { key: 'B', text: 'A loose roadmap — the topic order is somewhat flexible' },
+            { key: 'C', text: 'Just a playlist — watch whatever looks interesting first, no fixed order' },
+            { key: 'D', text: 'Nothing organized at all — wherever curiosity takes you' },
+          ],
+        },
+        {
+          id: 'q4_language',
+          prompt: 'Two teachers are available for the same topic.',
+          options: [
+            { key: 'A', text: 'Completely simple, everyday language — no technical terms' },
+            { key: 'B', text: 'Technical/precise language — exact, but takes extra effort to follow' },
+            { key: 'C', text: 'Simple language, but occasionally a technical term comes up (explained)' },
+            { key: 'D', text: 'Jargon-heavy, professional/industry language, with less explanation' },
+          ],
+        },
+        {
+          id: 'q5_repetition',
+          prompt: 'Choose a revision strategy before an exam.',
+          options: [
+            { key: 'A', text: "Never touch a topic again once you've seen it, unless there's a specific doubt" },
+            { key: 'B', text: "Fewer new topics — revise what you've seen 2-3 times to lock it in" },
+            { key: 'C', text: "Cover more new topics — don't repeat what you've already seen once" },
+            { key: 'D', text: 'Revise every topic many times, even if it means missing new topics' },
+          ],
+        },
+        {
+          id: 'q6_depth',
+          prompt: 'You\u2019ve understood "what" to do for a concept. The teacher asks — move on, or go into the "why" part first?',
+          options: [
+            { key: 'A', text: 'See a bit of the "why", then move on' },
+            { key: 'B', text: 'Move on — it\u2019s working, look at "why" later' },
+            { key: 'C', text: "Don't want to move on until the root cause is understood" },
+            { key: 'D', text: 'Not interested in "why", just want the result quickly' },
+          ],
+        },
+        {
+          id: 'q7_storytelling',
+          prompt: 'A concept can be explained in two ways.',
+          options: [
+            { key: 'A', text: 'Through a story/case-study — the concept reveals itself gradually' },
+            { key: 'B', text: 'With a short real-life example, straight to the point' },
+            { key: 'C', text: 'With an analogy/story that also has an emotional connection' },
+            { key: 'D', text: 'Straight to the definition and formula — direct, no extra talk' },
+          ],
+        },
+        {
+          id: 'q8_prior_knowledge',
+          prompt: 'You\u2019re starting a completely new subject you know nothing about.',
+          options: [
+            { key: 'A', text: 'I need a bit of basic background first — not completely from zero' },
+            { key: 'B', text: 'I usually already know something related that I can connect it to' },
+            { key: 'C', text: 'Starting from zero feels comfortable — no rush' },
+            { key: 'D', text: 'There\u2019s usually some overlap with prior knowledge, even in new subjects' },
+          ],
+        },
+        {
+          id: 'q9_pace_check',
+          prompt: 'Two online courses are available for the same topic — both give the same result.',
+          options: [
+            { key: 'A', text: 'Course B — 2 months, thorough — being thorough matters more' },
+            { key: 'B', text: 'Course A — 2 weeks, fast — need to finish it quickly' },
+            { key: 'C', text: 'Want something in between — not too fast, not too slow' },
+            { key: 'D', text: 'Either works, as long as the content is good' },
+          ],
+        },
+        {
+          id: 'q10_repetition_check',
+          prompt: 'You got a quiz question wrong on a concept you thought you had "understood".',
+          options: [
+            { key: 'A', text: 'Need to stop and go through the whole concept again' },
+            { key: 'B', text: 'It was just one mistake, moving on' },
+            { key: 'C', text: 'Will only revisit that specific part, not the whole thing' },
+            { key: 'D', text: "Will ask someone, won't go back and review it myself" },
+          ],
+        },
+        {
+          id: 'q11_language_check',
+          prompt: 'While reading an article, a new technical term comes up whose meaning can be guessed from context.',
+          options: [
+            { key: 'A', text: 'Think a bit and guess, then try to confirm it' },
+            { key: 'B', text: 'Guess and move on — flow matters' },
+            { key: 'C', text: 'Stop and look up the exact meaning first' },
+            { key: 'D', text: 'Skip that article, look for another source' },
+          ],
+        },
+      ],
+      honestyQuestion: {
+        prompt: 'While filling out this quiz, did you think about "which answer will make me look like a more serious/advanced learner"?',
+        options: [
+          { value: 'A', label: 'No, I chose whatever I actually felt' },
+          { value: 'B', label: 'Thought about it a little, but was mostly honest' },
+          { value: 'C', label: 'Yes, it was somewhat on my mind' },
+          { value: 'D', label: "Don't want to answer" },
+        ],
+      },
     },
     roadmap: {
       header: { title: 'Your Roadmap', subtitle: 'Foundation-first order — follow it for best results' },
@@ -938,6 +1075,134 @@ export const translations: Record<Locale, TranslationShape> = {
       generateCta: 'बनाएं',
       generatingCta: 'बन रहा है...',
     },
+    learningQuiz: {
+      assessmentLabel: 'लर्निंग स्टाइल असेसमेंट',
+      quickCheckBadge: 'क्विक चेक',
+      lastOneBadge: 'आखिरी सवाल',
+      hintText: 'ईमानदारी से जवाब दो — यह तय करेगा कि आपके लिए कौन से वीडियो चुने जाएं।',
+      honestNote: 'कोई भी जवाब गलत नहीं है — बस ईमानदार रहो।',
+      questions: [
+        {
+          id: 'q1_pace',
+          prompt: 'एक घंटे में एग्ज़ाम के लिए एक नया टॉपिक सीखना है। कौन सा वीडियो चुनोगे?',
+          options: [
+            { key: 'A', text: 'मीडियम लेंथ वीडियो जो थोड़ा कॉन्टेक्स्ट देता है, फिर मुख्य बातें' },
+            { key: 'B', text: '45 मिनट का डिटेल्ड वीडियो — सब कुछ समझाता है, लेकिन पूरा देखने का समय न मिले' },
+            { key: 'C', text: 'तेज़ 15 मिनट का वीडियो — सीधे मुख्य बातें, डाउट आया तो क्लैरिटी नहीं मिलेगी' },
+            { key: 'D', text: 'वीडियो की जगह एक छोटा लिखित सारांश पढ़ना, जल्दी खत्म' },
+          ],
+        },
+        {
+          id: 'q2_theory_practical',
+          prompt: 'नया कॉन्सेप्ट सीखने के लिए कौन सा टीचर चुनोगे?',
+          options: [
+            { key: 'A', text: 'थोड़ी थ्योरी, फिर सीधे एक उदाहरण — दोनों का मिक्स' },
+            { key: 'B', text: 'सीधे फॉर्मूला/तरीका देता है — तुरंत काम शुरू, "क्यों" खुद पता लगाना होगा' },
+            { key: 'C', text: 'पहले पूरा "क्यों" समझाता है — कॉन्फिडेंस मिलेगा, शुरू होने में देर लगेगी' },
+            { key: 'D', text: 'सिर्फ प्रैक्टिस प्रॉब्लम देता है, कोई एक्सप्लेनेशन नहीं — करते-करते सीखो' },
+          ],
+        },
+        {
+          id: 'q3_structure',
+          prompt: 'ग्रुप स्टडी के लिए कंटेंट चुनना है।',
+          options: [
+            { key: 'A', text: 'फिक्स्ड-ऑर्डर प्लेलिस्ट — सबको एक ही क्रम फॉलो करना होगा, कोई फ्लेक्सिबिलिटी नहीं' },
+            { key: 'B', text: 'एक लूज़ रोडमैप है, टॉपिक का क्रम थोड़ा फ्लेक्सिबल' },
+            { key: 'C', text: 'सिर्फ एक प्लेलिस्ट — जो इंटरेस्टिंग लगे वही पहले देखो, कोई फिक्स्ड ऑर्डर नहीं' },
+            { key: 'D', text: 'कुछ भी ऑर्गनाइज़्ड नहीं है — जहां क्यूरियोसिटी ले जाए' },
+          ],
+        },
+        {
+          id: 'q4_language',
+          prompt: 'एक ही टॉपिक के लिए दो टीचर उपलब्ध हैं।',
+          options: [
+            { key: 'A', text: 'बिल्कुल सिंपल रोज़मर्रा की भाषा — कोई टेक्निकल टर्म नहीं' },
+            { key: 'B', text: 'टेक्निकल/सटीक भाषा — एग्ज़ैक्ट है, समझने में एक्स्ट्रा मेहनत लगती है' },
+            { key: 'C', text: 'सिंपल भाषा, लेकिन कभी-कभी एक टेक्निकल टर्म आता है (समझाकर)' },
+            { key: 'D', text: 'जार्गन-हैवी, प्रोफेशनल/इंडस्ट्री भाषा, कम एक्सप्लेनेशन के साथ' },
+          ],
+        },
+        {
+          id: 'q5_repetition',
+          prompt: 'एग्ज़ाम से पहले रिवीज़न स्ट्रेटेजी चुननी है।',
+          options: [
+            { key: 'A', text: 'एक बार देखा हुआ टॉपिक दोबारा नहीं छूना, जब तक कोई खास डाउट न हो' },
+            { key: 'B', text: 'कम नए टॉपिक, जो देखा है उसे 2-3 बार रिवाइज़ करो पक्का करने के लिए' },
+            { key: 'C', text: 'ज़्यादा नए टॉपिक कवर करो — जो एक बार देख लिया उसे रिपीट मत करो' },
+            { key: 'D', text: 'हर टॉपिक को कई बार दोहराना, चाहे नए टॉपिक छूट जाएं' },
+          ],
+        },
+        {
+          id: 'q6_depth',
+          prompt: 'कॉन्सेप्ट में "क्या" करना है समझ आ गया। टीचर पूछ रहा है — आगे बढ़ें या "क्यों" वाले हिस्से में जाएं?',
+          options: [
+            { key: 'A', text: 'थोड़ा "क्यों" देख लो, फिर आगे बढ़ो' },
+            { key: 'B', text: 'आगे बढ़ो — काम हो रहा है, "क्यों" बाद में देख लेंगे' },
+            { key: 'C', text: 'जब तक रूट कॉज़ समझ न आए, आगे बढ़ना ही नहीं चाहता/चाहती' },
+            { key: 'D', text: '"क्यों" में इंटरेस्ट नहीं, बस रिज़ल्ट चाहिए जल्दी' },
+          ],
+        },
+        {
+          id: 'q7_storytelling',
+          prompt: 'एक कॉन्सेप्ट दो तरीकों से एक्सप्लेन हो सकता है।',
+          options: [
+            { key: 'A', text: 'एक कहानी/केस-स्टडी के ज़रिए — कॉन्सेप्ट धीरे-धीरे रिवील होता है' },
+            { key: 'B', text: 'छोटे रियल-लाइफ उदाहरण के साथ, सीधे पॉइंट पर' },
+            { key: 'C', text: 'एक एनालॉजी/कहानी के साथ, जिसमें इमोशनल कनेक्ट भी हो' },
+            { key: 'D', text: 'सीधे डेफिनिशन और फॉर्मूला — डायरेक्ट, कोई एक्स्ट्रा बातें नहीं' },
+          ],
+        },
+        {
+          id: 'q8_prior_knowledge',
+          prompt: 'बिल्कुल नया सब्जेक्ट शुरू कर रहे हो जिसके बारे में कुछ नहीं पता।',
+          options: [
+            { key: 'A', text: 'थोड़ी बेसिक बैकग्राउंड पहले चाहिए होती है — पूरी ज़ीरो से नहीं' },
+            { key: 'B', text: 'आमतौर पर कुछ न कुछ रिलेटेड पहले से पता होता है जिससे कनेक्ट कर लेता/लेती हूं' },
+            { key: 'C', text: 'ज़ीरो से शुरू करना कम्फर्टेबल लगता है — कोई जल्दी नहीं' },
+            { key: 'D', text: 'ज़्यादातर नए सब्जेक्ट्स में भी कुछ ओवरलैप मिल ही जाता है पुराने नॉलेज से' },
+          ],
+        },
+        {
+          id: 'q9_pace_check',
+          prompt: 'एक ही टॉपिक के लिए दो ऑनलाइन कोर्स मिलते हैं — दोनों से एक जैसा रिज़ल्ट मिलेगा।',
+          options: [
+            { key: 'A', text: 'कोर्स B — 2 महीने का, थॉरो — थॉरो होना ज़्यादा ज़रूरी है' },
+            { key: 'B', text: 'कोर्स A — 2 हफ्ते का, फास्ट — जल्दी खत्म करना है' },
+            { key: 'C', text: 'बीच का कोई ऑप्शन चाहिए — न बहुत फास्ट, न बहुत स्लो' },
+            { key: 'D', text: 'कोई भी चलेगा, जब तक कंटेंट अच्छा हो' },
+          ],
+        },
+        {
+          id: 'q10_repetition_check',
+          prompt: 'क्विज़ में गलत आंसर आया किसी कॉन्सेप्ट पे जो "समझ में आ गया" लगा था।',
+          options: [
+            { key: 'A', text: 'रुककर वापस से पूरा कॉन्सेप्ट देखना पड़ेगा' },
+            { key: 'B', text: 'बस एक गलती थी, आगे बढ़ता/बढ़ती हूं' },
+            { key: 'C', text: 'सिर्फ वही स्पेसिफिक पार्ट दोबारा देख लूंगा/लूंगी, पूरा नहीं' },
+            { key: 'D', text: 'किसी से पूछ लूंगा/लूंगी, खुद दोबारा नहीं देखूंगा/देखूंगी' },
+          ],
+        },
+        {
+          id: 'q11_language_check',
+          prompt: 'आर्टिकल पढ़ते वक्त एक नया टेक्निकल टर्म आता है जिसका मतलब कॉन्टेक्स्ट से गेस हो सकता है।',
+          options: [
+            { key: 'A', text: 'थोड़ा सोचकर गेस करता/करती हूं, फिर कन्फर्म करने की कोशिश करता/करती हूं' },
+            { key: 'B', text: 'गेस करके आगे बढ़ जाता/जाती हूं — फ्लो ज़रूरी है' },
+            { key: 'C', text: 'रुककर एग्ज़ैक्ट मतलब ढूंढता/ढूंढती हूं पहले' },
+            { key: 'D', text: 'उस आर्टिकल को छोड़ देता/देती हूं, कोई और सोर्स ढूंढता/ढूंढती हूं' },
+          ],
+        },
+      ],
+      honestyQuestion: {
+        prompt: 'यह क्विज़ भरते वक्त क्या सोचा — "कौन सा आंसर मुझे ज़्यादा सीरियस/एडवांस्ड लर्नर दिखाएगा"?',
+        options: [
+          { value: 'A', label: 'नहीं, जो एक्चुअली फील हुआ वही चुना' },
+          { value: 'B', label: 'थोड़ा सोचा, लेकिन ज़्यादातर ईमानदार रहा/रही' },
+          { value: 'C', label: 'हां, थोड़ा ध्यान में था' },
+          { value: 'D', label: 'आंसर नहीं देना चाहता/चाहती' },
+        ],
+      },
+    },
     roadmap: {
       header: { title: 'आपका रोडमैप', subtitle: 'पहले बुनियाद — सबसे अच्छे नतीजे के लिए इसी क्रम में चलें' },
       goalTabs: {
@@ -1336,6 +1601,134 @@ export const translations: Record<Locale, TranslationShape> = {
       noProfileHint: 'Pehle quiz complete karo for better matches',
       generateCta: 'Generate',
       generatingCta: 'Generating...',
+    },
+    learningQuiz: {
+      assessmentLabel: 'Learning Style Assessment',
+      quickCheckBadge: 'Quick check',
+      lastOneBadge: 'Last one',
+      hintText: 'Answer honestly — this shapes which videos we pick for you.',
+      honestNote: 'Koi bhi answer galat nahi hai — bas honest raho.',
+      questions: [
+        {
+          id: 'q1_pace',
+          prompt: 'Ek hi ghante mein ek naya topic seekhna hai exam ke liye. Kaunsa video choose karoge?',
+          options: [
+            { key: 'A', text: 'Medium-length video jo thoda context deta hai, phir core points' },
+            { key: 'B', text: 'Detailed 45-min video — sab kuch samjhata hai, lekin poora dekhne ka time na mile' },
+            { key: 'C', text: 'Fast 15-min video — seedha core points, doubt aaya toh clarity nahi milegi' },
+            { key: 'D', text: 'Video ke bajaye ek chhota written summary padhna, jaldi khatam' },
+          ],
+        },
+        {
+          id: 'q2_theory_practical',
+          prompt: 'Naya concept seekhne ke liye kaunsa teacher choose karoge?',
+          options: [
+            { key: 'A', text: 'Thoda theory, phir seedha ek example — dono ka mix' },
+            { key: 'B', text: 'Seedha formula/method deta hai — turant kaam shuru, "kyun" khud figure out karna hoga' },
+            { key: 'C', text: 'Pehle poora "kyun" explain karta hai — confidence milega, shuru hone mein der lagegi' },
+            { key: 'D', text: 'Sirf practice problems deta hai, koi explanation nahi — trial and error se seekho' },
+          ],
+        },
+        {
+          id: 'q3_structure',
+          prompt: 'Group study ke liye content choose karna hai.',
+          options: [
+            { key: 'A', text: 'Fixed-order playlist — sabko same sequence follow karna hoga, koi flexibility nahi' },
+            { key: 'B', text: 'Ek loose roadmap hai, topics ka order thoda flexible' },
+            { key: 'C', text: 'Sirf ek playlist — jo interesting lage wahi pehle dekho, koi fixed order nahi' },
+            { key: 'D', text: 'Kuch bhi organized nahi hai — jahan curiosity le jaaye' },
+          ],
+        },
+        {
+          id: 'q4_language',
+          prompt: 'Do teachers available hain same topic ke liye.',
+          options: [
+            { key: 'A', text: 'Bilkul simple everyday language — koi technical term nahi' },
+            { key: 'B', text: 'Technical/precise language — exact hai, extra effort lagta hai samajhne mein' },
+            { key: 'C', text: 'Simple language, lekin kabhi-kabhi ek technical term aata hai (explain karke)' },
+            { key: 'D', text: 'Jargon-heavy, professional/industry language, kam explanation ke saath' },
+          ],
+        },
+        {
+          id: 'q5_repetition',
+          prompt: 'Exam se pehle revision strategy choose karni hai.',
+          options: [
+            { key: 'A', text: 'Ek baar dekha hua topic dobara nahi chhuna, jab tak koi specific doubt na ho' },
+            { key: 'B', text: 'Kam naye topics, jo dekha hai usse 2-3 baar revise karo pakka karne ke liye' },
+            { key: 'C', text: 'Naye topics zyada cover karo — repeat mat karo jo ek baar dekh liya' },
+            { key: 'D', text: 'Har topic ko kai baar dohrana, chahe naye topics chhoot jaayein' },
+          ],
+        },
+        {
+          id: 'q6_depth',
+          prompt: 'Concept samajh aa gaya "kya" karna hai. Teacher pooch raha hai — aage badhein ya "kyun" wale part mein jaayein?',
+          options: [
+            { key: 'A', text: 'Thoda "kyun" dekh lo, phir aage badho' },
+            { key: 'B', text: 'Aage badho — kaam ho raha hai, "kyun" baad mein dekh lenge' },
+            { key: 'C', text: 'Jab tak root cause samajh na aaye, aage badhna hi nahi chahta/chahti' },
+            { key: 'D', text: '"Kyun" mein interest nahi, bas result chahiye jaldi' },
+          ],
+        },
+        {
+          id: 'q7_storytelling',
+          prompt: 'Ek concept do tarike se explain ho sakta hai.',
+          options: [
+            { key: 'A', text: 'Ek kahani/case-study ke through — concept dheere-dheere reveal hota hai' },
+            { key: 'B', text: 'Chhota real-life example ke saath, seedha point pe' },
+            { key: 'C', text: 'Ek analogy/story ke saath, jisme emotional connect bhi ho' },
+            { key: 'D', text: 'Seedha definition aur formula — direct, koi extra baatein nahi' },
+          ],
+        },
+        {
+          id: 'q8_prior_knowledge',
+          prompt: 'Bilkul naya subject start kar rahe ho jiske baare mein kuch nahi pata.',
+          options: [
+            { key: 'A', text: 'Thodi basic background pehle chahiye hoti hai — poori zero se nahi' },
+            { key: 'B', text: 'Generally kuch na kuch related pehle se pata hota hai jisse connect kar leta/leti hoon' },
+            { key: 'C', text: 'Zero se start karna comfortable lagta hai — koi jaldi nahi' },
+            { key: 'D', text: 'Zyadatar naye subjects mein bhi kuch overlap mil hi jaata hai purane knowledge se' },
+          ],
+        },
+        {
+          id: 'q9_pace_check',
+          prompt: '2 online courses milte hain same topic ke — dono se same result milega.',
+          options: [
+            { key: 'A', text: 'Course B — 2 mahine ka, thorough — thorough hona zyada important hai' },
+            { key: 'B', text: 'Course A — 2 hafte ka, fast — jaldi khatam karna hai' },
+            { key: 'C', text: 'Beech ka koi option chahiye — na bahut fast, na bahut slow' },
+            { key: 'D', text: 'Koi bhi chalega, jab tak content achha ho' },
+          ],
+        },
+        {
+          id: 'q10_repetition_check',
+          prompt: 'Quiz mein galat answer aaya kisi concept pe jo "samajh mein aa gaya" laga tha.',
+          options: [
+            { key: 'A', text: 'Ruk ke wapas se poora concept dekhna padega' },
+            { key: 'B', text: 'Bas ek galti thi, aage badhta/badhti hoon' },
+            { key: 'C', text: 'Sirf wahi specific part dobara dekh lunga/lungi, poora nahi' },
+            { key: 'D', text: 'Kisi se puchh lunga/lungi, khud dobara nahi dekhunga/dekhungi' },
+          ],
+        },
+        {
+          id: 'q11_language_check',
+          prompt: 'Article padhte waqt ek naya technical term aata hai jiska matlab context se guess ho sakta hai.',
+          options: [
+            { key: 'A', text: 'Thoda soch ke guess karta/karti hoon, phir confirm karne ki koshish karta/karti hoon' },
+            { key: 'B', text: 'Guess karke aage badh jaata/jaati hoon — flow important hai' },
+            { key: 'C', text: 'Ruk ke exact meaning dhoondta/dhoondti hoon pehle' },
+            { key: 'D', text: 'Us article ko chhod deta/deti hoon, koi aur source dhoondta/dhoondti hoon' },
+          ],
+        },
+      ],
+      honestyQuestion: {
+        prompt: 'Is quiz ko bharte waqt kya socha: "kaunsa answer mujhe zyada serious/advanced learner dikhayega"?',
+        options: [
+          { value: 'A', label: 'Nahi, jo actually feel hua wahi choose kiya' },
+          { value: 'B', label: 'Thoda socha, lekin zyada tar honest raha' },
+          { value: 'C', label: 'Haan, thoda dhyaan mein tha' },
+          { value: 'D', label: 'Answer nahi dena chahta/chahti' },
+        ],
+      },
     },
     roadmap: {
       header: { title: 'Your Roadmap', subtitle: 'Foundation-first order — follow it for best results' },
