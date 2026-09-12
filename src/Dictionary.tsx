@@ -178,7 +178,7 @@ export default function Dictionary() {
           {entry.sanskritMatches && entry.sanskritMatches.length > 0 && (
             <div className="border border-gray-200 dark:border-white/10 rounded-lg p-4">
               <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-white/40 mb-2">
-                Sanskrit (approximate suggestions)
+                Sanskrit root
               </p>
               <div className="space-y-2">
                 {entry.sanskritMatches.map((m, i) => (
@@ -192,8 +192,8 @@ export default function Dictionary() {
                 ))}
               </div>
               <p className="text-xs text-gray-400 dark:text-white/30 mt-2">
-                Computed from an 1899 Sanskrit-English dictionary — treat as a starting point, not a
-                confirmed translation.
+                Found via the Hindi meaning above matching a Sanskrit dictionary headword — reliable
+                for most words, but a rare shared spelling with an unrelated Sanskrit word is possible.
               </p>
             </div>
           )}
