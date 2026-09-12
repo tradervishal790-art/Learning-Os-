@@ -12,6 +12,12 @@ export interface DictionarySense {
   hindi: string[];
 }
 
+export interface SanskritMatch {
+  devanagari: string;
+  slp1: string;
+  meaning: string;
+}
+
 export interface DictionaryEntry {
   word: string;
   partsOfSpeech: string[];
@@ -21,6 +27,10 @@ export interface DictionaryEntry {
   level?: string;
   frequencyRank?: number;
   forms?: string[];
+  /** Best-effort English->Sanskrit suggestions (see sk field below) — computed
+   *  from keyword frequency over the 1899 Monier-Williams dictionary, so
+   *  treat as approximate, not authoritative. Always show as "suggestions". */
+  sanskritMatches?: SanskritMatch[];
 }
 
 interface RawEntry {
@@ -35,6 +45,7 @@ interface RawEntry {
   a?: string;
   l?: string;
   fr?: number;
+  sk?: { deva: string; slp1: string; meaning: string }[];
 }
 
 const DICTIONARY_URL = '/data/dictionary.json';
@@ -89,6 +100,7 @@ function toEntry(raw: RawEntry): DictionaryEntry {
     level: raw.l,
     frequencyRank: raw.fr,
     forms: raw.f,
+    sanskritMatches: raw.sk?.map((m) => ({ devanagari: m.deva, slp1: m.slp1, meaning: m.meaning })),
   };
 }
 

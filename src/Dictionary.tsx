@@ -175,6 +175,29 @@ export default function Dictionary() {
             ))}
           </div>
 
+          {entry.sanskritMatches && entry.sanskritMatches.length > 0 && (
+            <div className="border border-gray-200 dark:border-white/10 rounded-lg p-4">
+              <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-white/40 mb-2">
+                Sanskrit (approximate suggestions)
+              </p>
+              <div className="space-y-2">
+                {entry.sanskritMatches.map((m, i) => (
+                  <div key={i}>
+                    <span className="text-lg">{m.devanagari}</span>
+                    <span className="text-sm text-gray-500 dark:text-white/40"> ({m.slp1})</span>
+                    {m.meaning && (
+                      <p className="text-sm text-gray-500 dark:text-white/50">{m.meaning}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-gray-400 dark:text-white/30 mt-2">
+                Computed from an 1899 Sanskrit-English dictionary — treat as a starting point, not a
+                confirmed translation.
+              </p>
+            </div>
+          )}
+
           {entry.forms && entry.forms.length > 0 && (
             <p className="text-sm text-gray-500 dark:text-white/40">Other forms: {entry.forms.join(', ')}</p>
           )}
