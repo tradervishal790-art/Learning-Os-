@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { ComponentType } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Film } from 'lucide-react';
+import { Search, Film, BookOpen } from 'lucide-react';
 import PagePlaceholder from './PagePlaceholder';
 import Roadmap from './Roadmap';
 import Revision from './Revision';
@@ -22,6 +22,7 @@ import Mentor from './Mentor';
 import Notes from './Notes';
 import Progress from './progress';
 import Research from './Research';
+import Dictionary from './Dictionary';
 import HintBubble from './HintBubble';
 import Onborda from './Onborda';
 import { OnbordaProvider, useOnborda } from './OnbordaContext';
@@ -166,6 +167,7 @@ const sidebarItems: { id: DashboardPageId; label: string; icon?: ComponentType<{
   { id: 'mentor', label: 'Mentor' },
   { id: 'progress', label: 'Progress' },
   { id: 'research', label: 'Research', icon: Search },
+  { id: 'dictionary', label: 'Dictionary', icon: BookOpen },
 ];
 
 const roleOptions = ['student', 'developer', 'researcher', 'business', 'exam', 'creator'];
@@ -919,6 +921,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
         {activePage === 'notes' && <Notes />}
         {activePage === 'progress' && <Progress goals={goals} />}
         {activePage === 'research' && <Research />}
+        {activePage === 'dictionary' && <Dictionary />}
 
         {config && (
           <PagePlaceholder

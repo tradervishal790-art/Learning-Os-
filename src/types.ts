@@ -221,7 +221,8 @@ export type DashboardPageId =
   | 'videos'
   | 'mentor'
   | 'progress'
-  | 'research';
+  | 'research'
+  | 'dictionary';
   // ---------- Learning Style Profile ----------
 export interface LearningProfile {
   pace: number;
