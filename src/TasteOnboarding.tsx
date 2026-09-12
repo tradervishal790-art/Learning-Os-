@@ -120,7 +120,7 @@ export default function TasteOnboarding({ onComplete, onClose }: TasteOnboarding
 
       if (results.length === 0) {
         setPhase('error');
-        setErrorMsg('Koi bhi video analyze nahi ho paaya. Links check karke phir try karo.');
+        setErrorMsg('None of the videos could be analyzed. Check the links and try again.');
         return current;
       }
 
@@ -171,11 +171,11 @@ export default function TasteOnboarding({ onComplete, onClose }: TasteOnboarding
             <motion.div key="form" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <HintBubble id="video-providing" text="Share a video you've fully watched (45+ min) — we'll learn your style from it." />
               <h3 className="text-base md:text-lg font-semibold mb-1 leading-snug">
-                Wo videos do jo aap pehle se pura dekh chuke ho
+                Give videos you've already watched in full
               </h3>
               <p className="text-xs text-gray-400 dark:text-white/40 mb-4">
-                Kam se kam {MIN_VIDEOS} videos, har ek {MIN_DURATION_MINUTES}+ min ka — kisi bhi topic pe. Isse aapka
-                learning style quiz se nahi, real videos se samjha jaata hai.
+                At least {MIN_VIDEOS} videos, each {MIN_DURATION_MINUTES}+ min long — on any topic. This figures out your
+                learning style from real videos, not a quiz.
               </p>
 
               <div className="space-y-3 mb-4">
@@ -207,9 +207,9 @@ export default function TasteOnboarding({ onComplete, onClose }: TasteOnboarding
                           onChange={(e) => updateEntry(entry.id, { watchedFully: e.target.checked })}
                           className="rounded"
                         />
-                        Maine yeh video pura dekha hai
+                        I've watched this video fully
                         {!extractVideoId(entry.url) && (
-                          <span className="text-red-400 ml-1">(link samajh nahi aaya)</span>
+                          <span className="text-red-400 ml-1">(couldn't read this link)</span>
                         )}
                       </label>
                     )}
@@ -221,7 +221,7 @@ export default function TasteOnboarding({ onComplete, onClose }: TasteOnboarding
                 onClick={addEntry}
                 className="text-xs text-gray-400 dark:text-white/40 hover:text-black dark:hover:text-white transition mb-4"
               >
-                + Ek aur video add karo
+                + Add another video
               </button>
 
               <button
@@ -233,7 +233,7 @@ export default function TasteOnboarding({ onComplete, onClose }: TasteOnboarding
               </button>
               {!canSubmit && filledEntries.length > 0 && (
                 <p className="text-xs text-gray-400 dark:text-white/40 mt-2 text-center">
-                  Har video ke liye link valid ho aur "pura dekha hai" checked ho.
+                  Every video needs a valid link and "watched fully" checked.
                 </p>
               )}
             </motion.div>
@@ -242,7 +242,7 @@ export default function TasteOnboarding({ onComplete, onClose }: TasteOnboarding
           {phase === 'analyzing' && (
             <motion.div key="analyzing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-2">
               <p className="text-sm text-gray-500 dark:text-white/50 mb-4 text-center">
-                Videos analyze ho rahe hain — thoda time lagega...
+                Analyzing videos — this will take a moment...
               </p>
               <div className="space-y-2">
                 {entries
@@ -275,9 +275,9 @@ export default function TasteOnboarding({ onComplete, onClose }: TasteOnboarding
           {phase === 'done' && (
             <motion.div key="done" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-6 text-center">
               <div className="text-3xl mb-3">✅</div>
-              <p className="text-sm font-medium mb-1">Profile update ho gaya</p>
+              <p className="text-sm font-medium mb-1">Profile updated</p>
               <p className="text-xs text-gray-400 dark:text-white/40 mb-5">
-                {successCount} video{successCount === 1 ? '' : 's'} ke analysis se banaya gaya
+                Built from analysis of {successCount} video{successCount === 1 ? '' : 's'}
               </p>
               <button
                 onClick={onClose}
@@ -295,7 +295,7 @@ export default function TasteOnboarding({ onComplete, onClose }: TasteOnboarding
                 onClick={() => setPhase('form')}
                 className="px-4 py-2.5 rounded-lg border border-gray-200 dark:border-white/10 text-sm hover:bg-gray-100 dark:hover:bg-white/10 transition"
               >
-                Phir Try Karo
+                Try Again
               </button>
             </motion.div>
           )}

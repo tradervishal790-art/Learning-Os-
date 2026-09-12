@@ -23,9 +23,9 @@ export type DimensionKey =
 export type DeepDiveSignals = Partial<Record<DimensionKey, number>>;
 
 export const DEEP_DIVE_QUESTIONS = [
-  'Koi recent topic bataiye jo aapko samajhne mein dikkat hui — kya problem thi exactly?',
-  'Jab koi concept achhe se "click" ho jaata hai aapke liye, wo moment kaisa hota hai? Ek example dijiye.',
-  'Kal se ek bilkul naya subject start karna ho jisme kuch pata nahi — sabse pehla step kya lenge?',
+  'Tell me about a recent topic you had trouble understanding — what exactly was the problem?',
+  'When a concept really "clicks" for you, what does that moment feel like? Give an example.',
+  "Say you're starting a completely new subject tomorrow that you know nothing about — what's the very first step you'd take?",
 ] as const;
 
 const DIMENSION_KEYS: DimensionKey[] = [
@@ -42,11 +42,11 @@ const DIMENSION_KEYS: DimensionKey[] = [
 export function buildExtractionPrompt(qaPairs: { question: string; answer: string }[]): string {
   const transcript = qaPairs.map((qa, i) => `Q${i + 1}: ${qa.question}\nA${i + 1}: ${qa.answer}`).join('\n\n');
 
-  return `Neeche ek student ke 3 open-ended answers hain unke learning style ke baare mein.
+  return `Below are a student's 3 open-ended answers about their learning style.
 
 ${transcript}
 
-Inn answers ko padhkar, is student ko in 8 dimensions par 1-10 scale par rate karo (1 = ek extreme, 10 = doosra extreme):
+Based on these answers, rate this student on these 8 dimensions on a 1-10 scale (1 = one extreme, 10 = the other extreme):
 
 - pace (1=slow/thorough, 10=fast/skim)
 - theoryVsPractical (1=theory-first, 10=practical/hands-on-first)
@@ -57,7 +57,7 @@ Inn answers ko padhkar, is student ko in 8 dimensions par 1-10 scale par rate ka
 - repetitionNeed (1=once is enough, 10=needs repeated revision)
 - priorKnowledgeComfort (1=needs zero-background start, 10=comfortable connecting to prior knowledge)
 
-Sirf JSON return karo, koi extra text nahi, koi markdown fence nahi. Exact format:
+Return only JSON, no extra text, no markdown fence. Exact format:
 {"pace":N,"theoryVsPractical":N,"structureNeed":N,"depth":N,"languageComplexity":N,"storytelling":N,"repetitionNeed":N,"priorKnowledgeComfort":N}`;
 }
 

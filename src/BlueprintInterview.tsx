@@ -98,7 +98,7 @@ export default function BlueprintInterview({
       onComplete(profile);
     } catch (err: any) {
       setPhase('error');
-      setErrorMsg(err.message || 'Analysis fail ho gaya.');
+      setErrorMsg(err.message || 'Analysis failed.');
     }
   };
 
@@ -127,7 +127,7 @@ export default function BlueprintInterview({
       onComplete(profile);
     } catch (err: any) {
       setPhase('error');
-      setErrorMsg(err.message || 'Analysis fail ho gaya.');
+      setErrorMsg(err.message || 'Analysis failed.');
     }
   };
 
@@ -152,7 +152,7 @@ export default function BlueprintInterview({
                 ? 'Complete!'
                 : phase === 'analyzing'
                 ? 'Analyzing your answers...'
-                : `Sawaal ${currentIndex + 1} / ${totalQuestions}`}
+                : `Question ${currentIndex + 1} / ${totalQuestions}`}
             </p>
             {phase === 'answering' && (
               <div className="mt-2 h-1 bg-gray-200 dark:bg-white/10 rounded-full overflow-hidden">
@@ -201,7 +201,7 @@ export default function BlueprintInterview({
                     onClick={handleBack}
                     className="mt-4 text-xs text-gray-400 dark:text-white/40 hover:text-gray-600 dark:hover:text-white/70 transition"
                   >
-                    ← Pichla sawaal
+                    ← Previous question
                   </button>
                 )}
               </motion.div>
@@ -215,7 +215,7 @@ export default function BlueprintInterview({
                 <span className="w-2.5 h-2.5 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
                 <span className="w-2.5 h-2.5 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
               </div>
-              <p className="text-xs text-gray-400 dark:text-white/40">Aapke jawabon ko deeply analyze kar rahe hain...</p>
+              <p className="text-xs text-gray-400 dark:text-white/40">Deeply analyzing your answers...</p>
             </div>
           )}
 
@@ -300,7 +300,7 @@ export default function BlueprintInterview({
                 onClick={handleRetryAnalysis}
                 className="px-4 py-2 rounded-xl border border-gray-300 dark:border-white/10 text-sm font-medium hover:bg-gray-100 dark:hover:bg-white/10 transition"
               >
-                🔄 Phir try karein
+                🔄 Try again
               </button>
             </div>
           )}

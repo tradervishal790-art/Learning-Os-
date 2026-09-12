@@ -20,44 +20,44 @@ export function getGrade(score: number): Grade {
 
 const VERDICTS: Record<string, { high: string; mid: string; low: string }> = {
   pace: {
-    high: 'Aap fast-paced learner hain — lambi cheezein skim karke seedha essence pakadte hain.',
-    mid: 'Aapka pace balanced hai — na bahut slow, na bahut fast.',
-    low: 'Aapko thorough, slow-paced content chahiye — jaldi mein cheezein miss ho jaati hain.',
+    high: "You're a fast-paced learner — you skim through long material and go straight for the essence.",
+    mid: 'Your pace is balanced — not too slow, not too fast.',
+    low: 'You need thorough, slow-paced content — moving too fast makes you miss things.',
   },
   theoryVsPractical: {
-    high: 'Aap hands-on seekhte hain — pehle karke dekhna, phir samajhna aapka style hai.',
-    mid: 'Theory aur practical dono ka mix aapke liye kaam karta hai.',
-    low: 'Aapko pehle solid theory chahiye, uske baad hi practical mein confidence aata hai.',
+    high: 'You learn hands-on — doing it first, then understanding, is your style.',
+    mid: 'A mix of theory and practical works for you.',
+    low: 'You need solid theory first — confidence in the practical only comes after that.',
   },
   structureNeed: {
-    high: 'Aapko clear, step-by-step structure chahiye — flexible/random content confuse karta hai.',
-    mid: 'Thoda structure helpful hai, lekin poori rigidity zaroori nahi.',
-    low: 'Aap flexible learner hain — structure ki zyada zaroorat nahi padti.',
+    high: 'You need clear, step-by-step structure — flexible/random content confuses you.',
+    mid: "A bit of structure helps, but full rigidity isn't necessary.",
+    low: "You're a flexible learner — structure isn't really needed.",
   },
   depth: {
-    high: 'Aapko root-cause tak jaana pasand hai — surface-level explanation satisfy nahi karta.',
-    mid: 'Aap zaroorat ke hisaab se depth mein jaate hain, hamesha nahi.',
-    low: 'Surface-level understanding aapke liye kaafi hai — deep-diving se pace slow hoti hai.',
+    high: "You like to get to the root cause — surface-level explanations don't satisfy you.",
+    mid: 'You go deep when needed, not always.',
+    low: 'Surface-level understanding is enough for you — deep-diving slows down your pace.',
   },
   languageComplexity: {
-    high: 'Technical jargon se aapko problem nahi — comfortable hain complex vocabulary ke saath.',
-    mid: 'Kuch jargon chalta hai, lekin bahut technical language confuse kar sakti hai.',
-    low: 'Aapko simple, everyday language mein samjhaya jaana chahiye — jargon se dooriyan.',
+    high: "Technical jargon doesn't bother you — you're comfortable with complex vocabulary.",
+    mid: 'Some jargon is fine, but very technical language can confuse you.',
+    low: 'You need things explained in simple, everyday language — jargon should be kept at a distance.',
   },
   storytelling: {
-    high: 'Real-life stories aur analogies se concepts aapke mind mein permanently baith jaate hain.',
-    mid: 'Stories help karti hain, lekin zaroori nahi har jagah.',
-    low: 'Aapko direct, to-the-point explanation pasand hai — stories se distract ho sakte hain.',
+    high: 'Real-life stories and analogies make concepts stick permanently in your mind.',
+    mid: "Stories help, but aren't necessary everywhere.",
+    low: 'You prefer direct, to-the-point explanations — stories can distract you.',
   },
   repetitionNeed: {
-    high: 'Aapko multiple revisions chahiye deep clarity ke liye — ek baar padhna kaafi nahi.',
-    mid: 'Thoda revision helpful hota hai, lekin zyada zaroorat nahi.',
-    low: 'Ek baar samajh liya to dobara revise karne ki zaroorat kam hi padti hai.',
+    high: "You need multiple revisions for deep clarity — reading it once isn't enough.",
+    mid: "Some revision helps, but you don't need a lot of it.",
+    low: 'Once you understand something, you rarely need to revise it again.',
   },
   priorKnowledgeComfort: {
-    high: 'Naye topics ko purani knowledge se connect karke aap jaldi seekhte hain.',
-    mid: 'Kabhi kabhi prior knowledge se connect karte hain, hamesha nahi.',
-    low: 'Aapko fresh start pasand hai — purani knowledge se connect karna zaroori nahi lagta.',
+    high: 'You learn quickly by connecting new topics to what you already know.',
+    mid: 'You sometimes connect to prior knowledge, not always.',
+    low: "You prefer a fresh start — connecting to prior knowledge doesn't feel necessary.",
   },
 };
 

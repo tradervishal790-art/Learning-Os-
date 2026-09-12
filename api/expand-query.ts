@@ -17,9 +17,9 @@ interface Blueprint {
 }
 
 const QUERY_EXPANSION_PROMPT = (userInput: string, blueprint: Blueprint) => `
-User ne likha: "${userInput}"
+User wrote: "${userInput}"
 
-User ka Mind Blueprint:
+User's Mind Blueprint:
 - Role: ${blueprint.role}
 - Goal: ${blueprint.goal}
 - Language preference: ${blueprint.language}
@@ -32,19 +32,19 @@ User ka Mind Blueprint:
   - Storytelling (1=dry, 10=story-driven): ${blueprint.style.storytelling}
   - Language complexity (1=basic, 10=jargon-heavy): ${blueprint.style.languageComplexity}
 
-YouTube search ke liye 3-5 SPECIFIC personalized queries do jo is exact user ke style aur goal se match karein.
+Give 3-5 SPECIFIC, personalized YouTube search queries that match this exact user's style and goal.
 
 Rules:
-- Generic "best"/"top"/"easy" mat use kar — specific keywords use kar
-- ${blueprint.style.practical >= 7 ? 'Practical/hands-on content prioritize kar — "examples", "project", "real-world" keywords use kar' : 'Theory-focused content prioritize kar — "derivation", "proof", "explanation" keywords use kar'}
-- ${blueprint.style.pace >= 7 ? 'User fast pace prefer karta hai — "in one shot", "complete", "summary" type queries bhi include kar' : 'User detailed pace prefer karta hai — "step by step", "detailed", "thorough" type queries'}
-- ${blueprint.style.storytelling >= 7 ? 'Story/analogy-driven keywords prefer kar — "story", "real world", "analogy"' : ''}
-- ${blueprint.language === 'hindi' ? 'User ne Hindi language choose ki hai — queries mein explicitly Hindi-spoken video ke liye hints daal ("hindi mein samjhaye", "hindi explanation", "hindi medium"), sirf India-context English terms (NCERT, board exam) kaafi nahi hain kyunki wo English-audio videos bhi la sakte hain.' : blueprint.language === 'hinglish' ? 'User ne Hinglish choose ki hai — kam se kam ek query mein "hindi medium" ya "hindi mein" jaisa hint daalo taaki Hindi-audio explanation wale videos bhi aayein, baaki queries mixed keywords use kar sakti hain.' : 'Language preference English hai — India-specific terms (NCERT, board exam, classes 10-12, IIT-JEE, NEET) chahiye to theek hai, lekin Hindi-language hints mat daalo.'}
-- ${blueprint.goal === 'job' ? 'Job/interview-relevant queries bhi include kar' : ''}
-- ${blueprint.goal === 'mastery' ? 'Deep/expert-level queries include kar' : ''}
-- Indian educational context (NCERT, board exam, classes 10-12, IIT-JEE, NEET) auto-detect kar from input
+- Don't use generic "best"/"top"/"easy" — use specific keywords
+- ${blueprint.style.practical >= 7 ? 'Prioritize practical/hands-on content — use "examples", "project", "real-world" keywords' : 'Prioritize theory-focused content — use "derivation", "proof", "explanation" keywords'}
+- ${blueprint.style.pace >= 7 ? 'The user prefers a fast pace — also include "in one shot", "complete", "summary" type queries' : 'The user prefers a detailed pace — "step by step", "detailed", "thorough" type queries'}
+- ${blueprint.style.storytelling >= 7 ? 'Prefer story/analogy-driven keywords — "story", "real world", "analogy"' : ''}
+- ${blueprint.language === 'hindi' ? 'The user has chosen Hindi — add explicit hints in queries for Hindi-spoken videos ("hindi mein samjhaye", "hindi explanation", "hindi medium"); India-context English terms alone (NCERT, board exam) are not enough since they can also return English-audio videos.' : blueprint.language === 'hinglish' ? 'The user has chosen Hinglish — put a "hindi medium" or "hindi mein" style hint in at least one query so Hindi-audio explanation videos also come up; the rest of the queries can use mixed keywords.' : 'The language preference is English — India-specific terms (NCERT, board exam, classes 10-12, IIT-JEE, NEET) are fine if relevant, but do not add Hindi-language hints.'}
+- ${blueprint.goal === 'job' ? 'Also include job/interview-relevant queries' : ''}
+- ${blueprint.goal === 'mastery' ? 'Include deep/expert-level queries' : ''}
+- Auto-detect Indian educational context (NCERT, board exam, classes 10-12, IIT-JEE, NEET) from the input
 
-YouTube titles mein jo REAL words use hote hain wahi keywords use kar — taaki relevant videos return hon.
+Use the REAL words that actually appear in YouTube titles as keywords — so relevant videos come back.
 
 Return ONLY valid JSON (no markdown backticks, no extra text):
 {

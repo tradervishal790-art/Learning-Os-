@@ -647,7 +647,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
       if (freshVideos && freshVideos.length > 0) {
         setSelectedVideo(freshVideos[0]);
       } else {
-        setErrorMessage(`"${searchQuery}" ke liye aur naye videos nahi mile — sab dikha diye gaye.`);
+        setErrorMessage(`No more new videos found for "${searchQuery}" — all have been shown.`);
       }
     } finally {
       setLoadingMore(false);
@@ -676,7 +676,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
 
   const searchVideos = async () => {
     if (!searchQuery.trim()) {
-      setErrorMessage('Kuch search karo pehle');
+      setErrorMessage('Search for something first');
       return;
     }
 
@@ -694,7 +694,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
         throw new Error(data?.error || 'YouTube API error');
       }
       if (!data.items?.length) {
-        setErrorMessage('Koi video nahi mila, kuch aur search karo');
+        setErrorMessage('No video found, try searching something else');
         setVideos([]);
         return;
       }
@@ -715,7 +715,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
         )
       );
     } catch (err: any) {
-      setErrorMessage(err.message || 'Search fail hui, console check karo');
+      setErrorMessage(err.message || 'Search failed, check the console');
       setVideos([]);
     } finally {
       setLoading(false);
@@ -870,7 +870,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                 {videos.length === 0 ? (
                   <div className="text-center py-12 text-gray-400 dark:text-white/60">
                     <Play className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                    <p>Search se start karo</p>
+                    <p>Start with a search</p>
                   </div>
                 ) : (
                   videos.map((video, i) => {
@@ -1064,7 +1064,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                 <div className="h-96 border border-gray-200 dark:border-white/10 rounded-2xl flex items-center justify-center">
                   <div className="text-center">
                     <Play className="w-16 h-16 mx-auto mb-4 text-gray-300 dark:text-white/30" />
-                    <p className="text-gray-500 dark:text-white/60">Video select karo dekhne ke liye</p>
+                    <p className="text-gray-500 dark:text-white/60">Select a video to watch</p>
                   </div>
                 </div>
               )}

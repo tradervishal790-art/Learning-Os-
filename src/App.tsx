@@ -169,7 +169,7 @@ function App() {
   };
 
   // "+ Add Goal" — opens a 2nd (max) empty goal slot. No roadmap yet, so
-  // Roadmap.tsx's existing "Kya seekhna hai?" empty-state form renders for
+  // Roadmap.tsx's existing "What do you want to learn?" empty-state form renders for
   // it automatically (same as a brand-new user), scoped to this goal id.
   const handleAddGoal = (): boolean => {
     if (getActiveGoals(goals).length >= MAX_ACTIVE_GOALS) return false;

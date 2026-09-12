@@ -38,25 +38,25 @@ const DASHBOARD_TOUR: Tour[] = [
     steps: [
       {
         title: 'Roadmap',
-        content: 'Yahan aapke topics order me hain — foundation-first, isi order me follow karna best rahega.',
+        content: 'Your topics are ordered here — foundation-first, so following this order works best.',
         selector: '#onborda-nav-roadmap',
         side: 'right',
       },
       {
         title: 'Revision',
-        content: 'Jo topics due hain revise karne ke liye, wo yahan dikhte hain.',
+        content: 'Topics that are due for revision show up here.',
         selector: '#onborda-nav-revision',
         side: 'right',
       },
       {
         title: 'Progress',
-        content: 'Apni streak aur overall progress yahan track kar sakte ho.',
+        content: 'Track your streak and overall progress here.',
         selector: '#onborda-nav-progress',
         side: 'right',
       },
       {
         title: 'Settings',
-        content: 'Yahan se apna profile aur preferences badal sakte ho.',
+        content: 'Change your profile and preferences from here.',
         selector: '#onborda-settings-button',
         side: 'left',
       },
@@ -66,14 +66,14 @@ const DASHBOARD_TOUR: Tour[] = [
     tour: 'video-picker-intro',
     steps: [
       {
-        title: 'Ye 3 videos — same topic hai',
-        content: 'Teenon video ek hi concept sikhate hain, bas alag teaching style me (pace, examples, structure). Sirf ek chunkar dekhna hai jo aapko sabse suit kare — teeno dekhne ki zaroorat nahi.',
+        title: "These 3 videos — same topic",
+        content: 'All three videos teach the same concept, just in a different teaching style (pace, examples, structure). Pick the one that suits you best — you don\'t need to watch all three.',
         selector: '#onborda-video-primary',
         side: 'right',
       },
       {
-        title: 'Alag style, wahi concept',
-        content: 'Ye doosra option hai — agar pehla wala suit na kare, to isse try kar sakte ho. Same cheez, bas presentation different.',
+        title: 'Different style, same concept',
+        content: "This is a second option — if the first one didn't suit you, try this instead. Same content, just a different presentation.",
         selector: '#onborda-video-fallback',
         side: 'right',
       },
@@ -427,13 +427,13 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   const handleCustomPlaylist = async () => {
     const trimmed = customTopic.trim();
     if (!trimmed) {
-      setCustomError('Topic daalo pehle');
+      setCustomError('Enter a topic first');
       return;
     }
 
     const profile = getLearningProfile();
     if (!profile) {
-      setCustomError('Pehle Learning Style Quiz complete karo.');
+      setCustomError('Complete the Learning Style Quiz first.');
       return;
     }
 
@@ -486,13 +486,13 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
     try {
       const candidates = await buildCandidatePoolForConcept(adhocTopic, queries, userData?.language);
       if (candidates.length === 0) {
-        setCustomError('Koi video nahi mili. Alag words try karo.');
+        setCustomError('No video found. Try different words.');
         return;
       }
 
       const result = selectPlaylistForConcept(candidates, profile, undefined);
       if (!result) {
-        setCustomError('Playlist ban nahi payi, dobara try karo.');
+        setCustomError('Playlist could not be built, please try again.');
         return;
       }
 
@@ -506,7 +506,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
       setCustomHours(0);
       setCustomDeadline('');
     } catch (err: any) {
-      setCustomError(err.message || 'Kuch gadbad ho gayi.');
+      setCustomError(err.message || 'Something went wrong.');
     } finally {
       setCustomLoading(false);
     }
@@ -546,22 +546,22 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   const onboardingSteps = [
     {
       done: hasLearningProfile,
-      title: 'Apna learning style set karo',
-      subtitle: 'Short AI interview — better video matches milenge',
+      title: 'Set your learning style',
+      subtitle: 'A short AI interview — gets you better video matches',
       action: () => setShowLearningQuiz(true),
       cta: 'Start',
     },
     {
       done: hasRoadmap,
-      title: 'Apna roadmap banao',
-      subtitle: 'Topics ka sahi order — kya pehle seekhna hai',
+      title: 'Build your roadmap',
+      subtitle: 'The right order for your topics — what to learn first',
       action: () => setActivePage('roadmap'),
       cta: 'Generate',
     },
     {
       done: hasWatchedVideo,
-      title: 'Pehla video dekho',
-      subtitle: 'Roadmap ke pehle topic se shuru karo',
+      title: 'Watch your first video',
+      subtitle: "Start with the roadmap's first topic",
       action: () => setActivePage('videos'),
       cta: 'Watch',
     },
@@ -570,9 +570,11 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
 
   const getGreeting = () => {
     const hour = new Date().getHours();
+    if (hour < 5) return 'Good Night';
     if (hour < 12) return 'Good Morning';
     if (hour < 17) return 'Good Afternoon';
-    return 'Good Evening';
+    if (hour < 21) return 'Good Evening';
+    return 'Good Night';
   };
 
   const statsCards = [
@@ -723,9 +725,9 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                 animate={{ opacity: 1, y: 0 }}
                 className="p-5 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5"
               >
-                <h3 className="font-semibold mb-1">Shuru karo</h3>
+                <h3 className="font-semibold mb-1">Get Started</h3>
                 <p className="text-xs text-gray-400 dark:text-white/40 mb-4">
-                  Ye 3 steps follow karo — is order me best result milega
+                  Follow these 3 steps in order for the best results
                 </p>
                 <div className="space-y-2">
                   {onboardingSteps.map((step, i) => (
@@ -776,10 +778,10 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                   <div className="flex-1 min-w-[200px]">
                     <div className="font-semibold text-sm">
                       {revisionAlert.overdue > 0
-                        ? `${revisionAlert.dueToday + revisionAlert.overdue} topics revise karna hai — ${revisionAlert.overdue} overdue!`
-                        : `${revisionAlert.dueToday} topics aaj revise karna hai`}
+                        ? `${revisionAlert.dueToday + revisionAlert.overdue} topics need revision — ${revisionAlert.overdue} overdue!`
+                        : `${revisionAlert.dueToday} topics to revise today`}
                     </div>
-                    <div className="text-xs opacity-70">Bhoolo mat — abhi kar lo</div>
+                    <div className="text-xs opacity-70">Don't forget — do it now</div>
                   </div>
                   <button
                     onClick={() => {
@@ -788,7 +790,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                     }}
                     className="px-4 py-2 rounded-full bg-white text-black dark:bg-black dark:text-white text-sm font-medium hover:opacity-80 transition whitespace-nowrap"
                   >
-                    Revision dekho
+                    View Revision
                   </button>
                   <button
                     onClick={() => setRevisionAlert(null)}
@@ -855,13 +857,13 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
               <h3 className="font-semibold mb-1">{learningProfile ? 'Learning Style' : 'Find Your Style'}</h3>
               <p className="text-xs text-gray-400 dark:text-white/40 mb-4">
                 {learningProfile
-                  ? 'Profile ready — full report Settings me hai'
+                  ? 'Profile ready — full report is in Settings'
                   : 'Short quiz for better matches'}
               </p>
               {learningProfile && (
                 <p className="text-xs text-gray-500 dark:text-white/60 mb-4">
-                  ✓ 8 learning dimensions set — pace, depth, structure aur baaki. Settings → "Learning Profile
-                  Report" me poora breakdown dekho.
+                  ✓ 8 learning dimensions set — pace, depth, structure and more. See the full breakdown under
+                  Settings → "Learning Profile Report".
                 </p>
               )}
               <button
@@ -1022,7 +1024,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                 <div className="pt-2 border-t border-gray-200 dark:border-white/10">
                   <label className="block text-xs uppercase tracking-wider text-gray-400 dark:text-white/40 mb-2 mt-4">Roadmap</label>
                   <p className="text-xs text-gray-400 dark:text-white/40 mb-3">
-                    Roadmap sirf ek baar banta hai. Agar topics bahut broad lag rahe hain ya learning style change kiya hai, dobara generate karo.
+                    The roadmap is only built once. If the topics feel too broad or your learning style has changed, regenerate it.
                   </p>
                   <button
                     onClick={handleRegenerateRoadmap}
@@ -1032,10 +1034,10 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                     {regeneratingRoadmap ? 'Regenerating...' : 'Regenerate Roadmap'}
                   </button>
                   {regenerateResult === 'success' && (
-                    <p className="text-xs text-green-600 dark:text-green-400 mt-2">Naya roadmap ban gaya.</p>
+                    <p className="text-xs text-green-600 dark:text-green-400 mt-2">New roadmap created.</p>
                   )}
                   {regenerateResult === 'error' && (
-                    <p className="text-xs text-red-500 dark:text-red-400 mt-2">Kuch gadbad ho gayi, dobara try karo.</p>
+                    <p className="text-xs text-red-500 dark:text-red-400 mt-2">Something went wrong, please try again.</p>
                   )}
                 </div>
 
@@ -1049,7 +1051,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                       Learning Profile Report
                     </label>
                     <p className="text-xs text-gray-400 dark:text-white/40 mb-3">
-                      Yeh sirf request karne par dikhta hai — home page pe sirf ek short summary hoti hai.
+                      This only shows on request — the home page just has a short summary.
                     </p>
                     <button
                       onClick={() => setShowFullProfileReport((v) => !v)}
@@ -1213,7 +1215,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                 )}
 
                 {!learningProfile && !customLoading && (
-                  <p className="text-xs text-yellow-600 dark:text-yellow-300">Pehle quiz complete karo for better matches</p>
+                  <p className="text-xs text-yellow-600 dark:text-yellow-300">Complete the quiz first for better matches</p>
                 )}
               </div>
 

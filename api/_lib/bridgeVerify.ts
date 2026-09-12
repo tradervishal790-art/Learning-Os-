@@ -49,7 +49,7 @@ ${next.facts.map((f) => `- ${f}`).join('\n')}
 Sawaal: kya agla topic sach mein pichhle topic ke content par build karta hai?
 
 Sirf JSON return karo, koi extra text nahi:
-{"connected": true/false, "connect_text": "1 line, agar connected hai to kaise judte hain, warna null", "reasoning": "1 line"}
+{"connected": true/false, "connect_text": "1 line on how they connect if connected, else null", "reasoning": "1 line"}
 `.trim();
 
   try {

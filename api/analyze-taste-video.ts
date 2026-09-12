@@ -74,7 +74,7 @@ Sirf JSON return karo, is exact shape mein, koi extra text/markdown nahi:
   "cut_frequency": "low" | "medium" | "high",
   "on_screen_text": boolean,
   "pacing_feel": "calm" | "moderate" | "energetic",
-  "notes": "1-2 lines, kya cheez engagement ke liye stand out karti hai"
+  "notes": "1-2 lines on what stands out for engagement"
 }
 `;
 
@@ -142,7 +142,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (meta.durationSeconds < MIN_DURATION_SECONDS) {
     const minutes = Math.floor(meta.durationSeconds / 60);
     res.status(400).json({
-      error: `Yeh video sirf ${minutes} min ka hai — kam se kam 45 min ka poora-dekha-hua video chahiye.`,
+      error: `This video is only ${minutes} min long — a fully-watched video of at least 45 min is required.`,
     });
     return;
   }
