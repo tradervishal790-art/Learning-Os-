@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Sphere from './Sphere';
 import Stars from './Stars';
@@ -43,6 +43,22 @@ function App() {
   const [page, setPage] = useState<Page>('landing');
   const [userData, setUserData] = useState<UserOnboardingData | null>(loadSavedOnboardingData);
   const [showDemo, setShowDemo] = useState(false);
+
+  // SYNC FIX: setLanguage() was previously only called at the moment
+  // onboarding completes or Settings is saved — an EXISTING user who
+  // already had e.g. userData.language === 'hindi' saved from before
+  // never had that reflected into LanguageContext's own locale on a
+  // fresh app load (its localStorage key is separate from userData's),
+  // so they'd see Settings correctly showing "Hindi" selected while the
+  // rest of the app silently rendered in English. Run once whenever
+  // userData first becomes available (mount, or right after onboarding
+  // finishes and setUserData(data) runs) so this can't drift again.
+  useEffect(() => {
+    if (userData?.language) {
+      setLanguage(mapOnboardingLanguage(userData.language));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userData?.language]);
 
   // Multi-goal state — up to MAX_ACTIVE_GOALS (2) goals can be 'active' at
   // once, each with its own roadmap (roadmapData.ts keys it by goal id).
