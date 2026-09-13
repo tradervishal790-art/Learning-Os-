@@ -1,4 +1,5 @@
 import type { LearningProfile } from './types';
+import type { TranslationShape } from './i18n/translations';
 
 // ============================================================
 // deepDiveScoring.ts
@@ -8,6 +9,15 @@ import type { LearningProfile } from './types';
 // BLENDED into the existing quiz-derived LearningProfile —
 // never overwrite it outright. See mergeLearningProfile() in
 // learningProfileStore.ts for the blend logic.
+//
+// i18n: getDeepDiveQuestions(t) returns the *displayed* question text in
+// the user's locale (source: t.deepDiveQuestions in translations.ts).
+// Like blueprintQuestions.ts, this isn't purely cosmetic — the Q&A
+// transcript built in buildExtractionPrompt() below is sent verbatim to
+// Gemini, so it must use the question text the user actually saw/
+// answered, not a hardcoded English original. The instructional part of
+// the prompt (dimension descriptions, JSON format) stays in English —
+// that's an instruction to Gemini, not something the user reads.
 // ============================================================
 
 export type DimensionKey =
@@ -22,11 +32,9 @@ export type DimensionKey =
 
 export type DeepDiveSignals = Partial<Record<DimensionKey, number>>;
 
-export const DEEP_DIVE_QUESTIONS = [
-  'Tell me about a recent topic you had trouble understanding — what exactly was the problem?',
-  'When a concept really "clicks" for you, what does that moment feel like? Give an example.',
-  "Say you're starting a completely new subject tomorrow that you know nothing about — what's the very first step you'd take?",
-] as const;
+export function getDeepDiveQuestions(t: TranslationShape): readonly string[] {
+  return t.deepDiveQuestions;
+}
 
 const DIMENSION_KEYS: DimensionKey[] = [
   'pace',

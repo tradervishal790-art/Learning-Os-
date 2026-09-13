@@ -1,6 +1,7 @@
 import type { RevisionItem, RevisionStatus, RevisionDifficulty, Topic, Difficulty, Goal } from './types';
 import { getRoadmapData } from './roadmapData';
 import { getReviewedDays } from './revisionstore';
+import type { TranslationShape } from './i18n/translations';
 
 // Standard spaced-repetition checkpoints, referenced across the app copy
 // (App.tsx demo modal) as "Day 1, 3, 7, 15, 30, 60".
@@ -32,14 +33,18 @@ function estimateRetention(daysPastDue: number, intervalDays: number): number {
 // Generic fallback task per spaced-repetition checkpoint — used when the
 // topic has no cached Deep Notes yet (so nothing video-grounded exists to
 // pull from). Kept in sync with generate-notes.ts's learningPath spirit.
-const FALLBACK_DAY_TASKS: Record<number, string> = {
-  1: 'Do a deep read — understand the WHY, not just the WHAT',
-  3: 'Apply it to 3-4 different real examples',
-  7: 'Teach it to someone — without looking at your notes',
-  15: 'Look up advanced applications and edge cases',
-  30: 'Connect it to related concepts, spot the pattern',
-  60: 'Final recall check — explain it fully from memory',
-};
+// Sourced from t.revisionTasks (translations.ts) — passed in by the caller
+// since this is a plain module and can't call useTranslation() itself.
+function fallbackDayTasks(revisionTasks: TranslationShape['revisionTasks']): Record<number, string> {
+  return {
+    1: revisionTasks.day1,
+    3: revisionTasks.day3,
+    7: revisionTasks.day7,
+    15: revisionTasks.day15,
+    30: revisionTasks.day30,
+    60: revisionTasks.day60,
+  };
+}
 
 /**
  * Resolves what to actually DO for this topic's due checkpoint. Prefers the
@@ -48,7 +53,7 @@ const FALLBACK_DAY_TASKS: Record<number, string> = {
  * to a generic day-based task when no notes have been generated for this
  * topic yet.
  */
-function getTaskForTopic(topicTitle: string, day: number): string {
+function getTaskForTopic(topicTitle: string, day: number, revisionTasks: TranslationShape['revisionTasks']): string {
   try {
     const cacheKey = `deepnotes_v3_topic_${topicTitle.trim().toLowerCase()}`;
     const cached = localStorage.getItem(cacheKey);
@@ -63,10 +68,16 @@ function getTaskForTopic(topicTitle: string, day: number): string {
   } catch {
     // Corrupted/unavailable cache — fall through to generic task.
   }
-  return FALLBACK_DAY_TASKS[day] ?? 'Revise this topic';
+  return fallbackDayTasks(revisionTasks)[day] ?? revisionTasks.fallback;
 }
 
 function categoryForDifficulty(difficulty: Difficulty): string {
+  // NOTE: no translation keys exist for these category labels
+  // ("Foundations"/"Core Concepts"/"Advanced") or for formatDueDate's
+  // relative-date phrases below — flagging rather than guessing new
+  // Hindi/Hinglish text, per the "don't touch translations.ts content
+  // unless it's an actual bug" rule. Left as English pending a decision
+  // on where these keys should live in translations.ts.
   if (difficulty === 'Beginner') return 'Foundations';
   if (difficulty === 'Intermediate') return 'Core Concepts';
   return 'Advanced';
@@ -85,7 +96,7 @@ function toRevisionDifficulty(difficulty: Difficulty): RevisionDifficulty {
  * learningStartedAt timestamp). Nothing here is seeded/mock: an empty
  * roadmap or a roadmap nobody has started yet correctly returns [].
  */
-export function getRevisionData(roadmap: Topic = getRoadmapData()): RevisionItem[] {
+export function getRevisionData(revisionTasks: TranslationShape['revisionTasks'], roadmap: Topic = getRoadmapData()): RevisionItem[] {
   const topics = roadmap.children ?? [];
   const items: RevisionItem[] = [];
   const now = new Date();
@@ -108,6 +119,8 @@ export function getRevisionData(roadmap: Topic = getRoadmapData()): RevisionItem
         status: 'mastered',
         difficulty: toRevisionDifficulty(topic.difficulty),
         retention: 100,
+        // NOTE: also flagged above — no translation key exists for this
+        // "mastered" task line either.
         task: 'Mastered — sab checkpoints ho gaye ✓',
       });
       continue;
@@ -134,7 +147,7 @@ export function getRevisionData(roadmap: Topic = getRoadmapData()): RevisionItem
       status,
       difficulty: toRevisionDifficulty(topic.difficulty),
       retention,
-      task: getTaskForTopic(topic.title, nextDay),
+      task: getTaskForTopic(topic.title, nextDay, revisionTasks),
     });
   }
 
@@ -151,12 +164,15 @@ export function getRevisionData(roadmap: Topic = getRoadmapData()): RevisionItem
  * Revision page, so revision always covers both simultaneous goals instead
  * of just whichever one the Roadmap tab happens to be open on.
  */
-export function getRevisionDataForGoals(goals: Goal[]): (RevisionItem & { goalTitle?: string; goalId?: string })[] {
+export function getRevisionDataForGoals(
+  revisionTasks: TranslationShape['revisionTasks'],
+  goals: Goal[]
+): (RevisionItem & { goalTitle?: string; goalId?: string })[] {
   const activeGoals = goals.filter((g) => g.status === 'active');
-  if (activeGoals.length === 0) return getRevisionData();
+  if (activeGoals.length === 0) return getRevisionData(revisionTasks);
 
   const merged = activeGoals.flatMap((g) => {
-    const items = getRevisionData(getRoadmapData(g.id));
+    const items = getRevisionData(revisionTasks, getRoadmapData(g.id));
     // goalId is always stamped (needed so "Mark Done" can write back to the
     // right goal's roadmap); goalTitle is only added for display when the
     // learner has more than one active goal at once.

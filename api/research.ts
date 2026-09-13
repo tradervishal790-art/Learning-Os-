@@ -31,11 +31,20 @@ interface ResearchResult {
 const RESEARCH_MODEL = 'gemini-3-flash-preview'; // same pinned default as aiFallback.ts
 const SNIPPET_MAX_LEN = 240;
 
+type Locale = 'en' | 'hi' | 'hinglish';
+
+function languageInstruction(locale: Locale): string {
+  if (locale === 'hi') return 'Hindi (Devanagari script)';
+  if (locale === 'en') return 'clear English';
+  return 'Hinglish (a Hindi-English mix, like how students talk to each other)';
+}
+
 // Written to kill every "obviously AI" tell in the underlying generated
 // text — even though the UI now shows it broken up as short snippets
 // instead of one essay, this still keeps each snippet reading like a real
 // sentence a person wrote, not chatbot filler.
-const HUMAN_RESEARCH_STYLE = `Tum ek insaan ho jisne abhi is topic pe khud internet khangaal ke padha hai, aur apne kisi dost/colleague ko seedha bata rahe ho jo samajhna chahta hai. Hinglish mein likho, natural bolchaal wali tone mein — jaise koi likha hua notes nahi, seedha samjha raha ho.
+function buildResearchStyle(locale: Locale): string {
+  return `Tum ek insaan ho jisne abhi is topic pe khud internet khangaal ke padha hai, aur apne kisi dost/colleague ko seedha bata rahe ho jo samajhna chahta hai. ${languageInstruction(locale)} mein likho, natural bolchaal wali tone mein — jaise koi likha hua notes nahi, seedha samjha raha ho.
 
 Sakht mana hai:
 - "Based on my research", "I hope this helps", "In conclusion", "Certainly!", "Great question", "As we can see", "It's important to note that", "Overall" jaise koi bhi AI-typical opener/closer/filler phrase — inn sab ko poori tarah avoid karo
@@ -47,6 +56,7 @@ Karna hai:
 - Specific facts, numbers, naam, dates jo search mein mile wahi use karo — vague mat raho
 - Short, clear sentences likho — har sentence apne aap mein ek complete fact ho, kyunki inhe alag-alag snippets mein todha jayega
 - 250-400 words total`;
+}
 
 function truncate(text: string, max: number): string {
   const trimmed = text.trim();
@@ -54,10 +64,10 @@ function truncate(text: string, max: number): string {
   return trimmed.slice(0, max).replace(/\s+\S*$/, '') + '…';
 }
 
-async function groundedGeminiSearch(query: string, apiKey: string): Promise<ResearchResult[] | null> {
+async function groundedGeminiSearch(query: string, apiKey: string, locale: Locale): Promise<ResearchResult[] | null> {
   const body = {
     contents: [{ role: 'user', parts: [{ text: query }] }],
-    system_instruction: { parts: [{ text: HUMAN_RESEARCH_STYLE }] },
+    system_instruction: { parts: [{ text: buildResearchStyle(locale) }] },
     tools: [{ googleSearch: {} }],
     generationConfig: { temperature: 0.75, maxOutputTokens: 2048 },
   };
@@ -122,10 +132,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'POST only' });
   }
 
-  const { query } = (req.body ?? {}) as { query?: string };
+  const { query, locale: rawLocale } = (req.body ?? {}) as { query?: string; locale?: string };
   if (!query?.trim()) {
     return res.status(400).json({ error: 'query required' });
   }
+  const locale: Locale = rawLocale === 'hi' || rawLocale === 'en' ? rawLocale : 'hinglish';
 
   const apiKey = process.env.VITE_GEMINI_API_KEY;
   const minimaxApiKey = process.env.MINIMAX_API_KEY;
@@ -136,7 +147,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Primary: Gemini with live Google Search grounding.
   if (apiKey) {
     try {
-      const results = await groundedGeminiSearch(query, apiKey);
+      const results = await groundedGeminiSearch(query, apiKey, locale);
       if (results) {
         return res.status(200).json({ results, grounded: true });
       }
@@ -152,7 +163,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       geminiApiKey: apiKey,
       minimaxApiKey,
       keyGroup: 'research',
-      systemInstruction: HUMAN_RESEARCH_STYLE,
+      systemInstruction: buildResearchStyle(locale),
       contents: [{ parts: [{ text: query }] }],
       generationConfig: { temperature: 0.4, maxOutputTokens: 2048 },
     });

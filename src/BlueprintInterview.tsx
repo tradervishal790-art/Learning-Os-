@@ -1,9 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { LearningProfile } from './types';
-import { BLUEPRINT_QUESTIONS } from './blueprintQuestions';
-import BlueprintRadar, { DIMENSION_ORDER } from './BlueprintRadar';
+import { getBlueprintQuestions } from './blueprintQuestions';
+import BlueprintRadar, { getDimensionOrder } from './BlueprintRadar';
 import { getGrade, getVerdict } from './blueprintGrading';
+import { useTranslation, useLanguage } from './i18n/LanguageContext';
+import { format } from './i18n/format';
 
 // ============================================================
 // BlueprintInterview.tsx — v2
@@ -26,14 +28,14 @@ interface AnswerRecord {
 
 type Phase = 'answering' | 'analyzing' | 'done' | 'error';
 
-async function callAnalysisApi(answers: AnswerRecord[]): Promise<any> {
+async function callAnalysisApi(answers: AnswerRecord[], genericErrorMsg: string, locale: string): Promise<any> {
   const response = await fetch('/api/blueprint-interview', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ answers }),
+    body: JSON.stringify({ answers, locale }),
   });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data?.error || `Analysis error ${response.status}`);
+  if (!response.ok) throw new Error(data?.error || `${genericErrorMsg} (${response.status})`);
   return data;
 }
 
@@ -44,6 +46,10 @@ export default function BlueprintInterview({
   onComplete: (profile: LearningProfile) => void;
   onClose?: () => void;
 }) {
+  const t = useTranslation();
+  const { locale } = useLanguage();
+  const BLUEPRINT_QUESTIONS = getBlueprintQuestions(t);
+  const DIMENSION_ORDER = getDimensionOrder(t.blueprintInterview.dimensionLabels);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<AnswerRecord[]>([]);
   const [phase, setPhase] = useState<Phase>('answering');
@@ -77,7 +83,7 @@ export default function BlueprintInterview({
     // Last question answered — fire the single analysis call.
     setPhase('analyzing');
     try {
-      const data = await callAnalysisApi(updatedAnswers);
+      const data = await callAnalysisApi(updatedAnswers, t.blueprintInterview.genericError, locale);
       const profile: LearningProfile = {
         pace: data.dimensions.pace,
         theoryVsPractical: data.dimensions.theoryVsPractical,
@@ -98,7 +104,7 @@ export default function BlueprintInterview({
       onComplete(profile);
     } catch (err: any) {
       setPhase('error');
-      setErrorMsg(err.message || 'Analysis failed.');
+      setErrorMsg(err.message || t.blueprintInterview.genericError);
     }
   };
 
@@ -106,7 +112,7 @@ export default function BlueprintInterview({
     setPhase('analyzing');
     setErrorMsg('');
     try {
-      const data = await callAnalysisApi(answers);
+      const data = await callAnalysisApi(answers, t.blueprintInterview.genericError, locale);
       const profile: LearningProfile = {
         pace: data.dimensions.pace,
         theoryVsPractical: data.dimensions.theoryVsPractical,
@@ -127,7 +133,7 @@ export default function BlueprintInterview({
       onComplete(profile);
     } catch (err: any) {
       setPhase('error');
-      setErrorMsg(err.message || 'Analysis failed.');
+      setErrorMsg(err.message || t.blueprintInterview.genericError);
     }
   };
 
@@ -146,13 +152,13 @@ export default function BlueprintInterview({
       >
         <div className="flex items-center justify-between px-5 md:px-6 py-4 border-b border-gray-200 dark:border-white/10">
           <div className="flex-1">
-            <h2 className="text-base font-semibold">🧭 AI Blueprint Interview</h2>
+            <h2 className="text-base font-semibold">{t.blueprintInterview.headerTitle}</h2>
             <p className="text-xs text-gray-400 dark:text-white/40 mt-0.5">
               {phase === 'done'
-                ? 'Complete!'
+                ? t.blueprintInterview.progress.complete
                 : phase === 'analyzing'
-                ? 'Analyzing your answers...'
-                : `Question ${currentIndex + 1} / ${totalQuestions}`}
+                ? t.blueprintInterview.progress.analyzing
+                : format(t.blueprintInterview.progress.questionOf, currentIndex + 1, totalQuestions)}
             </p>
             {phase === 'answering' && (
               <div className="mt-2 h-1 bg-gray-200 dark:bg-white/10 rounded-full overflow-hidden">
@@ -201,7 +207,7 @@ export default function BlueprintInterview({
                     onClick={handleBack}
                     className="mt-4 text-xs text-gray-400 dark:text-white/40 hover:text-gray-600 dark:hover:text-white/70 transition"
                   >
-                    ← Previous question
+                    {t.blueprintInterview.backCta}
                   </button>
                 )}
               </motion.div>
@@ -215,7 +221,7 @@ export default function BlueprintInterview({
                 <span className="w-2.5 h-2.5 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
                 <span className="w-2.5 h-2.5 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
               </div>
-              <p className="text-xs text-gray-400 dark:text-white/40">Deeply analyzing your answers...</p>
+              <p className="text-xs text-gray-400 dark:text-white/40">{t.blueprintInterview.analyzingText}</p>
             </div>
           )}
 
@@ -225,12 +231,12 @@ export default function BlueprintInterview({
                 {/* Mind score ring + radar */}
                 <div className="p-4 rounded-xl border border-purple-300/30 dark:border-purple-500/20 bg-purple-50/50 dark:bg-purple-500/5">
                   <div className="flex items-center justify-between mb-2">
-                    <p className="text-xs font-semibold text-purple-700 dark:text-purple-300">🔮 Your Mind Map</p>
+                    <p className="text-xs font-semibold text-purple-700 dark:text-purple-300">{t.blueprintInterview.resultSection.mindMapTitle}</p>
                     <div className="text-right">
-                      <p className="text-[10px] text-gray-400 dark:text-white/40 uppercase tracking-wide">Mind Score</p>
+                      <p className="text-[10px] text-gray-400 dark:text-white/40 uppercase tracking-wide">{t.blueprintInterview.resultSection.mindScoreLabel}</p>
                       <p className="text-lg font-bold text-purple-600 dark:text-purple-300">
                         {Math.round(
-                          (DIMENSION_ORDER.reduce((sum, d) => sum + (resultProfile[d.key] as number), 0) /
+                          (DIMENSION_ORDER.reduce((sum: number, d) => sum + (resultProfile[d.key] as number), 0) /
                             DIMENSION_ORDER.length) *
                             10
                         )}
@@ -238,7 +244,7 @@ export default function BlueprintInterview({
                       </p>
                     </div>
                   </div>
-                  <BlueprintRadar profile={resultProfile} />
+                  <BlueprintRadar profile={resultProfile} labels={t.blueprintInterview.dimensionLabels} />
                 </div>
 
                 {/* Expandable dimension rows */}
@@ -272,7 +278,7 @@ export default function BlueprintInterview({
                         </div>
                         {isOpen && (
                           <p className="text-xs text-gray-500 dark:text-white/50 leading-relaxed mt-2 pt-2 border-t border-gray-200 dark:border-white/10">
-                            {getVerdict(d.key, score)}
+                            {getVerdict(d.key, score, t.blueprintVerdicts)}
                           </p>
                         )}
                       </div>
@@ -283,7 +289,7 @@ export default function BlueprintInterview({
                 {/* Written report */}
                 <div className="p-4 rounded-xl border border-purple-300/30 dark:border-purple-500/20 bg-purple-50 dark:bg-purple-500/5">
                   <h3 className="text-sm font-semibold mb-2 text-purple-700 dark:text-purple-300">
-                    📋 Aapka Learning Blueprint
+                    {t.blueprintInterview.resultSection.reportTitle}
                   </h3>
                   <p className="text-sm text-gray-700 dark:text-white/80 leading-relaxed whitespace-pre-wrap">
                     {report}
@@ -300,7 +306,7 @@ export default function BlueprintInterview({
                 onClick={handleRetryAnalysis}
                 className="px-4 py-2 rounded-xl border border-gray-300 dark:border-white/10 text-sm font-medium hover:bg-gray-100 dark:hover:bg-white/10 transition"
               >
-                🔄 Try again
+                {t.blueprintInterview.errorRetryCta}
               </button>
             </div>
           )}
@@ -312,7 +318,7 @@ export default function BlueprintInterview({
               onClick={onClose}
               className="w-full px-4 py-3 rounded-xl bg-black text-white dark:bg-white dark:text-black text-sm font-semibold transition active:scale-[0.98]"
             >
-              Done
+              {t.blueprintInterview.doneCta}
             </button>
           </div>
         )}

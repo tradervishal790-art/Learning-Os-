@@ -14,6 +14,8 @@ import { hydrateGoalsFromCloud, getSavedGoals } from './goalsStore';
 import { hydrateRoadmapDataFromCloud } from './roadmapData';
 import { hydrateRevisionFromCloud } from './revisionstore';
 import { hydrateActiveDaysFromCloud } from './Dashboard';
+import { useTranslation } from './i18n/LanguageContext';
+import { format } from './i18n/format';
 
 // ============================================================
 // AuthGate.tsx
@@ -30,6 +32,7 @@ import { hydrateActiveDaysFromCloud } from './Dashboard';
 // ============================================================
 
 export default function AuthGate({ children }: { children: ReactNode }) {
+  const t = useTranslation();
   const [user, setUser] = useState<User | null | 'loading'>('loading');
   const [mode, setMode] = useState<'signin' | 'create'>('signin');
   const [name, setName] = useState('');
@@ -97,7 +100,7 @@ export default function AuthGate({ children }: { children: ReactNode }) {
           onClick={() => signOutOfApp()}
           className="fixed bottom-4 right-4 z-50 text-xs px-3 py-1.5 rounded-full bg-white/70 dark:bg-black/70 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white border border-black/10 dark:border-white/10 backdrop-blur"
         >
-          Sign out ({user.displayName || user.email})
+          {format(t.authScreen.signOutBtn, user.displayName || user.email || '')}
         </button>
       </>
     );
@@ -105,16 +108,16 @@ export default function AuthGate({ children }: { children: ReactNode }) {
 
   const submit = async () => {
     if (!email || password.length < 6) {
-      setError('Enter a valid email and a password with at least 6 characters.');
+      setError(t.authScreen.validationEmailPassword);
       return;
     }
     if (mode === 'create' && !name.trim()) {
-      setError('Please enter your name.');
+      setError(t.authScreen.validationName);
       return;
     }
     setBusy(true);
     setError('');
-    const result = mode === 'create' ? await createAccount(email, password, name) : await signIn(email, password);
+    const result = mode === 'create' ? await createAccount(email, password, name, t.authErrors) : await signIn(email, password, t.authErrors);
     setBusy(false);
     if (!result.ok) setError(result.error);
   };
@@ -122,7 +125,7 @@ export default function AuthGate({ children }: { children: ReactNode }) {
   const google = async () => {
     setBusy(true);
     setError('');
-    const result = await signInWithGoogle();
+    const result = await signInWithGoogle(t.authErrors);
     setBusy(false);
     if (!result.ok) {
       console.error('Google sign-in failed:', result.error);
@@ -142,7 +145,7 @@ export default function AuthGate({ children }: { children: ReactNode }) {
           </h1>
         </div>
         <p className="text-sm text-black/50 dark:text-white/50 mb-6">
-          {mode === 'create' ? 'Create a new account' : 'Sign in to your account'}
+          {mode === 'create' ? t.authScreen.subtitleCreate : t.authScreen.subtitleSignin}
         </p>
 
         {mode === 'create' && (
@@ -150,7 +153,7 @@ export default function AuthGate({ children }: { children: ReactNode }) {
             type="text"
             value={name}
             onChange={(e) => { setName(e.target.value); setError(''); }}
-            placeholder="Name"
+            placeholder={t.authScreen.namePlaceholder}
             className="w-full px-4 py-3 rounded-xl border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 text-black dark:text-white text-sm mb-3 outline-none focus:border-black/30 dark:focus:border-white/30"
           />
         )}
@@ -158,14 +161,14 @@ export default function AuthGate({ children }: { children: ReactNode }) {
           type="email"
           value={email}
           onChange={(e) => { setEmail(e.target.value); setError(''); }}
-          placeholder="Email"
+          placeholder={t.authScreen.emailPlaceholder}
           className="w-full px-4 py-3 rounded-xl border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 text-black dark:text-white text-sm mb-3 outline-none focus:border-black/30 dark:focus:border-white/30"
         />
         <input
           type="password"
           value={password}
           onChange={(e) => { setPassword(e.target.value); setError(''); }}
-          placeholder="Password"
+          placeholder={t.authScreen.passwordPlaceholder}
           onKeyDown={(e) => e.key === 'Enter' && submit()}
           className="w-full px-4 py-3 rounded-xl border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 text-black dark:text-white text-sm mb-3 outline-none focus:border-black/30 dark:focus:border-white/30"
         />
@@ -177,12 +180,12 @@ export default function AuthGate({ children }: { children: ReactNode }) {
           onClick={submit}
           className="w-full py-3 rounded-xl bg-black text-white dark:bg-white dark:text-black text-sm font-semibold disabled:opacity-50 mb-3"
         >
-          {busy ? '...' : mode === 'create' ? 'Create Account' : 'Sign In'}
+          {busy ? '...' : mode === 'create' ? t.authScreen.createAccountCta : t.authScreen.signInCta}
         </button>
 
         <div className="flex items-center gap-2 my-3">
           <div className="flex-1 h-px bg-black/10 dark:bg-white/10" />
-          <span className="text-[10px] text-black/30 dark:text-white/30">OR</span>
+          <span className="text-[10px] text-black/30 dark:text-white/30">{t.authScreen.orDivider}</span>
           <div className="flex-1 h-px bg-black/10 dark:bg-white/10" />
         </div>
 
@@ -191,14 +194,14 @@ export default function AuthGate({ children }: { children: ReactNode }) {
           onClick={google}
           className="w-full py-3 rounded-xl border border-black/10 dark:border-white/10 text-black dark:text-white text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 mb-4"
         >
-          Continue with Google
+          {t.authScreen.googleCta}
         </button>
 
         <button
           onClick={() => { setMode(mode === 'create' ? 'signin' : 'create'); setError(''); setName(''); }}
           className="w-full text-center text-xs text-black/40 dark:text-white/40 hover:text-black/70 dark:hover:text-white/70"
         >
-          {mode === 'create' ? 'Already have an account? Sign in' : 'New here? Create an account'}
+          {mode === 'create' ? t.authScreen.switchToSignin : t.authScreen.switchToCreate}
         </button>
       </div>
     </div>

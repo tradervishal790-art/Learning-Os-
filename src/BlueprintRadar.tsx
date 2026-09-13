@@ -1,4 +1,5 @@
 import type { LearningProfile } from './types';
+import type { TranslationShape } from './i18n/translations';
 
 // ============================================================
 // BlueprintRadar.tsx
@@ -12,23 +13,32 @@ import type { LearningProfile } from './types';
 // the bundle.
 // ============================================================
 
-const DIMENSION_ORDER: { key: keyof LearningProfile; label: string }[] = [
-  { key: 'pace', label: 'Pace' },
-  { key: 'theoryVsPractical', label: 'Practical' },
-  { key: 'structureNeed', label: 'Structure' },
-  { key: 'depth', label: 'Depth' },
-  { key: 'languageComplexity', label: 'Language' },
-  { key: 'storytelling', label: 'Storytelling' },
-  { key: 'repetitionNeed', label: 'Repetition' },
-  { key: 'priorKnowledgeComfort', label: 'Prior Knowledge' },
-];
+export type DimensionOrderEntry = { key: keyof LearningProfile; label: string };
+
+/** `key` order/identity never changes across locale, only the displayed
+ *  `label` does — pulled from t.blueprintInterview.dimensionLabels.
+ *  BlueprintRadar has no hook access (profile is passed as a prop, not
+ *  read via context), so the caller supplies the translated labels. */
+export function getDimensionOrder(labels: TranslationShape['blueprintInterview']['dimensionLabels']): DimensionOrderEntry[] {
+  return [
+    { key: 'pace', label: labels.pace },
+    { key: 'theoryVsPractical', label: labels.practical },
+    { key: 'structureNeed', label: labels.structure },
+    { key: 'depth', label: labels.depth },
+    { key: 'languageComplexity', label: labels.language },
+    { key: 'storytelling', label: labels.storytelling },
+    { key: 'repetitionNeed', label: labels.repetition },
+    { key: 'priorKnowledgeComfort', label: labels.priorKnowledge },
+  ];
+}
 
 function polarPoint(cx: number, cy: number, radius: number, angleDeg: number) {
   const angleRad = ((angleDeg - 90) * Math.PI) / 180;
   return { x: cx + radius * Math.cos(angleRad), y: cy + radius * Math.sin(angleRad) };
 }
 
-export default function BlueprintRadar({ profile, size = 260 }: { profile: LearningProfile; size?: number }) {
+export default function BlueprintRadar({ profile, labels, size = 260 }: { profile: LearningProfile; labels: TranslationShape['blueprintInterview']['dimensionLabels']; size?: number }) {
+  const DIMENSION_ORDER = getDimensionOrder(labels);
   const cx = size / 2;
   const cy = size / 2;
   const maxRadius = size / 2 - 32; // leave room for axis labels
@@ -109,5 +119,3 @@ export default function BlueprintRadar({ profile, size = 260 }: { profile: Learn
     </svg>
   );
 }
-
-export { DIMENSION_ORDER };

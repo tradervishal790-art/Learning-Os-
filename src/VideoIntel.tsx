@@ -13,6 +13,8 @@ import HintBubble from './HintBubble';
 import { getCachedConnectorFacts } from './conceptVideoPool';
 import { useOnborda } from './OnbordaContext';
 import { hasSeenTour, markTourSeen } from './tourStore';
+import { useTranslation } from './i18n/LanguageContext';
+import { format } from './i18n/format';
 
 declare global {
   interface Window {
@@ -245,6 +247,7 @@ interface VideoIntelProps {
 }
 
 export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicId, allGoalIds }: VideoIntelProps = {}) {
+  const t = useTranslation();
   const { startOnborda } = useOnborda();
   // Every active goal, active-tab first (checked first so ties resolve in
   // the learner's favor) — deduped in case activeGoalId is also in the list.
@@ -464,11 +467,11 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
     // one, not all three — before it reads as a bug ("why 3 of the same
     // thing?"). See personalityEngine.ts for why there are always 3.
     if (initialPlaylist.fallbacks.length > 0 && !hasSeenTour('video-picker-intro')) {
-      const t = setTimeout(() => {
+      const timer = setTimeout(() => {
         startOnborda('video-picker-intro');
         markTourSeen('video-picker-intro');
       }, 500);
-      return () => clearTimeout(t);
+      return () => clearTimeout(timer);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialPlaylist?.primary.id]);
@@ -647,7 +650,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
       if (freshVideos && freshVideos.length > 0) {
         setSelectedVideo(freshVideos[0]);
       } else {
-        setErrorMessage(`No more new videos found for "${searchQuery}" — all have been shown.`);
+        setErrorMessage(format(t.videos.errors.noMoreVideos, searchQuery));
       }
     } finally {
       setLoadingMore(false);
@@ -676,7 +679,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
 
   const searchVideos = async () => {
     if (!searchQuery.trim()) {
-      setErrorMessage('Search for something first');
+      setErrorMessage(t.videos.errors.searchSomethingFirst);
       return;
     }
 
@@ -694,7 +697,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
         throw new Error(data?.error || 'YouTube API error');
       }
       if (!data.items?.length) {
-        setErrorMessage('No video found, try searching something else');
+        setErrorMessage(t.videos.errors.noVideosFound);
         setVideos([]);
         return;
       }
@@ -715,7 +718,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
         )
       );
     } catch (err: any) {
-      setErrorMessage(err.message || 'Search failed, check the console');
+      setErrorMessage(err.message || t.videos.errors.searchFailed);
       setVideos([]);
     } finally {
       setLoading(false);
@@ -787,9 +790,9 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
   // (whatever roadmap was made first, ever), showing stale/unrelated
   // suggestions once a learner had more than one goal.
   const suggestions = (getRoadmapData(activeGoalId ?? undefined)?.children ?? [])
-    .filter((t) => t.status !== 'locked')
+    .filter((topic) => topic.status !== 'locked')
     .slice(0, 4)
-    .map((t) => t.title);
+    .map((topic) => topic.title);
   const hasNextVideo = !!selectedVideo;
 
   return (
@@ -800,15 +803,15 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
             onClick={() => setShowDeepNotes(false)}
             className="mb-6 px-4 py-2 border border-gray-300 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg font-semibold transition"
           >
-            ← Back to Video
+            {t.videos.backToVideo}
           </button>
           <Notes videoTitle={selectedVideo.title} videoId={selectedVideo.id} />
         </div>
       ) : (
         <div className="p-4 md:p-8">
           <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-            <h1 className="text-4xl font-bold mb-2">📺 Videos</h1>
-            <p className="text-gray-500 dark:text-white/60">Search • Watch • Personalized recommendations</p>
+            <h1 className="text-4xl font-bold mb-2">{t.videos.header.title}</h1>
+            <p className="text-gray-500 dark:text-white/60">{t.videos.header.subtitle}</p>
           </motion.div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -819,7 +822,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                   <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400 dark:text-white/40" />
                   <input
                     type="text"
-                    placeholder="Search videos..."
+                    placeholder={t.videos.searchPlaceholder}
                     value={searchQuery}
                     onChange={(e) => {
                       setSearchQuery(e.target.value);
@@ -834,7 +837,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                   disabled={loading}
                   className="px-5 py-2.5 bg-black text-white dark:bg-white dark:text-black disabled:opacity-40 rounded-lg font-semibold transition"
                 >
-                  {loading ? '...' : 'Search'}
+                  {loading ? '...' : t.videos.searchCta}
                 </button>
               </div>
 
@@ -870,7 +873,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                 {videos.length === 0 ? (
                   <div className="text-center py-12 text-gray-400 dark:text-white/60">
                     <Play className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                    <p>Start with a search</p>
+                    <p>{t.videos.noResultsYet}</p>
                   </div>
                 ) : (
                   videos.map((video, i) => {
@@ -905,7 +908,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                           <div className="flex-1 min-w-0">
                             <h3 className="font-semibold text-sm line-clamp-2">{video.title}</h3>
                             <p className="text-xs text-gray-500 dark:text-white/60">{video.channel}</p>
-                            {watched && <span className="text-xs text-gray-500 dark:text-white/60">Score: {watched.aiScore}/100</span>}
+                            {watched && <span className="text-xs text-gray-500 dark:text-white/60">{format(t.videos.score, watched.aiScore)}</span>}
                           </div>
                         </div>
                       </motion.div>
@@ -937,7 +940,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                           <span className="text-black dark:text-white font-medium">{activeBridge.toTopicTitle}</span>
                           {activeBridge.verified === true && (
                             <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded-full bg-black text-white dark:bg-white dark:text-black">
-                              verified
+                              {t.videos.verifiedBadge}
                             </span>
                           )}
                         </div>
@@ -946,7 +949,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                       <button
                         onClick={() => setActiveBridge(null)}
                         className="text-gray-400 dark:text-white/40 hover:text-black dark:hover:text-white transition flex-shrink-0"
-                        aria-label="Dismiss"
+                        aria-label={t.videos.dismissAria}
                       >
                         ✕
                       </button>
@@ -978,7 +981,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                             : 'border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10'
                         }`}
                       >
-                        <ThumbsUp className="w-4 h-4" /> Helpful
+                        <ThumbsUp className="w-4 h-4" /> {t.videos.helpfulCta}
                       </button>
                       <button
                         onClick={() => handleFeedback('dislike')}
@@ -988,7 +991,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                             : 'border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10'
                         }`}
                       >
-                        <ThumbsDown className="w-4 h-4" /> Not for me
+                        <ThumbsDown className="w-4 h-4" /> {t.videos.notForMeCta}
                       </button>
 
                       {hasNextVideo && (
@@ -997,15 +1000,15 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                           disabled={loadingMore}
                           className="ml-auto flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-black text-white dark:bg-white dark:text-black hover:opacity-80 transition disabled:opacity-50"
                         >
-                          {loadingMore ? 'Naye videos dhoondh raha hoon...' : 'Next'} <SkipForward className="w-4 h-4" />
+                          {loadingMore ? t.videos.loadingNextCta : t.videos.nextCta} <SkipForward className="w-4 h-4" />
                         </button>
                       )}
                     </div>
 
                     <div className="border border-gray-200 dark:border-white/10 rounded-lg p-4 mb-4">
-                      <h3 className="font-semibold mb-3">Watch Progress</h3>
+                      <h3 className="font-semibold mb-3">{t.videos.watchProgress.title}</h3>
                       <div className="flex justify-between text-sm mb-2">
-                        <span>Watched</span>
+                        <span>{t.videos.watchProgress.watched}</span>
                         <span className="text-gray-500 dark:text-white/60">
                           {formatTime(watchStats.watchedDuration)} / {formatTime(watchStats.totalDuration)}
                         </span>
@@ -1018,19 +1021,19 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                       </div>
                       <div className="grid grid-cols-2 gap-2 text-sm">
                         <div className="flex justify-between">
-                          <span>Pauses:</span>
+                          <span>{t.videos.watchProgress.pauses}</span>
                           <span className="text-gray-500 dark:text-white/60">{watchStats.pauseCount}x</span>
                         </div>
                         <div className="flex justify-between">
-                          <span>Rewinds:</span>
+                          <span>{t.videos.watchProgress.rewinds}</span>
                           <span className="text-gray-500 dark:text-white/60">{watchStats.rewindCount}x</span>
                         </div>
                         <div className="flex justify-between">
-                          <span>Speed:</span>
+                          <span>{t.videos.watchProgress.speed}</span>
                           <span className="text-gray-500 dark:text-white/60">{watchStats.playbackSpeed}x</span>
                         </div>
                         <div className="flex justify-between">
-                          <span>Complete:</span>
+                          <span>{t.videos.watchProgress.complete}</span>
                           <span className="text-gray-500 dark:text-white/60">{Math.round(watchStats.watchPercentage)}%</span>
                         </div>
                       </div>
@@ -1041,7 +1044,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                         onClick={() => setShowDeepNotes(true)}
                         className="flex-1 px-4 py-2.5 border border-gray-300 dark:border-white/10 rounded-lg font-semibold hover:bg-gray-100 dark:hover:bg-white/10 transition"
                       >
-                        Deep Notes
+                        {t.videos.deepNotesCta}
                       </button>
                       <button
                         onClick={() => setShowResearch((v) => !v)}
@@ -1051,7 +1054,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                             : 'border-gray-300 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10'
                         }`}
                       >
-                        <Search className="w-4 h-4" /> Research
+                        <Search className="w-4 h-4" /> {t.videos.researchCta}
                       </button>
                     </div>
                   </div>
@@ -1064,7 +1067,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                 <div className="h-96 border border-gray-200 dark:border-white/10 rounded-2xl flex items-center justify-center">
                   <div className="text-center">
                     <Play className="w-16 h-16 mx-auto mb-4 text-gray-300 dark:text-white/30" />
-                    <p className="text-gray-500 dark:text-white/60">Select a video to watch</p>
+                    <p className="text-gray-500 dark:text-white/60">{t.videos.selectVideoPrompt}</p>
                   </div>
                 </div>
               )}

@@ -10,7 +10,7 @@ import { trackOnboardingComplete } from './firebase';
 import { getLearningProfile } from './learningProfileStore';
 import { saveRoadmapData } from './roadmapData';
 import { getGoals, getActiveGoals, addGoal, endGoal as endGoalInStore, updateGoal, saveGoals, MAX_ACTIVE_GOALS } from './goalsStore';
-import { useTranslation } from './i18n/LanguageContext';
+import { useTranslation, useLanguage, mapOnboardingLanguage } from './i18n/LanguageContext';
 type Page = 'landing' | 'onboarding' | 'dashboard';
 
 const ONBOARDING_STORAGE_KEY = 'learning_os_onboarding_data';
@@ -38,6 +38,7 @@ function loadSavedOnboardingData(): UserOnboardingData | null {
 
 function App() {
   const t = useTranslation();
+  const { setLanguage } = useLanguage();
   const demoSteps = t.demo.steps;
   const [page, setPage] = useState<Page>('landing');
   const [userData, setUserData] = useState<UserOnboardingData | null>(loadSavedOnboardingData);
@@ -111,6 +112,7 @@ function App() {
 
   const handleOnboardingComplete = async (data: UserOnboardingData) => {
     setUserData(data);
+    setLanguage(mapOnboardingLanguage(data.language));
     trackOnboardingComplete({
   name: (data as unknown as Record<string, string>).name,
   role: (data as unknown as Record<string, string>).role,
@@ -145,6 +147,7 @@ function App() {
   // after onboarding, without going through the full flow again.
   const handleUpdateUserData = (data: UserOnboardingData) => {
     setUserData(data);
+    setLanguage(mapOnboardingLanguage(data.language));
     localStorage.setItem(ONBOARDING_STORAGE_KEY, JSON.stringify(data));
   };
 

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Search, X } from 'lucide-react';
+import { useTranslation, useLanguage } from './i18n/LanguageContext';
 
 interface SerpResult {
   title: string;
@@ -17,8 +18,8 @@ interface ResearchResponse {
 const RESEARCH_STATE_STORAGE_KEY = 'learning_os_research_state';
 const RESEARCH_CACHE_PREFIX = 'learning_os_research_cache_';
 
-function cacheKey(query: string): string {
-  return `${RESEARCH_CACHE_PREFIX}${query.trim().toLowerCase()}`;
+function cacheKey(query: string, locale: string): string {
+  return `${RESEARCH_CACHE_PREFIX}${locale}_${query.trim().toLowerCase()}`;
 }
 
 function displayUrl(url: string): string {
@@ -30,17 +31,17 @@ function displayUrl(url: string): string {
   }
 }
 
-async function runResearch(query: string): Promise<ResearchResponse> {
+async function runResearch(query: string, genericErrorMsg: string, locale: string): Promise<ResearchResponse> {
   const response = await fetch('/api/research', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ query }),
+    body: JSON.stringify({ query, locale }),
   });
 
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    throw new Error(data?.error || `Research failed (${response.status})`);
+    throw new Error(data?.error || `${genericErrorMsg} (${response.status})`);
   }
 
   return { query, results: data.results ?? [], grounded: !!data.grounded };
@@ -57,6 +58,8 @@ interface ResearchProps {
 }
 
 export default function Research({ embedded = false, onClose }: ResearchProps) {
+  const t = useTranslation();
+  const { locale } = useLanguage();
   const [query, setQuery] = useState('');
   const [result, setResult] = useState<ResearchResponse | null>(null);
   const [history, setHistory] = useState<string[]>([]);
@@ -98,21 +101,21 @@ export default function Research({ embedded = false, onClose }: ResearchProps) {
     setError('');
 
     try {
-      const cached = localStorage.getItem(cacheKey(q));
+      const cached = localStorage.getItem(cacheKey(q, locale));
       if (cached) {
         setResult(JSON.parse(cached));
         setLoading(false);
         return;
       }
 
-      const res = await runResearch(q);
-      localStorage.setItem(cacheKey(q), JSON.stringify(res));
+      const res = await runResearch(q, t.research.genericError, locale);
+      localStorage.setItem(cacheKey(q, locale), JSON.stringify(res));
       setResult(res);
       if (!embedded) {
         setHistory((prev) => [q, ...prev.filter((h) => h.toLowerCase() !== q.toLowerCase())].slice(0, 8));
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Research failed');
+      setError(err instanceof Error ? err.message : t.research.genericError);
     } finally {
       setLoading(false);
     }
@@ -127,7 +130,7 @@ export default function Research({ embedded = false, onClose }: ResearchProps) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-          placeholder="What do you want to know?"
+          placeholder={t.research.searchPlaceholder}
           autoFocus={embedded}
           className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg pl-9 pr-4 py-2.5 placeholder-gray-400 dark:placeholder-white/40 focus:outline-none focus:border-black dark:focus:border-white"
         />
@@ -138,13 +141,13 @@ export default function Research({ embedded = false, onClose }: ResearchProps) {
           disabled={loading || !query.trim()}
           className="flex-1 px-5 py-2.5 bg-black text-white dark:bg-white dark:text-black disabled:opacity-40 rounded-lg font-semibold transition"
         >
-          {loading ? '...' : 'Search'}
+          {loading ? '...' : t.research.searchCta}
         </button>
         {embedded && onClose && (
           <button
             onClick={onClose}
             className="px-3 py-2.5 border border-gray-200 dark:border-white/10 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 transition"
-            aria-label="Close research panel"
+            aria-label={t.research.closeAria}
           >
             <X className="w-4 h-4" />
           </button>
@@ -159,7 +162,7 @@ export default function Research({ embedded = false, onClose }: ResearchProps) {
     <div className={embedded ? 'mt-4 space-y-4' : 'max-w-3xl mx-auto space-y-5'}>
       {!result.grounded && (
         <p className="text-xs text-gray-400 dark:text-white/40">
-          No live search source found this time — the answer below is from general knowledge, so double-check it for anything current
+          {t.research.notGroundedNote}
         </p>
       )}
       {result.results.map((r, i) => (
@@ -183,13 +186,13 @@ export default function Research({ embedded = false, onClose }: ResearchProps) {
       <div className="bg-white dark:bg-black border border-gray-200 dark:border-white/10 rounded-xl p-4">
         <div className="flex items-center gap-2 mb-3">
           <Search className="w-4 h-4" />
-          <h3 className="font-semibold text-sm">Research (alongside your video)</h3>
+          <h3 className="font-semibold text-sm">{t.research.embedded.title}</h3>
         </div>
         {searchBar}
         {error && <p className="text-red-500 dark:text-red-400 text-sm mt-2">{error}</p>}
         {resultsBlock}
         {!result && !loading && (
-          <p className="text-sm text-gray-400 dark:text-white/40 mt-4">Search for anything — the video will keep playing.</p>
+          <p className="text-sm text-gray-400 dark:text-white/40 mt-4">{t.research.embedded.hint}</p>
         )}
       </div>
     );
@@ -199,9 +202,9 @@ export default function Research({ embedded = false, onClose }: ResearchProps) {
     <div className="min-h-screen bg-white dark:bg-black text-black dark:text-white p-4 md:p-8">
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
         <h1 className="text-4xl font-bold mb-2 flex items-center gap-3">
-          <Search className="w-8 h-8" /> Research
+          <Search className="w-8 h-8" /> {t.research.header.title}
         </h1>
-        <p className="text-gray-500 dark:text-white/60">Search any topic — from the internet, for deeper reading</p>
+        <p className="text-gray-500 dark:text-white/60">{t.research.header.subtitle}</p>
       </motion.div>
 
       <div className="max-w-3xl mx-auto mb-6">
@@ -231,8 +234,8 @@ export default function Research({ embedded = false, onClose }: ResearchProps) {
       {!result && !loading && (
         <div className="max-w-2xl mx-auto text-center py-16 text-gray-400 dark:text-white/60">
           <Search className="w-12 h-12 mx-auto mb-3 opacity-30" />
-          <p className="text-lg mb-2">Search any topic</p>
-          <p className="text-sm">You can also open this alongside a video — from the Videos page</p>
+          <p className="text-lg mb-2">{t.research.emptyState.title}</p>
+          <p className="text-sm">{t.research.emptyState.subtitle}</p>
         </div>
       )}
     </div>

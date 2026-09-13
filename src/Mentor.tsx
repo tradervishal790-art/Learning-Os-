@@ -1,5 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation, useLanguage } from './i18n/LanguageContext';
+import { format } from './i18n/format';
+import type { TranslationShape } from './i18n/translations';
 
 interface Message {
   id: string;
@@ -7,15 +10,6 @@ interface Message {
   content: string;
   timestamp: Date;
 }
-
-const SUGGESTED_PROMPTS = [
-  { icon: '💡', label: 'Explain simply', prompt: 'Explain this concept simply' },
-  { icon: '🧠', label: 'Deep dive', prompt: 'Explain this in depth with examples' },
-  { icon: '🎯', label: 'Real analogy', prompt: 'Give me a real-world analogy' },
-  { icon: '📝', label: 'Quiz me', prompt: 'Generate a quiz on this topic' },
-  { icon: '🛠️', label: 'Project idea', prompt: 'Suggest a mini project' },
-  { icon: '🐛', label: 'Find mistake', prompt: 'What are common mistakes?' },
-];
 
 // ============================================
 // MENTOR RESPONSE — now routed through /api/mentor-chat
@@ -25,10 +19,15 @@ const SUGGESTED_PROMPTS = [
 // into the client bundle and is readable by anyone. The system prompt
 // + actual Gemini call now live server-side in api/mentor-chat.ts —
 // this function just sends the conversation and gets text back.
+//
+// `mentorErrors` is passed in (rather than called via useTranslation)
+// since this is a plain async helper, not a component.
 async function generateMentorResponse(
   userMessage: string,
   context: string,
-  history: Message[]
+  history: Message[],
+  mentorErrors: TranslationShape['mentor']['errors'],
+  locale: string
 ): Promise<string> {
   try {
     const response = await fetch('/api/mentor-chat', {
@@ -38,6 +37,7 @@ async function generateMentorResponse(
         userMessage,
         context,
         history: history.slice(-6).map((m) => ({ role: m.role, content: m.content })),
+        locale,
       }),
     });
 
@@ -45,33 +45,34 @@ async function generateMentorResponse(
 
     if (!response.ok) {
       console.error('Mentor chat API error:', response.status, data);
-      return data?.error || `Something went wrong (${response.status}). Please try again in a bit. 🔄`;
+      return data?.error || format(mentorErrors.generic, response.status);
     }
 
     if (!data?.text) {
-      return 'Could not get a response, please try again. 🔄';
+      return mentorErrors.noResponse;
     }
 
     // Let the user know explicitly if a response still got cut off,
     // instead of silently showing an incomplete sentence.
     if (data.finishReason === 'MAX_TOKENS') {
-      return data.text + '\n\n_(⚠️ The response was long and got cut off midway — try asking a shorter question instead of "Deep dive")_';
+      return data.text + mentorErrors.truncatedSuffix;
     }
 
     return data.text;
   } catch (error) {
     console.error('Mentor chat fetch failed:', error);
-    return 'A network error occurred. Please check your internet and try again. 🔄';
+    return mentorErrors.network;
   }
 }
 
 export default function Mentor() {
+  const t = useTranslation();
+  const { locale } = useLanguage();
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
       role: 'mentor',
-      content:
-        'Hi! I\'m your AI Mentor. 🙏\n\nYou can ask me anything:\n• Get concepts explained\n• Real-world analogies\n• Take a quiz\n• Project ideas\n• Common mistakes\n\nTry a suggestion below, or type your own question!',
+      content: t.mentor.welcomeMessage,
       timestamp: new Date(),
     },
   ]);
@@ -109,7 +110,7 @@ export default function Mentor() {
     setInput('');
     setLoading(true);
 
-    const reply = await generateMentorResponse(text, contextTopic, updatedHistory);
+    const reply = await generateMentorResponse(text, contextTopic, updatedHistory, t.mentor.errors, locale);
 
     const mentorMsg: Message = {
       id: (Date.now() + 1).toString(),
@@ -124,8 +125,8 @@ export default function Mentor() {
   return (
     <div className="min-h-screen bg-white dark:bg-black text-black dark:text-white flex flex-col p-4 md:p-8">
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
-        <h1 className="text-4xl font-bold mb-2">🤖 AI Mentor</h1>
-        <p className="text-gray-500 dark:text-white/60">Stuck? Ask here — it knows what you're learning right now</p>
+        <h1 className="text-4xl font-bold mb-2">{t.mentor.header.title}</h1>
+        <p className="text-gray-500 dark:text-white/60">{t.mentor.header.subtitle}</p>
       </motion.div>
 
       {/* Chat area */}
@@ -147,7 +148,7 @@ export default function Mentor() {
                   }`}
                 >
                   <div className="text-xs opacity-60 mb-1">
-                    {msg.role === 'user' ? '👤 You' : '🤖 Mentor'}
+                    {msg.role === 'user' ? t.mentor.youLabel : t.mentor.mentorLabel}
                   </div>
                   <div className="whitespace-pre-wrap text-sm leading-relaxed">{msg.content}</div>
                 </div>
@@ -170,7 +171,7 @@ export default function Mentor() {
 
         {/* Quick prompts */}
         <div className="px-6 py-3 border-t border-gray-200 dark:border-white/5 flex gap-2 overflow-x-auto">
-          {SUGGESTED_PROMPTS.map((p) => (
+          {t.mentor.suggestedPrompts.map((p) => (
             <button
               key={p.label}
               onClick={() => sendMessage(p.prompt)}
@@ -189,7 +190,7 @@ export default function Mentor() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && sendMessage(input)}
-            placeholder="Ask anything..."
+            placeholder={t.mentor.inputPlaceholder}
             disabled={loading}
             className="flex-1 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-2.5 placeholder-gray-400 dark:placeholder-white/40 focus:outline-none focus:border-black dark:focus:border-white"
           />
@@ -198,7 +199,7 @@ export default function Mentor() {
             disabled={loading || !input.trim()}
             className="px-5 py-2.5 bg-black text-white dark:bg-white dark:text-black disabled:opacity-40 rounded-xl font-semibold transition"
           >
-            Send
+            {t.mentor.sendCta}
           </button>
         </div>
       </div>

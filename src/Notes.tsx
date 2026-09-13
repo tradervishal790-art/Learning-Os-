@@ -1,6 +1,8 @@
 /// <reference types="vite/client" />
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { useTranslation } from './i18n/LanguageContext';
+import type { TranslationShape } from './i18n/translations';
 
 // Lightweight markdown renderer for myNotes (## headings, - bullets,
 // **bold**, blank-line paragraph breaks) — no react-markdown dependency
@@ -159,6 +161,7 @@ async function fetchVideoMeta(videoId: string): Promise<{ title: string; descrip
 }
 
 export default function Notes({ videoTitle, videoDescription, videoId }: { videoTitle?: string; videoDescription?: string; videoId?: string }) {
+  const t = useTranslation();
   const [topic, setTopic] = useState(videoTitle || '');
   const [notes, setNotes] = useState<DeepNotesData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -238,7 +241,7 @@ export default function Notes({ videoTitle, videoDescription, videoId }: { video
       localStorage.setItem(cacheKey, JSON.stringify(deepNotes));
       setNotes(deepNotes);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error generating notes');
+      setError(err instanceof Error ? err.message : t.notes.genericGenerateError);
     } finally {
       setLoading(false);
     }
@@ -247,7 +250,7 @@ export default function Notes({ videoTitle, videoDescription, videoId }: { video
   const handleGenerateFromVideo = async () => {
     const videoId = extractVideoId(youtubeUrl.trim());
     if (!videoId) {
-      setError('Invalid YouTube URL');
+      setError(t.notes.invalidUrlError);
       return;
     }
 
@@ -270,22 +273,22 @@ export default function Notes({ videoTitle, videoDescription, videoId }: { video
       localStorage.setItem(`deepnotes_v3_${videoId}`, JSON.stringify(deepNotes));
       setNotes(deepNotes);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error generating notes from video');
+      setError(err instanceof Error ? err.message : t.notes.genericVideoGenerateError);
     } finally {
       setLoading(false);
     }
   };
 
-  const sections = [
-    { id: 'summary', label: 'Summary', key: 'summary' },
-    { id: 'mynotes', label: 'My Notes', key: 'myNotes' },
-    { id: 'coreConcept', label: 'Core Concept', key: 'coreConcept' },
-    { id: 'workedExamples', label: 'Worked Examples', key: 'workedExamples' },
-    { id: 'misconceptions', label: 'Misconceptions', key: 'misconceptions' },
-    { id: 'realworld', label: 'Real World Application', key: 'realWorldApps' },
-    { id: 'advanced', label: 'Advanced', key: 'advancedConcepts' },
-    { id: 'practice', label: 'Practice', key: 'practice' },
-    { id: 'insights', label: 'Key Insights', key: 'keyInsights' },
+  const sections: { id: string; label: string; key: keyof TranslationShape['notes']['sections'] | string }[] = [
+    { id: 'summary', label: t.notes.sections.summary, key: 'summary' },
+    { id: 'mynotes', label: t.notes.sections.myNotes, key: 'myNotes' },
+    { id: 'coreConcept', label: t.notes.sections.coreConcept, key: 'coreConcept' },
+    { id: 'workedExamples', label: t.notes.sections.workedExamples, key: 'workedExamples' },
+    { id: 'misconceptions', label: t.notes.sections.misconceptions, key: 'misconceptions' },
+    { id: 'realworld', label: t.notes.sections.realWorldApp, key: 'realWorldApps' },
+    { id: 'advanced', label: t.notes.sections.advanced, key: 'advancedConcepts' },
+    { id: 'practice', label: t.notes.sections.practice, key: 'practice' },
+    { id: 'insights', label: t.notes.sections.insights, key: 'keyInsights' },
   ];
 
   const renderContent = () => {
@@ -296,7 +299,7 @@ export default function Notes({ videoTitle, videoDescription, videoId }: { video
     if (data === undefined || data === null) {
       return (
         <p className="text-gray-400 dark:text-white/40 text-sm">
-          Yeh section is note ke liye available nahi hai — "Deep Dive" ya "From Video" dobara chala ke fresh notes banao.
+          {t.notes.sectionUnavailable}
         </p>
       );
     }
@@ -329,8 +332,8 @@ export default function Notes({ videoTitle, videoDescription, videoId }: { video
   return (
     <div className="min-h-screen bg-white dark:bg-black text-black dark:text-white p-4 md:p-8">
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-        <h1 className="text-4xl font-bold mb-2">Deep Learning Notes</h1>
-        <p className="text-gray-500 dark:text-white/60">Auto-generated from the video — edit anything, they're yours</p>
+        <h1 className="text-4xl font-bold mb-2">{t.notes.header.title}</h1>
+        <p className="text-gray-500 dark:text-white/60">{t.notes.header.subtitle}</p>
       </motion.div>
 
       <div className="max-w-4xl mx-auto mb-6">
@@ -340,7 +343,7 @@ export default function Notes({ videoTitle, videoDescription, videoId }: { video
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleGenerate()}
-            placeholder="Topic for deep learning..."
+            placeholder={t.notes.topicPlaceholder}
             className="flex-1 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 placeholder-gray-400 dark:placeholder-white/40 focus:outline-none focus:border-black dark:focus:border-white"
           />
           <button
@@ -348,7 +351,7 @@ export default function Notes({ videoTitle, videoDescription, videoId }: { video
             disabled={loading || !topic.trim()}
             className="px-6 py-3 bg-black text-white dark:bg-white dark:text-black disabled:opacity-40 rounded-xl font-semibold transition"
           >
-            {loading ? '...' : 'Deep Dive'}
+            {loading ? '...' : t.notes.deepDiveCta}
           </button>
         </div>
 
@@ -358,7 +361,7 @@ export default function Notes({ videoTitle, videoDescription, videoId }: { video
             value={youtubeUrl}
             onChange={(e) => setYoutubeUrl(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleGenerateFromVideo()}
-            placeholder="Link"
+            placeholder={t.notes.linkPlaceholder}
             className="flex-1 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 placeholder-gray-400 dark:placeholder-white/40 focus:outline-none focus:border-black dark:focus:border-white"
           />
           <button
@@ -366,7 +369,7 @@ export default function Notes({ videoTitle, videoDescription, videoId }: { video
             disabled={loading || !youtubeUrl.trim()}
             className="px-6 py-3 border border-gray-300 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/20 disabled:opacity-40 rounded-xl font-semibold transition"
           >
-            {loading ? '...' : 'From Video'}
+            {loading ? '...' : t.notes.fromVideoCta}
           </button>
         </div>
 
@@ -404,14 +407,14 @@ export default function Notes({ videoTitle, videoDescription, videoId }: { video
                 rel="noopener noreferrer"
                 className="text-xs underline mb-3 inline-block text-gray-500 dark:text-white/60 hover:text-black dark:hover:text-white"
               >
-                🎥 Source video dekho
+                {t.notes.sourceVideoLink}
               </a>
             )}
             {notes.notesSource === 'transcript' && (
-              <p className="text-xs text-gray-400 dark:text-white/40 mb-3">✓ Video transcript se banaye gaye notes</p>
+              <p className="text-xs text-gray-400 dark:text-white/40 mb-3">{t.notes.transcriptSourceNote}</p>
             )}
             {notes.notesSource === 'metadata' && (
-              <p className="text-xs text-gray-400 dark:text-white/40 mb-3">⚠ Transcript available nahi thi — sirf title/description se banaye gaye</p>
+              <p className="text-xs text-gray-400 dark:text-white/40 mb-3">{t.notes.metadataSourceNote}</p>
             )}
             <h2 className="text-2xl font-bold mb-4">
               {sections.find((s) => s.id === activeSection)?.label} — {notes.topic}
@@ -423,8 +426,8 @@ export default function Notes({ videoTitle, videoDescription, videoId }: { video
 
       {!notes && !loading && (
         <div className="max-w-2xl mx-auto text-center py-16 text-gray-400 dark:text-white/60">
-          <p className="text-lg mb-2">Enter a topic for comprehensive, deep learning notes</p>
-          <p className="text-sm">Goes beyond basics - covers WHY, HOW, and WHERE</p>
+          <p className="text-lg mb-2">{t.notes.emptyState.title}</p>
+          <p className="text-sm">{t.notes.emptyState.subtitle}</p>
         </div>
       )}
     </div>

@@ -22,6 +22,14 @@ interface AnswerPayload {
   selectedOption: string; // the option text the user picked
 }
 
+type Locale = 'en' | 'hi' | 'hinglish';
+
+function languageInstruction(locale: Locale): string {
+  if (locale === 'hi') return 'Hindi (Devanagari script)';
+  if (locale === 'en') return 'English';
+  return 'Hinglish (Roman-script Hindi-English mix)';
+}
+
 const DIMENSION_KEYS = [
   'pace',
   'theoryVsPractical',
@@ -33,7 +41,9 @@ const DIMENSION_KEYS = [
   'priorKnowledgeComfort',
 ] as const;
 
-const SYSTEM_INSTRUCTIONS = `Tum ek expert learning-psychology analyst ho. Tumhe ek student ke 11 multiple-choice answers diye jaayenge (poora question + jo option unhone chuna). Tumhara kaam hai in answers ko DEEPLY cross-analyze karke in 8 dimensions ko 1-10 scale par accurately nikalna:
+function buildSystemInstructions(locale: Locale): string {
+  const lang = languageInstruction(locale);
+  return `Tum ek expert learning-psychology analyst ho. Tumhe ek student ke 11 multiple-choice answers diye jaayenge (poora question + jo option unhone chuna). Tumhara kaam hai in answers ko DEEPLY cross-analyze karke in 8 dimensions ko 1-10 scale par accurately nikalna:
 
 - pace (1=slow/thorough, 10=fast/skim)
 - theoryVsPractical (1=theory-first, 10=practical/hands-on-first)
@@ -53,10 +63,11 @@ Agar sab jawab consistent hain toh reliabilityScore high (80-100) rakho aur self
 
 Sirf answers ke actual content se dimensions nikaalo — options ka surface keyword mat dekho, actual meaning/intent samjho.
 
-TONE — report likhte waqt hamesha respectful "aap" form use karo (jaise "aap", "aapka", "aapko"). Informal "tum", "tera", "tu" bilkul use mat karo.
+TONE — report likhte waqt hamesha respectful "aap" form use karo (jaise "aap", "aapka", "aapko"). Informal "tum", "tera", "tu" bilkul use mat karo. (Yeh tone-instruction sirf Hindi/Hinglish output par apply hoti hai — agar output English mein hai toh normal respectful English tone use karo.)
 
 Response — SIRF valid JSON, koi markdown fence nahi, koi extra text nahi:
-{"report":"student ke liye ek warm, personal, paragraph-form likha hua report — 4-6 sentences, Hinglish mein, jaise ek mentor apne student ko unke baare mein bata raha ho, jisme unki learning style ke key traits mention ho","dimensions":{"pace":N,"theoryVsPractical":N,"structureNeed":N,"depth":N,"languageComplexity":N,"storytelling":N,"repetitionNeed":N,"priorKnowledgeComfort":N},"reliabilityScore":N,"selfReportedHonesty":"honest"}`;
+{"report":"student ke liye ek warm, personal, paragraph-form likha hua report — 4-6 sentences, ${lang} mein, jaise ek mentor apne student ko unke baare mein bata raha ho, jisme unki learning style ke key traits mention ho","dimensions":{"pace":N,"theoryVsPractical":N,"structureNeed":N,"depth":N,"languageComplexity":N,"storytelling":N,"repetitionNeed":N,"priorKnowledgeComfort":N},"reliabilityScore":N,"selfReportedHonesty":"honest"}`;
+}
 
 function parseGeminiJson(rawText: string): any | null {
   try {
@@ -83,10 +94,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'POST only' });
   }
 
-  const { answers } = (req.body ?? {}) as { answers?: AnswerPayload[] };
+  const { answers, locale: rawLocale } = (req.body ?? {}) as { answers?: AnswerPayload[]; locale?: string };
   if (!Array.isArray(answers) || answers.length === 0) {
     return res.status(400).json({ error: 'answers array required' });
   }
+  const locale: Locale = rawLocale === 'hi' || rawLocale === 'en' ? rawLocale : 'hinglish';
 
   const apiKey = process.env.VITE_GEMINI_API_KEY;
   const minimaxApiKey = process.env.MINIMAX_API_KEY;
@@ -102,7 +114,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { text: rawText, finishReason: rawFinishReason } = await generateAIText({
       geminiApiKey: apiKey,
       minimaxApiKey,
-      systemInstruction: SYSTEM_INSTRUCTIONS,
+      systemInstruction: buildSystemInstructions(locale),
       contents: [{ role: 'user', parts: [{ text: `Student's answers:\n\n${answersBlock}` }] }],
       generationConfig: {
         maxOutputTokens: 2048,

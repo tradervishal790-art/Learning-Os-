@@ -10,12 +10,21 @@ import { getLearningProfile } from './learningProfileStore';
 import { expandSearchQuery } from './queryExpander';
 import DeepDiveChat from './DeepDiveChat';
 import HintBubble from './HintBubble';
+import { useTranslation } from './i18n/LanguageContext';
+import { format } from './i18n/format';
 
-const statusConfig: Record<Topic['status'], { label: string; bg: string; border: string; text: string; icon: string }> = {
-  mastered: { label: 'Mastered', bg: 'bg-gray-50 dark:bg-white/5', border: 'border-gray-200 dark:border-white/10', text: 'text-gray-600 dark:text-white/70', icon: '⭐' },
-  completed: { label: 'Done', bg: 'bg-gray-50 dark:bg-white/5', border: 'border-gray-200 dark:border-white/10', text: 'text-gray-600 dark:text-white/70', icon: '✓' },
-  learning: { label: 'In Progress', bg: 'bg-gray-50 dark:bg-white/5', border: 'border-gray-300 dark:border-white/20', text: 'text-black dark:text-white', icon: '🔥' },
-  locked: { label: 'Locked', bg: 'bg-gray-50 dark:bg-white/5', border: 'border-gray-200 dark:border-white/10', text: 'text-gray-400 dark:text-white/40', icon: '🔒' },
+const statusIcons: Record<Topic['status'], string> = {
+  mastered: '⭐',
+  completed: '✓',
+  learning: '🔥',
+  locked: '🔒',
+};
+
+const statusStyles: Record<Topic['status'], { bg: string; border: string; text: string }> = {
+  mastered: { bg: 'bg-gray-50 dark:bg-white/5', border: 'border-gray-200 dark:border-white/10', text: 'text-gray-600 dark:text-white/70' },
+  completed: { bg: 'bg-gray-50 dark:bg-white/5', border: 'border-gray-200 dark:border-white/10', text: 'text-gray-600 dark:text-white/70' },
+  learning: { bg: 'bg-gray-50 dark:bg-white/5', border: 'border-gray-300 dark:border-white/20', text: 'text-black dark:text-white' },
+  locked: { bg: 'bg-gray-50 dark:bg-white/5', border: 'border-gray-200 dark:border-white/10', text: 'text-gray-400 dark:text-white/40' },
 };
 
 const difficultyConfig: Record<Topic['difficulty'], string> = {
@@ -78,6 +87,13 @@ export default function Roadmap({
   onEndGoal,
   onSwitchGoal,
 }: RoadmapProps) {
+  const t = useTranslation();
+  const statusLabels: Record<Topic['status'], string> = {
+    mastered: t.roadmap.statusLabels.mastered,
+    completed: t.roadmap.statusLabels.completed,
+    learning: t.roadmap.statusLabels.learning,
+    locked: t.roadmap.statusLabels.locked,
+  };
   const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null);
   // Which teaching process is currently active for the launched playlist —
   // only set on the 'personality_v1' path, used to decide the push-trigger
@@ -364,9 +380,9 @@ export default function Roadmap({
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="mb-4">
         <div className="flex items-center gap-3 mb-2">
           <span className="text-2xl">🗺️</span>
-          <h1 className="text-2xl md:text-4xl font-bold">Your Roadmap</h1>
+          <h1 className="text-2xl md:text-4xl font-bold">{t.roadmap.header.title}</h1>
         </div>
-        <p className="text-sm text-gray-500 dark:text-white/60">Foundation-first order — follow it for best results</p>
+        <p className="text-sm text-gray-500 dark:text-white/60">{t.roadmap.header.subtitle}</p>
       </motion.div>
 
       {/* Goal tabs — up to MAX_ACTIVE_GOALS active goals at once */}
@@ -385,9 +401,9 @@ export default function Roadmap({
                 ? 'bg-black text-white dark:bg-white dark:text-black border-transparent'
                 : 'border-gray-200 dark:border-white/10 text-gray-500 dark:text-white/50 hover:bg-gray-100 dark:hover:bg-white/10'
             }`}
-            title={g.title || 'Naya Goal'}
+            title={g.title || t.roadmap.goalTabs.newGoal}
           >
-            🎯 {g.title || 'Naya Goal'}
+            🎯 {g.title || t.roadmap.goalTabs.newGoal}
           </button>
         ))}
 
@@ -396,11 +412,11 @@ export default function Roadmap({
             onClick={onAddGoal}
             className="px-4 py-2 rounded-xl text-sm font-medium border border-dashed border-gray-300 dark:border-white/20 text-gray-500 dark:text-white/50 hover:bg-gray-100 dark:hover:bg-white/10 transition"
           >
-            + Add Goal
+            {t.roadmap.goalTabs.addGoal}
           </button>
         ) : (
           <span className="text-[11px] text-gray-400 dark:text-white/40 px-1">
-            Max {MAX_ACTIVE_GOALS} goals at once — end one to start a new one.
+            {format(t.roadmap.goalTabs.maxGoalsNote, MAX_ACTIVE_GOALS)}
           </span>
         )}
 
@@ -409,7 +425,7 @@ export default function Roadmap({
             onClick={() => setConfirmEndGoal(true)}
             className="ml-auto px-3 py-2 rounded-xl text-xs font-medium border border-red-200 dark:border-red-500/20 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition"
           >
-            End this goal
+            {t.roadmap.goalTabs.endGoal}
           </button>
         )}
       </motion.div>
@@ -431,16 +447,16 @@ export default function Roadmap({
               className="bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-white/10 rounded-2xl max-w-sm w-full p-6 text-black dark:text-white"
               onClick={(e) => e.stopPropagation()}
             >
-              <h3 className="text-lg font-bold mb-2">End this goal?</h3>
+              <h3 className="text-lg font-bold mb-2">{t.roadmap.endGoalModal.title}</h3>
               <p className="text-sm text-gray-500 dark:text-white/50 mb-5">
-                "{roadmap.title}" will be ended — your progress stays safe, and a slot frees up for a new goal.
+                {format(t.roadmap.endGoalModal.body, roadmap.title)}
               </p>
               <div className="flex gap-3">
                 <button
                   onClick={() => setConfirmEndGoal(false)}
                   className="flex-1 py-2.5 rounded-lg text-sm font-medium border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10 transition"
                 >
-                  Cancel
+                  {t.roadmap.endGoalModal.cancel}
                 </button>
                 <button
                   onClick={() => {
@@ -449,7 +465,7 @@ export default function Roadmap({
                   }}
                   className="flex-1 py-2.5 rounded-lg text-sm font-medium bg-red-600 text-white hover:bg-red-700 transition"
                 >
-                  End Goal
+                  {t.roadmap.endGoalModal.confirm}
                 </button>
               </div>
             </motion.div>
@@ -460,19 +476,19 @@ export default function Roadmap({
       {/* Top stats */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.5 }} className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-8">
         <div className="p-4 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5">
-          <div className="text-xs text-gray-400 dark:text-white/40 uppercase tracking-wider mb-1">Progress</div>
+          <div className="text-xs text-gray-400 dark:text-white/40 uppercase tracking-wider mb-1">{t.roadmap.stats.progress}</div>
           <div className="text-2xl font-bold">{progressPercent}%</div>
         </div>
         <div className="p-4 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5">
-          <div className="text-xs text-gray-400 dark:text-white/40 uppercase tracking-wider mb-1">Done</div>
+          <div className="text-xs text-gray-400 dark:text-white/40 uppercase tracking-wider mb-1">{t.roadmap.stats.done}</div>
           <div className="text-2xl font-bold">{completedTopics}/{totalTopics}</div>
         </div>
         <div className="p-4 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5">
-          <div className="text-xs text-gray-400 dark:text-white/40 uppercase tracking-wider mb-1">In Progress</div>
+          <div className="text-xs text-gray-400 dark:text-white/40 uppercase tracking-wider mb-1">{t.roadmap.stats.inProgress}</div>
           <div className="text-2xl font-bold">{learningTopics}</div>
         </div>
         <div className="p-4 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5">
-          <div className="text-xs text-gray-400 dark:text-white/40 uppercase tracking-wider mb-1">Est. Time</div>
+          <div className="text-xs text-gray-400 dark:text-white/40 uppercase tracking-wider mb-1">{t.roadmap.stats.estTime}</div>
           <div className="text-2xl font-bold">{roadmap.estimatedTime}</div>
         </div>
       </motion.div>
@@ -506,20 +522,20 @@ export default function Roadmap({
 
         {hasNoRoadmap && !activeGoalId && (
           <div className="mt-5 p-5 rounded-xl border border-dashed border-gray-300 dark:border-white/20 text-center text-sm text-gray-500 dark:text-white/50">
-            No active goal. Tap "+ Add Goal" above to start a new one.
+            {t.roadmap.noActiveGoal}
           </div>
         )}
 
         {hasNoRoadmap && activeGoalId && onGenerateForSubject && (
           <div className="mt-5 p-5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5">
-            <label className="block text-sm font-semibold mb-2">What do you want to learn?</label>
+            <label className="block text-sm font-semibold mb-2">{t.roadmap.generateForm.label}</label>
             <div className="flex flex-col sm:flex-row gap-3">
               <input
                 type="text"
                 value={subjectInput}
                 onChange={(e) => setSubjectInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleGenerateClick()}
-                placeholder="Aap kya seekhna chahte ho?"
+                placeholder={t.roadmap.generateForm.placeholder}
                 autoFocus
                 className="flex-1 px-4 py-2.5 rounded-lg text-sm border border-gray-200 dark:border-white/10 bg-white dark:bg-black/30 focus:outline-none focus:border-black dark:focus:border-white"
               />
@@ -528,29 +544,29 @@ export default function Roadmap({
                 disabled={generating || !subjectInput.trim()}
                 className="px-5 py-2.5 rounded-lg text-sm font-medium bg-black text-white dark:bg-white dark:text-black hover:opacity-80 transition disabled:opacity-40 flex-shrink-0"
               >
-                {generating ? 'Building your roadmap...' : 'Generate Roadmap'}
+                {generating ? t.roadmap.generateForm.generatingCta : t.roadmap.generateForm.generateCta}
               </button>
             </div>
 
             <div className="mt-4">
               <label className="block text-sm font-semibold mb-2">
-                Kisi specific exam/board ke liye? <span className="font-normal text-gray-400 dark:text-white/40">(optional)</span>
+                {t.roadmap.generateForm.examLabel} <span className="font-normal text-gray-400 dark:text-white/40">{t.roadmap.generateForm.examOptional}</span>
               </label>
               <input
                 type="text"
                 value={examTypeInput}
                 onChange={(e) => setExamTypeInput(e.target.value)}
-                placeholder="e.g. CBSE Class 10, JEE, NEET — leave blank for general learning"
+                placeholder={t.roadmap.generateForm.examPlaceholder}
                 className="w-full px-4 py-2.5 rounded-lg text-sm border border-gray-200 dark:border-white/10 bg-white dark:bg-black/30 focus:outline-none focus:border-black dark:focus:border-white"
               />
               <p className="text-[11px] text-gray-400 dark:text-white/40 mt-1.5">
-                Bataoge to roadmap us exam ke syllabus-order aur marks-weightage ke hisaab se banega.
+                {t.roadmap.generateForm.examHint}
               </p>
             </div>
 
             <div className="mt-4">
               <div className="flex items-center justify-between mb-2">
-                <label className="text-sm font-semibold">Weekly time available</label>
+                <label className="text-sm font-semibold">{t.roadmap.generateForm.weeklyTimeLabel}</label>
                 <span className="text-sm font-mono px-2 py-0.5 rounded-md bg-black text-white dark:bg-white dark:text-black">
                   {hoursInput} hrs/week
                 </span>
@@ -569,12 +585,12 @@ export default function Roadmap({
                 <span>40 hrs</span>
               </div>
               <p className="text-[11px] text-gray-400 dark:text-white/40 mt-1.5">
-                This makes the roadmap's topics and depth more accurate for the time you actually have.
+                {t.roadmap.generateForm.weeklyTimeHint}
               </p>
             </div>
 
             <div className="mt-4">
-              <label className="block text-sm font-semibold mb-2">Time limit</label>
+              <label className="block text-sm font-semibold mb-2">{t.roadmap.generateForm.timeLimitLabel}</label>
               <div className="flex gap-2 mb-3">
                 {(['day', 'week', 'month'] as const).map((unit) => (
                   <button
@@ -591,7 +607,7 @@ export default function Roadmap({
                 ))}
               </div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs text-gray-400 dark:text-white/40">Deadline</span>
+                <span className="text-xs text-gray-400 dark:text-white/40">{t.roadmap.generateForm.deadlineLabel}</span>
                 <span className="text-sm font-mono px-2 py-0.5 rounded-md bg-black text-white dark:bg-white dark:text-black">
                   {DEADLINE_UNIT_CONFIG[deadlineUnit].label(deadlineValue)}
                 </span>
@@ -613,7 +629,7 @@ export default function Roadmap({
 
             {generateFailed && (
               <div className="mt-3">
-                <p className="text-xs text-red-600 dark:text-red-400">Could not generate the roadmap — please try again.</p>
+                <p className="text-xs text-red-600 dark:text-red-400">{t.roadmap.generateForm.generateFailed}</p>
                 {lastRoadmapError && (
                   <p className="text-[11px] font-mono text-red-500/70 dark:text-red-400/60 mt-1 break-all">
                     {lastRoadmapError}
@@ -628,7 +644,7 @@ export default function Roadmap({
       {/* Topic list */}
       <div className="space-y-3">
         {roadmap.children?.map((topic, i) => {
-          const status = statusConfig[topic.status];
+          const status = { ...statusStyles[topic.status], icon: statusIcons[topic.status], label: statusLabels[topic.status] };
           const isLast = i === (roadmap.children?.length ?? 0) - 1;
           return (
             <motion.button
@@ -649,7 +665,7 @@ export default function Roadmap({
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-[10px] text-gray-400 dark:text-white/30">STEP {i + 1}</span>
+                    <span className="text-[10px] text-gray-400 dark:text-white/30">{format(t.roadmap.step, i + 1)}</span>
                     <span className={`text-[10px] uppercase tracking-wider ${difficultyConfig[topic.difficulty]}`}>
                       • {topic.difficulty}
                     </span>
@@ -664,7 +680,7 @@ export default function Roadmap({
                         }`}
                         title="Exam weightage"
                       >
-                        {topic.examWeightage} weightage
+                        {topic.examWeightage === 'high' ? t.roadmap.examWeightage.high : topic.examWeightage === 'medium' ? t.roadmap.examWeightage.medium : t.roadmap.examWeightage.low}
                       </span>
                     )}
                   </div>
@@ -708,9 +724,9 @@ export default function Roadmap({
               <div className="p-5 md:p-6 border-b border-gray-200 dark:border-white/5">
                 <div className="flex items-center justify-between mb-3">
                   <span
-                    className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full border ${statusConfig[selectedTopic.status].border} ${statusConfig[selectedTopic.status].text}`}
+                    className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full border ${statusStyles[selectedTopic.status].border} ${statusStyles[selectedTopic.status].text}`}
                   >
-                    {statusConfig[selectedTopic.status].label}
+                    {statusLabels[selectedTopic.status]}
                   </span>
                   <button
                     onClick={() => setSelectedTopic(null)}
@@ -733,13 +749,13 @@ export default function Roadmap({
                   onClick={() => setShowWhy(false)}
                   className={`flex-1 px-6 py-3 text-sm font-medium transition ${!showWhy ? 'border-b-2 border-black dark:border-white' : 'text-gray-400 dark:text-white/50 hover:text-black dark:hover:text-white'}`}
                 >
-                  Overview
+                  {t.roadmap.topicModal.overviewTab}
                 </button>
                 <button
                   onClick={() => setShowWhy(true)}
                   className={`flex-1 px-6 py-3 text-sm font-medium transition ${showWhy ? 'border-b-2 border-black dark:border-white' : 'text-gray-400 dark:text-white/50 hover:text-black dark:hover:text-white'}`}
                 >
-                  Why
+                  {t.roadmap.topicModal.whyTab}
                 </button>
               </div>
 
@@ -747,7 +763,7 @@ export default function Roadmap({
                 {!showWhy ? (
                   <div className="space-y-4">
                     <div className="p-4 rounded-xl border border-gray-200 dark:border-white/10">
-                      <h3 className="text-sm font-semibold mb-2">What you'll learn</h3>
+                      <h3 className="text-sm font-semibold mb-2">{t.roadmap.topicModal.whatYoullLearn}</h3>
                       <p className="text-sm text-gray-500 dark:text-white/60">{selectedTopic.description}</p>
                     </div>
 
@@ -761,7 +777,7 @@ export default function Roadmap({
                       if (!bridge) return null;
                       return (
                         <>
-                        <HintBubble id="bridge" text="This shows how the last topic connects to this one." />
+                        <HintBubble id="bridge" text={t.roadmap.topicModal.bridgeHint} />
                         <div className="p-4 rounded-xl border border-gray-300 dark:border-white/20 bg-gray-50 dark:bg-white/5">
                           <div className="flex items-center gap-2 mb-2 text-xs text-gray-400 dark:text-white/40">
                             <span>{bridge.fromTopicTitle}</span>
@@ -782,7 +798,7 @@ export default function Roadmap({
                         onClick={() => setShowDeepDive(true)}
                         className="w-full text-left px-3 py-3 rounded-lg border border-purple-300/30 dark:border-purple-500/20 bg-purple-50 dark:bg-purple-500/5 text-sm text-purple-700 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-500/10 active:scale-[0.99] transition mb-3"
                       >
-                        🔍 2 quick sawaal poochu? Better matched videos milenge (optional)
+                        {t.roadmap.topicModal.deepDiveCta}
                       </button>
 
                       <button
@@ -790,14 +806,14 @@ export default function Roadmap({
                         disabled={playlistLoading}
                         className="w-full px-4 py-3.5 md:py-2.5 rounded-lg bg-black text-white dark:bg-white dark:text-black disabled:opacity-40 text-sm font-semibold transition active:scale-[0.98]"
                       >
-                        {playlistLoading ? 'Dhundh raha hoon...' : 'Watch videos'}
+                        {playlistLoading ? t.roadmap.topicModal.searchingCta : t.roadmap.topicModal.watchVideosCta}
                       </button>
                       {hasSavedVideoForTopic(activeGoalId ?? undefined, selectedTopic.id) && (
                         <button
                           onClick={() => onOpenSavedVideo(selectedTopic.id)}
                           className="w-full mt-2 px-4 py-3 md:py-2 rounded-lg border border-gray-300 dark:border-white/20 text-sm font-medium hover:bg-gray-50 dark:hover:bg-white/5 active:scale-[0.98] transition"
                         >
-                          Saved video
+                          {t.roadmap.topicModal.savedVideoCta}
                         </button>
                       )}
                       {playlistError && <p className="text-xs text-red-500 dark:text-red-400 mt-2">{playlistError}</p>}
@@ -807,7 +823,7 @@ export default function Roadmap({
                           onClick={handleMarkComplete}
                           className="w-full mt-2 px-4 py-3 md:py-2 rounded-lg border border-gray-300 dark:border-white/20 text-sm font-medium text-gray-600 dark:text-white/70 hover:bg-gray-50 dark:hover:bg-white/5 active:scale-[0.98] transition"
                         >
-                          ✓ Maine ye already seekh liya — mark as complete
+                          {t.roadmap.topicModal.markCompleteCta}
                         </button>
                       )}
 
@@ -817,7 +833,7 @@ export default function Roadmap({
                       {showChallengePrompt && (
                         <div className="mt-3 p-4 rounded-xl border border-gray-300 dark:border-white/20 bg-gray-50 dark:bg-white/5">
                           <p className="text-sm font-medium mb-2">
-                            Try a small applied challenge first, then mark the topic complete.
+                            {t.roadmap.topicModal.challengeTitle}
                           </p>
                           <p className="text-xs text-gray-500 dark:text-white/50 mb-3">
                             {activeTeachingProcess?.pushStrategy}
@@ -826,7 +842,7 @@ export default function Roadmap({
                             onClick={handleChallengeSubmit}
                             className="w-full px-4 py-2.5 rounded-lg bg-black text-white dark:bg-white dark:text-black text-sm font-semibold transition active:scale-[0.98]"
                           >
-                            Try kar liya — complete maaro
+                            {t.roadmap.topicModal.challengeCta}
                           </button>
                         </div>
                       )}
@@ -835,10 +851,10 @@ export default function Roadmap({
                 ) : (
                   <div className="space-y-3">
                     {[
-                      { label: 'Why learn this?', content: selectedTopic.why.learn, icon: '❓' },
-                      { label: 'How does it connect?', content: selectedTopic.why.connect, icon: '🔗' },
-                      { label: 'What system does it belong to?', content: selectedTopic.why.system, icon: '🌐' },
-                      { label: "What if you don't learn it?", content: selectedTopic.why.risk, icon: '⚠️' },
+                      { label: t.roadmap.topicModal.whyItems.learn, content: selectedTopic.why.learn, icon: '❓' },
+                      { label: t.roadmap.topicModal.whyItems.connect, content: selectedTopic.why.connect, icon: '🔗' },
+                      { label: t.roadmap.topicModal.whyItems.system, content: selectedTopic.why.system, icon: '🌐' },
+                      { label: t.roadmap.topicModal.whyItems.risk, content: selectedTopic.why.risk, icon: '⚠️' },
                     ].map((item, i) => (
                       <motion.div
                         key={item.label}

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { UserOnboardingData } from './types';
 import { getCurrentUser } from './authStore';
-import { useTranslation } from './i18n/LanguageContext';
+import { useLanguage, useTranslation, mapOnboardingLanguage } from './i18n/LanguageContext';
 
 interface Onboarding3DProps {
   onComplete: (data: UserOnboardingData) => void;
@@ -29,16 +29,13 @@ const getStartPosition = (index: number, _total: number) => {
   return positions[index % positions.length];
 };
 
-// NOTE: This flow is intentionally English-only. The language-selection
-// step (Hindi/English/Hinglish) has been removed — only the Landing page,
-// this Onboarding flow, and the Demo modal have an i18n system wired up
-// so far (see src/i18n/), while the rest of the app (Dashboard, Roadmap,
-// VideoIntel, Notes, etc.) is still hardcoded English. Letting the user
-// pick a language here that the rest of the app doesn't honor yet would
-// leave them stuck with a half-translated experience, so the picker is
-// disabled and UserOnboardingData.language is fixed to 'english' until
-// every screen is translated.
-const FIXED_LANGUAGE = 'english';
+const languageFlags: Record<string, string> = {
+  hindi: '🇮🇳',
+  english: '🇬🇧',
+  hinglish: '✨',
+  any: '🌍',
+};
+const languageOrder = ['hindi', 'english', 'hinglish', 'any'];
 
 const roleIcons: Record<string, string> = {
   student: '🎓',
@@ -63,10 +60,12 @@ const goalOrder = ['job', 'skill', 'research', 'startup', 'curiosity', 'mastery'
 
 export default function Onboarding3D({ onComplete }: Onboarding3DProps) {
   const t = useTranslation();
-  // 3 steps only: role, goal, name. (Language step removed — see FIXED_LANGUAGE above.)
-  const stepTitles = [t.onboarding.stepTitles[0], t.onboarding.stepTitles[1], t.onboarding.stepTitles[3]];
+  const { setLanguage } = useLanguage();
+  // 4 steps: role, goal, language, name.
+  const stepTitles = t.onboarding.stepTitles;
   const roles: CardOption[] = roleOrder.map((id) => ({ id, label: t.onboarding.roles[id], icon: roleIcons[id] }));
   const goals: CardOption[] = goalOrder.map((id) => ({ id, label: t.onboarding.goals[id], icon: goalIcons[id] }));
+  const languages: CardOption[] = languageOrder.map((id) => ({ id, label: t.onboarding.languages[id], icon: languageFlags[id] }));
 
   const [step, setStep] = useState(0);
   // Prefill from the name entered at signup (Firebase displayName), so
@@ -74,7 +73,7 @@ export default function Onboarding3D({ onComplete }: Onboarding3DProps) {
   const [data, setData] = useState<UserOnboardingData>({
   role: '',
   goal: '',
-  language: FIXED_LANGUAGE,
+  language: '',
   name: getCurrentUser()?.displayName ?? '',
   hours: 0,
   deadline: 'none',
@@ -95,12 +94,13 @@ export default function Onboarding3D({ onComplete }: Onboarding3DProps) {
   const canProceed = () => {
     if (step === 0) return data.role !== '';
     if (step === 1) return data.goal !== '';
-    if (step === 2) return data.name.trim() !== '';
+    if (step === 2) return data.language !== '';
+    if (step === 3) return data.name.trim() !== '';
     return false;
   };
 
   const renderCards = () => {
-    if (step === 2) {
+    if (step === 3) {
       return (
         <div className="max-w-sm mx-auto">
           <motion.input
@@ -119,15 +119,17 @@ export default function Onboarding3D({ onComplete }: Onboarding3DProps) {
       );
     }
 
-    const options: CardOption[] = step === 0 ? roles : goals;
+    const options: CardOption[] = step === 0 ? roles : step === 1 ? goals : languages;
+    const isGrid = step === 2;
 
     return (
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+      <div className={isGrid ? 'grid grid-cols-2 md:grid-cols-4 gap-4' : 'grid grid-cols-2 md:grid-cols-3 gap-4'}>
         {options.map((option, i) => {
           const start = getStartPosition(i, options.length);
           const isSelected =
             (step === 0 && data.role === option.id) ||
-            (step === 1 && data.goal === option.id);
+            (step === 1 && data.goal === option.id) ||
+            (step === 2 && data.language === option.id);
 
           return (
             <motion.button
@@ -140,6 +142,13 @@ export default function Onboarding3D({ onComplete }: Onboarding3DProps) {
               onClick={() => {
                 if (step === 0) setData({ ...data, role: option.id });
                 else if (step === 1) setData({ ...data, goal: option.id });
+                else if (step === 2) {
+                  setData({ ...data, language: option.id });
+                  // Live-preview: switch the app locale the instant the user
+                  // picks a language, so the remaining onboarding steps (and
+                  // the app behind it) already render in their choice.
+                  setLanguage(mapOnboardingLanguage(option.id));
+                }
               }}
               className={`relative p-6 rounded-2xl border transition-all duration-300 overflow-hidden ${
                 isSelected

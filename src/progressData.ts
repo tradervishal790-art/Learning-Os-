@@ -2,6 +2,7 @@ import type { Goal, Topic, EngagementSession } from './types';
 import { getRoadmapData } from './roadmapData';
 import { getEngagementSessions } from './engagementStore';
 import { getRevisionDataForGoals, getRevisionStats } from './revisionData';
+import type { TranslationShape } from './i18n/translations';
 
 // ============================================================
 // progressData.ts
@@ -194,7 +195,7 @@ export function getWeakAreas(heatmap: TopicMastery[], limit = 5): TopicMastery[]
 }
 
 // ---------- Retention rate (delegates to the same engine Revision.tsx uses) ----------
-export function getRetentionStats(goals: Goal[]) {
-  const items = getRevisionDataForGoals(goals);
+export function getRetentionStats(revisionTasks: TranslationShape['revisionTasks'], goals: Goal[]) {
+  const items = getRevisionDataForGoals(revisionTasks, goals);
   return getRevisionStats(items);
 }

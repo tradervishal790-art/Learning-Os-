@@ -12,6 +12,7 @@ import {
   type User,
 } from 'firebase/auth';
 import { auth } from './firebase';
+import type { TranslationShape } from './i18n/translations';
 
 // ============================================================
 // authStore.ts
@@ -44,23 +45,32 @@ export function onAuthChange(callback: (user: User | null) => void): () => void 
 }
 
 /** First-time setup: creates the account, sets their display name, and signs them in immediately. */
-export async function createProfileLockAccount(email: string, password: string, displayName?: string): Promise<{ ok: true } | { ok: false; error: string }> {
+export async function createProfileLockAccount(
+  email: string,
+  password: string,
+  displayName: string | undefined,
+  authErrors: TranslationShape['authErrors']
+): Promise<{ ok: true } | { ok: false; error: string }> {
   try {
     const credential = await createUserWithEmailAndPassword(auth, email, password);
     if (displayName?.trim()) await updateProfile(credential.user, { displayName: displayName.trim() });
     return { ok: true };
   } catch (err: any) {
-    return { ok: false, error: mapAuthError(err?.code) };
+    return { ok: false, error: mapAuthError(err?.code, authErrors) };
   }
 }
 
 /** Session expired / signed out on this device — sign back in with the same credentials. */
-export async function signInProfileLock(email: string, password: string): Promise<{ ok: true } | { ok: false; error: string }> {
+export async function signInProfileLock(
+  email: string,
+  password: string,
+  authErrors: TranslationShape['authErrors']
+): Promise<{ ok: true } | { ok: false; error: string }> {
   try {
     await signInWithEmailAndPassword(auth, email, password);
     return { ok: true };
   } catch (err: any) {
-    return { ok: false, error: mapAuthError(err?.code) };
+    return { ok: false, error: mapAuthError(err?.code, authErrors) };
   }
 }
 
@@ -69,15 +79,18 @@ export async function signInProfileLock(email: string, password: string): Promis
  * re-confirms identity with the password before revealing it (step-up
  * auth), without forcing a full sign-out/sign-in cycle.
  */
-export async function reauthenticateProfileLock(password: string): Promise<{ ok: true } | { ok: false; error: string }> {
+export async function reauthenticateProfileLock(
+  password: string,
+  authErrors: TranslationShape['authErrors']
+): Promise<{ ok: true } | { ok: false; error: string }> {
   const user = auth.currentUser;
-  if (!user?.email) return { ok: false, error: 'Session not found, please sign in again.' };
+  if (!user?.email) return { ok: false, error: authErrors.sessionExpired };
   try {
     const credential = EmailAuthProvider.credential(user.email, password);
     await reauthenticateWithCredential(user, credential);
     return { ok: true };
   } catch (err: any) {
-    return { ok: false, error: mapAuthError(err?.code) };
+    return { ok: false, error: mapAuthError(err?.code, authErrors) };
   }
 }
 
@@ -86,12 +99,14 @@ export async function reauthenticateProfileLock(password: string): Promise<{ ok:
  * Firebase auto-creates the account on first Google sign-in, so the
  * caller doesn't need to know create vs signin mode like the email flow.
  */
-export async function signInWithGoogleProfileLock(): Promise<{ ok: true } | { ok: false; error: string }> {
+export async function signInWithGoogleProfileLock(
+  authErrors: TranslationShape['authErrors']
+): Promise<{ ok: true } | { ok: false; error: string }> {
   try {
     await signInWithPopup(auth, new GoogleAuthProvider());
     return { ok: true };
   } catch (err: any) {
-    return { ok: false, error: mapAuthError(err?.code) };
+    return { ok: false, error: mapAuthError(err?.code, authErrors) };
   }
 }
 
@@ -101,46 +116,48 @@ export function isGoogleAccount(): boolean {
 }
 
 /** Step-up confirmation for a Google-based account — re-shows the Google popup instead of asking a password. */
-export async function reauthenticateProfileLockGoogle(): Promise<{ ok: true } | { ok: false; error: string }> {
+export async function reauthenticateProfileLockGoogle(
+  authErrors: TranslationShape['authErrors']
+): Promise<{ ok: true } | { ok: false; error: string }> {
   const user = auth.currentUser;
-  if (!user) return { ok: false, error: 'Session not found, please sign in again.' };
+  if (!user) return { ok: false, error: authErrors.sessionExpired };
   try {
     await reauthenticateWithPopup(user, new GoogleAuthProvider());
     return { ok: true };
   } catch (err: any) {
-    return { ok: false, error: mapAuthError(err?.code) };
+    return { ok: false, error: mapAuthError(err?.code, authErrors) };
   }
 }
 
-function mapAuthError(code?: string): string {
-  const known = mapKnownAuthError(code);
+function mapAuthError(code: string | undefined, authErrors: TranslationShape['authErrors']): string {
+  const known = mapKnownAuthError(code, authErrors);
   // Always append the raw code — generic messages hide the real cause;
   // the user can act on 'auth/unauthorized-domain' etc. directly.
   return code ? `${known} (${code})` : known;
 }
 
-function mapKnownAuthError(code?: string): string {
+function mapKnownAuthError(code: string | undefined, authErrors: TranslationShape['authErrors']): string {
   switch (code) {
     case 'auth/email-already-in-use':
-      return 'This email is already registered — please sign in.';
+      return authErrors.emailAlreadyInUse;
     case 'auth/weak-password':
-      return 'Password must be at least 6 characters.';
+      return authErrors.weakPassword;
     case 'auth/invalid-email':
-      return 'Email is not in a valid format.';
+      return authErrors.invalidEmail;
     case 'auth/wrong-password':
     case 'auth/invalid-credential':
-      return 'Incorrect password.';
+      return authErrors.wrongPassword;
     case 'auth/user-not-found':
-      return 'This email is not registered.';
+      return authErrors.userNotFound;
     case 'auth/operation-not-allowed':
-      return 'Email/Password sign-in is not enabled in the Firebase Console.';
+      return authErrors.operationNotAllowed;
     case 'auth/unauthorized-domain':
-      return 'This website domain is not authorized in the Firebase Console.';
+      return authErrors.unauthorizedDomain;
     case 'auth/popup-blocked':
-      return 'Your browser blocked the popup — allow popups and try again.';
+      return authErrors.popupBlocked;
     case 'auth/popup-closed-by-user':
-      return 'The Google popup closed before sign-in could complete.';
+      return authErrors.popupClosedByUser;
     default:
-      return 'Something went wrong, please try again.';
+      return authErrors.genericAuthError;
   }
 }

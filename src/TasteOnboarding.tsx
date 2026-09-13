@@ -4,6 +4,8 @@ import { getLearningProfile, saveLearningProfile, mergeLearningProfile } from '.
 import { averageTasteSignals, buildFreshProfileFromTaste } from './tasteProfileScoring';
 import type { LearningProfile, TasteVideoResult } from './types';
 import HintBubble from './HintBubble';
+import { useTranslation } from './i18n/LanguageContext';
+import { format } from './i18n/format';
 
 // ============================================================
 // TasteOnboarding.tsx
@@ -64,6 +66,7 @@ interface TasteOnboardingProps {
 type Phase = 'form' | 'analyzing' | 'done' | 'error';
 
 export default function TasteOnboarding({ onComplete, onClose }: TasteOnboardingProps) {
+  const t = useTranslation();
   const [entries, setEntries] = useState<VideoEntry[]>(
     Array.from({ length: MIN_VIDEOS }, (_, i) => makeEmptyEntry(`v${i}`))
   );
@@ -120,7 +123,7 @@ export default function TasteOnboarding({ onComplete, onClose }: TasteOnboarding
 
       if (results.length === 0) {
         setPhase('error');
-        setErrorMsg('None of the videos could be analyzed. Check the links and try again.');
+        setErrorMsg(t.tasteOnboarding.errors.noneAnalyzed);
         return current;
       }
 
@@ -154,7 +157,7 @@ export default function TasteOnboarding({ onComplete, onClose }: TasteOnboarding
       >
         <div className="flex items-center justify-between mb-4">
           <span className="text-xs uppercase tracking-wider text-gray-400 dark:text-white/40">
-            Video Taste · Alternative to quiz
+            {t.tasteOnboarding.badge}
           </span>
           {phase !== 'analyzing' && (
             <button
@@ -171,11 +174,10 @@ export default function TasteOnboarding({ onComplete, onClose }: TasteOnboarding
             <motion.div key="form" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <HintBubble id="video-providing" text="Share a video you've fully watched (45+ min) — we'll learn your style from it." />
               <h3 className="text-base md:text-lg font-semibold mb-1 leading-snug">
-                Give videos you've already watched in full
+                {t.tasteOnboarding.formTitle}
               </h3>
               <p className="text-xs text-gray-400 dark:text-white/40 mb-4">
-                At least {MIN_VIDEOS} videos, each {MIN_DURATION_MINUTES}+ min long — on any topic. This figures out your
-                learning style from real videos, not a quiz.
+                {format(t.tasteOnboarding.formSubtitle, MIN_VIDEOS, MIN_DURATION_MINUTES)}
               </p>
 
               <div className="space-y-3 mb-4">
@@ -187,7 +189,7 @@ export default function TasteOnboarding({ onComplete, onClose }: TasteOnboarding
                         type="text"
                         value={entry.url}
                         onChange={(e) => updateEntry(entry.id, { url: e.target.value })}
-                        placeholder="https://youtube.com/watch?v=..."
+                        placeholder={t.tasteOnboarding.urlPlaceholder}
                         className="flex-1 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg px-3 py-2 text-sm placeholder-gray-400 dark:placeholder-white/40 focus:outline-none focus:border-purple-500/50"
                       />
                       {entries.length > MIN_VIDEOS && (
@@ -207,9 +209,9 @@ export default function TasteOnboarding({ onComplete, onClose }: TasteOnboarding
                           onChange={(e) => updateEntry(entry.id, { watchedFully: e.target.checked })}
                           className="rounded"
                         />
-                        I've watched this video fully
+                        {t.tasteOnboarding.watchedCheckbox}
                         {!extractVideoId(entry.url) && (
-                          <span className="text-red-400 ml-1">(couldn't read this link)</span>
+                          <span className="text-red-400 ml-1">{t.tasteOnboarding.linkNotRecognized}</span>
                         )}
                       </label>
                     )}
@@ -221,7 +223,7 @@ export default function TasteOnboarding({ onComplete, onClose }: TasteOnboarding
                 onClick={addEntry}
                 className="text-xs text-gray-400 dark:text-white/40 hover:text-black dark:hover:text-white transition mb-4"
               >
-                + Add another video
+                {t.tasteOnboarding.addAnotherCta}
               </button>
 
               <button
@@ -229,11 +231,11 @@ export default function TasteOnboarding({ onComplete, onClose }: TasteOnboarding
                 disabled={!canSubmit}
                 className="w-full px-4 py-3.5 md:py-2.5 rounded-lg bg-black text-white dark:bg-white dark:text-black disabled:opacity-40 text-sm font-semibold transition active:scale-[0.98]"
               >
-                Analyze {filledEntries.length >= MIN_VIDEOS ? filledEntries.length : MIN_VIDEOS} Videos
+                {format(t.tasteOnboarding.analyzeCta, filledEntries.length >= MIN_VIDEOS ? filledEntries.length : MIN_VIDEOS)}
               </button>
               {!canSubmit && filledEntries.length > 0 && (
                 <p className="text-xs text-gray-400 dark:text-white/40 mt-2 text-center">
-                  Every video needs a valid link and "watched fully" checked.
+                  {t.tasteOnboarding.validationHint}
                 </p>
               )}
             </motion.div>
@@ -242,7 +244,7 @@ export default function TasteOnboarding({ onComplete, onClose }: TasteOnboarding
           {phase === 'analyzing' && (
             <motion.div key="analyzing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-2">
               <p className="text-sm text-gray-500 dark:text-white/50 mb-4 text-center">
-                Analyzing videos — this will take a moment...
+                {t.tasteOnboarding.analyzingText}
               </p>
               <div className="space-y-2">
                 {entries
@@ -261,7 +263,7 @@ export default function TasteOnboarding({ onComplete, onClose }: TasteOnboarding
                         {entry.status === 'pending' && '⏳'}
                       </span>
                       <span className="flex-1 truncate text-gray-500 dark:text-white/50">
-                        {entry.result?.title || `Video ${i + 1}`}
+                        {entry.result?.title || format(t.tasteOnboarding.videoFallbackLabel, i + 1)}
                       </span>
                       {entry.status === 'error' && (
                         <span className="text-red-400 text-[10px] flex-shrink-0">{entry.error}</span>
@@ -275,15 +277,15 @@ export default function TasteOnboarding({ onComplete, onClose }: TasteOnboarding
           {phase === 'done' && (
             <motion.div key="done" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-6 text-center">
               <div className="text-3xl mb-3">✅</div>
-              <p className="text-sm font-medium mb-1">Profile updated</p>
+              <p className="text-sm font-medium mb-1">{t.tasteOnboarding.doneTitle}</p>
               <p className="text-xs text-gray-400 dark:text-white/40 mb-5">
-                Built from analysis of {successCount} video{successCount === 1 ? '' : 's'}
+                {format(t.tasteOnboarding.doneSubtitle, successCount, successCount === 1 ? '' : 's')}
               </p>
               <button
                 onClick={onClose}
                 className="px-5 py-2.5 rounded-lg bg-black text-white dark:bg-white dark:text-black text-sm font-medium hover:opacity-80 transition"
               >
-                Done
+                {t.tasteOnboarding.doneCta}
               </button>
             </motion.div>
           )}
@@ -295,7 +297,7 @@ export default function TasteOnboarding({ onComplete, onClose }: TasteOnboarding
                 onClick={() => setPhase('form')}
                 className="px-4 py-2.5 rounded-lg border border-gray-200 dark:border-white/10 text-sm hover:bg-gray-100 dark:hover:bg-white/10 transition"
               >
-                Try Again
+                {t.tasteOnboarding.retryCta}
               </button>
             </motion.div>
           )}

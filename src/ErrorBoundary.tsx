@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
+import { getStaticTranslation } from './i18n/LanguageContext';
 
 interface Props {
   children: ReactNode;
@@ -38,26 +39,27 @@ export default class ErrorBoundary extends Component<Props, State> {
 
   render() {
     if (this.state.hasError) {
+      const t = getStaticTranslation();
       return (
         <div className="min-h-screen bg-white dark:bg-black text-black dark:text-white flex items-center justify-center p-8">
           <div className="max-w-md text-center">
             <div className="text-5xl mb-4">⚠️</div>
-            <h1 className="text-xl font-bold mb-2">Kuch galat ho gaya</h1>
+            <h1 className="text-xl font-bold mb-2">{t.errorBoundary.title}</h1>
             <p className="text-sm text-gray-500 dark:text-white/60 mb-6">
-              App mein ek error aa gaya. Reload try karo — agar problem rahe toh local data clear karke reload karo (progress/roadmap wapas nahi milega, isliye pehle sirf reload try karo).
+              {t.errorBoundary.body}
             </p>
             <div className="flex flex-col gap-2">
               <button
                 onClick={this.handleReset}
                 className="px-4 py-2.5 rounded-xl bg-black text-white dark:bg-white dark:text-black text-sm font-medium"
               >
-                Reload
+                {t.errorBoundary.reloadCta}
               </button>
               <button
                 onClick={this.handleClearData}
                 className="px-4 py-2.5 rounded-xl border border-gray-300 dark:border-white/10 text-sm font-medium text-gray-500 dark:text-white/60"
               >
-                Local data clear karke reload karo
+                {t.errorBoundary.clearDataCta}
               </button>
             </div>
           </div>

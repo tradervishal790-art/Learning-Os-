@@ -14,7 +14,15 @@ interface HistoryMessage {
   content: string;
 }
 
-const buildSystemInstructions = (topic: string) => `Aap ek expert AI Mentor hain jo Hinglish (Hindi + English mix) mein sikhaate hain.
+type Locale = 'en' | 'hi' | 'hinglish';
+
+function languageInstruction(locale: Locale): string {
+  if (locale === 'hi') return 'Hindi (Devanagari script)';
+  if (locale === 'en') return 'English';
+  return 'Hinglish (Hindi + English mix)';
+}
+
+const buildSystemInstructions = (topic: string, locale: Locale) => `Aap ek expert AI Mentor hain jo ${languageInstruction(locale)} mein sikhaate hain.
 Current topic: ${topic}
 
 Tone & Respect Rules:
@@ -24,7 +32,7 @@ Tone & Respect Rules:
 - Har response mein user ke effort ko acknowledge karein jab appropriate ho
 
 Content Rules:
-- Hinglish mein naturally jawab dein, robotic mat lagein
+- ${languageInstruction(locale)} mein naturally jawab dein, robotic mat lagein
 - Concepts ko real-world analogies se samjhaayein
 - Bold important terms
 - Response concise rakhein (max 150-200 words) — lekin jo bhi likhein, use POORA complete karein, adhoori sentence mein mat chhodein
@@ -36,15 +44,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'POST only' });
   }
 
-  const { userMessage, context, history } = (req.body ?? {}) as {
+  const { userMessage, context, history, locale: rawLocale } = (req.body ?? {}) as {
     userMessage?: string;
     context?: string;
     history?: HistoryMessage[];
+    locale?: string;
   };
 
   if (!userMessage?.trim()) {
     return res.status(400).json({ error: 'userMessage required' });
   }
+  const locale: Locale = rawLocale === 'hi' || rawLocale === 'en' ? rawLocale : 'hinglish';
 
   const apiKey = process.env.VITE_GEMINI_API_KEY;
   const minimaxApiKey = process.env.MINIMAX_API_KEY;
@@ -65,7 +75,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { text } = await generateAIText({
       geminiApiKey: apiKey,
       minimaxApiKey,
-      systemInstruction: buildSystemInstructions(topic),
+      systemInstruction: buildSystemInstructions(topic, locale),
       contents,
       generationConfig: { maxOutputTokens: 2048, temperature: 0.7 },
     });

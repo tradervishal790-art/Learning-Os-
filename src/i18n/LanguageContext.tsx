@@ -7,15 +7,20 @@ import { translations, type Locale, type TranslationShape } from './translations
 // Single root-level source of truth for which language the whole app
 // renders in.
 //
-// CURRENT STATE: locked to English. Only the Landing page, Onboarding
-// flow, and Demo modal have translated strings (see translations.ts) —
-// the rest of the app (Dashboard, Roadmap, VideoIntel, Notes, etc.) is
-// still hardcoded English. Letting the locale vary would leave users
-// with a half-translated experience, so loadInitialLocale() below
-// ignores any stored preference (including one saved before this
-// lock was added) and always resolves to 'en'. Once every screen is
-// translated, re-enable the localStorage read to restore per-user
-// language choice.
+// CURRENT STATE: rendering is locked to English via LOCKED_TO_ENGLISH.
+// Only the Landing page, Onboarding flow, and Demo modal have translated
+// strings (see translations.ts) — the rest of the app (Dashboard, Roadmap,
+// VideoIntel, Notes, etc.) is still hardcoded English, so letting every
+// screen actually render in the user's chosen locale would leave them
+// with a half-translated experience.
+//
+// The user's real choice (from onboarding or Settings) IS still captured
+// and persisted normally — see loadInitialLocale() and setLanguage()
+// below — only the `t` object handed out by useTranslation() is forced
+// to the 'en' dictionary while locked (see renderedLocale in
+// LanguageProvider). Once every screen in Phase 2 is wired up, flip
+// LOCKED_TO_ENGLISH to false: every already-saved choice will start
+// rendering immediately, no migration needed.
 // ============================================================
 
 const STORAGE_KEY = 'learning_os_language';
@@ -41,7 +46,12 @@ export function mapOnboardingLanguage(rawLanguage: string | undefined | null): L
 }
 
 function loadInitialLocale(): Locale {
-  if (LOCKED_TO_ENGLISH) return 'en';
+  // NOTE: even while locked, we still read/track the user's real saved
+  // choice below (see LanguageProvider) — LOCKED_TO_ENGLISH only forces
+  // what actually gets *rendered* (`t`), not what's remembered. That way
+  // onboarding/Settings can already capture and persist the user's pick
+  // correctly, and flipping LOCKED_TO_ENGLISH to false later needs no
+  // migration — every stored choice just starts rendering immediately.
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved === 'en' || saved === 'hi' || saved === 'hinglish') return saved;
@@ -49,6 +59,18 @@ function loadInitialLocale(): Locale {
     /* localStorage unavailable — fall through to default */
   }
   return 'en';
+}
+
+/**
+ * Non-hook variant of the same locale resolution, for the rare spot that
+ * can't sit inside <LanguageProvider> — namely ErrorBoundary, which wraps
+ * LanguageProvider itself (so it can also catch errors thrown by the
+ * provider) and, being a class component, can't call hooks anyway. Reads
+ * localStorage directly and applies the same English lock.
+ */
+export function getStaticTranslation(): TranslationShape {
+  const locale = LOCKED_TO_ENGLISH ? 'en' : loadInitialLocale();
+  return translations[locale];
 }
 
 interface LanguageContextValue {
@@ -71,9 +93,14 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // Rendered content stays English while locked, even though `locale`
+  // itself (returned by useLanguage(), used to drive selected-state in
+  // pickers) already reflects the user's real, persisted choice.
+  const renderedLocale: Locale = LOCKED_TO_ENGLISH ? 'en' : locale;
+
   const value = useMemo<LanguageContextValue>(
-    () => ({ locale, setLanguage, t: translations[locale] }),
-    [locale, setLanguage]
+    () => ({ locale, setLanguage, t: translations[renderedLocale] }),
+    [locale, setLanguage, renderedLocale]
   );
 
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;

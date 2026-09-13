@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { DEEP_DIVE_QUESTIONS, buildExtractionPrompt, parseDeepDiveResponse } from './deepDiveScoring';
+import { getDeepDiveQuestions, buildExtractionPrompt, parseDeepDiveResponse } from './deepDiveScoring';
 import { getLearningProfile, mergeLearningProfile } from './learningProfileStore';
 import type { LearningProfile } from './types';
+import { useTranslation } from './i18n/LanguageContext';
+import { format } from './i18n/format';
 
 // Gemini call now happens server-side (api/deep-dive-extract.ts) — the
 // key was previously exposed in the client bundle via
@@ -29,6 +31,8 @@ interface DeepDiveChatProps {
 type Phase = 'asking' | 'processing' | 'error';
 
 export default function DeepDiveChat({ onComplete, onClose }: DeepDiveChatProps) {
+  const t = useTranslation();
+  const DEEP_DIVE_QUESTIONS = getDeepDiveQuestions(t);
   const [step, setStep] = useState(0);
   const [currentAnswer, setCurrentAnswer] = useState('');
   const [answers, setAnswers] = useState<string[]>([]);
@@ -58,14 +62,14 @@ export default function DeepDiveChat({ onComplete, onClose }: DeepDiveChatProps)
 
       if (!signals) {
         setPhase('error');
-        setErrorMsg('Could not understand the response, try again or skip.');
+        setErrorMsg(t.deepDiveChat.errors.noResponse);
         return;
       }
 
       const existingProfile = getLearningProfile();
       if (!existingProfile) {
         setPhase('error');
-        setErrorMsg('Complete the quiz first.');
+        setErrorMsg(t.deepDiveChat.errors.noProfile);
         return;
       }
 
@@ -73,7 +77,7 @@ export default function DeepDiveChat({ onComplete, onClose }: DeepDiveChatProps)
       onComplete(merged);
     } catch (err: any) {
       setPhase('error');
-      setErrorMsg(err.message || 'Something went wrong.');
+      setErrorMsg(err.message || t.deepDiveChat.errors.generic);
     }
   };
 
@@ -95,7 +99,7 @@ export default function DeepDiveChat({ onComplete, onClose }: DeepDiveChatProps)
       >
         <div className="flex items-center justify-between mb-4">
           <span className="text-xs uppercase tracking-wider text-gray-400 dark:text-white/40">
-            Deep Dive · Optional
+            {t.deepDiveChat.badge}
           </span>
           <button
             onClick={onClose}
@@ -109,14 +113,14 @@ export default function DeepDiveChat({ onComplete, onClose }: DeepDiveChatProps)
           {phase === 'asking' && (
             <motion.div key={step} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
               <div className="text-xs text-gray-400 dark:text-white/40 mb-2">
-                Question {step + 1} / {DEEP_DIVE_QUESTIONS.length}
+                {format(t.deepDiveChat.questionOf, step + 1, DEEP_DIVE_QUESTIONS.length)}
               </div>
               <h3 className="text-base md:text-lg font-semibold mb-4 leading-snug">{DEEP_DIVE_QUESTIONS[step]}</h3>
               <textarea
                 value={currentAnswer}
                 onChange={(e) => setCurrentAnswer(e.target.value)}
                 rows={4}
-                placeholder="Type your answer here..."
+                placeholder={t.deepDiveChat.answerPlaceholder}
                 autoFocus={false}
                 className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 text-base md:text-sm placeholder-gray-400 dark:placeholder-white/40 focus:outline-none focus:border-purple-500/50 mb-4 resize-none"
               />
@@ -125,7 +129,7 @@ export default function DeepDiveChat({ onComplete, onClose }: DeepDiveChatProps)
                 disabled={!currentAnswer.trim()}
                 className="w-full px-4 py-3.5 md:py-2.5 rounded-lg bg-black text-white dark:bg-white dark:text-black disabled:opacity-40 text-sm font-semibold transition active:scale-[0.98]"
               >
-                {isLastStep ? 'Submit' : 'Next'}
+                {isLastStep ? t.deepDiveChat.submitCta : t.deepDiveChat.nextCta}
               </button>
             </motion.div>
           )}
@@ -137,7 +141,7 @@ export default function DeepDiveChat({ onComplete, onClose }: DeepDiveChatProps)
                 <span className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
                 <span className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
               </div>
-              <p className="text-sm text-gray-500 dark:text-white/50">Updating profile...</p>
+              <p className="text-sm text-gray-500 dark:text-white/50">{t.deepDiveChat.processingText}</p>
             </motion.div>
           )}
 
@@ -148,7 +152,7 @@ export default function DeepDiveChat({ onComplete, onClose }: DeepDiveChatProps)
                 onClick={onClose}
                 className="px-4 py-2.5 rounded-lg border border-gray-200 dark:border-white/10 text-sm hover:bg-gray-100 dark:hover:bg-white/10 transition"
               >
-                Close
+                {t.deepDiveChat.closeCta}
               </button>
             </motion.div>
           )}

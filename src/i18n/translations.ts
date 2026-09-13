@@ -58,6 +58,7 @@ export interface TranslationShape {
       mentor: string;
       progress: string;
       research: string;
+      dictionary: string;
     };
     greeting: {
       morning: string;
@@ -509,6 +510,7 @@ export const translations: Record<Locale, TranslationShape> = {
         mentor: 'Mentor',
         progress: 'Progress',
         research: 'Research',
+        dictionary: 'Dictionary',
       },
       greeting: {
         morning: 'Good Morning',
@@ -1301,6 +1303,7 @@ export const translations: Record<Locale, TranslationShape> = {
         mentor: 'मेंटर',
         progress: 'प्रगति',
         research: 'रिसर्च',
+        dictionary: 'शब्दकोश',
       },
       greeting: {
         morning: 'सुप्रभात',
@@ -2087,6 +2090,7 @@ export const translations: Record<Locale, TranslationShape> = {
         mentor: 'Mentor',
         progress: 'Progress',
         research: 'Research',
+        dictionary: 'Dictionary',
       },
       greeting: {
         morning: 'Good Morning',

@@ -4,6 +4,10 @@
 // (S/A/B/C/D) plus a short one-line verdict. Kept dimension-specific
 // because "high pace" and "high depth" mean opposite things in plain
 // English — a generic "9/10 = excellent" label would be misleading.
+//
+// Verdict text lives in translations.ts (t.blueprintVerdicts.<dimension>)
+// — getVerdict takes `t` in since this is a plain module, not a component.
+import type { TranslationShape } from './i18n/translations';
 
 export interface Grade {
   letter: 'S' | 'A' | 'B' | 'C' | 'D';
@@ -18,51 +22,12 @@ export function getGrade(score: number): Grade {
   return { letter: 'D', colorClass: 'text-gray-600 dark:text-white/60 bg-gray-100 dark:bg-white/5 border-gray-300/40 dark:border-white/10' };
 }
 
-const VERDICTS: Record<string, { high: string; mid: string; low: string }> = {
-  pace: {
-    high: "You're a fast-paced learner — you skim through long material and go straight for the essence.",
-    mid: 'Your pace is balanced — not too slow, not too fast.',
-    low: 'You need thorough, slow-paced content — moving too fast makes you miss things.',
-  },
-  theoryVsPractical: {
-    high: 'You learn hands-on — doing it first, then understanding, is your style.',
-    mid: 'A mix of theory and practical works for you.',
-    low: 'You need solid theory first — confidence in the practical only comes after that.',
-  },
-  structureNeed: {
-    high: 'You need clear, step-by-step structure — flexible/random content confuses you.',
-    mid: "A bit of structure helps, but full rigidity isn't necessary.",
-    low: "You're a flexible learner — structure isn't really needed.",
-  },
-  depth: {
-    high: "You like to get to the root cause — surface-level explanations don't satisfy you.",
-    mid: 'You go deep when needed, not always.',
-    low: 'Surface-level understanding is enough for you — deep-diving slows down your pace.',
-  },
-  languageComplexity: {
-    high: "Technical jargon doesn't bother you — you're comfortable with complex vocabulary.",
-    mid: 'Some jargon is fine, but very technical language can confuse you.',
-    low: 'You need things explained in simple, everyday language — jargon should be kept at a distance.',
-  },
-  storytelling: {
-    high: 'Real-life stories and analogies make concepts stick permanently in your mind.',
-    mid: "Stories help, but aren't necessary everywhere.",
-    low: 'You prefer direct, to-the-point explanations — stories can distract you.',
-  },
-  repetitionNeed: {
-    high: "You need multiple revisions for deep clarity — reading it once isn't enough.",
-    mid: "Some revision helps, but you don't need a lot of it.",
-    low: 'Once you understand something, you rarely need to revise it again.',
-  },
-  priorKnowledgeComfort: {
-    high: 'You learn quickly by connecting new topics to what you already know.',
-    mid: 'You sometimes connect to prior knowledge, not always.',
-    low: "You prefer a fresh start — connecting to prior knowledge doesn't feel necessary.",
-  },
-};
-
-export function getVerdict(dimensionKey: string, score: number): string {
-  const v = VERDICTS[dimensionKey];
+export function getVerdict(
+  dimensionKey: keyof TranslationShape['blueprintVerdicts'] | string,
+  score: number,
+  blueprintVerdicts: TranslationShape['blueprintVerdicts']
+): string {
+  const v = (blueprintVerdicts as Record<string, { high: string; mid: string; low: string }>)[dimensionKey];
   if (!v) return '';
   if (score >= 7) return v.high;
   if (score >= 4) return v.mid;
