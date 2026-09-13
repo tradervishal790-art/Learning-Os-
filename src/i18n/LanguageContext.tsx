@@ -24,7 +24,7 @@ import { translations, type Locale, type TranslationShape } from './translations
 // ============================================================
 
 const STORAGE_KEY = 'learning_os_language';
-const LOCKED_TO_ENGLISH = true;
+const LOCKED_TO_ENGLISH = false;
 
 /**
  * The onboarding language picker (when enabled) stores one of these raw
