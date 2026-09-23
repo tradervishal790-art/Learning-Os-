@@ -4,6 +4,12 @@
 // attempt. MCQs never hit this endpoint — they're graded instantly and
 // deterministically client-side (testGrading.ts) by comparing
 // selectedIndex to correctIndex, no AI needed.
+//
+// Free text can't be string-matched against modelAnswer, so this sends
+// each question + the learner's answer + the model answer to Gemini and
+// asks for a 0-1 score plus one line of feedback per question, keyed by
+// questionId so the client can merge results back onto the right question
+// regardless of AI response ordering.
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { generateAIText } from './_lib/aiFallback.js';
@@ -81,7 +87,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         responseMimeType: 'application/json',
         responseSchema,
         maxOutputTokens: 4000,
-        temperature: 0.3,
+        temperature: 0.3, // grading should be consistent, not creative
       },
       minimaxJsonMode: true,
       minimaxMaxTokens: 4000,
