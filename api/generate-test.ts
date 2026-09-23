@@ -106,6 +106,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(500).json({ error: 'No AI provider configured on server (VITE_GEMINI_API_KEY / MINIMAX_API_KEY both missing)' });
   }
 
+  // Same grounding chain as generate-notes.ts: real transcript > video
+  // metadata > topic-only. Never blocks generation, only affects how
+  // specific the questions can be.
   let basis: string | undefined;
   const transcript = videoId ? await tryFetchTranscript(videoId) : null;
   if (transcript) {
