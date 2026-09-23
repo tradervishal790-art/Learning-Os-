@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { ComponentType } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Film, BookOpen } from 'lucide-react';
+import { Search, Film, BookOpen, ClipboardCheck } from 'lucide-react';
 import PagePlaceholder from './PagePlaceholder';
 import Roadmap from './Roadmap';
 import Revision from './Revision';
@@ -23,6 +23,7 @@ import Notes from './Notes';
 import Progress from './progress';
 import Research from './Research';
 import Dictionary from './Dictionary';
+import Test from './Test';
 import HintBubble from './HintBubble';
 import Onborda from './Onborda';
 import { OnbordaProvider, useOnborda } from './OnbordaContext';
@@ -168,6 +169,7 @@ function getSidebarItems(t: ReturnType<typeof useTranslation>): { id: DashboardP
     { id: 'roadmap', label: t.dashboard.sidebar.roadmap },
     { id: 'revision', label: t.dashboard.sidebar.revision },
     { id: 'notes', label: t.dashboard.sidebar.notes },
+    { id: 'test', label: t.dashboard.sidebar.test, icon: ClipboardCheck },
     { id: 'videos', label: t.dashboard.sidebar.videos },
     { id: 'mentor', label: t.dashboard.sidebar.mentor },
     { id: 'progress', label: t.dashboard.sidebar.progress },
@@ -925,6 +927,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
         )}
         {activePage === 'mentor' && <Mentor />}
         {activePage === 'notes' && <Notes />}
+        {activePage === 'test' && <Test />}
         {activePage === 'progress' && <Progress goals={goals} />}
         {activePage === 'research' && <Research />}
         {activePage === 'dictionary' && <Dictionary />}
