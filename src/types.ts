@@ -222,7 +222,8 @@ export type DashboardPageId =
   | 'mentor'
   | 'progress'
   | 'research'
-  | 'dictionary';
+  | 'dictionary'
+  | 'test';
   // ---------- Learning Style Profile ----------
 export interface LearningProfile {
   pace: number;
@@ -291,6 +292,32 @@ export interface TasteVideoResult {
   styleProfile: VideoStyleProfile | null;
   styleAnalysisError?: string;
 }
+
+// ---------- Test-taking (Test.tsx) ----------
+export interface MCQQuestion {
+  id: string;
+  type: 'mcq';
+  question: string;
+  options: string[];
+  correctIndex: number;
+  explanation: string;
+}
+
+export interface SubjectiveQuestion {
+  id: string;
+  type: 'subjective';
+  question: string;
+  modelAnswer: string;
+  explanation: string;
+}
+
+export type TestQuestion = MCQQuestion | SubjectiveQuestion;
+export interface TestData { topic: string; questions: TestQuestion[]; }
+export interface MCQUserAnswer { questionId: string; type: 'mcq'; selectedIndex: number | null; }
+export interface SubjectiveUserAnswer { questionId: string; type: 'subjective'; text: string; }
+export type TestUserAnswer = MCQUserAnswer | SubjectiveUserAnswer;
+export interface GradedResult { questionId: string; isCorrect: boolean; score: number; feedback: string; }
+export interface TestAttempt { id: string; topic: string; completedAt: string; questions: TestQuestion[]; answers: TestUserAnswer[]; results: GradedResult[]; scorePercent: number; }
 
 // ---------- localStorage cache envelopes ----------
 export interface CachedQueryExpansion {
