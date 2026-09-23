@@ -222,7 +222,8 @@ export type DashboardPageId =
   | 'mentor'
   | 'progress'
   | 'research'
-  | 'dictionary';
+  | 'dictionary'
+  | 'test';
   // ---------- Learning Style Profile ----------
 export interface LearningProfile {
   pace: number;
@@ -290,6 +291,73 @@ export interface TasteVideoResult {
   analysisSource: AnalysisSource;
   styleProfile: VideoStyleProfile | null;
   styleAnalysisError?: string;
+}
+
+// ---------- Test-taking (Test.tsx) ----------
+// A generated test mixes objective (MCQ) and subjective (free-text)
+// questions on one topic. MCQs are graded instantly client-side
+// (correctIndex is known); subjective answers are graded server-side by
+// the AI against modelAnswer (see api/grade-test.ts) since free text
+// can't be matched exactly. Both question types carry their own
+// `explanation` so the results dashboard can show "why" regardless of
+// which the learner got wrong.
+export interface MCQQuestion {
+  id: string;
+  type: 'mcq';
+  question: string;
+  options: string[]; // always 4
+  correctIndex: number; // 0-3
+  explanation: string;
+}
+
+export interface SubjectiveQuestion {
+  id: string;
+  type: 'subjective';
+  question: string;
+  modelAnswer: string;
+  explanation: string;
+}
+
+export type TestQuestion = MCQQuestion | SubjectiveQuestion;
+
+export interface TestData {
+  topic: string;
+  questions: TestQuestion[];
+}
+
+export interface MCQUserAnswer {
+  questionId: string;
+  type: 'mcq';
+  selectedIndex: number | null;
+}
+
+export interface SubjectiveUserAnswer {
+  questionId: string;
+  type: 'subjective';
+  text: string;
+}
+
+export type TestUserAnswer = MCQUserAnswer | SubjectiveUserAnswer;
+
+/** Per-question outcome after grading — score is 0/1 for MCQ, 0-1
+ *  (partial credit allowed) for AI-graded subjective answers. */
+export interface GradedResult {
+  questionId: string;
+  isCorrect: boolean;
+  score: number;
+  feedback: string;
+}
+
+/** One completed test, persisted in testStore.ts so past attempts show
+ *  up in a history list and can be re-opened/re-downloaded as a PDF. */
+export interface TestAttempt {
+  id: string;
+  topic: string;
+  completedAt: string;
+  questions: TestQuestion[];
+  answers: TestUserAnswer[];
+  results: GradedResult[];
+  scorePercent: number;
 }
 
 // ---------- localStorage cache envelopes ----------

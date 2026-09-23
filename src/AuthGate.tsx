@@ -13,6 +13,7 @@ import { hydrateLearningProfileFromCloud } from './learningProfileStore';
 import { hydrateGoalsFromCloud, getSavedGoals } from './goalsStore';
 import { hydrateRoadmapDataFromCloud } from './roadmapData';
 import { hydrateRevisionFromCloud } from './revisionstore';
+import { hydrateTestAttemptsFromCloud } from './testStore';
 import { hydrateActiveDaysFromCloud } from './Dashboard';
 import { useTranslation } from './i18n/LanguageContext';
 import { format } from './i18n/format';
@@ -65,6 +66,7 @@ export default function AuthGate({ children }: { children: ReactNode }) {
           }
           await hydrateRevisionFromCloud();
           await hydrateActiveDaysFromCloud();
+          await hydrateTestAttemptsFromCloud();
         })().finally(() => setUser(u));
       } else {
         setUser(u);
