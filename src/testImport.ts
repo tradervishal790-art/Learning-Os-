@@ -7,7 +7,9 @@ import { auth } from './firebase';
 import type { TestQuestion, MCQQuestion, SubjectiveQuestion } from './types';
 import { normalizeAnswer } from './testGrading';
 
-export const MAX_IMPORT_PHOTOS = 4;
+export const MAX_IMPORT_PHOTOS = 4; // max files per import (photos and/or PDFs)
+export const MAX_PDF_PAGES = 30; // per PDF, to keep AI cost bounded
+const MAX_PDF_BYTES = 2_400_000; // raw bytes per request (≈3.2 MB base64, under the server's limit)
 
 export interface PhotoPayload {
   mimeType: string;
@@ -28,6 +30,70 @@ export interface ExtractedAnswer {
 }
 
 const newId = () => (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `q_${Date.now()}_${Math.random().toString(36).slice(2)}`);
+
+function bytesToBase64(bytes: Uint8Array): string {
+  let binary = '';
+  const step = 0x8000;
+  for (let i = 0; i < bytes.length; i += step) binary += String.fromCharCode(...bytes.subarray(i, i + step));
+  return btoa(binary);
+}
+
+/** Splits a PDF into page ranges that each fit under maxBytes (in page order). A PDF already under the limit is returned as-is. */
+export async function splitPdfIntoChunks(bytes: Uint8Array, maxBytes = MAX_PDF_BYTES, maxPages = MAX_PDF_PAGES): Promise<Uint8Array[]> {
+  if (bytes.length <= maxBytes) return [bytes];
+  const { PDFDocument } = await import('pdf-lib');
+  let src;
+  try {
+    src = await PDFDocument.load(bytes);
+  } catch {
+    throw new Error('Could not open this PDF — it may be password-protected or damaged.');
+  }
+  const pageCount = src.getPageCount();
+  if (pageCount > maxPages) throw new Error(`This PDF has ${pageCount} pages — the limit is ${maxPages} per PDF. Split it and upload in parts.`);
+
+  // Measure each page on its own, then group consecutive pages while the (over-)estimated size stays under the limit.
+  const sizes: number[] = [];
+  for (let i = 0; i < pageCount; i++) {
+    const one = await PDFDocument.create();
+    const [page] = await one.copyPages(src, [i]);
+    one.addPage(page);
+    const size = (await one.save()).length;
+    if (size > maxBytes) throw new Error(`Page ${i + 1} of this PDF is too large — try a lower-quality scan.`);
+    sizes.push(size);
+  }
+  const groups: number[][] = [];
+  let current: number[] = [];
+  let total = 0;
+  sizes.forEach((size, i) => {
+    if (current.length > 0 && total + size > maxBytes) {
+      groups.push(current);
+      current = [];
+      total = 0;
+    }
+    current.push(i);
+    total += size;
+  });
+  if (current.length > 0) groups.push(current);
+
+  const chunks: Uint8Array[] = [];
+  for (const indices of groups) {
+    const out = await PDFDocument.create();
+    const pages = await out.copyPages(src, indices);
+    pages.forEach((p) => out.addPage(p));
+    chunks.push(await out.save());
+  }
+  return chunks;
+}
+
+/** Turns a chosen file (photo or PDF) into one or more upload payloads, in order. */
+export async function prepareUpload(file: File): Promise<PhotoPayload[]> {
+  if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    const chunks = await splitPdfIntoChunks(bytes);
+    return chunks.map((c) => ({ mimeType: 'application/pdf', data: bytesToBase64(c) }));
+  }
+  return [await compressPhoto(file)];
+}
 
 /** Downscales + re-encodes a photo so the upload stays small (long edge ≤ 1800px, JPEG). */
 export async function compressPhoto(file: File): Promise<PhotoPayload> {
