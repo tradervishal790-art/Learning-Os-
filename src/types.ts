@@ -294,13 +294,20 @@ export interface TasteVideoResult {
 }
 
 // ---------- Test-taking (Test.tsx) ----------
-// A generated test mixes objective (MCQ) and subjective (free-text)
-// questions on one topic. MCQs are graded instantly client-side
-// (correctIndex is known); subjective answers are graded server-side by
-// the AI against modelAnswer (see api/grade-test.ts) since free text
-// can't be matched exactly. Both question types carry their own
-// `explanation` so the results dashboard can show "why" regardless of
-// which the learner got wrong.
+// Self-authored test papers — no AI involved anywhere in this feature.
+// Vishal builds a TestPaper by hand in the in-app test builder (question
+// text, options, correct answer, marks, negative marking), it's stored
+// like any other Learning OS data (localStorage + best-effort Firestore
+// sync, see testBankStore.ts), and the exam UI (Test.tsx) runs it with an
+// NTA/JEE-Main-style interface: instructions screen, countdown timer,
+// question palette (not-visited/not-answered/answered/marked-for-review),
+// Save & Next / Mark for Review / Clear Response.
+//
+// MCQs grade instantly and deterministically (correctIndex is known).
+// Subjective (free-text) questions can't be auto-graded without an AI
+// call, which this feature intentionally avoids — instead the results
+// screen shows the learner's answer next to their own model answer and
+// lets them self-mark it right/wrong, same as a flashcard.
 export interface MCQQuestion {
   id: string;
   type: 'mcq';
@@ -308,6 +315,8 @@ export interface MCQQuestion {
   options: string[]; // always 4
   correctIndex: number; // 0-3
   explanation: string;
+  marks: number; // awarded when correct
+  negativeMarks: number; // deducted when answered wrong (0 disables negative marking for this question)
 }
 
 export interface SubjectiveQuestion {
@@ -316,13 +325,24 @@ export interface SubjectiveQuestion {
   question: string;
   modelAnswer: string;
   explanation: string;
+  marks: number; // awarded when correct (self-marked, or auto-marked if acceptedAnswers is set)
+  /** Optional. When present (even empty), the answer is auto-graded on-device by matching
+   *  modelAnswer + acceptedAnswers (case/punctuation-insensitive) instead of self-marking. */
+  acceptedAnswers?: string[];
 }
 
 export type TestQuestion = MCQQuestion | SubjectiveQuestion;
 
-export interface TestData {
+/** A test paper Vishal authored in the test builder — the unit that gets
+ *  "taken". Stored in testBankStore.ts; can be edited or deleted anytime. */
+export interface TestPaper {
+  id: string;
+  title: string;
   topic: string;
+  durationMinutes: number; // 0 = no timer
   questions: TestQuestion[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface MCQUserAnswer {
@@ -339,24 +359,30 @@ export interface SubjectiveUserAnswer {
 
 export type TestUserAnswer = MCQUserAnswer | SubjectiveUserAnswer;
 
-/** Per-question outcome after grading — score is 0/1 for MCQ, 0-1
- *  (partial credit allowed) for AI-graded subjective answers. */
+/** Per-question outcome. isCorrect is null for a subjective answer until
+ *  the learner self-grades it on the results screen — marksObtained stays
+ *  0 until then. MCQs are never null; they're resolved the instant the
+ *  test is submitted. */
 export interface GradedResult {
   questionId: string;
-  isCorrect: boolean;
-  score: number;
-  feedback: string;
+  isCorrect: boolean | null;
+  marksObtained: number;
 }
 
-/** One completed test, persisted in testStore.ts so past attempts show
+/** One completed attempt, persisted in testStore.ts so past attempts show
  *  up in a history list and can be re-opened/re-downloaded as a PDF. */
 export interface TestAttempt {
   id: string;
+  testId: string;
+  testTitle: string;
   topic: string;
   completedAt: string;
+  timeTakenSeconds: number;
   questions: TestQuestion[];
   answers: TestUserAnswer[];
   results: GradedResult[];
+  totalMarks: number;
+  obtainedMarks: number;
   scorePercent: number;
 }
 

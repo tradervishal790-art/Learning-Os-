@@ -14,6 +14,7 @@ import { hydrateGoalsFromCloud, getSavedGoals } from './goalsStore';
 import { hydrateRoadmapDataFromCloud } from './roadmapData';
 import { hydrateRevisionFromCloud } from './revisionstore';
 import { hydrateTestAttemptsFromCloud } from './testStore';
+import { hydrateTestBankFromCloud } from './testBankStore';
 import { hydrateActiveDaysFromCloud } from './Dashboard';
 import { useTranslation } from './i18n/LanguageContext';
 import { format } from './i18n/format';
@@ -67,6 +68,7 @@ export default function AuthGate({ children }: { children: ReactNode }) {
           await hydrateRevisionFromCloud();
           await hydrateActiveDaysFromCloud();
           await hydrateTestAttemptsFromCloud();
+          await hydrateTestBankFromCloud();
         })().finally(() => setUser(u));
       } else {
         setUser(u);

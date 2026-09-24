@@ -60,6 +60,9 @@ export function saveTestAttempt(attempt: TestAttempt): void {
   saveAttempts(attempts);
 }
 
+/** Alias of saveTestAttempt — used when the learner self-grades a subjective answer after submit, to persist the updated score. */
+export const updateTestAttempt = saveTestAttempt;
+
 export function deleteTestAttempt(id: string): void {
   saveAttempts(loadAttempts().filter((a) => a.id !== id));
 }

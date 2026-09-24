@@ -1,10 +1,10 @@
 // src/testPdf.ts
 //
-// Builds a downloadable PDF report for a completed TestAttempt — score
+// Builds a downloadable PDF report for a completed TestAttempt — marks
 // summary + every question with the learner's answer, the correct
-// answer, and the explanation, mistakes visually flagged. Runs entirely
-// client-side (jsPDF), no server round-trip needed since everything it
-// needs is already in the attempt object.
+// answer, marks obtained, and the explanation. Runs entirely client-side
+// (jsPDF), no server round-trip since everything it needs is already in
+// the attempt object.
 import { jsPDF } from 'jspdf';
 import type { TestAttempt, MCQQuestion, SubjectiveQuestion } from './types';
 
@@ -36,21 +36,37 @@ export function downloadTestResultPdf(attempt: TestAttempt): void {
   // ── Header ──────────────────────────────────────────────────────────
   doc.setFontSize(18);
   doc.setFont('helvetica', 'bold');
-  writeWrapped(`Test Results: ${attempt.topic}`, MARGIN, CONTENT_WIDTH, 7);
+  writeWrapped(attempt.testTitle || attempt.topic, MARGIN, CONTENT_WIDTH, 7);
   y += 1;
 
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(100);
   doc.text(`Completed: ${new Date(attempt.completedAt).toLocaleString()}`, MARGIN, y);
-  y += 8;
+  y += 6;
+  if (attempt.timeTakenSeconds > 0) {
+    const mins = Math.floor(attempt.timeTakenSeconds / 60);
+    const secs = attempt.timeTakenSeconds % 60;
+    doc.text(`Time taken: ${mins}m ${secs}s`, MARGIN, y);
+    y += 6;
+  }
 
-  const correctCount = attempt.results.filter((r) => r.isCorrect).length;
+  const correctCount = attempt.results.filter((r) => r.isCorrect === true).length;
+  const pendingCount = attempt.results.filter((r) => r.isCorrect === null).length;
   doc.setFontSize(13);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(0);
-  doc.text(`Score: ${attempt.scorePercent}%  (${correctCount}/${attempt.results.length} correct)`, MARGIN, y);
-  y += 10;
+  doc.text(`Score: ${attempt.obtainedMarks} / ${attempt.totalMarks} marks (${attempt.scorePercent}%)`, MARGIN, y);
+  y += 6;
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(100);
+  doc.text(
+    `${correctCount}/${attempt.results.length} correct${pendingCount > 0 ? `  •  ${pendingCount} not yet self-graded` : ''}`,
+    MARGIN,
+    y
+  );
+  y += 8;
 
   doc.setDrawColor(210);
   doc.line(MARGIN, y, PAGE_WIDTH - MARGIN, y);
@@ -68,7 +84,7 @@ export function downloadTestResultPdf(attempt: TestAttempt): void {
     doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(0);
-    writeWrapped(`Q${i + 1}. ${q.question}`, MARGIN, CONTENT_WIDTH, 5.6);
+    writeWrapped(`Q${i + 1}. ${q.question}  [${q.marks} marks]`, MARGIN, CONTENT_WIDTH, 5.6);
     y += 1;
 
     doc.setFontSize(10);
@@ -90,7 +106,12 @@ export function downloadTestResultPdf(attempt: TestAttempt): void {
     } else {
       const sub = q as SubjectiveQuestion;
       doc.setTextColor(70);
-      writeWrapped(`Your answer: ${answer && answer.type === 'subjective' && answer.text.trim() ? answer.text.trim() : '(left blank)'}`, MARGIN + 4, CONTENT_WIDTH - 4, 5);
+      writeWrapped(
+        `Your answer: ${answer && answer.type === 'subjective' && answer.text.trim() ? answer.text.trim() : '(left blank)'}`,
+        MARGIN + 4,
+        CONTENT_WIDTH - 4,
+        5
+      );
       y += 0.5;
       doc.setTextColor(20, 130, 20);
       writeWrapped(`Model answer: ${sub.modelAnswer}`, MARGIN + 4, CONTENT_WIDTH - 4, 5);
@@ -98,18 +119,16 @@ export function downloadTestResultPdf(attempt: TestAttempt): void {
 
     y += 0.5;
     doc.setFont('helvetica', 'italic');
-    doc.setTextColor(result?.isCorrect ? 20 : 190, result?.isCorrect ? 130 : 30, result?.isCorrect ? 20 : 30);
-    writeWrapped(`${result?.isCorrect ? 'Correct' : 'Mistake'} — ${q.explanation}`, MARGIN + 4, CONTENT_WIDTH - 4, 5);
-    if (result && q.type === 'subjective' && result.feedback) {
-      doc.setTextColor(70);
-      writeWrapped(`Grader note: ${result.feedback}`, MARGIN + 4, CONTENT_WIDTH - 4, 5);
-    }
+    const status = result?.isCorrect === true ? `Correct (+${result.marksObtained})` : result?.isCorrect === false ? `Incorrect (${result.marksObtained})` : 'Not yet self-graded';
+    const color = result?.isCorrect === true ? [20, 130, 20] : result?.isCorrect === false ? [190, 30, 30] : [150, 120, 20];
+    doc.setTextColor(color[0], color[1], color[2]);
+    writeWrapped(`${status} — ${q.explanation}`, MARGIN + 4, CONTENT_WIDTH - 4, 5);
 
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(0);
     y += 5;
   });
 
-  const fileTopic = attempt.topic.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 40) || 'test';
+  const fileTopic = (attempt.testTitle || attempt.topic).trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 40) || 'test';
   doc.save(`test-results-${fileTopic}.pdf`);
 }

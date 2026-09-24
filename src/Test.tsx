@@ -1,260 +1,547 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Download, RotateCcw, CheckCircle2, XCircle, History, ArrowLeft, ArrowRight } from 'lucide-react';
-import type { TestData, TestQuestion, TestUserAnswer, GradedResult, TestAttempt, MCQQuestion, SubjectiveQuestion } from './types';
-import { buildSubjectiveGradingItems, buildFinalResults, computeScorePercent } from './testGrading';
-import { getTestAttempts, saveTestAttempt } from './testStore';
+import { Download, RotateCcw, CheckCircle2, XCircle, HelpCircle, History, Plus, Pencil, Trash2, Clock, Flag } from 'lucide-react';
+import type { TestPaper, TestQuestion, TestUserAnswer, TestAttempt, MCQQuestion, SubjectiveQuestion } from './types';
+import { getTestPapers, saveTestPaper, deleteTestPaper } from './testBankStore';
+import { OFFICIAL_TESTS } from './officialTests';
+import { getTestAttempts, saveTestAttempt, updateTestAttempt } from './testStore';
+import { buildInitialResults, selfGradeSubjective, computeTotalMarks, computeObtainedMarks, computeScorePercent, pendingSelfGradeCount, isAnswered } from './testGrading';
 import { downloadTestResultPdf } from './testPdf';
+import TestBuilder from './TestBuilder';
 
 // ============================================================
-// Test.tsx — standalone "Test" tab (Dashboard renders <Test /> with no
-// props, same as Notes.tsx). Flow:
-//   setup   → learner types a topic + picks question counts
-//   taking  → step through questions one at a time (MCQ radio / textarea)
-//   grading → subjective answers sent to api/grade-test.ts (MCQs are
-//             already graded instantly, client-side, in testGrading.ts)
-//   results → score dashboard, mistake/explanation breakdown, PDF download
-// A short history list (testStore.ts) lets the learner re-open or
-// re-download a past attempt without retaking it.
+// Test.tsx — "Test" tab (Dashboard renders <Test /> with no props).
+// No AI anywhere in this feature — every question is authored by hand
+// in TestBuilder.tsx and stored in testBankStore.ts. Flow:
+//   list         → pick a saved test paper, or create/edit/delete one
+//   instructions → duration, marking scheme, palette legend, Start
+//   taking       → NTA/JEE-Main-style exam UI: timer, question palette,
+//                  Save & Next / Mark for Review / Clear Response
+//   results      → score, self-grade any subjective answers, PDF export
 // ============================================================
 
-type Stage = 'setup' | 'taking' | 'grading' | 'results';
+type Stage = 'list' | 'builder' | 'instructions' | 'taking' | 'results';
+type QuestionStatus = 'not-visited' | 'not-answered' | 'answered' | 'marked' | 'answered-marked';
 
-async function generateTest(topic: string, mcqCount: number, subjectiveCount: number): Promise<TestData> {
-  const response = await fetch('/api/generate-test', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ topic, mcqCount, subjectiveCount }),
-  });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data?.error || `Test generation failed (${response.status})`);
-  return data as TestData;
-}
-
-async function gradeSubjectiveAnswers(
-  topic: string,
-  items: { questionId: string; question: string; modelAnswer: string; userAnswer: string }[]
-): Promise<GradedResult[]> {
-  if (items.length === 0) return [];
-  const response = await fetch('/api/grade-test', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ topic, items }),
-  });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data?.error || `Grading failed (${response.status})`);
-  return (data.results ?? []) as GradedResult[];
+function formatClock(totalSeconds: number): string {
+  const s = Math.max(0, totalSeconds);
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  return `${m}:${sec.toString().padStart(2, '0')}`;
 }
 
 export default function Test() {
-  const [stage, setStage] = useState<Stage>('setup');
-  const [topic, setTopic] = useState('');
-  const [mcqCount, setMcqCount] = useState(5);
-  const [subjectiveCount, setSubjectiveCount] = useState(3);
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [stage, setStage] = useState<Stage>('list');
+  const [papers, setPapers] = useState<TestPaper[]>([]);
+  const [history, setHistory] = useState<TestAttempt[]>([]);
+  const [editingPaper, setEditingPaper] = useState<TestPaper | null>(null);
+  const [activePaper, setActivePaper] = useState<TestPaper | null>(null);
 
-  const [questions, setQuestions] = useState<TestQuestion[]>([]);
+  // ── taking-stage state ──────────────────────────────────────────────
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<TestUserAnswer[]>([]);
+  const [statusMap, setStatusMap] = useState<Record<string, QuestionStatus>>({});
+  const [secondsElapsed, setSecondsElapsed] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const [attempt, setAttempt] = useState<TestAttempt | null>(null);
-  const [history, setHistory] = useState<TestAttempt[]>([]);
+
+  // Refs mirror the latest state so submitTest (called from the timer
+  // effect, which only re-subscribes when `stage`/`timeLeft` change) always
+  // reads the current paper/answers/elapsed time instead of a stale closure.
+  const activePaperRef = useRef(activePaper);
+  const answersRef = useRef(answers);
+  const secondsElapsedRef = useRef(secondsElapsed);
+  useEffect(() => {
+    activePaperRef.current = activePaper;
+  }, [activePaper]);
+  useEffect(() => {
+    answersRef.current = answers;
+  }, [answers]);
+  useEffect(() => {
+    secondsElapsedRef.current = secondsElapsed;
+  }, [secondsElapsed]);
+
+  const refresh = useCallback(() => {
+    setPapers(getTestPapers());
+    setHistory(getTestAttempts());
+  }, []);
 
   useEffect(() => {
-    setHistory(getTestAttempts());
+    refresh();
+  }, [stage, refresh]);
+
+  // ── timer ────────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (stage !== 'taking') {
+      if (timerRef.current) clearInterval(timerRef.current);
+      return;
+    }
+    timerRef.current = setInterval(() => setSecondsElapsed((s) => s + 1), 1000);
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
   }, [stage]);
 
-  const currentQuestion = questions[step];
+  const timeLimitSeconds = (activePaper?.durationMinutes ?? 0) * 60;
+  const timeLeft = timeLimitSeconds > 0 ? timeLimitSeconds - secondsElapsed : null;
+
+  // ── test bank actions ────────────────────────────────────────────────
+  const openCreate = () => {
+    setEditingPaper(null);
+    setStage('builder');
+  };
+  const openEdit = (p: TestPaper) => {
+    setEditingPaper(p);
+    setStage('builder');
+  };
+  const handleSavePaper = (p: TestPaper) => {
+    saveTestPaper(p);
+    setStage('list');
+  };
+  const handleDeletePaper = (id: string) => {
+    if (!confirm('Delete this test? This cannot be undone.')) return;
+    deleteTestPaper(id);
+    refresh();
+  };
+
+  // ── taking a test ────────────────────────────────────────────────────
+  const startInstructions = (p: TestPaper) => {
+    setActivePaper(p);
+    setStage('instructions');
+  };
+
+  const beginTest = () => {
+    if (!activePaper) return;
+    const initialAnswers: TestUserAnswer[] = activePaper.questions.map((q) =>
+      q.type === 'mcq' ? { questionId: q.id, type: 'mcq', selectedIndex: null } : { questionId: q.id, type: 'subjective', text: '' }
+    );
+    const initialStatus: Record<string, QuestionStatus> = {};
+    activePaper.questions.forEach((q, i) => {
+      initialStatus[q.id] = i === 0 ? 'not-answered' : 'not-visited';
+    });
+    setAnswers(initialAnswers);
+    setStatusMap(initialStatus);
+    setStep(0);
+    setSecondsElapsed(0);
+    setStage('taking');
+  };
+
+  const currentQuestion: TestQuestion | undefined = activePaper?.questions[step];
   const currentAnswer = currentQuestion ? answers.find((a) => a.questionId === currentQuestion.id) : undefined;
 
-  const startTest = async () => {
-    if (!topic.trim()) return;
-    setLoading(true);
-    setError('');
-    try {
-      const data = await generateTest(topic.trim(), mcqCount, subjectiveCount);
-      setQuestions(data.questions);
-      setAnswers(
-        data.questions.map((q) =>
-          q.type === 'mcq' ? { questionId: q.id, type: 'mcq', selectedIndex: null } : { questionId: q.id, type: 'subjective', text: '' }
-        )
-      );
-      setStep(0);
-      setStage('taking');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to generate test.');
-    } finally {
-      setLoading(false);
-    }
+  const goToStep = (index: number) => {
+    if (!activePaper) return;
+    const q = activePaper.questions[index];
+    setStatusMap((prev) => ({ ...prev, [q.id]: prev[q.id] === 'not-visited' ? 'not-answered' : prev[q.id] }));
+    setStep(index);
   };
 
   const selectMCQ = (index: number) => {
     if (!currentQuestion) return;
     setAnswers((prev) => prev.map((a) => (a.questionId === currentQuestion.id ? { ...a, type: 'mcq', selectedIndex: index } : a)));
   };
-
   const setSubjectiveText = (text: string) => {
     if (!currentQuestion) return;
     setAnswers((prev) => prev.map((a) => (a.questionId === currentQuestion.id ? { ...a, type: 'subjective', text } : a)));
   };
 
-  const submitTest = async () => {
-    setStage('grading');
-    setError('');
-    try {
-      const items = buildSubjectiveGradingItems(questions, answers);
-      const subjectiveResults = await gradeSubjectiveAnswers(topic, items);
-      const results = buildFinalResults(questions, answers, subjectiveResults);
-      const scorePercent = computeScorePercent(results);
-      const newAttempt: TestAttempt = {
-        id: `attempt_${Date.now()}`,
-        topic: topic.trim(),
-        completedAt: new Date().toISOString(),
-        questions,
-        answers,
-        results,
-        scorePercent,
-      };
-      saveTestAttempt(newAttempt);
-      setAttempt(newAttempt);
-      setStage('results');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Grading failed — your MCQ answers are still saved, try submitting again.');
-      setStage('taking');
-      setStep(questions.length - 1);
+  const saveAndNext = () => {
+    if (!currentQuestion || !activePaper) return;
+    const answered = isAnswered(currentAnswer);
+    setStatusMap((prev) => ({ ...prev, [currentQuestion.id]: answered ? 'answered' : 'not-answered' }));
+    if (step < activePaper.questions.length - 1) goToStep(step + 1);
+  };
+
+  const markForReviewAndNext = () => {
+    if (!currentQuestion || !activePaper) return;
+    const answered = isAnswered(currentAnswer);
+    setStatusMap((prev) => ({ ...prev, [currentQuestion.id]: answered ? 'answered-marked' : 'marked' }));
+    if (step < activePaper.questions.length - 1) goToStep(step + 1);
+  };
+
+  const clearResponse = () => {
+    if (!currentQuestion) return;
+    setAnswers((prev) =>
+      prev.map((a) =>
+        a.questionId === currentQuestion.id ? (a.type === 'mcq' ? { ...a, selectedIndex: null } : { ...a, text: '' }) : a
+      )
+    );
+    setStatusMap((prev) => ({ ...prev, [currentQuestion.id]: 'not-answered' }));
+  };
+
+  const submitTest = useCallback(() => {
+    const paper = activePaperRef.current;
+    if (!paper) return;
+    const currentAnswers = answersRef.current;
+    const results = buildInitialResults(paper.questions, currentAnswers);
+    const totalMarks = computeTotalMarks(paper.questions);
+    const obtainedMarks = computeObtainedMarks(results);
+    const newAttempt: TestAttempt = {
+      id: `attempt_${Date.now()}`,
+      testId: paper.id,
+      testTitle: paper.title,
+      topic: paper.topic,
+      completedAt: new Date().toISOString(),
+      timeTakenSeconds: secondsElapsedRef.current,
+      questions: paper.questions,
+      answers: currentAnswers,
+      results,
+      totalMarks,
+      obtainedMarks,
+      scorePercent: computeScorePercent(obtainedMarks, totalMarks),
+    };
+    saveTestAttempt(newAttempt);
+    setAttempt(newAttempt);
+    setStage('results');
+  }, []);
+
+  useEffect(() => {
+    if (stage === 'taking' && timeLeft !== null && timeLeft <= 0) {
+      submitTest();
     }
+  }, [timeLeft, stage, submitTest]);
+
+  const confirmSubmit = () => {
+    const unanswered = activePaper ? activePaper.questions.length - answers.filter((a) => isAnswered(a)).length : 0;
+    const msg = unanswered > 0 ? `${unanswered} question(s) unanswered. Submit anyway?` : 'Submit the test now?';
+    if (confirm(msg)) submitTest();
   };
 
   const startOver = () => {
-    setStage('setup');
-    setQuestions([]);
-    setAnswers([]);
+    setStage('list');
+    setActivePaper(null);
     setAttempt(null);
-    setStep(0);
-    setError('');
   };
 
   const openPastAttempt = (a: TestAttempt) => {
     setAttempt(a);
-    setQuestions(a.questions);
-    setAnswers(a.answers);
-    setTopic(a.topic);
     setStage('results');
   };
 
-  const answeredCount = answers.filter((a) => (a.type === 'mcq' ? a.selectedIndex !== null : a.text.trim().length > 0)).length;
+  const handleSelfGrade = (questionId: string, isCorrect: boolean, marks: number) => {
+    if (!attempt) return;
+    const results = selfGradeSubjective(attempt.results, questionId, isCorrect, marks);
+    const obtainedMarks = computeObtainedMarks(results);
+    const updated: TestAttempt = { ...attempt, results, obtainedMarks, scorePercent: computeScorePercent(obtainedMarks, attempt.totalMarks) };
+    updateTestAttempt(updated);
+    setAttempt(updated);
+  };
 
   return (
     <div className="min-h-screen bg-white dark:bg-black text-black dark:text-white p-4 md:p-8">
-      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-        <h1 className="text-4xl font-bold mb-2">Test Yourself</h1>
-        <p className="text-gray-500 dark:text-white/60">Generate a quick test on any topic, then get a full results breakdown.</p>
-      </motion.div>
+      {stage !== 'taking' && (
+        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
+          <h1 className="text-4xl font-bold mb-2">Tests</h1>
+          <p className="text-gray-500 dark:text-white/60">Take official tests, or build your own for practice.</p>
+        </motion.div>
+      )}
 
-      {stage === 'setup' && (
-        <div className="max-w-2xl mx-auto">
-          <div className="bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl p-6 md:p-8 mb-8">
-            <label className="block text-sm font-medium mb-2 text-gray-600 dark:text-white/70">Topic</label>
-            <input
-              type="text"
-              value={topic}
-              onChange={(e) => setTopic(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && startTest()}
-              placeholder="e.g. Photosynthesis, React Hooks, Newton's Laws..."
-              className="w-full bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 placeholder-gray-400 dark:placeholder-white/40 focus:outline-none focus:border-black dark:focus:border-white mb-5"
-            />
+      {stage === 'list' && (
+        <TestList
+          papers={papers}
+          history={history}
+          onCreate={openCreate}
+          onEdit={openEdit}
+          onDelete={handleDeletePaper}
+          onTake={startInstructions}
+          onOpenAttempt={openPastAttempt}
+        />
+      )}
 
-            <div className="grid grid-cols-2 gap-4 mb-6">
-              <div>
-                <label className="block text-sm font-medium mb-2 text-gray-600 dark:text-white/70">MCQ questions</label>
-                <input
-                  type="number"
-                  min={1}
-                  max={10}
-                  value={mcqCount}
-                  onChange={(e) => setMcqCount(Math.min(10, Math.max(1, Number(e.target.value) || 1)))}
-                  className="w-full bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-2.5 focus:outline-none focus:border-black dark:focus:border-white"
-                />
+      {stage === 'builder' && <TestBuilder initialPaper={editingPaper} onSave={handleSavePaper} onCancel={() => setStage('list')} />}
+
+      {stage === 'instructions' && activePaper && <Instructions paper={activePaper} onStart={beginTest} onBack={() => setStage('list')} />}
+
+      {stage === 'taking' && activePaper && currentQuestion && (
+        <TakingScreen
+          paper={activePaper}
+          step={step}
+          currentQuestion={currentQuestion}
+          currentAnswer={currentAnswer}
+          answers={answers}
+          statusMap={statusMap}
+          timeLeft={timeLeft}
+          secondsElapsed={secondsElapsed}
+          onGoToStep={goToStep}
+          onSelectMCQ={selectMCQ}
+          onSubjectiveText={setSubjectiveText}
+          onSaveAndNext={saveAndNext}
+          onMarkForReview={markForReviewAndNext}
+          onClearResponse={clearResponse}
+          onSubmit={confirmSubmit}
+        />
+      )}
+
+      {stage === 'results' && attempt && <ResultsDashboard attempt={attempt} onSelfGrade={handleSelfGrade} onRetake={startOver} />}
+    </div>
+  );
+}
+
+// ============================================================
+// List screen: saved test papers + past attempt history
+// ============================================================
+function TestList({
+  papers,
+  history,
+  onCreate,
+  onEdit,
+  onDelete,
+  onTake,
+  onOpenAttempt,
+}: {
+  papers: TestPaper[];
+  history: TestAttempt[];
+  onCreate: () => void;
+  onEdit: (p: TestPaper) => void;
+  onDelete: (id: string) => void;
+  onTake: (p: TestPaper) => void;
+  onOpenAttempt: (a: TestAttempt) => void;
+}) {
+  return (
+    <div className="max-w-3xl mx-auto">
+      {OFFICIAL_TESTS.length > 0 && (
+        <div className="mb-10">
+          <h2 className="text-sm font-semibold text-gray-500 dark:text-white/50 mb-3">Official tests</h2>
+          <div className="space-y-3">
+            {OFFICIAL_TESTS.map((p) => (
+              <div
+                key={p.id}
+                className="flex items-center justify-between gap-3 px-5 py-4 rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10"
+              >
+                <div className="min-w-0">
+                  <p className="font-semibold truncate">{p.title}</p>
+                  <p className="text-xs text-gray-400 dark:text-white/40">
+                    {p.topic} · {p.questions.length} questions
+                    {p.durationMinutes > 0 ? ` · ${p.durationMinutes} min` : ' · no timer'}
+                  </p>
+                </div>
+                <button onClick={() => onTake(p)} className="px-4 py-2 rounded-lg bg-black text-white dark:bg-white dark:text-black text-sm font-semibold transition flex-shrink-0">
+                  Take Test
+                </button>
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-2 text-gray-600 dark:text-white/70">Subjective questions</label>
-                <input
-                  type="number"
-                  min={1}
-                  max={6}
-                  value={subjectiveCount}
-                  onChange={(e) => setSubjectiveCount(Math.min(6, Math.max(1, Number(e.target.value) || 1)))}
-                  className="w-full bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-2.5 focus:outline-none focus:border-black dark:focus:border-white"
-                />
-              </div>
-            </div>
-
-            <button
-              onClick={startTest}
-              disabled={loading || !topic.trim()}
-              className="w-full py-3 bg-black text-white dark:bg-white dark:text-black disabled:opacity-40 rounded-xl font-semibold transition"
-            >
-              {loading ? 'Generating test...' : 'Generate Test'}
-            </button>
-            {error && <p className="text-yellow-600 dark:text-yellow-400 text-sm mt-3">{error}</p>}
+            ))}
           </div>
-
-          {history.length > 0 && (
-            <div>
-              <h2 className="flex items-center gap-2 text-sm font-semibold text-gray-500 dark:text-white/50 mb-3">
-                <History className="w-4 h-4" /> Past attempts
-              </h2>
-              <div className="space-y-2">
-                {history.slice(0, 8).map((a) => (
-                  <button
-                    key={a.id}
-                    onClick={() => openPastAttempt(a)}
-                    className="w-full flex items-center justify-between text-left px-4 py-3 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10 transition"
-                  >
-                    <div>
-                      <p className="font-medium">{a.topic}</p>
-                      <p className="text-xs text-gray-400 dark:text-white/40">{new Date(a.completedAt).toLocaleString()}</p>
-                    </div>
-                    <span className={`text-sm font-bold ${a.scorePercent >= 60 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'}`}>
-                      {a.scorePercent}%
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       )}
 
-      {stage === 'taking' && currentQuestion && (
-        <div className="max-w-2xl mx-auto">
-          <div className="mb-6">
-            <div className="flex justify-between text-xs text-gray-400 dark:text-white/50 mb-2">
-              <span>{topic}</span>
-              <span>{step + 1} / {questions.length}</span>
-            </div>
-            <div className="w-full bg-gray-100 dark:bg-white/10 rounded-full h-1.5">
-              <motion.div
-                className="h-full bg-gradient-to-r from-purple-500 via-blue-400 to-pink-500 rounded-full"
-                animate={{ width: `${((step + 1) / questions.length) * 100}%` }}
-                transition={{ duration: 0.3 }}
-              />
-            </div>
-          </div>
+      <h2 className="text-sm font-semibold text-gray-500 dark:text-white/50 mb-3">My tests</h2>
+      <button
+        onClick={onCreate}
+        className="w-full flex items-center justify-center gap-2 py-3.5 mb-8 rounded-xl bg-black text-white dark:bg-white dark:text-black font-semibold transition"
+      >
+        <Plus className="w-4 h-4" /> Create New Test
+      </button>
 
+      {papers.length === 0 ? (
+        <p className="text-center text-gray-400 dark:text-white/40 mb-10">You haven't created any tests yet — add your own questions above.</p>
+      ) : (
+        <div className="space-y-3 mb-10">
+          {papers.map((p) => (
+            <div
+              key={p.id}
+              className="flex items-center justify-between gap-3 px-5 py-4 rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10"
+            >
+              <div className="min-w-0">
+                <p className="font-semibold truncate">{p.title}</p>
+                <p className="text-xs text-gray-400 dark:text-white/40">
+                  {p.topic} · {p.questions.length} question{p.questions.length !== 1 ? 's' : ''}
+                  {p.durationMinutes > 0 ? ` · ${p.durationMinutes} min` : ' · no timer'}
+                </p>
+              </div>
+              <div className="flex items-center gap-1.5 flex-shrink-0">
+                <button onClick={() => onEdit(p)} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10" aria-label="Edit test">
+                  <Pencil className="w-4 h-4" />
+                </button>
+                <button onClick={() => onDelete(p.id)} className="p-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-500/10 text-red-500" aria-label="Delete test">
+                  <Trash2 className="w-4 h-4" />
+                </button>
+                <button onClick={() => onTake(p)} className="px-4 py-2 rounded-lg bg-black text-white dark:bg-white dark:text-black text-sm font-semibold transition">
+                  Take Test
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {history.length > 0 && (
+        <div>
+          <h2 className="flex items-center gap-2 text-sm font-semibold text-gray-500 dark:text-white/50 mb-3">
+            <History className="w-4 h-4" /> Past attempts
+          </h2>
+          <div className="space-y-2">
+            {history.slice(0, 8).map((a) => (
+              <button
+                key={a.id}
+                onClick={() => onOpenAttempt(a)}
+                className="w-full flex items-center justify-between text-left px-4 py-3 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10 transition"
+              >
+                <div>
+                  <p className="font-medium">{a.testTitle}</p>
+                  <p className="text-xs text-gray-400 dark:text-white/40">{new Date(a.completedAt).toLocaleString()}</p>
+                </div>
+                <span className={`text-sm font-bold ${a.scorePercent >= 60 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'}`}>
+                  {a.obtainedMarks}/{a.totalMarks}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================================
+// Instructions screen — shown once, before the timer starts
+// ============================================================
+function Instructions({ paper, onStart, onBack }: { paper: TestPaper; onStart: () => void; onBack: () => void }) {
+  const totalMarks = computeTotalMarks(paper.questions);
+  const mcqCount = paper.questions.filter((q) => q.type === 'mcq').length;
+  const subjCount = paper.questions.length - mcqCount;
+
+  return (
+    <div className="max-w-2xl mx-auto">
+      <div className="bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl p-6 md:p-8">
+        <h2 className="text-2xl font-bold mb-1">{paper.title}</h2>
+        <p className="text-gray-500 dark:text-white/60 mb-6">{paper.topic}</p>
+
+        <div className="grid grid-cols-2 gap-4 mb-6 text-sm">
+          <div className="bg-white dark:bg-white/5 rounded-xl p-4 border border-gray-200 dark:border-white/10">
+            <p className="text-gray-400 dark:text-white/40">Duration</p>
+            <p className="font-semibold text-lg">{paper.durationMinutes > 0 ? `${paper.durationMinutes} min` : 'No limit'}</p>
+          </div>
+          <div className="bg-white dark:bg-white/5 rounded-xl p-4 border border-gray-200 dark:border-white/10">
+            <p className="text-gray-400 dark:text-white/40">Total marks</p>
+            <p className="font-semibold text-lg">{totalMarks}</p>
+          </div>
+          <div className="bg-white dark:bg-white/5 rounded-xl p-4 border border-gray-200 dark:border-white/10">
+            <p className="text-gray-400 dark:text-white/40">MCQ questions</p>
+            <p className="font-semibold text-lg">{mcqCount}</p>
+          </div>
+          <div className="bg-white dark:bg-white/5 rounded-xl p-4 border border-gray-200 dark:border-white/10">
+            <p className="text-gray-400 dark:text-white/40">Subjective questions</p>
+            <p className="font-semibold text-lg">{subjCount}</p>
+          </div>
+        </div>
+
+        <h3 className="font-semibold mb-3 text-sm text-gray-600 dark:text-white/70">Question palette legend</h3>
+        <div className="space-y-2 mb-8 text-sm">
+          <LegendRow color="bg-gray-300 dark:bg-white/20" label="Not visited yet" />
+          <LegendRow color="bg-orange-400" label="Visited, not answered" />
+          <LegendRow color="bg-emerald-500" label="Answered" />
+          <LegendRow color="bg-purple-500" label="Marked for review (not scored)" />
+          <LegendRow color="bg-purple-500" label="Answered & marked for review (scored)" dot />
+        </div>
+
+        <div className="flex gap-3">
+          <button onClick={onStart} className="flex-1 py-3 rounded-xl bg-black text-white dark:bg-white dark:text-black font-semibold transition">
+            Start Test
+          </button>
+          <button onClick={onBack} className="px-6 py-3 rounded-xl border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10 font-medium transition">
+            Back
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LegendRow({ color, label, dot }: { color: string; label: string; dot?: boolean }) {
+  return (
+    <div className="flex items-center gap-3">
+      <span className={`relative w-5 h-5 rounded ${color} flex-shrink-0`}>
+        {dot && <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-400 border border-white dark:border-black" />}
+      </span>
+      <span className="text-gray-600 dark:text-white/70">{label}</span>
+    </div>
+  );
+}
+
+// ============================================================
+// Taking screen — timer, single question, palette, nav buttons
+// ============================================================
+function TakingScreen({
+  paper,
+  step,
+  currentQuestion,
+  currentAnswer,
+  answers,
+  statusMap,
+  timeLeft,
+  secondsElapsed,
+  onGoToStep,
+  onSelectMCQ,
+  onSubjectiveText,
+  onSaveAndNext,
+  onMarkForReview,
+  onClearResponse,
+  onSubmit,
+}: {
+  paper: TestPaper;
+  step: number;
+  currentQuestion: TestQuestion;
+  currentAnswer: TestUserAnswer | undefined;
+  answers: TestUserAnswer[];
+  statusMap: Record<string, QuestionStatus>;
+  timeLeft: number | null;
+  secondsElapsed: number;
+  onGoToStep: (i: number) => void;
+  onSelectMCQ: (i: number) => void;
+  onSubjectiveText: (t: string) => void;
+  onSaveAndNext: () => void;
+  onMarkForReview: () => void;
+  onClearResponse: () => void;
+  onSubmit: () => void;
+}) {
+  const statusColor: Record<QuestionStatus, string> = {
+    'not-visited': 'bg-gray-200 dark:bg-white/10 text-gray-500 dark:text-white/50',
+    'not-answered': 'bg-orange-400 text-white',
+    answered: 'bg-emerald-500 text-white',
+    marked: 'bg-purple-500 text-white',
+    'answered-marked': 'bg-purple-500 text-white',
+  };
+
+  const isLast = step === paper.questions.length - 1;
+  const lowTime = timeLeft !== null && timeLeft <= 60;
+
+  return (
+    <div className="max-w-6xl mx-auto">
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+        <div>
+          <p className="font-semibold">{paper.title}</p>
+          <p className="text-xs text-gray-400 dark:text-white/40">Question {step + 1} of {paper.questions.length}</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-mono font-semibold ${lowTime ? 'bg-red-100 dark:bg-red-500/10 text-red-600 dark:text-red-400' : 'bg-gray-100 dark:bg-white/10'}`}>
+            <Clock className="w-4 h-4" /> {timeLeft !== null ? formatClock(timeLeft) : formatClock(secondsElapsed)}
+          </span>
+          <button onClick={onSubmit} className="px-4 py-2 rounded-xl bg-red-500 text-white text-sm font-semibold transition">
+            Submit Test
+          </button>
+        </div>
+      </div>
+
+      <div className="grid lg:grid-cols-[1fr_260px] gap-6">
+        <div>
           <AnimatePresence mode="wait">
             <motion.div
               key={currentQuestion.id}
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.25 }}
+              transition={{ duration: 0.2 }}
               className="bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl p-6 md:p-8"
             >
-              <span className="inline-block mb-3 text-xs font-medium tracking-wide uppercase text-purple-500 dark:text-purple-300/70 bg-purple-100 dark:bg-purple-500/10 border border-purple-300/40 dark:border-purple-500/20 rounded-full px-3 py-1">
-                {currentQuestion.type === 'mcq' ? 'Multiple Choice' : 'Short Answer'}
-              </span>
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-xs font-medium tracking-wide uppercase text-purple-500 dark:text-purple-300/70 bg-purple-100 dark:bg-purple-500/10 border border-purple-300/40 dark:border-purple-500/20 rounded-full px-3 py-1">
+                  {currentQuestion.type === 'mcq' ? 'Multiple Choice' : 'Short Answer'}
+                </span>
+                <span className="text-xs text-gray-400 dark:text-white/40">
+                  +{currentQuestion.marks}{currentQuestion.type === 'mcq' ? ` / -${(currentQuestion as MCQQuestion).negativeMarks}` : ''} marks
+                </span>
+              </div>
               <h2 className="text-xl font-semibold mb-6 leading-snug">{currentQuestion.question}</h2>
 
               {currentQuestion.type === 'mcq' ? (
@@ -264,7 +551,7 @@ export default function Test() {
                     return (
                       <button
                         key={i}
-                        onClick={() => selectMCQ(i)}
+                        onClick={() => onSelectMCQ(i)}
                         className={`w-full text-left p-4 rounded-xl border transition ${
                           selected
                             ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
@@ -279,90 +566,86 @@ export default function Test() {
               ) : (
                 <textarea
                   value={currentAnswer && currentAnswer.type === 'subjective' ? currentAnswer.text : ''}
-                  onChange={(e) => setSubjectiveText(e.target.value)}
+                  onChange={(e) => onSubjectiveText(e.target.value)}
                   placeholder="Type your answer here..."
                   rows={6}
-                  className="w-full bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 placeholder-gray-400 dark:placeholder-white/40 focus:outline-none focus:border-black dark:focus:border-white resize-none"
+                  className="w-full bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-black dark:focus:border-white resize-none"
                 />
               )}
             </motion.div>
           </AnimatePresence>
 
-          <div className="flex items-center justify-between mt-6">
-            <button
-              onClick={() => setStep((s) => Math.max(0, s - 1))}
-              disabled={step === 0}
-              className="flex items-center gap-1 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 disabled:opacity-30 hover:bg-gray-100 dark:hover:bg-white/10 transition text-sm font-medium"
-            >
-              <ArrowLeft className="w-4 h-4" /> Back
+          <div className="flex items-center flex-wrap gap-3 mt-6">
+            <button onClick={onClearResponse} className="px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10 text-sm font-medium transition">
+              Clear Response
             </button>
-            <span className="text-xs text-gray-400 dark:text-white/40">{answeredCount}/{questions.length} answered</span>
-            {step < questions.length - 1 ? (
-              <button
-                onClick={() => setStep((s) => Math.min(questions.length - 1, s + 1))}
-                className="flex items-center gap-1 px-4 py-2.5 rounded-xl bg-black text-white dark:bg-white dark:text-black transition text-sm font-medium"
-              >
-                Next <ArrowRight className="w-4 h-4" />
-              </button>
-            ) : (
-              <button
-                onClick={submitTest}
-                className="px-5 py-2.5 rounded-xl bg-black text-white dark:bg-white dark:text-black transition text-sm font-semibold"
-              >
-                Submit Test
-              </button>
-            )}
+            <button onClick={onMarkForReview} className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-purple-300 dark:border-purple-500/30 text-purple-600 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-500/10 text-sm font-medium transition">
+              <Flag className="w-4 h-4" /> Mark for Review & Next
+            </button>
+            <button onClick={onSaveAndNext} disabled={isLast} className="ml-auto px-5 py-2.5 rounded-xl bg-black text-white dark:bg-white dark:text-black disabled:opacity-30 text-sm font-semibold transition">
+              Save & Next
+            </button>
           </div>
-          {error && <p className="text-yellow-600 dark:text-yellow-400 text-sm mt-3 text-center">{error}</p>}
         </div>
-      )}
 
-      {stage === 'grading' && (
-        <div className="max-w-2xl mx-auto text-center py-24">
-          <div className="inline-flex gap-1.5 mb-4">
-            <span className="w-2.5 h-2.5 bg-gray-400 rounded-full animate-bounce" />
-            <span className="w-2.5 h-2.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-            <span className="w-2.5 h-2.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+        <div className="bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl p-4 h-fit">
+          <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-white/40 mb-3">Question Palette</p>
+          <div className="grid grid-cols-5 gap-2">
+            {paper.questions.map((q, i) => (
+              <button
+                key={q.id}
+                onClick={() => onGoToStep(i)}
+                className={`w-9 h-9 rounded-lg text-sm font-semibold transition ${statusColor[statusMap[q.id] ?? 'not-visited']} ${i === step ? 'ring-2 ring-offset-2 ring-black dark:ring-white dark:ring-offset-black' : ''}`}
+              >
+                {i + 1}
+              </button>
+            ))}
           </div>
-          <p className="text-gray-500 dark:text-white/60">Grading your answers...</p>
+          <p className="text-xs text-gray-400 dark:text-white/40 mt-4">
+            {answers.filter((a) => isAnswered(a)).length}/{paper.questions.length} answered
+          </p>
         </div>
-      )}
-
-      {stage === 'results' && attempt && (
-        <ResultsDashboard attempt={attempt} onRetake={startOver} />
-      )}
+      </div>
     </div>
   );
 }
 
-function ResultsDashboard({ attempt, onRetake }: { attempt: TestAttempt; onRetake: () => void }) {
+// ============================================================
+// Results screen — score, self-grade subjective answers, PDF export
+// ============================================================
+function ResultsDashboard({
+  attempt,
+  onSelfGrade,
+  onRetake,
+}: {
+  attempt: TestAttempt;
+  onSelfGrade: (questionId: string, isCorrect: boolean, marks: number) => void;
+  onRetake: () => void;
+}) {
   const resultsById = new Map(attempt.results.map((r) => [r.questionId, r]));
   const answersById = new Map(attempt.answers.map((a) => [a.questionId, a]));
-  const correctCount = attempt.results.filter((r) => r.isCorrect).length;
-  const mistakes = attempt.questions.filter((q) => !resultsById.get(q.id)?.isCorrect);
+  const correctCount = attempt.results.filter((r) => r.isCorrect === true).length;
+  const pending = pendingSelfGradeCount(attempt.results);
 
   const scoreColor = attempt.scorePercent >= 80 ? 'text-emerald-500' : attempt.scorePercent >= 50 ? 'text-amber-500' : 'text-red-500';
 
   return (
     <div className="max-w-3xl mx-auto">
       <div className="bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl p-6 md:p-8 mb-8 text-center">
-        <p className="text-sm text-gray-500 dark:text-white/50 mb-1">{attempt.topic}</p>
-        <p className={`text-5xl font-bold mb-2 ${scoreColor}`}>{attempt.scorePercent}%</p>
-        <p className="text-gray-500 dark:text-white/60 mb-6">
-          {correctCount} of {attempt.results.length} correct — {mistakes.length} to review
-        </p>
-        <div className="flex flex-wrap justify-center gap-3">
-          <button
-            onClick={() => downloadTestResultPdf(attempt)}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-black text-white dark:bg-white dark:text-black text-sm font-semibold transition"
-          >
+        <p className="text-sm text-gray-500 dark:text-white/50 mb-1">{attempt.testTitle}</p>
+        <p className={`text-5xl font-bold mb-2 ${scoreColor}`}>{attempt.obtainedMarks}/{attempt.totalMarks}</p>
+        <p className="text-gray-500 dark:text-white/60 mb-1">{attempt.scorePercent}% · {correctCount} correct</p>
+        {pending > 0 && (
+          <p className="flex items-center justify-center gap-1.5 text-sm text-amber-600 dark:text-amber-400 mb-4">
+            <HelpCircle className="w-4 h-4" /> {pending} subjective answer{pending !== 1 ? 's' : ''} awaiting your self-grade below
+          </p>
+        )}
+        <div className="flex flex-wrap justify-center gap-3 mt-4">
+          <button onClick={() => downloadTestResultPdf(attempt)} className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-black text-white dark:bg-white dark:text-black text-sm font-semibold transition">
             <Download className="w-4 h-4" /> Download PDF
           </button>
-          <button
-            onClick={onRetake}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10 text-sm font-semibold transition"
-          >
-            <RotateCcw className="w-4 h-4" /> Take Another Test
+          <button onClick={onRetake} className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10 text-sm font-semibold transition">
+            <RotateCcw className="w-4 h-4" /> Back to Tests
           </button>
         </div>
       </div>
@@ -371,23 +654,26 @@ function ResultsDashboard({ attempt, onRetake }: { attempt: TestAttempt; onRetak
         {attempt.questions.map((q, i) => {
           const result = resultsById.get(q.id);
           const answer = answersById.get(q.id);
-          const isCorrect = !!result?.isCorrect;
+          const isCorrect = result?.isCorrect;
+          const borderClass =
+            isCorrect === true
+              ? 'border-emerald-300/40 dark:border-emerald-500/20 bg-emerald-50/40 dark:bg-emerald-500/5'
+              : isCorrect === false
+                ? 'border-red-300/40 dark:border-red-500/20 bg-red-50/40 dark:bg-red-500/5'
+                : 'border-amber-300/40 dark:border-amber-500/20 bg-amber-50/40 dark:bg-amber-500/5';
+
           return (
-            <div
-              key={q.id}
-              className={`rounded-2xl border p-5 ${
-                isCorrect
-                  ? 'border-emerald-300/40 dark:border-emerald-500/20 bg-emerald-50/40 dark:bg-emerald-500/5'
-                  : 'border-red-300/40 dark:border-red-500/20 bg-red-50/40 dark:bg-red-500/5'
-              }`}
-            >
+            <div key={q.id} className={`rounded-2xl border p-5 ${borderClass}`}>
               <div className="flex items-start gap-3 mb-3">
-                {isCorrect ? (
+                {isCorrect === true ? (
                   <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
-                ) : (
+                ) : isCorrect === false ? (
                   <XCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                ) : (
+                  <HelpCircle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
                 )}
-                <p className="font-medium">Q{i + 1}. {q.question}</p>
+                <p className="font-medium flex-1">Q{i + 1}. {q.question}</p>
+                <span className="text-xs text-gray-400 dark:text-white/40 flex-shrink-0">{result?.marksObtained ?? 0}/{q.marks}</span>
               </div>
 
               {q.type === 'mcq' ? (
@@ -396,16 +682,7 @@ function ResultsDashboard({ attempt, onRetake }: { attempt: TestAttempt; onRetak
                     const selected = answer && answer.type === 'mcq' && answer.selectedIndex === oi;
                     const correct = oi === (q as MCQQuestion).correctIndex;
                     return (
-                      <p
-                        key={oi}
-                        className={`text-sm ${
-                          correct
-                            ? 'text-emerald-600 dark:text-emerald-400 font-medium'
-                            : selected
-                              ? 'text-red-600 dark:text-red-400 font-medium'
-                              : 'text-gray-500 dark:text-white/50'
-                        }`}
-                      >
+                      <p key={oi} className={`text-sm ${correct ? 'text-emerald-600 dark:text-emerald-400 font-medium' : selected ? 'text-red-600 dark:text-red-400 font-medium' : 'text-gray-500 dark:text-white/50'}`}>
                         {String.fromCharCode(65 + oi)}. {opt}
                         {correct ? ' (correct)' : selected ? ' (your answer)' : ''}
                       </p>
@@ -413,7 +690,7 @@ function ResultsDashboard({ attempt, onRetake }: { attempt: TestAttempt; onRetak
                   })}
                 </div>
               ) : (
-                <div className="ml-8 mb-3 space-y-1.5 text-sm">
+                <div className="ml-8 mb-3 space-y-2 text-sm">
                   <p className="text-gray-600 dark:text-white/70">
                     <span className="font-medium">Your answer: </span>
                     {answer && answer.type === 'subjective' && answer.text.trim() ? answer.text.trim() : <em>left blank</em>}
@@ -422,14 +699,25 @@ function ResultsDashboard({ attempt, onRetake }: { attempt: TestAttempt; onRetak
                     <span className="font-medium">Model answer: </span>
                     {(q as SubjectiveQuestion).modelAnswer}
                   </p>
-                  {result?.feedback && <p className="text-gray-500 dark:text-white/50 italic">{result.feedback}</p>}
+                  {isCorrect === null && (
+                    <div className="flex gap-2 pt-1">
+                      <button onClick={() => onSelfGrade(q.id, true, q.marks)} className="px-3 py-1.5 rounded-lg bg-emerald-500 text-white text-xs font-semibold transition">
+                        I got this right
+                      </button>
+                      <button onClick={() => onSelfGrade(q.id, false, q.marks)} className="px-3 py-1.5 rounded-lg bg-red-500 text-white text-xs font-semibold transition">
+                        I got this wrong
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
 
-              <p className="ml-8 text-sm text-gray-500 dark:text-white/60">
-                <span className="font-medium text-gray-700 dark:text-white/80">Why: </span>
-                {q.explanation}
-              </p>
+              {q.explanation && (
+                <p className="ml-8 text-sm text-gray-500 dark:text-white/60">
+                  <span className="font-medium text-gray-700 dark:text-white/80">Why: </span>
+                  {q.explanation}
+                </p>
+              )}
             </div>
           );
         })}
