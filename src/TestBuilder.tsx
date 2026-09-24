@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Trash2, ChevronUp, ChevronDown, ListChecks, PenLine, ClipboardPaste, X } from 'lucide-react';
 import type { TestPaper, TestQuestion, MCQQuestion, SubjectiveQuestion } from './types';
+import PhotoImport from './PhotoImport';
 import { parseBulkQuestions, BULK_IMPORT_EXAMPLE } from './testBulkImport';
 
 // ============================================================
@@ -141,6 +142,12 @@ export default function TestBuilder({ initialPaper, onSave, onCancel }: TestBuil
           />
         </div>
       </div>
+
+      <PhotoImport
+        questions={questions}
+        onAppendQuestions={(qs) => setQuestions((prev) => [...prev, ...qs])}
+        onReplaceQuestions={setQuestions}
+      />
 
       <div className="space-y-4 mb-6">
         {questions.map((q, i) => (
