@@ -1,134 +1,113 @@
 // src/testPdf.ts
 //
-// Builds a downloadable PDF report for a completed TestAttempt — marks
-// summary + every question with the learner's answer, the correct
-// answer, marks obtained, and the explanation. Runs entirely client-side
-// (jsPDF), no server round-trip since everything it needs is already in
-// the attempt object.
-import { jsPDF } from 'jspdf';
+// Builds the downloadable result report for a completed TestAttempt.
+// It is rendered as HTML and handed to the browser's own print engine
+// ("Save as PDF"), NOT drawn with a PDF library. Reason: the questions,
+// options, answers and explanations can be in ANY language/script that
+// the test author used (Hindi, English, Hinglish, ...). Libraries like
+// jsPDF cannot shape Devanagari and ship only Latin fonts, so the text
+// would come out broken; the browser renders every script correctly with
+// the user's system fonts. Everything shown is exactly what the author
+// wrote — nothing is translated or altered.
 import type { TestAttempt, MCQQuestion, SubjectiveQuestion } from './types';
 
-const PAGE_WIDTH = 210; // A4 mm
-const MARGIN = 16;
-const CONTENT_WIDTH = PAGE_WIDTH - MARGIN * 2;
-const PAGE_HEIGHT = 297;
+const esc = (s: string): string =>
+  String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
-export function downloadTestResultPdf(attempt: TestAttempt): void {
-  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
-  let y = MARGIN;
+const CSS = `
+  @page { size: A4; margin: 14mm; }
+  * { box-sizing: border-box; }
+  body { font-family: 'Noto Sans', 'Noto Sans Devanagari', 'Nirmala UI', 'Mangal', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif; color: #111; font-size: 11pt; line-height: 1.5; margin: 0; }
+  h1 { font-size: 18pt; margin: 0 0 4px; }
+  .meta { color: #666; font-size: 9.5pt; }
+  .score { font-size: 13pt; font-weight: 700; margin: 10px 0 2px; }
+  hr { border: 0; border-top: 1px solid #ddd; margin: 12px 0; }
+  .q { margin-bottom: 14px; page-break-inside: avoid; }
+  .qt { font-weight: 700; white-space: pre-wrap; }
+  .opt, .ans { margin-left: 14px; white-space: pre-wrap; color: #444; }
+  .ok { color: #148214; }
+  .bad { color: #be1e1e; }
+  .pend { color: #96780f; }
+  .exp { margin: 3px 0 0 14px; font-style: italic; white-space: pre-wrap; }
+`;
 
-  const ensureSpace = (needed: number) => {
-    if (y + needed > PAGE_HEIGHT - MARGIN) {
-      doc.addPage();
-      y = MARGIN;
-    }
-  };
-
-  const writeWrapped = (text: string, x: number, maxWidth: number, lineHeight = 5.2) => {
-    const lines = doc.splitTextToSize(text, maxWidth) as string[];
-    for (const line of lines) {
-      ensureSpace(lineHeight);
-      doc.text(line, x, y);
-      y += lineHeight;
-    }
-  };
-
-  // ── Header ──────────────────────────────────────────────────────────
-  doc.setFontSize(18);
-  doc.setFont('helvetica', 'bold');
-  writeWrapped(attempt.testTitle || attempt.topic, MARGIN, CONTENT_WIDTH, 7);
-  y += 1;
-
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(100);
-  doc.text(`Completed: ${new Date(attempt.completedAt).toLocaleString()}`, MARGIN, y);
-  y += 6;
-  if (attempt.timeTakenSeconds > 0) {
-    const mins = Math.floor(attempt.timeTakenSeconds / 60);
-    const secs = attempt.timeTakenSeconds % 60;
-    doc.text(`Time taken: ${mins}m ${secs}s`, MARGIN, y);
-    y += 6;
-  }
-
+function buildHtml(attempt: TestAttempt): string {
   const correctCount = attempt.results.filter((r) => r.isCorrect === true).length;
   const pendingCount = attempt.results.filter((r) => r.isCorrect === null).length;
-  doc.setFontSize(13);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(0);
-  doc.text(`Score: ${attempt.obtainedMarks} / ${attempt.totalMarks} marks (${attempt.scorePercent}%)`, MARGIN, y);
-  y += 6;
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(100);
-  doc.text(
-    `${correctCount}/${attempt.results.length} correct${pendingCount > 0 ? `  •  ${pendingCount} not yet self-graded` : ''}`,
-    MARGIN,
-    y
-  );
-  y += 8;
-
-  doc.setDrawColor(210);
-  doc.line(MARGIN, y, PAGE_WIDTH - MARGIN, y);
-  y += 8;
-
-  // ── Per-question breakdown ──────────────────────────────────────────
   const resultsById = new Map(attempt.results.map((r) => [r.questionId, r]));
   const answersById = new Map(attempt.answers.map((a) => [a.questionId, a]));
 
-  attempt.questions.forEach((q, i) => {
-    const result = resultsById.get(q.id);
-    const answer = answersById.get(q.id);
-    ensureSpace(14);
+  const time =
+    attempt.timeTakenSeconds > 0 ? ` &nbsp;•&nbsp; Time taken: ${Math.floor(attempt.timeTakenSeconds / 60)}m ${attempt.timeTakenSeconds % 60}s` : '';
 
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(0);
-    writeWrapped(`Q${i + 1}. ${q.question}  [${q.marks} marks]`, MARGIN, CONTENT_WIDTH, 5.6);
-    y += 1;
+  const questions = attempt.questions
+    .map((q, i) => {
+      const result = resultsById.get(q.id);
+      const answer = answersById.get(q.id);
+      let body = '';
 
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
+      if (q.type === 'mcq') {
+        const mcq = q as MCQQuestion;
+        const selected = answer && answer.type === 'mcq' ? answer.selectedIndex : null;
+        body = mcq.options
+          .map((opt, oi) => {
+            const isCorrectOpt = oi === mcq.correctIndex;
+            const isSelected = oi === selected;
+            const cls = isCorrectOpt ? 'ok' : isSelected ? 'bad' : '';
+            const tag = isCorrectOpt ? ' [correct]' : isSelected ? ' [your answer]' : '';
+            return `<div class="opt ${cls}">${String.fromCharCode(65 + oi)}. ${esc(opt)}${tag}</div>`;
+          })
+          .join('');
+      } else {
+        const sub = q as SubjectiveQuestion;
+        const text = answer && answer.type === 'subjective' && answer.text.trim() ? answer.text.trim() : '(left blank)';
+        body = `<div class="ans">Your answer: ${esc(text)}</div><div class="ans ok">Model answer: ${esc(sub.modelAnswer)}</div>`;
+      }
 
-    if (q.type === 'mcq') {
-      const mcq = q as MCQQuestion;
-      const selected = answer && answer.type === 'mcq' ? answer.selectedIndex : null;
-      mcq.options.forEach((opt, oi) => {
-        const isCorrectOpt = oi === mcq.correctIndex;
-        const isSelected = oi === selected;
-        const marker = isCorrectOpt ? '[correct] ' : isSelected ? '[your answer] ' : '';
-        if (isCorrectOpt) doc.setTextColor(20, 130, 20);
-        else if (isSelected && !isCorrectOpt) doc.setTextColor(190, 30, 30);
-        else doc.setTextColor(70);
-        writeWrapped(`${String.fromCharCode(65 + oi)}. ${marker}${opt}`, MARGIN + 4, CONTENT_WIDTH - 4, 5);
-      });
-      doc.setTextColor(70);
-    } else {
-      const sub = q as SubjectiveQuestion;
-      doc.setTextColor(70);
-      writeWrapped(
-        `Your answer: ${answer && answer.type === 'subjective' && answer.text.trim() ? answer.text.trim() : '(left blank)'}`,
-        MARGIN + 4,
-        CONTENT_WIDTH - 4,
-        5
-      );
-      y += 0.5;
-      doc.setTextColor(20, 130, 20);
-      writeWrapped(`Model answer: ${sub.modelAnswer}`, MARGIN + 4, CONTENT_WIDTH - 4, 5);
-    }
+      const status =
+        result?.isCorrect === true
+          ? { cls: 'ok', text: `Correct (+${result.marksObtained})` }
+          : result?.isCorrect === false
+            ? { cls: 'bad', text: `Incorrect (${result.marksObtained})` }
+            : { cls: 'pend', text: 'Not yet self-graded' };
 
-    y += 0.5;
-    doc.setFont('helvetica', 'italic');
-    const status = result?.isCorrect === true ? `Correct (+${result.marksObtained})` : result?.isCorrect === false ? `Incorrect (${result.marksObtained})` : 'Not yet self-graded';
-    const color = result?.isCorrect === true ? [20, 130, 20] : result?.isCorrect === false ? [190, 30, 30] : [150, 120, 20];
-    doc.setTextColor(color[0], color[1], color[2]);
-    writeWrapped(`${status} — ${q.explanation}`, MARGIN + 4, CONTENT_WIDTH - 4, 5);
+      return `<div class="q">
+        <div class="qt">Q${i + 1}. ${esc(q.question)} &nbsp;[${q.marks} marks]</div>
+        ${body}
+        <div class="exp ${status.cls}">${status.text}${q.explanation ? ' — ' + esc(q.explanation) : ''}</div>
+      </div>`;
+    })
+    .join('');
 
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(0);
-    y += 5;
-  });
+  return `<!doctype html><html><head><meta charset="utf-8"><title>${esc(attempt.testTitle || attempt.topic)}</title><style>${CSS}</style></head><body>
+    <h1>${esc(attempt.testTitle || attempt.topic)}</h1>
+    <div class="meta">Completed: ${esc(new Date(attempt.completedAt).toLocaleString())}${time}</div>
+    <div class="score">Score: ${attempt.obtainedMarks} / ${attempt.totalMarks} marks (${attempt.scorePercent}%)</div>
+    <div class="meta">${correctCount}/${attempt.results.length} correct${pendingCount > 0 ? ` &nbsp;•&nbsp; ${pendingCount} not yet self-graded` : ''}</div>
+    <hr>${questions}
+  </body></html>`;
+}
 
-  const fileTopic = (attempt.testTitle || attempt.topic).trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 40) || 'test';
-  doc.save(`test-results-${fileTopic}.pdf`);
+/** Opens the browser's print dialog for the report — choose "Save as PDF". */
+export function downloadTestResultPdf(attempt: TestAttempt): void {
+  const iframe = document.createElement('iframe');
+  iframe.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;';
+  document.body.appendChild(iframe);
+  const doc = iframe.contentWindow?.document;
+  if (!doc || !iframe.contentWindow) {
+    iframe.remove();
+    return;
+  }
+  doc.open();
+  doc.write(buildHtml(attempt));
+  doc.close();
+
+  const win = iframe.contentWindow;
+  const cleanup = () => setTimeout(() => iframe.remove(), 1000);
+  win.addEventListener('afterprint', cleanup);
+  // Give fonts/layout a moment, then print.
+  setTimeout(() => {
+    win.focus();
+    win.print();
+  }, 250);
 }

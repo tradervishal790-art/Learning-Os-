@@ -22,10 +22,13 @@ export function gradeMCQAnswer(question: MCQQuestion, answer: TestUserAnswer | u
 }
 
 export function normalizeAnswer(text: string): string {
+  // Language-neutral: NFC-normalise (so Hindi/other scripts compare reliably), lowercase
+  // (no-op for scripts without case), drop common punctuation incl. the Devanagari danda.
   return text
+    .normalize('NFC')
     .toLowerCase()
     .replace(/[\u2018\u2019]/g, "'")
-    .replace(/[.,;:!?"\u201c\u201d]/g, '')
+    .replace(/[.,;:!?"\u201c\u201d\u0964\u0965]/g, '')
     .replace(/\s+/g, ' ')
     .trim();
 }
