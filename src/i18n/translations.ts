@@ -513,7 +513,6 @@ export const translations: Record<Locale, TranslationShape> = {
         research: 'Research',
         dictionary: 'Dictionary',
         test: 'Test',
-        test: 'Test',
       },
       greeting: {
         morning: 'Good Morning',
@@ -2095,6 +2094,7 @@ export const translations: Record<Locale, TranslationShape> = {
         progress: 'Progress',
         research: 'Research',
         dictionary: 'Dictionary',
+        test: 'Test',
       },
       greeting: {
         morning: 'Good Morning',
