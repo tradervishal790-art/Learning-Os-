@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Trash2, ChevronUp, ChevronDown, ListChecks, PenLine } from 'lucide-react';
+import { Trash2, ChevronUp, ChevronDown, ListChecks, PenLine, ClipboardPaste, X } from 'lucide-react';
 import type { TestPaper, TestQuestion, MCQQuestion, SubjectiveQuestion } from './types';
 import PhotoImport from './PhotoImport';
+import { parseBulkQuestions, BULK_IMPORT_EXAMPLE } from './testBulkImport';
 
 // ============================================================
 // TestBuilder.tsx
@@ -61,6 +62,7 @@ export default function TestBuilder({ initialPaper, onSave, onCancel }: TestBuil
   const [durationMinutes, setDurationMinutes] = useState(initialPaper?.durationMinutes ?? 30);
   const [questions, setQuestions] = useState<TestQuestion[]>(initialPaper?.questions ?? []);
   const [error, setError] = useState('');
+  const [showBulkImport, setShowBulkImport] = useState(false);
 
   // No cap on the number of questions.
   const addMCQ = () => setQuestions((qs) => [...qs, blankMCQ()]);
@@ -77,6 +79,11 @@ export default function TestBuilder({ initialPaper, onSave, onCancel }: TestBuil
 
   const updateQuestion = (id: string, patch: QuestionPatch) =>
     setQuestions((qs) => qs.map((q) => (q.id === id ? ({ ...q, ...patch } as TestQuestion) : q)));
+
+  const handleBulkImport = (parsed: TestQuestion[]) => {
+    setQuestions((qs) => [...qs, ...parsed]);
+    setShowBulkImport(false);
+  };
 
   const handleSave = () => {
     if (!title.trim()) return setError('Give the test a title.');
@@ -169,7 +176,15 @@ export default function TestBuilder({ initialPaper, onSave, onCancel }: TestBuil
         >
           <PenLine className="w-4 h-4" /> Add Subjective Question
         </button>
+        <button
+          onClick={() => setShowBulkImport(true)}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10 text-sm font-medium transition"
+        >
+          <ClipboardPaste className="w-4 h-4" /> Bulk Import
+        </button>
       </div>
+
+      {showBulkImport && <BulkImportPanel onImport={handleBulkImport} onClose={() => setShowBulkImport(false)} />}
 
       {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
 
@@ -182,6 +197,60 @@ export default function TestBuilder({ initialPaper, onSave, onCancel }: TestBuil
         </button>
       </div>
     </div>
+  );
+}
+
+function BulkImportPanel({ onImport, onClose }: { onImport: (questions: TestQuestion[]) => void; onClose: () => void }) {
+  const [text, setText] = useState('');
+  const [errors, setErrors] = useState<string[]>([]);
+  const [showExample, setShowExample] = useState(false);
+
+  const handleImport = () => {
+    const { questions, errors: parseErrors } = parseBulkQuestions(text);
+    setErrors(parseErrors);
+    if (questions.length > 0) onImport(questions);
+  };
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl p-5 mb-6">
+      <div className="flex items-center justify-between mb-3">
+        <p className="font-semibold">Bulk Import</p>
+        <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10" aria-label="Close bulk import">
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+      <p className="text-sm text-gray-500 dark:text-white/60 mb-3">
+        Paste as many questions as you want, one after another, separated by a line with just <code className="px-1 py-0.5 rounded bg-gray-200 dark:bg-white/10">---</code>.{' '}
+        <button onClick={() => setShowExample((s) => !s)} className="underline">
+          {showExample ? 'Hide' : 'Show'} format example
+        </button>
+      </p>
+      {showExample && (
+        <pre className="text-xs bg-white dark:bg-black/40 border border-gray-200 dark:border-white/10 rounded-xl p-3 mb-3 overflow-x-auto whitespace-pre-wrap">{BULK_IMPORT_EXAMPLE}</pre>
+      )}
+      <textarea
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        placeholder="Paste your questions here..."
+        rows={10}
+        className="w-full bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 mb-3 font-mono text-sm resize-none focus:outline-none focus:border-black dark:focus:border-white"
+      />
+      {errors.length > 0 && (
+        <div className="mb-3 text-sm text-amber-600 dark:text-amber-400 space-y-1">
+          {errors.map((e, i) => (
+            <p key={i}>{e}</p>
+          ))}
+        </div>
+      )}
+      <div className="flex gap-3">
+        <button onClick={handleImport} disabled={!text.trim()} className="px-5 py-2.5 rounded-xl bg-black text-white dark:bg-white dark:text-black disabled:opacity-30 text-sm font-semibold transition">
+          Import Questions
+        </button>
+        <button onClick={onClose} className="px-5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10 text-sm font-medium transition">
+          Cancel
+        </button>
+      </div>
+    </motion.div>
   );
 }
 
