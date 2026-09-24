@@ -37,6 +37,8 @@ interface GeminiPart {
   // so we only pay for/process a few short clips per video, not the full
   // 45+ min. See: https://ai.google.dev/gemini-api/docs/video-understanding
   fileData?: { fileUri: string; mimeType: string };
+  // Inline image bytes (base64) — used by api/extract-questions.ts to read photos of question papers / answer sheets.
+  inlineData?: { mimeType: string; data: string };
   videoMetadata?: { startOffset: string; endOffset: string; fps?: number };
 }
 interface GeminiContent {
@@ -184,7 +186,7 @@ function contentsToMinimaxMessages(
  *  those up front so generateAIText can skip the MiniMax attempt entirely
  *  instead of silently sending it a request stripped of its actual content. */
 function hasVideoParts(contents: GeminiContent[]): boolean {
-  return contents.some((c) => c.parts.some((p) => !!p.fileData));
+  return contents.some((c) => c.parts.some((p) => !!p.fileData || !!p.inlineData));
 }
 
 async function tryMinimax(params: AICallParams): Promise<{ ok: true; text: string } | { ok: false; status: number }> {
@@ -266,7 +268,7 @@ export async function generateAIText(params: AICallParams): Promise<AICallResult
     // error. Fail clearly instead so the caller falls back to its own
     // non-video path (e.g. transcript/metadata-only analysis).
     const err = new Error(
-      `Gemini failed (status ${lastGeminiStatus}) and MiniMax cannot process video content — no fallback available for this request`
+      `Gemini failed (status ${lastGeminiStatus}) and MiniMax cannot process video/image content — no fallback available for this request`
     ) as Error & { geminiStatus: number; minimaxStatus: number };
     err.geminiStatus = lastGeminiStatus;
     err.minimaxStatus = 0;

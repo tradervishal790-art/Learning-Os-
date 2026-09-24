@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Trash2, ChevronUp, ChevronDown, ListChecks, PenLine } from 'lucide-react';
 import type { TestPaper, TestQuestion, MCQQuestion, SubjectiveQuestion } from './types';
-import { MAX_QUESTIONS_PER_TEST } from './testBankStore';
+import PhotoImport from './PhotoImport';
 
 // ============================================================
 // TestBuilder.tsx
@@ -62,9 +62,9 @@ export default function TestBuilder({ initialPaper, onSave, onCancel }: TestBuil
   const [questions, setQuestions] = useState<TestQuestion[]>(initialPaper?.questions ?? []);
   const [error, setError] = useState('');
 
-  const atLimit = questions.length >= MAX_QUESTIONS_PER_TEST;
-  const addMCQ = () => setQuestions((qs) => (qs.length >= MAX_QUESTIONS_PER_TEST ? qs : [...qs, blankMCQ()]));
-  const addSubjective = () => setQuestions((qs) => (qs.length >= MAX_QUESTIONS_PER_TEST ? qs : [...qs, blankSubjective()]));
+  // No cap on the number of questions.
+  const addMCQ = () => setQuestions((qs) => [...qs, blankMCQ()]);
+  const addSubjective = () => setQuestions((qs) => [...qs, blankSubjective()]);
   const removeQuestion = (id: string) => setQuestions((qs) => qs.filter((q) => q.id !== id));
   const moveQuestion = (index: number, dir: -1 | 1) =>
     setQuestions((qs) => {
@@ -85,6 +85,7 @@ export default function TestBuilder({ initialPaper, onSave, onCancel }: TestBuil
     for (const [i, q] of questions.entries()) {
       if (!q.question.trim()) return setError(`Question ${i + 1} is empty.`);
       if (q.type === 'mcq' && q.options.some((o) => !o.trim())) return setError(`Question ${i + 1}: fill all 4 options.`);
+      if (q.type === 'mcq' && (q.correctIndex < 0 || q.correctIndex > 3)) return setError(`Question ${i + 1}: select the correct option (or add the answer sheet).`);
       if (q.type === 'subjective' && !q.modelAnswer.trim()) return setError(`Question ${i + 1}: add a model answer.`);
     }
 
@@ -135,6 +136,12 @@ export default function TestBuilder({ initialPaper, onSave, onCancel }: TestBuil
         </div>
       </div>
 
+      <PhotoImport
+        questions={questions}
+        onAppendQuestions={(qs) => setQuestions((prev) => [...prev, ...qs])}
+        onReplaceQuestions={setQuestions}
+      />
+
       <div className="space-y-4 mb-6">
         {questions.map((q, i) => (
           <QuestionCard
@@ -152,21 +159,18 @@ export default function TestBuilder({ initialPaper, onSave, onCancel }: TestBuil
       <div className="flex flex-wrap gap-3 mb-6">
         <button
           onClick={addMCQ}
-          disabled={atLimit}
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10 text-sm font-medium transition"
         >
           <ListChecks className="w-4 h-4" /> Add MCQ Question
         </button>
         <button
           onClick={addSubjective}
-          disabled={atLimit}
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10 text-sm font-medium transition"
         >
           <PenLine className="w-4 h-4" /> Add Subjective Question
         </button>
       </div>
 
-      {atLimit && <p className="text-yellow-600 dark:text-yellow-400 text-sm mb-4">Maximum {MAX_QUESTIONS_PER_TEST} questions per test reached.</p>}
       {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
 
       <div className="flex gap-3">

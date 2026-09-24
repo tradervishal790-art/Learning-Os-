@@ -1,12 +1,11 @@
 import type { MCQQuestion, SubjectiveQuestion, TestPaper, TestQuestion } from './types';
-import { MAX_QUESTIONS_PER_TEST } from './testBankStore';
 
 // ============================================================
 // officialTests.ts
 // Curated tests authored by the app owner. Users can TAKE these but
 // never edit them — they live in code, not in localStorage/Firestore.
 // To add or change a test: edit this file and redeploy.
-// Hard cap: MAX_QUESTIONS_PER_TEST (100, see testBankStore.ts) per test.
+// No cap on the number of questions per test.
 // Source: British English Grammar — Nouns: Number & Kind (Exercises 1–6).
 // ============================================================
 
@@ -160,7 +159,7 @@ export const OFFICIAL_TESTS: TestPaper[] = [
     title: 'Nouns: Number & Kind',
     topic: 'English Grammar',
     durationMinutes: DURATION_MINUTES,
-    questions: nounsQuestions.slice(0, MAX_QUESTIONS_PER_TEST),
+    questions: nounsQuestions,
     createdAt: PUBLISHED_AT,
     updatedAt: PUBLISHED_AT,
   },

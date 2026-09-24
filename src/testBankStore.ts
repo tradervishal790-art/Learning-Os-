@@ -10,9 +10,6 @@ import type { TestPaper } from './types';
 // other store in the app (see revisionstore.ts / testStore.ts).
 // ============================================================
 
-/** Hard cap on questions in any test (official or user-built). */
-export const MAX_QUESTIONS_PER_TEST = 100;
-
 const TEST_BANK_STORAGE_KEY = 'learning_os_test_bank';
 const CLOUD_KEY = 'testBank';
 
