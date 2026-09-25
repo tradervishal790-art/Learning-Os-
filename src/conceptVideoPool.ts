@@ -136,7 +136,7 @@ async function getCandidateVideos(
   language?: string,
   forceRefresh?: boolean
 ): Promise<CandidateMeta[]> {
-  // YouTube search now goes through /api/youtube-search — the key
+  // YouTube search now goes through /api/youtube — the key
   // used to live client-side here via `import.meta.env.VITE_YOUTUBE_API_KEY`,
   // exposed in the shipped bundle. It's server-only now.
 
@@ -167,7 +167,7 @@ async function getCandidateVideos(
     try {
       const langParam = relevanceLanguage ? `&relevanceLanguage=${relevanceLanguage}` : '';
       const res = await fetch(
-        `/api/youtube-search?maxResults=${perQueryLimit}&q=${encodeURIComponent(query)}${langParam}`
+        `/api/youtube?maxResults=${perQueryLimit}&q=${encodeURIComponent(query)}${langParam}`
       );
       const data = await res.json();
       if (!res.ok) {

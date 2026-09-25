@@ -1,6 +1,8 @@
-// api/youtube-search.ts
+// api/youtube.ts
 //
-// Server-side proxy for YouTube's `search` endpoint.
+// Server-side proxy for YouTube's `search` and `videos` endpoints, merged
+// into one file (was api/youtube-search.ts + api/youtube-video.ts) to stay
+// under Vercel Hobby's 12-serverless-function limit.
 //
 // WHY THIS FILE EXISTS:
 // VideoIntel.tsx and conceptVideoPool.ts used to call
@@ -15,7 +17,10 @@
 // This endpoint keeps the key server-side only (process.env, never sent
 // to the client) and forwards just the fields the client actually needs.
 //
-// SHORTS FILTERING:
+// ROUTING: GET /api/youtube?id=<videoId>        -> single-video lookup (was youtube-video.ts)
+//          GET /api/youtube?q=<query>&...       -> search              (was youtube-search.ts)
+//
+// SHORTS FILTERING (search only):
 // YouTube's search API has no direct "exclude Shorts" flag, and its
 // videoDuration enum ("short" / "medium" / "long") doesn't line up with
 // a 3-minute cutoff. So we over-fetch search results, batch-fetch their
@@ -23,6 +28,7 @@
 // anything under 3 minutes before returning to the client.
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { fetchVideoMeta } from './_lib/youtubeMeta.js';
 
 const MIN_DURATION_SECONDS = 180; // 3 minutes — drops YouTube Shorts
 
@@ -31,24 +37,48 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'GET only' });
   }
 
-  const { q, maxResults, pageToken, relevanceLanguage } = req.query as {
-    q?: string;
-    maxResults?: string;
-    pageToken?: string;
-    relevanceLanguage?: string;
-  };
+  const { id, q } = req.query as { id?: string; q?: string };
 
-  if (!q?.trim()) {
-    return res.status(400).json({ error: 'q (query) required' });
-  }
-
-  // Same env var name as before — just read server-side now instead of
-  // client-side. Set this in Vercel Project Settings > Environment
-  // Variables (NOT prefixed with VITE_ going forward — see note below).
   const apiKey = process.env.YOUTUBE_API_KEY || process.env.VITE_YOUTUBE_API_KEY;
   if (!apiKey) {
     return res.status(500).json({ error: 'YouTube API key not configured on server' });
   }
+
+  if (id?.trim()) {
+    return handleVideoLookup(id.trim(), apiKey, res);
+  }
+  if (q?.trim()) {
+    return handleSearch(req, q.trim(), apiKey, res);
+  }
+  return res.status(400).json({ error: 'q (query) or id (videoId) required' });
+}
+
+// --- single-video lookup (was api/youtube-video.ts) ---
+async function handleVideoLookup(id: string, apiKey: string, res: VercelResponse) {
+  try {
+    const meta = await fetchVideoMeta(id, apiKey);
+    if (!meta) {
+      return res.status(404).json({ error: 'Video not found' });
+    }
+
+    return res.status(200).json({
+      title: meta.title,
+      description: meta.description,
+      durationSeconds: meta.durationSeconds,
+    });
+  } catch (err: any) {
+    console.error('YouTube video-meta proxy failed:', err);
+    return res.status(500).json({ error: err?.message || 'YouTube video-meta failed' });
+  }
+}
+
+// --- search (was api/youtube-search.ts) ---
+async function handleSearch(req: VercelRequest, q: string, apiKey: string, res: VercelResponse) {
+  const { maxResults, pageToken, relevanceLanguage } = req.query as {
+    maxResults?: string;
+    pageToken?: string;
+    relevanceLanguage?: string;
+  };
 
   // Over-fetch — some results will be dropped as sub-3-min Shorts, so
   // requesting exactly the client's target count would leave it short.
@@ -60,7 +90,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     part: 'snippet',
     type: 'video',
     maxResults: overFetchCount.toString(),
-    q: q.trim(),
+    q,
     key: apiKey,
   });
   if (pageToken) searchParams.set('pageToken', pageToken);

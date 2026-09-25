@@ -153,7 +153,7 @@ function extractVideoId(url: string): string | null {
 }
 
 async function fetchVideoMeta(videoId: string): Promise<{ title: string; description: string }> {
-  const res = await fetch(`/api/youtube-video?id=${encodeURIComponent(videoId)}`);
+  const res = await fetch(`/api/youtube?id=${encodeURIComponent(videoId)}`);
   if (!res.ok) throw new Error('YouTube meta fetch failed');
   const data = await res.json();
   if (!data?.title) throw new Error('Video not found');

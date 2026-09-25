@@ -254,7 +254,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
   const goalIdsToCheck = Array.from(
     new Set([activeGoalId ?? undefined, ...(allGoalIds ?? [])])
   );
-  // YouTube search now goes through /api/youtube-search — the key
+  // YouTube search now goes through /api/youtube — the key
   // used to be `import.meta.env.VITE_YOUTUBE_API_KEY` appended directly
   // to the googleapis.com URL from the browser, which bakes it into the
   // client bundle. It now lives server-side only.
@@ -689,7 +689,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
 
     try {
       const res = await fetch(
-        `/api/youtube-search?maxResults=12&q=${encodeURIComponent(searchQuery)}`
+        `/api/youtube?maxResults=12&q=${encodeURIComponent(searchQuery)}`
       );
       const data = await res.json();
 
@@ -742,7 +742,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
 
     try {
       const res = await fetch(
-        `/api/youtube-search?maxResults=12&q=${encodeURIComponent(searchQuery)}&pageToken=${encodeURIComponent(nextPageTokenRef.current)}`
+        `/api/youtube?maxResults=12&q=${encodeURIComponent(searchQuery)}&pageToken=${encodeURIComponent(nextPageTokenRef.current)}`
       );
       const data = await res.json();
       if (!res.ok || !data.items?.length) {
