@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Camera, FileCheck2, Loader2 } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { Camera, FileCheck2, Loader2, X } from 'lucide-react';
 import type { TestQuestion } from './types';
 import {
   MAX_IMPORT_PHOTOS,
@@ -76,6 +76,46 @@ const TEXT = {
     filesChosen: (n: number) => `${n} फाइलें चुनी गईं`,
   },
 } as const;
+
+// Thumbnail strip for chosen files, with a per-file remove (×) button so a
+// wrong photo/PDF can be dropped before "Read questions" / "Read answers"
+// is pressed. Images get a real preview via a blob URL; PDFs and anything
+// else fall back to showing the file name.
+function FileThumbList({ files, onRemove, disabled }: { files: File[]; onRemove: (index: number) => void; disabled: boolean }) {
+  const urls = useMemo(() => files.map((f) => (f.type.startsWith('image/') ? URL.createObjectURL(f) : null)), [files]);
+  useEffect(() => {
+    return () => {
+      urls.forEach((u) => u && URL.revokeObjectURL(u));
+    };
+  }, [urls]);
+
+  return (
+    <div className="flex flex-wrap gap-2 mb-3">
+      {files.map((f, i) => (
+        <div
+          key={`${f.name}-${f.lastModified}-${i}`}
+          className="relative w-16 h-16 rounded-lg border border-gray-200 dark:border-white/10 overflow-hidden bg-white dark:bg-white/10 flex items-center justify-center"
+        >
+          {urls[i] ? (
+            <img src={urls[i]!} alt={f.name} className="w-full h-full object-cover" />
+          ) : (
+            <span className="text-[9px] text-center px-1 text-gray-500 dark:text-white/60 break-all leading-tight">{f.name}</span>
+          )}
+          {!disabled && (
+            <button
+              type="button"
+              onClick={() => onRemove(i)}
+              className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-black text-white dark:bg-white dark:text-black flex items-center justify-center shadow"
+              aria-label={`Remove ${f.name}`}
+            >
+              <X className="w-3 h-3" />
+            </button>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
 
 function loadLang(): Lang {
   try {
@@ -208,6 +248,9 @@ export default function PhotoImport({ questions, onAppendQuestions, onReplaceQue
         </h3>
         <p className="text-xs text-gray-500 dark:text-white/60 mb-3">{t.qHelp}</p>
         <input type="file" accept="image/*,application/pdf,.pdf" multiple onChange={(e) => pick(e.target.files, setQFiles)} disabled={busy !== null} className={`${fileInput} mb-3`} />
+        {qFiles.length > 0 && (
+          <FileThumbList files={qFiles} disabled={busy !== null} onRemove={(i) => setQFiles((prev) => prev.filter((_, idx) => idx !== i))} />
+        )}
         <button onClick={readQuestions} disabled={busy !== null || qFiles.length === 0} className={btn}>
           {busy === 'q' && <Loader2 className="w-4 h-4 animate-spin" />}
           {busy === 'q' ? progress : qFiles.length > 0 ? `${t.qButton} (${t.filesChosen(qFiles.length)})` : t.qButton}
@@ -236,6 +279,9 @@ export default function PhotoImport({ questions, onAppendQuestions, onReplaceQue
           disabled={busy !== null || questions.length === 0}
           className={`${fileInput} mb-3`}
         />
+        {aFiles.length > 0 && (
+          <FileThumbList files={aFiles} disabled={busy !== null} onRemove={(i) => setAFiles((prev) => prev.filter((_, idx) => idx !== i))} />
+        )}
         <button onClick={readAnswers} disabled={busy !== null || aFiles.length === 0 || questions.length === 0} className={btn}>
           {busy === 'a' && <Loader2 className="w-4 h-4 animate-spin" />}
           {busy === 'a' ? progress : aFiles.length > 0 ? `${t.aButton} (${t.filesChosen(aFiles.length)})` : t.aButton}
