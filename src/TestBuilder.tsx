@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Trash2, ChevronUp, ChevronDown, ListChecks, PenLine, ClipboardPaste, X } from 'lucide-react';
+import { Trash2, ChevronUp, ChevronDown, ListChecks, PenLine, ClipboardPaste, X, Sparkles } from 'lucide-react';
 import type { TestPaper, TestQuestion, MCQQuestion, SubjectiveQuestion } from './types';
 import PhotoImport from './PhotoImport';
 import { parseBulkQuestions, BULK_IMPORT_EXAMPLE } from './testBulkImport';
+import { findMissingAnswers, generateAnswerKey, applyAnswerKey } from './testAI';
 
 // ============================================================
 // TestBuilder.tsx
@@ -63,6 +64,13 @@ export default function TestBuilder({ initialPaper, onSave, onCancel }: TestBuil
   const [questions, setQuestions] = useState<TestQuestion[]>(initialPaper?.questions ?? []);
   const [error, setError] = useState('');
   const [showBulkImport, setShowBulkImport] = useState(false);
+  const [aiFilling, setAiFilling] = useState(false);
+  const [aiError, setAiError] = useState('');
+
+  // No answer key for some questions (typed by hand, or imported from a
+  // photo with no answer sheet)? These are the ones "Fill with AI" sends.
+  const missingAnswerQuestions = findMissingAnswers(questions).filter((q) => q.question.trim());
+  const missingCount = missingAnswerQuestions.length;
 
   // No cap on the number of questions.
   const addMCQ = () => setQuestions((qs) => [...qs, blankMCQ()]);
@@ -83,6 +91,28 @@ export default function TestBuilder({ initialPaper, onSave, onCancel }: TestBuil
   const handleBulkImport = (parsed: TestQuestion[]) => {
     setQuestions((qs) => [...qs, ...parsed]);
     setShowBulkImport(false);
+  };
+
+  /** No answer key? Ask Gemini to solve the questions itself. Only fills
+   *  questions still missing an answer — never overwrites one already set. */
+  const handleFillMissingAnswers = async () => {
+    if (missingAnswerQuestions.length === 0) return;
+    setAiFilling(true);
+    setAiError('');
+    try {
+      const items = missingAnswerQuestions.map((q) => ({
+        id: q.id,
+        type: q.type,
+        question: q.question,
+        options: q.type === 'mcq' ? q.options : undefined,
+      }));
+      const answers = await generateAnswerKey(items);
+      setQuestions((qs) => applyAnswerKey(qs, answers));
+    } catch (e: any) {
+      setAiError(e?.message || 'Could not generate the answer key — please try again.');
+    } finally {
+      setAiFilling(false);
+    }
   };
 
   const handleSave = () => {
@@ -182,10 +212,21 @@ export default function TestBuilder({ initialPaper, onSave, onCancel }: TestBuil
         >
           <ClipboardPaste className="w-4 h-4" /> Bulk Import
         </button>
+        {missingCount > 0 && (
+          <button
+            onClick={handleFillMissingAnswers}
+            disabled={aiFilling}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10 text-sm font-medium transition disabled:opacity-40"
+          >
+            <Sparkles className="w-4 h-4" />
+            {aiFilling ? 'Asking AI…' : `Fill ${missingCount} Missing Answer${missingCount === 1 ? '' : 's'} with AI`}
+          </button>
+        )}
       </div>
 
       {showBulkImport && <BulkImportPanel onImport={handleBulkImport} onClose={() => setShowBulkImport(false)} />}
 
+      {aiError && <p className="text-amber-600 dark:text-amber-400 text-sm mb-4">{aiError}</p>}
       {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
 
       <div className="flex gap-3">

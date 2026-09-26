@@ -1,11 +1,14 @@
 // src/testGrading.ts
 //
-// Everything here runs on-device, no network call, no AI. MCQs are
-// graded the instant the test is submitted (correctIndex is already
-// known). Subjective (free-text) questions can't be scored that way, so
-// they start "ungraded" (isCorrect: null) and the results screen lets
-// the learner compare their answer to their own modelAnswer and pick
-// right/wrong themselves — see selfGradeSubjective().
+// MCQs are graded the instant the test is submitted (correctIndex is
+// already known) — fully on-device, no network call. Subjective
+// (free-text) questions can't be scored that deterministically, so they
+// start "ungraded" (isCorrect: null) and the results screen lets the
+// learner either compare their answer to their own modelAnswer and pick
+// right/wrong themselves (selfGradeSubjective(), no AI, no network), or —
+// opt-in, see testAI.ts / api/grade-answer.ts — have Gemini judge the
+// answer instead and pass a short feedback string through this same
+// function.
 import type { GradedResult, TestQuestion, TestUserAnswer, MCQQuestion, SubjectiveQuestion, SubjectiveUserAnswer } from './types';
 
 export function gradeMCQAnswer(question: MCQQuestion, answer: TestUserAnswer | undefined): GradedResult {
@@ -53,9 +56,25 @@ export function buildInitialResults(questions: TestQuestion[], answers: TestUser
   );
 }
 
-/** Learner clicks "I got this right" / "I got this wrong" for a subjective question on the results screen. */
-export function selfGradeSubjective(results: GradedResult[], questionId: string, isCorrect: boolean, marks: number): GradedResult[] {
-  return results.map((r) => (r.questionId === questionId ? { questionId, isCorrect, marksObtained: isCorrect ? marks : 0 } : r));
+/** Learner clicks "I got this right" / "I got this wrong" for a subjective question on the results screen — or an AI check (api/grade-answer.ts) supplies the same verdict plus a short `feedback` note. */
+export function selfGradeSubjective(results: GradedResult[], questionId: string, isCorrect: boolean, marks: number, feedback?: string): GradedResult[] {
+  return results.map((r) => (r.questionId === questionId ? { questionId, isCorrect, marksObtained: isCorrect ? marks : 0, feedback } : r));
+}
+
+/** Folds several AI-graded results (api/grade-answer.ts, one batched call) into the result set in a single pass — used instead of calling selfGradeSubjective in a loop so each verdict doesn't get built from a stale snapshot of `results`. */
+export function applyAIGradeBatch(
+  results: GradedResult[],
+  questions: TestQuestion[],
+  graded: { id: string; isCorrect: boolean; feedback: string }[]
+): GradedResult[] {
+  const marksById = new Map(questions.map((q) => [q.id, q.marks]));
+  let next = results;
+  for (const g of graded) {
+    const marks = marksById.get(g.id);
+    if (marks === undefined) continue;
+    next = selfGradeSubjective(next, g.id, g.isCorrect, marks, g.feedback);
+  }
+  return next;
 }
 
 export function computeTotalMarks(questions: TestQuestion[]): number {

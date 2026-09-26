@@ -360,13 +360,16 @@ export interface SubjectiveUserAnswer {
 export type TestUserAnswer = MCQUserAnswer | SubjectiveUserAnswer;
 
 /** Per-question outcome. isCorrect is null for a subjective answer until
- *  the learner self-grades it on the results screen — marksObtained stays
- *  0 until then. MCQs are never null; they're resolved the instant the
- *  test is submitted. */
+ *  the learner self-grades it (or has AI check it) on the results screen —
+ *  marksObtained stays 0 until then. MCQs are never null; they're resolved
+ *  the instant the test is submitted. */
 export interface GradedResult {
   questionId: string;
   isCorrect: boolean | null;
   marksObtained: number;
+  /** Optional. Set when an AI check (not a manual self-grade) produced
+   *  this result — a short 1-2 sentence note shown next to the verdict. */
+  feedback?: string;
 }
 
 /** One completed attempt, persisted in testStore.ts so past attempts show

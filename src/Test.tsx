@@ -1,23 +1,27 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Download, RotateCcw, CheckCircle2, XCircle, HelpCircle, History, Plus, Pencil, Trash2, Clock, Flag } from 'lucide-react';
+import { Download, RotateCcw, CheckCircle2, XCircle, HelpCircle, History, Plus, Pencil, Trash2, Clock, Flag, Sparkles } from 'lucide-react';
 import type { TestPaper, TestQuestion, TestUserAnswer, TestAttempt, MCQQuestion, SubjectiveQuestion } from './types';
 import { getTestPapers, saveTestPaper, deleteTestPaper } from './testBankStore';
 import { OFFICIAL_TESTS } from './officialTests';
 import { getTestAttempts, saveTestAttempt, updateTestAttempt } from './testStore';
-import { buildInitialResults, selfGradeSubjective, computeTotalMarks, computeObtainedMarks, computeScorePercent, pendingSelfGradeCount, isAnswered } from './testGrading';
+import { buildInitialResults, selfGradeSubjective, applyAIGradeBatch, computeTotalMarks, computeObtainedMarks, computeScorePercent, pendingSelfGradeCount, isAnswered } from './testGrading';
+import { checkAnswersWithAI } from './testAI';
 import { downloadTestResultPdf } from './testPdf';
 import TestBuilder from './TestBuilder';
 
 // ============================================================
 // Test.tsx — "Test" tab (Dashboard renders <Test /> with no props).
-// No AI anywhere in this feature — every question is authored by hand
-// in TestBuilder.tsx and stored in testBankStore.ts. Flow:
+// Every question is authored by hand in TestBuilder.tsx and stored in
+// testBankStore.ts — AI is opt-in only, never automatic: TestBuilder can
+// ask Gemini to fill in a missing answer key (testAI.ts), and the results
+// screen below can ask Gemini to check a subjective answer instead of
+// self-marking it. Flow:
 //   list         → pick a saved test paper, or create/edit/delete one
 //   instructions → duration, marking scheme, palette legend, Start
 //   taking       → NTA/JEE-Main-style exam UI: timer, question palette,
 //                  Save & Next / Mark for Review / Clear Response
-//   results      → score, self-grade any subjective answers, PDF export
+//   results      → score, self-grade (or AI-check) subjective answers, PDF export
 // ============================================================
 
 type Stage = 'list' | 'builder' | 'instructions' | 'taking' | 'results';
@@ -228,6 +232,20 @@ export default function Test() {
     setAttempt(updated);
   };
 
+  /** One batched AI-check call (checkAnswersWithAI) comes back with several
+   *  verdicts at once — fold them all into the attempt in a single update
+   *  (applyAIGradeBatch) rather than calling handleSelfGrade in a loop,
+   *  which would have each iteration overwrite the last from a stale
+   *  `attempt` snapshot. */
+  const handleAIGradeBatch = (graded: { id: string; isCorrect: boolean; feedback: string }[]) => {
+    if (!attempt) return;
+    const results = applyAIGradeBatch(attempt.results, attempt.questions, graded);
+    const obtainedMarks = computeObtainedMarks(results);
+    const updated: TestAttempt = { ...attempt, results, obtainedMarks, scorePercent: computeScorePercent(obtainedMarks, attempt.totalMarks) };
+    updateTestAttempt(updated);
+    setAttempt(updated);
+  };
+
   return (
     <div className="min-h-screen bg-white dark:bg-black text-black dark:text-white p-4 md:p-8">
       {stage !== 'taking' && (
@@ -273,7 +291,9 @@ export default function Test() {
         />
       )}
 
-      {stage === 'results' && attempt && <ResultsDashboard attempt={attempt} onSelfGrade={handleSelfGrade} onRetake={startOver} />}
+      {stage === 'results' && attempt && (
+        <ResultsDashboard attempt={attempt} onSelfGrade={handleSelfGrade} onAIGradeBatch={handleAIGradeBatch} onRetake={startOver} />
+      )}
     </div>
   );
 }
@@ -616,16 +636,54 @@ function TakingScreen({
 function ResultsDashboard({
   attempt,
   onSelfGrade,
+  onAIGradeBatch,
   onRetake,
 }: {
   attempt: TestAttempt;
   onSelfGrade: (questionId: string, isCorrect: boolean, marks: number) => void;
+  onAIGradeBatch: (graded: { id: string; isCorrect: boolean; feedback: string }[]) => void;
   onRetake: () => void;
 }) {
+  const [aiChecking, setAiChecking] = useState(false);
+  const [aiError, setAiError] = useState('');
+
   const resultsById = new Map(attempt.results.map((r) => [r.questionId, r]));
   const answersById = new Map(attempt.answers.map((a) => [a.questionId, a]));
   const correctCount = attempt.results.filter((r) => r.isCorrect === true).length;
   const pending = pendingSelfGradeCount(attempt.results);
+
+  // Pending subjective questions that were actually answered — AI has
+  // nothing to check on a blank one, so those stay for manual self-grade only.
+  const aiCheckableIds = new Set(
+    attempt.questions
+      .filter((q) => q.type === 'subjective' && resultsById.get(q.id)?.isCorrect === null)
+      .filter((q) => {
+        const a = answersById.get(q.id);
+        return a && a.type === 'subjective' && a.text.trim().length > 0;
+      })
+      .map((q) => q.id)
+  );
+
+  const handleCheckAllWithAI = async () => {
+    const items = attempt.questions
+      .filter((q): q is SubjectiveQuestion => q.type === 'subjective' && aiCheckableIds.has(q.id))
+      .map((q) => {
+        const a = answersById.get(q.id);
+        const userAnswer = a && a.type === 'subjective' ? a.text.trim() : '';
+        return { id: q.id, question: q.question, modelAnswer: q.modelAnswer, userAnswer, marks: q.marks };
+      });
+    if (items.length === 0) return;
+    setAiChecking(true);
+    setAiError('');
+    try {
+      const results = await checkAnswersWithAI(items);
+      onAIGradeBatch(results);
+    } catch (e: any) {
+      setAiError(e?.message || 'AI check failed — you can still self-grade below.');
+    } finally {
+      setAiChecking(false);
+    }
+  };
 
   const scoreColor = attempt.scorePercent >= 80 ? 'text-emerald-500' : attempt.scorePercent >= 50 ? 'text-amber-500' : 'text-red-500';
 
@@ -636,9 +694,22 @@ function ResultsDashboard({
         <p className={`text-5xl font-bold mb-2 ${scoreColor}`}>{attempt.obtainedMarks}/{attempt.totalMarks}</p>
         <p className="text-gray-500 dark:text-white/60 mb-1">{attempt.scorePercent}% · {correctCount} correct</p>
         {pending > 0 && (
-          <p className="flex items-center justify-center gap-1.5 text-sm text-amber-600 dark:text-amber-400 mb-4">
-            <HelpCircle className="w-4 h-4" /> {pending} subjective answer{pending !== 1 ? 's' : ''} awaiting your self-grade below
-          </p>
+          <div className="mb-4">
+            <p className="flex items-center justify-center gap-1.5 text-sm text-amber-600 dark:text-amber-400 mb-2">
+              <HelpCircle className="w-4 h-4" /> {pending} subjective answer{pending !== 1 ? 's' : ''} awaiting grading
+            </p>
+            {aiCheckableIds.size > 0 && (
+              <button
+                onClick={handleCheckAllWithAI}
+                disabled={aiChecking}
+                className="flex items-center gap-2 mx-auto px-4 py-2 rounded-xl border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10 text-xs font-semibold transition disabled:opacity-40"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                {aiChecking ? 'AI is checking…' : `Check ${aiCheckableIds.size} with AI`}
+              </button>
+            )}
+            {aiError && <p className="text-red-500 text-xs mt-2">{aiError}</p>}
+          </div>
         )}
         <div className="flex flex-wrap justify-center gap-3 mt-4">
           <button onClick={() => downloadTestResultPdf(attempt)} className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-black text-white dark:bg-white dark:text-black text-sm font-semibold transition">
@@ -695,10 +766,18 @@ function ResultsDashboard({
                     <span className="font-medium">Your answer: </span>
                     {answer && answer.type === 'subjective' && answer.text.trim() ? answer.text.trim() : <em>left blank</em>}
                   </p>
-                  <p className="text-emerald-600 dark:text-emerald-400">
-                    <span className="font-medium">Model answer: </span>
-                    {(q as SubjectiveQuestion).modelAnswer}
-                  </p>
+                  {(q as SubjectiveQuestion).modelAnswer && (
+                    <p className="text-emerald-600 dark:text-emerald-400">
+                      <span className="font-medium">Model answer: </span>
+                      {(q as SubjectiveQuestion).modelAnswer}
+                    </p>
+                  )}
+                  {result?.feedback && (
+                    <p className="text-sky-600 dark:text-sky-400 flex items-start gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                      <span><span className="font-medium">AI: </span>{result.feedback}</span>
+                    </p>
+                  )}
                   {isCorrect === null && (
                     <div className="flex gap-2 pt-1">
                       <button onClick={() => onSelfGrade(q.id, true, q.marks)} className="px-3 py-1.5 rounded-lg bg-emerald-500 text-white text-xs font-semibold transition">
