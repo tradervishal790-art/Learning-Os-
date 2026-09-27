@@ -11,6 +11,7 @@ import { getLearningProfile } from './learningProfileStore';
 import { saveRoadmapData } from './roadmapData';
 import { getGoals, getActiveGoals, addGoal, endGoal as endGoalInStore, updateGoal, saveGoals, MAX_ACTIVE_GOALS } from './goalsStore';
 import { useTranslation, useLanguage, mapOnboardingLanguage } from './i18n/LanguageContext';
+import radheRadheLogo from './assets/brand/radhe-radhe.png';
 
 // Onboarding3D is its own route ("/onboarding") — no need to ship it in the
 // initial landing/dashboard bundle, so it's loaded on demand only.
@@ -319,17 +320,13 @@ function App() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ duration: 0.9 }}
             className="mb-8 select-none"
-            style={{ fontFamily: "'Yatra One', cursive" }}
           >
-            <span
-              className="text-6xl sm:text-7xl md:text-8xl lg:text-9xl tracking-wide bg-clip-text text-transparent"
-              style={{
-                backgroundImage: 'linear-gradient(135deg, #fff6d5 0%, #f2c94c 25%, #b8860b 50%, #f2c94c 75%, #fff6d5 100%)',
-                filter: 'drop-shadow(0 0 24px rgba(242, 201, 76, 0.45))',
-              }}
-            >
-              राधे - राधे
-            </span>
+            <img
+              src={radheRadheLogo}
+              alt="राधे - राधे"
+              className="w-full max-w-[280px] sm:max-w-[380px] md:max-w-[480px] lg:max-w-[560px] h-auto mx-auto"
+              style={{ filter: 'drop-shadow(0 0 24px rgba(242, 201, 76, 0.35))' }}
+            />
           </motion.div>
 
           <motion.div
