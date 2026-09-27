@@ -327,6 +327,24 @@ function App() {
 
         <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-6 text-center">
           <motion.div
+            initial={{ opacity: 0, y: -16, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.9 }}
+            className="mb-5 select-none"
+            style={{ fontFamily: "'Yatra One', cursive" }}
+          >
+            <span
+              className="text-2xl sm:text-3xl md:text-4xl tracking-wide bg-clip-text text-transparent"
+              style={{
+                backgroundImage: 'linear-gradient(135deg, #fff6d5 0%, #f2c94c 25%, #b8860b 50%, #f2c94c 75%, #fff6d5 100%)',
+                filter: 'drop-shadow(0 0 12px rgba(242, 201, 76, 0.45))',
+              }}
+            >
+              राधे - राधे
+            </span>
+          </motion.div>
+
+          <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
