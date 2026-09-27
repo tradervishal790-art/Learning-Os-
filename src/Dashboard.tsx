@@ -1,13 +1,9 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, lazy, Suspense } from 'react';
 import type { ComponentType } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Film, BookOpen, ClipboardCheck } from 'lucide-react';
 import PagePlaceholder from './PagePlaceholder';
-import Roadmap from './Roadmap';
-import Revision from './Revision';
-import VideoIntel from './VideoIntel';
-import BlueprintInterview from './BlueprintInterview';
-import TasteOnboarding from './TasteOnboarding';
 import { getRoadmapData, getCurrentTopic } from './roadmapData';
 import { getRevisionStats, getRevisionDataForGoals } from './revisionData';
 import { getLearningProfile, saveLearningProfile, clearLearningProfile } from './learningProfileStore';
@@ -18,12 +14,6 @@ import { selectPlaylistForConcept, analyzedVideoToVideo } from './PlaylistBuilde
 import { expandSearchQuery } from './queryExpander';
 import { useTheme } from './ThemeContext';
 import type { DashboardPageId, PageConfig, UserOnboardingData, LearningProfile, Video, Topic, Goal, TopicBridge } from './types';
-import Mentor from './Mentor';
-import Notes from './Notes';
-import Progress from './progress';
-import Research from './Research';
-import Dictionary from './Dictionary';
-import Test from './Test';
 import HintBubble from './HintBubble';
 import Onborda from './Onborda';
 import { OnbordaProvider, useOnborda } from './OnbordaContext';
@@ -32,6 +22,33 @@ import type { Tour } from './onbordaTypes';
 import { hasSeenTour, markTourSeen } from './tourStore';
 import { useTranslation } from './i18n/LanguageContext';
 import { format } from './i18n/format';
+
+// Every real "page" is lazy-loaded: each one only downloads once the user
+// actually navigates to its route, instead of every page's code shipping
+// in the same bundle as the Dashboard shell. This is the main fix for the
+// slow initial load — Dictionary alone used to pull in a 20MB fetch's
+// worth of surrounding code paths on first paint even when unused.
+const Roadmap = lazy(() => import('./Roadmap'));
+const Revision = lazy(() => import('./Revision'));
+const VideoIntel = lazy(() => import('./VideoIntel'));
+const BlueprintInterview = lazy(() => import('./BlueprintInterview'));
+const TasteOnboarding = lazy(() => import('./TasteOnboarding'));
+const Mentor = lazy(() => import('./Mentor'));
+const Notes = lazy(() => import('./Notes'));
+const Progress = lazy(() => import('./progress'));
+const Research = lazy(() => import('./Research'));
+const Dictionary = lazy(() => import('./Dictionary'));
+const Test = lazy(() => import('./Test'));
+
+// Small, centered loading indicator shown while a lazy page's chunk is
+// still downloading — kept intentionally minimal (no new deps).
+function PageLoading() {
+  return (
+    <div className="flex items-center justify-center py-24 text-gray-400 dark:text-white/40 text-sm">
+      Loading…
+    </div>
+  );
+}
 
 // Guided spotlight tour for first-time users — see Onborda.tsx for how this
 // engine works (ported from uixmat/onborda, MIT). Each `selector` below
@@ -260,33 +277,25 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   }, [startOnborda]);
 
   const { theme, toggleTheme } = useTheme();
-  const [activePage, setActivePageRaw] = useState<DashboardPageId>('dashboard');
-  // Every in-app page change pushes a browser/PWA history entry, and the
-  // hardware/gesture back button pops it (via popstate below) instead of
-  // exiting the app — this was the root cause of one-tap-back closing the
-  // whole app: activePage was pure React state with zero history entries
-  // for the back button to consume.
-  const setActivePage = useCallback((page: DashboardPageId) => {
-    setActivePageRaw((current) => {
-      if (current === page) return current;
-      window.history.pushState({ activePage: page }, '', '');
-      return page;
-    });
-  }, []);
-
-  useEffect(() => {
-    // Establish the very first history entry so there's always something
-    // for the initial back-press to land on instead of falling through to
-    // "close app".
-    window.history.replaceState({ activePage: 'dashboard' }, '', '');
-
-    const onPopState = (e: PopStateEvent) => {
-      const page = (e.state?.activePage as DashboardPageId | undefined) ?? 'dashboard';
-      setActivePageRaw(page);
-    };
-    window.addEventListener('popstate', onPopState);
-    return () => window.removeEventListener('popstate', onPopState);
-  }, []);
+  // activePage now mirrors the real URL (/dashboard/:page) instead of being
+  // plain React state — this is what gives every page its own shareable,
+  // bookmarkable, refreshable URL. react-router's BrowserRouter already
+  // maintains the browser/PWA history entries, so the previous manual
+  // window.history.pushState/popstate bookkeeping (which existed only to
+  // stop the hardware back button from closing the app) is no longer
+  // needed — real route entries give the back button the same thing to
+  // land on.
+  const location = useLocation();
+  const navigate = useNavigate();
+  // location.pathname looks like "/dashboard" or "/dashboard/roadmap" — the
+  // segment right after "/dashboard/" (if any) is the active page.
+  const activePage = (location.pathname.replace(/^\/dashboard\/?/, '').split('/')[0] || 'dashboard') as DashboardPageId;
+  const setActivePage = useCallback(
+    (page: DashboardPageId) => {
+      navigate(page === 'dashboard' ? '/dashboard' : `/dashboard/${page}`);
+    },
+    [navigate]
+  );
 
   const [showSidebar, setShowSidebar] = useState(false);
   const [streak, setStreak] = useState(0);
@@ -525,19 +534,23 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
 
   if (showLearningQuiz) {
     return (
-      <BlueprintInterview
-        onComplete={handleQuizComplete}
-        onClose={() => setShowLearningQuiz(false)}
-      />
+      <Suspense fallback={<PageLoading />}>
+        <BlueprintInterview
+          onComplete={handleQuizComplete}
+          onClose={() => setShowLearningQuiz(false)}
+        />
+      </Suspense>
     );
   }
 
   if (showTasteOnboarding) {
     return (
-      <TasteOnboarding
-        onComplete={handleTasteOnboardingComplete}
-        onClose={() => setShowTasteOnboarding(false)}
-      />
+      <Suspense fallback={<PageLoading />}>
+        <TasteOnboarding
+          onComplete={handleTasteOnboardingComplete}
+          onClose={() => setShowTasteOnboarding(false)}
+        />
+      </Suspense>
     );
   }
 
@@ -728,6 +741,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
           </button>
         </motion.div>
 
+        <Suspense fallback={<PageLoading />}>
         {activePage === 'dashboard' && (
           <div className="p-4 md:p-8 space-y-6">
             {showOnboardingChecklist && (
@@ -941,6 +955,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
             status={config.status}
           />
         )}
+        </Suspense>
       </div>
 
       {/* === Settings Modal === */}

@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense, lazy } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import Sphere from './Sphere';
 import Stars from './Stars';
-import Onboarding3D from './Onboarding3D';
 import Dashboard from './Dashboard';
 import { ThemeProvider } from './ThemeContext';
 import type { UserOnboardingData, Goal } from './types';
@@ -11,6 +11,11 @@ import { getLearningProfile } from './learningProfileStore';
 import { saveRoadmapData } from './roadmapData';
 import { getGoals, getActiveGoals, addGoal, endGoal as endGoalInStore, updateGoal, saveGoals, MAX_ACTIVE_GOALS } from './goalsStore';
 import { useTranslation, useLanguage, mapOnboardingLanguage } from './i18n/LanguageContext';
+
+// Onboarding3D is its own route ("/onboarding") — no need to ship it in the
+// initial landing/dashboard bundle, so it's loaded on demand only.
+const Onboarding3D = lazy(() => import('./Onboarding3D'));
+
 type Page = 'landing' | 'onboarding' | 'dashboard';
 
 const ONBOARDING_STORAGE_KEY = 'learning_os_onboarding_data';
@@ -40,7 +45,19 @@ function App() {
   const t = useTranslation();
   const { setLanguage } = useLanguage();
   const demoSteps = t.demo.steps;
-  const [page, setPage] = useState<Page>('landing');
+  const navigate = useNavigate();
+  const location = useLocation();
+  // `page` now mirrors the URL (real, shareable/bookmarkable routes) instead
+  // of being disconnected local state. setPage keeps every existing call
+  // site below unchanged — it just navigates instead of setting state.
+  const page: Page = location.pathname.startsWith('/dashboard')
+    ? 'dashboard'
+    : location.pathname.startsWith('/onboarding')
+      ? 'onboarding'
+      : 'landing';
+  const setPage = (p: Page) => {
+    navigate(p === 'dashboard' ? '/dashboard' : p === 'onboarding' ? '/onboarding' : '/');
+  };
   const [userData, setUserData] = useState<UserOnboardingData | null>(loadSavedOnboardingData);
   const [showDemo, setShowDemo] = useState(false);
 
@@ -272,7 +289,11 @@ function App() {
   let content: React.ReactNode;
 
   if (page === 'onboarding') {
-    content = <Onboarding3D onComplete={handleOnboardingComplete} />;
+    content = (
+      <Suspense fallback={<div className="min-h-screen bg-[#030303]" />}>
+        <Onboarding3D onComplete={handleOnboardingComplete} />
+      </Suspense>
+    );
   } else if (page === 'dashboard') {
     content = (
       <Dashboard
