@@ -34,7 +34,7 @@ function saveAttempts(attempts: TestAttempt[]): void {
   void pushToCloud(CLOUD_KEY, attempts);
 }
 
-/** Called once on sign-in (see AuthGate.tsx), same as hydrateRevisionFromCloud. */
+/** Called once, the first time the Test page is opened (see Test.tsx). */
 export async function hydrateTestAttemptsFromCloud(): Promise<void> {
   if (loadAttempts().length > 0) return; // this device already has history — don't clobber it
   const cloud = await pullFromCloud<TestAttempt[]>(CLOUD_KEY);

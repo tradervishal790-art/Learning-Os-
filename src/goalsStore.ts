@@ -48,9 +48,11 @@ export function saveGoals(goals: Goal[]): void {
 }
 
 /**
- * Called once on sign-in (see AuthGate.tsx), BEFORE the roadmap/revision
- * hydration steps that depend on knowing which goal ids exist. Pulls the
- * goal list down from Firestore if this device doesn't have one yet.
+ * Called once, the first time the user reaches the dashboard (see
+ * App.tsx) — not on every page/tab switch. Pulls the goal list down from
+ * Firestore if this device doesn't have one yet. Roadmap.tsx hydrates
+ * each goal's own roadmap separately, only when that goal's Roadmap page
+ * is opened.
  */
 export async function hydrateGoalsFromCloud(): Promise<void> {
   if (load().length > 0) return; // this device already has goals — don't clobber it

@@ -40,7 +40,8 @@ function saveReviews(reviews: ReviewsMap): void {
 }
 
 /**
- * Called once on sign-in (see AuthGate.tsx) to pull revision history down
+ * Called once, the first time the Revision page is opened (see
+ * Revision.tsx) — not upfront on sign-in — to pull revision history down
  * from Firestore into localStorage on a device that has none yet — without
  * this, a topic marked "revised" on Device A would show as never-revised
  * on Device B, wrongly re-triggering "overdue" reminders there.

@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getRoadmapData, getRoadmapProgress, markTopicFinished } from './roadmapData';
+import { getRoadmapData, getRoadmapProgress, markTopicFinished, hydrateRoadmapDataFromCloud } from './roadmapData';
 import { hasSavedVideoForTopic, getSavedVideoIdForTopic } from './VideoIntel';
 import { MAX_ACTIVE_GOALS } from './goalsStore';
 import type { Topic, Video, UserOnboardingData, Goal, TopicBridge } from './types';
@@ -124,6 +124,16 @@ export default function Roadmap({
   // from storage on every render) re-fetches the just-updated data — the
   // state value itself is unused, only the setter's re-render matters.
   const [, forceRefresh] = useState(0);
+
+  // ON-DEMAND CLOUD HYDRATION: pulls this goal's roadmap down from
+  // Firestore for a device that doesn't have it yet, but only when the
+  // Roadmap page is actually opened and only for the goal currently being
+  // viewed — not every goal the user has, and not upfront on sign-in.
+  // No-op (and near-instant) if this device already has the data.
+  useEffect(() => {
+    if (!activeGoalId) return;
+    void hydrateRoadmapDataFromCloud(activeGoalId).then(() => forceRefresh((n) => n + 1));
+  }, [activeGoalId]);
 
   const activeGoals = goals.filter((g) => g.status === 'active');
   const canAddGoal = activeGoals.length < MAX_ACTIVE_GOALS;

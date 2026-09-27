@@ -2,9 +2,9 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Download, RotateCcw, CheckCircle2, XCircle, HelpCircle, History, Plus, Pencil, Trash2, Clock, Flag, Sparkles } from 'lucide-react';
 import type { TestPaper, TestQuestion, TestUserAnswer, TestAttempt, MCQQuestion, SubjectiveQuestion } from './types';
-import { getTestPapers, saveTestPaper, deleteTestPaper } from './testBankStore';
+import { getTestPapers, saveTestPaper, deleteTestPaper, hydrateTestBankFromCloud } from './testBankStore';
 import { OFFICIAL_TESTS } from './officialTests';
-import { getTestAttempts, saveTestAttempt, updateTestAttempt } from './testStore';
+import { getTestAttempts, saveTestAttempt, updateTestAttempt, hydrateTestAttemptsFromCloud } from './testStore';
 import { buildInitialResults, selfGradeSubjective, applyAIGradeBatch, computeTotalMarks, computeObtainedMarks, computeScorePercent, pendingSelfGradeCount, isAnswered } from './testGrading';
 import { checkAnswersWithAI } from './testAI';
 import { downloadTestResultPdf } from './testPdf';
@@ -74,6 +74,17 @@ export default function Test() {
   useEffect(() => {
     refresh();
   }, [stage, refresh]);
+
+  // ON-DEMAND CLOUD HYDRATION: only pulled down when the Test page is
+  // actually opened (once), not upfront on sign-in. No-op if this device
+  // already has test attempts/papers.
+  const hydratedRef = useRef(false);
+  useEffect(() => {
+    if (hydratedRef.current) return;
+    hydratedRef.current = true;
+    void Promise.all([hydrateTestAttemptsFromCloud(), hydrateTestBankFromCloud()]).then(refresh);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ── timer ────────────────────────────────────────────────────────────
   useEffect(() => {

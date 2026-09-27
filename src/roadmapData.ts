@@ -68,10 +68,9 @@ export function saveRoadmapData(goalId: string | undefined, roadmap: Topic): voi
 }
 
 /**
- * Called once on sign-in (see AuthGate.tsx), once per goal id — after
- * hydrateGoalsFromCloud() has populated the goal list, so the caller knows
- * which goal ids to hydrate a roadmap for. Skips any goal that already has
- * a locally-saved roadmap on this device.
+ * Called by Roadmap.tsx, once per goal id, only when that goal's Roadmap
+ * page is actually opened (not upfront for every goal on sign-in). Skips
+ * any goal that already has a locally-saved roadmap on this device.
  */
 export async function hydrateRoadmapDataFromCloud(goalId?: string): Promise<void> {
   const hasLocal = (() => {

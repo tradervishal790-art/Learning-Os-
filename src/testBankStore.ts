@@ -33,7 +33,7 @@ function savePapers(papers: TestPaper[]): void {
   void pushToCloud(CLOUD_KEY, papers);
 }
 
-/** Called once on sign-in (see AuthGate.tsx), same as hydrateRevisionFromCloud. */
+/** Called once, the first time the Test page is opened (see Test.tsx). */
 export async function hydrateTestBankFromCloud(): Promise<void> {
   if (loadPapers().length > 0) return; // this device already has papers — don't clobber them
   const cloud = await pullFromCloud<TestPaper[]>(CLOUD_KEY);

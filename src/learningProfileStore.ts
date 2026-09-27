@@ -49,7 +49,8 @@ export function saveLearningProfile(profile: LearningProfile): void {
 }
 
 /**
- * Called once on sign-in (see AuthGate.tsx) to pull this user's profile
+ * Called once, the first time the user reaches the dashboard (see
+ * App.tsx), to pull this user's profile
  * down from Firestore into localStorage — the step that actually makes
  * the profile show up on a NEW device/browser instead of only ever being
  * visible on the device it was created on.

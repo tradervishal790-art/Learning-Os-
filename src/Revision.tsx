@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getRevisionStats, getRevisionDataForGoals } from './revisionData';
-import { markDayReviewed } from './revisionstore';
+import { markDayReviewed, hydrateRevisionFromCloud } from './revisionstore';
 import { markTopicFinished } from './roadmapData';
 import type { RevisionStatus, RevisionDifficulty, RevisionItem, Goal } from './types';
 import { useTranslation } from './i18n/LanguageContext';
@@ -48,6 +48,14 @@ export default function Revision({ goals = [] }: RevisionProps) {
   // real refresh after persisting to revisionStore.
   const [items, setItems] = useState<(RevisionItem & { goalTitle?: string })[]>(() => getRevisionDataForGoals(t.revisionTasks, goals));
   const [reviewingId, setReviewingId] = useState<string | null>(null);
+
+  // ON-DEMAND CLOUD HYDRATION: only pulled down when the Revision page is
+  // actually opened, not upfront on sign-in. No-op if this device already
+  // has revision data.
+  useEffect(() => {
+    void hydrateRevisionFromCloud().then(() => setItems(getRevisionDataForGoals(t.revisionTasks, goals)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Marking done is now a real state change, not a cosmetic toggle: it
   // persists to revisionStore, and the item either moves to its next

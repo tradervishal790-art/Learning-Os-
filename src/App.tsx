@@ -1,15 +1,15 @@
-import { useState, useEffect, Suspense, lazy } from 'react';
+import { useState, useEffect, useRef, Suspense, lazy } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import Sphere from './Sphere';
 import Stars from './Stars';
-import Dashboard from './Dashboard';
+import Dashboard, { hydrateActiveDaysFromCloud } from './Dashboard';
 import { ThemeProvider } from './ThemeContext';
 import type { UserOnboardingData, Goal } from './types';
 import { trackOnboardingComplete } from './firebase';
-import { getLearningProfile } from './learningProfileStore';
+import { getLearningProfile, hydrateLearningProfileFromCloud } from './learningProfileStore';
 import { saveRoadmapData } from './roadmapData';
-import { getGoals, getActiveGoals, addGoal, endGoal as endGoalInStore, updateGoal, saveGoals, MAX_ACTIVE_GOALS } from './goalsStore';
+import { getGoals, getActiveGoals, addGoal, endGoal as endGoalInStore, updateGoal, saveGoals, MAX_ACTIVE_GOALS, hydrateGoalsFromCloud } from './goalsStore';
 import { useTranslation, useLanguage, mapOnboardingLanguage } from './i18n/LanguageContext';
 import radheRadheLogo from './assets/brand/radhe-radhe.png';
 
@@ -74,6 +74,40 @@ function App() {
   const [activeGoalId, setActiveGoalId] = useState<string | null>(
     () => getActiveGoals(getGoals(loadSavedOnboardingData()))[0]?.id ?? null
   );
+
+  // ON-DEMAND CLOUD HYDRATION, dashboard-wide pieces only: pulls the
+  // learning profile, goal list, and streak/active-days down from
+  // Firestore for a device that doesn't have them yet (new device / new
+  // browser). This only runs once, the first time the user actually
+  // reaches the dashboard — not on landing, and not repeated on every
+  // page/tab switch inside the dashboard. Goal/roadmap-specific data,
+  // revision data, and test data are each hydrated by their OWN page
+  // (Roadmap.tsx, Revision.tsx, Test.tsx) only when that page opens, so a
+  // visit to the dashboard never fetches more than what's about to be shown.
+  const hydratedDashboardRef = useRef(false);
+  useEffect(() => {
+    if (page !== 'dashboard' || hydratedDashboardRef.current) return;
+    hydratedDashboardRef.current = true;
+    void (async () => {
+      // Independent of each other — run together instead of one after
+      // another so this finishes as fast as the slowest single fetch.
+      await Promise.all([
+        hydrateLearningProfileFromCloud(),
+        hydrateGoalsFromCloud(),
+        hydrateActiveDaysFromCloud(),
+      ]);
+      // Re-sync state that was read from localStorage before hydration
+      // resolved, so a new device picks up the cloud data without needing
+      // a manual refresh. No-op (same values) for a device that already
+      // had everything locally.
+      const freshUserData = loadSavedOnboardingData();
+      setUserData(freshUserData);
+      const freshGoals = getGoals(freshUserData);
+      setGoals(freshGoals);
+      setActiveGoalId((current) => current ?? getActiveGoals(freshGoals)[0]?.id ?? null);
+    })();
+  }, [page]);
+
   // Actual server/network error from the last generate-roadmap attempt —
   // shown in Roadmap.tsx's failure banner so a failure is debuggable
   // instead of a silent "something went wrong".

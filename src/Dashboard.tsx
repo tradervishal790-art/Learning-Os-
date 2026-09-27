@@ -212,9 +212,10 @@ const ACTIVE_DAYS_STORAGE_KEY = 'learning_os_active_days';
 const TOPIC_TIMING_STORAGE_KEY = 'learning_os_topic_timing';
 
 /**
- * Called once on sign-in (see AuthGate.tsx) to pull the active-days streak
- * down from Firestore if this device has none yet — otherwise a genuine
- * multi-day streak would appear to reset to 0 on a new device.
+ * Called once, the first time the user reaches the dashboard (see
+ * App.tsx), to pull the active-days streak down from Firestore if this
+ * device has none yet — otherwise a genuine multi-day streak would
+ * appear to reset to 0 on a new device.
  */
 export async function hydrateActiveDaysFromCloud(): Promise<void> {
   try {

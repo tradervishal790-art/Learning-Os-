@@ -10,13 +10,6 @@ import {
   signOutOfApp,
 } from './authStore';
 import { loadSavedTheme } from './ThemeContext';
-import { hydrateLearningProfileFromCloud } from './learningProfileStore';
-import { hydrateGoalsFromCloud, getSavedGoals } from './goalsStore';
-import { hydrateRoadmapDataFromCloud } from './roadmapData';
-import { hydrateRevisionFromCloud } from './revisionstore';
-import { hydrateTestAttemptsFromCloud } from './testStore';
-import { hydrateTestBankFromCloud } from './testBankStore';
-import { hydrateActiveDaysFromCloud } from './Dashboard';
 import { useTranslation } from './i18n/LanguageContext';
 import { format } from './i18n/format';
 
@@ -53,36 +46,15 @@ export default function AuthGate({ children }: { children: ReactNode }) {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = onAuthChange((u) => {
-      if (u) {
-        // CROSS-DEVICE SYNC: pull this account's cloud data down into
-        // localStorage BEFORE letting <App> mount — App.tsx reads
-        // localStorage synchronously in its useState initializers on
-        // first render, so hydrating after that would be too late and
-        // a new device would flash "no data" even though the cloud has
-        // it. Order matters: goals must hydrate first, because the
-        // roadmap hydration step needs to know which goal ids exist.
-        // Every step is best-effort (never throws), so a slow/offline
-        // network just means it resolves with nothing changed, not a
-        // stuck loading screen.
-        void (async () => {
-          await hydrateLearningProfileFromCloud();
-          await hydrateGoalsFromCloud();
-          const goals = getSavedGoals();
-          if (goals.length > 0) {
-            await Promise.all(goals.map((g) => hydrateRoadmapDataFromCloud(g.id)));
-          } else {
-            await hydrateRoadmapDataFromCloud(undefined); // legacy single-roadmap users
-          }
-          await hydrateRevisionFromCloud();
-          await hydrateActiveDaysFromCloud();
-          await hydrateTestAttemptsFromCloud();
-          await hydrateTestBankFromCloud();
-        })().finally(() => setUser(u));
-      } else {
-        setUser(u);
-      }
-    });
+    // Just resolve WHO is signed in — nothing else. This used to also pull
+    // every store's cloud data down in one big sequential chain before
+    // letting <App> mount, which meant even a returning user sat on a
+    // "Loading..." screen until all of it finished. Cloud hydration now
+    // happens per-section, only when that section is actually opened (see
+    // App.tsx for goals/profile/active-days, and Roadmap.tsx, Revision.tsx,
+    // Test.tsx for their own goal/topic-specific data) — so a device only
+    // ever fetches what the user is about to look at, not everything at once.
+    const unsubscribe = onAuthChange((u) => setUser(u));
     return unsubscribe;
   }, []);
 
