@@ -19,18 +19,6 @@ const Onboarding3D = lazy(() => import('./Onboarding3D'));
 type Page = 'landing' | 'onboarding' | 'dashboard';
 
 const ONBOARDING_STORAGE_KEY = 'learning_os_onboarding_data';
-const wordAnimation = {
-  hidden: { opacity: 0, y: 20 },
-  visible: (i: number) => ({
-    opacity: 1,
-    y: 0,
-    transition: {
-      delay: i * 0.15,
-      duration: 0.8,
-      ease: [0.215, 0.61, 0.355, 1] as const,
-    },
-  }),
-};
 
 function loadSavedOnboardingData(): UserOnboardingData | null {
   try {
@@ -330,83 +318,19 @@ function App() {
             initial={{ opacity: 0, y: -16, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ duration: 0.9 }}
-            className="mb-5 select-none"
+            className="mb-8 select-none"
             style={{ fontFamily: "'Yatra One', cursive" }}
           >
             <span
-              className="text-2xl sm:text-3xl md:text-4xl tracking-wide bg-clip-text text-transparent"
+              className="text-6xl sm:text-7xl md:text-8xl lg:text-9xl tracking-wide bg-clip-text text-transparent"
               style={{
                 backgroundImage: 'linear-gradient(135deg, #fff6d5 0%, #f2c94c 25%, #b8860b 50%, #f2c94c 75%, #fff6d5 100%)',
-                filter: 'drop-shadow(0 0 12px rgba(242, 201, 76, 0.45))',
+                filter: 'drop-shadow(0 0 24px rgba(242, 201, 76, 0.45))',
               }}
             >
               राधे - राधे
             </span>
           </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="mb-8 px-5 py-2 rounded-full backdrop-blur-md bg-white/5 border border-white/10"
-            style={{ boxShadow: '0 0 30px rgba(139, 92, 246, 0.3)' }}
-          >
-            <span className="text-xs font-medium tracking-[0.2em] uppercase text-white/80">
-              Learning OS
-            </span>
-          </motion.div>
-
-          <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold tracking-tight leading-[0.95] max-w-5xl">
-            <span className="block">
-              <motion.span
-                custom={0}
-                initial="hidden"
-                animate="visible"
-                variants={wordAnimation}
-                className="inline-block bg-gradient-to-r from-white via-purple-200 to-white bg-clip-text text-transparent"
-              >
-                {t.landing.heroWords[0]}
-              </motion.span>{' '}
-              <motion.span
-                custom={1}
-                initial="hidden"
-                animate="visible"
-                variants={wordAnimation}
-                className="inline-block bg-gradient-to-r from-purple-400 via-blue-400 to-purple-400 bg-clip-text text-transparent"
-              >
-                {t.landing.heroWords[1]}
-              </motion.span>
-            </span>
-            <span className="block">
-              <motion.span
-                custom={2}
-                initial="hidden"
-                animate="visible"
-                variants={wordAnimation}
-                className="inline-block bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-400 bg-clip-text text-transparent"
-              >
-                {t.landing.heroWords[2]}
-              </motion.span>{' '}
-              <motion.span
-                custom={3}
-                initial="hidden"
-                animate="visible"
-                variants={wordAnimation}
-                className="inline-block bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 bg-clip-text text-transparent"
-              >
-                {t.landing.heroWords[3]}
-              </motion.span>
-            </span>
-          </h1>
-
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.8, duration: 0.8 }}
-            className="mt-8 max-w-2xl text-base md:text-lg text-white/60 leading-relaxed"
-          >
-            {t.landing.tagline}
-          </motion.p>
 
           <motion.div
             initial={{ opacity: 0, y: 20 }}
