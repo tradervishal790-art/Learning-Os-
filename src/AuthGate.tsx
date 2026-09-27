@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
+import { useLocation } from 'react-router-dom';
 import type { User } from 'firebase/auth';
 import {
   onAuthChange,
@@ -22,10 +23,11 @@ import { format } from './i18n/format';
 // ============================================================
 // AuthGate.tsx
 //
-// Wraps the entire app. Nothing (landing page, onboarding, dashboard)
-// renders until a user is signed in — each user has their OWN account
-// (email+password or Google), so their data on this device is only
-// reachable by them. Free on Firebase's Spark plan (see authStore.ts).
+// Wraps the entire app. Landing page ("/") is public and always renders
+// immediately. /onboarding and /dashboard are gated — nothing on those
+// routes renders until a user is signed in — each user has their OWN
+// account (email+password or Google), so their data on this device is
+// only reachable by them. Free on Firebase's Spark plan (see authStore.ts).
 //
 // This renders BEFORE ThemeProvider (see main.tsx), so it applies the
 // same saved-theme-or-device-preference class to <html> itself on
@@ -35,6 +37,13 @@ import { format } from './i18n/format';
 
 export default function AuthGate({ children }: { children: ReactNode }) {
   const t = useTranslation();
+  const location = useLocation();
+  // Landing page ("/") is public marketing content — it must render
+  // instantly for every visitor (new or returning) without waiting on
+  // Firebase's auth check or any cloud hydration. Only /onboarding and
+  // /dashboard actually need a signed-in user and their synced data, so
+  // only those routes go through the loading/sign-in gate below.
+  const isPublicRoute = location.pathname === '/';
   const [user, setUser] = useState<User | null | 'loading'>('loading');
   const [mode, setMode] = useState<'signin' | 'create'>('signin');
   const [name, setName] = useState('');
@@ -85,6 +94,15 @@ export default function AuthGate({ children }: { children: ReactNode }) {
     if (loadSavedTheme() === 'dark') root.classList.add('dark');
     else root.classList.remove('dark');
   }, []);
+
+  // Landing page renders immediately, no matter what `user` currently is —
+  // the onAuthChange listener above still runs in the background, so by
+  // the time the visitor clicks through to /onboarding or /dashboard, the
+  // auth state (and, for a returning user, their hydrated cloud data) is
+  // usually already resolved and that route won't need to wait either.
+  if (isPublicRoute) {
+    return <>{children}</>;
+  }
 
   if (user === 'loading') {
     return (
