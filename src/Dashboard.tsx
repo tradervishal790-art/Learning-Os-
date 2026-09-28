@@ -13,6 +13,7 @@ import { buildCandidatePoolForConcept } from './conceptVideoPool';
 import { selectPlaylistForConcept, analyzedVideoToVideo } from './PlaylistBuilder';
 import { expandSearchQuery } from './queryExpander';
 import { useTheme } from './ThemeContext';
+import { signOutOfApp, getCurrentUser } from './authStore';
 import type { DashboardPageId, PageConfig, UserOnboardingData, LearningProfile, Video, Topic, Goal, TopicBridge } from './types';
 import HintBubble from './HintBubble';
 import Onborda from './Onborda';
@@ -1108,6 +1109,23 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                     )}
                   </div>
                 )}
+
+                {/* Account — sign out lives here now, inside Settings,
+                    instead of a floating button on every screen. */}
+                <div className="pt-2 border-t border-gray-200 dark:border-white/10">
+                  <label className="block text-xs uppercase tracking-wider text-gray-400 dark:text-white/40 mb-2 mt-4">
+                    {t.settingsModal.accountSection.label}
+                  </label>
+                  <p className="text-xs text-gray-400 dark:text-white/40 mb-3">
+                    {format(t.settingsModal.accountSection.signedInAs, getCurrentUser()?.displayName || getCurrentUser()?.email || '')}
+                  </p>
+                  <button
+                    onClick={() => signOutOfApp()}
+                    className="w-full py-2.5 rounded-xl border border-gray-300 dark:border-white/10 text-sm font-medium hover:bg-gray-100 dark:hover:bg-white/10 transition"
+                  >
+                    {t.settingsModal.accountSection.signOutCta}
+                  </button>
+                </div>
               </div>
 
               <div className="p-6 pt-0">

@@ -145,6 +145,11 @@ export interface TranslationShape {
     };
     saveCta: string;
     deadlineNone: string;
+    accountSection: {
+      label: string;
+      signedInAs: string; // "Signed in as {0}"
+      signOutCta: string;
+    };
   };
   customPlaylistModal: {
     title: string;
@@ -636,6 +641,11 @@ export const translations: Record<Locale, TranslationShape> = {
       },
       saveCta: 'Save',
       deadlineNone: 'None',
+      accountSection: {
+        label: 'Account',
+        signedInAs: 'Signed in as {0}',
+        signOutCta: 'Sign Out',
+      },
     },
     customPlaylistModal: {
       title: 'Custom Playlist',
@@ -1430,6 +1440,11 @@ export const translations: Record<Locale, TranslationShape> = {
       },
       saveCta: 'सेव करें',
       deadlineNone: 'कोई नहीं',
+      accountSection: {
+        label: 'अकाउंट',
+        signedInAs: '{0} के रूप में साइन इन है',
+        signOutCta: 'साइन आउट',
+      },
     },
     customPlaylistModal: {
       title: 'कस्टम प्लेलिस्ट',
@@ -2218,6 +2233,11 @@ export const translations: Record<Locale, TranslationShape> = {
       },
       saveCta: 'Save',
       deadlineNone: 'None',
+      accountSection: {
+        label: 'Account',
+        signedInAs: 'Signed in as {0}',
+        signOutCta: 'Sign Out',
+      },
     },
     customPlaylistModal: {
       title: 'Custom Playlist',

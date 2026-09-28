@@ -7,11 +7,9 @@ import {
   createProfileLockAccount as createAccount,
   signInProfileLock as signIn,
   signInWithGoogleProfileLock as signInWithGoogle,
-  signOutOfApp,
 } from './authStore';
 import { loadSavedTheme } from './ThemeContext';
 import { useTranslation } from './i18n/LanguageContext';
-import { format } from './i18n/format';
 
 // ============================================================
 // AuthGate.tsx
@@ -85,19 +83,7 @@ export default function AuthGate({ children }: { children: ReactNode }) {
   }
 
   if (user) {
-    return (
-      <>
-        {children}
-        {/* Small always-available sign-out affordance, since this gate
-            replaces the app's previous "no login" state entirely. */}
-        <button
-          onClick={() => signOutOfApp()}
-          className="fixed bottom-4 right-4 z-50 text-xs px-3 py-1.5 rounded-full bg-white/70 dark:bg-black/70 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white border border-black/10 dark:border-white/10 backdrop-blur"
-        >
-          {format(t.authScreen.signOutBtn, user.displayName || user.email || '')}
-        </button>
-      </>
-    );
+    return <>{children}</>;
   }
 
   const submit = async () => {
