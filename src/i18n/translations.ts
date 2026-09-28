@@ -220,6 +220,17 @@ export interface TranslationShape {
     popupClosedByUser: string;
     genericAuthError: string;
   };
+  sectionLock: {
+    title: string;
+    subtitle: string;
+    subtitleGoogle: string;
+    passwordPlaceholder: string;
+    unlockCta: string;
+    googleCta: string;
+    checking: string;
+    enterPassword: string;
+    lockNow: string;
+  };
   authScreen: {
     signOutBtn: string; // "Sign out ({0})"
     subtitleCreate: string;
@@ -1022,6 +1033,17 @@ export const translations: Record<Locale, TranslationShape> = {
       popupBlocked: 'Your browser blocked the popup — allow popups and try again.',
       popupClosedByUser: 'The Google popup was closed before sign-in completed.',
       genericAuthError: 'Something went wrong, please try again.',
+    },
+    sectionLock: {
+      title: 'This section is locked',
+      subtitle: 'Enter your account password to open it. It stays unlocked until you close the tab or tap Lock.',
+      subtitleGoogle: 'Confirm with your Google account to open it. It stays unlocked until you close the tab or tap Lock.',
+      passwordPlaceholder: 'Password',
+      unlockCta: 'Unlock',
+      googleCta: 'Confirm with Google',
+      checking: 'Checking...',
+      enterPassword: 'Enter your password.',
+      lockNow: 'Lock',
     },
     authScreen: {
       signOutBtn: 'Sign out ({0})',
@@ -1861,6 +1883,17 @@ export const translations: Record<Locale, TranslationShape> = {
       popupClosedByUser: 'Google पॉपअप बंद हो गया साइन-इन पूरा होने से पहले।',
       genericAuthError: 'कुछ गड़बड़ हो गई, दोबारा कोशिश करें।',
     },
+    sectionLock: {
+      title: 'यह सेक्शन लॉक है',
+      subtitle: 'इसे खोलने के लिए अपने अकाउंट का पासवर्ड डालें। टैब बंद करने या Lock दबाने तक यह खुला रहेगा।',
+      subtitleGoogle: 'इसे खोलने के लिए अपने Google अकाउंट से पुष्टि करें। टैब बंद करने या Lock दबाने तक यह खुला रहेगा।',
+      passwordPlaceholder: 'पासवर्ड',
+      unlockCta: 'अनलॉक करें',
+      googleCta: 'Google से पुष्टि करें',
+      checking: 'जांच हो रही है...',
+      enterPassword: 'अपना पासवर्ड डालें।',
+      lockNow: 'लॉक',
+    },
     authScreen: {
       signOutBtn: 'साइन आउट ({0})',
       subtitleCreate: 'नया अकाउंट बनाएं',
@@ -2695,6 +2728,17 @@ export const translations: Record<Locale, TranslationShape> = {
       popupBlocked: 'Browser ne popup block kar diya — popup allow karo aur dobara try karo.',
       popupClosedByUser: 'Google popup band ho gaya sign-in complete hone se pehle.',
       genericAuthError: 'Kuch gadbad ho gayi, dobara try karo.',
+    },
+    sectionLock: {
+      title: 'Ye section locked hai',
+      subtitle: 'Kholne ke liye apne account ka password daalo. Tab band karne ya Lock dabane tak ye khula rahega.',
+      subtitleGoogle: 'Kholne ke liye apne Google account se confirm karo. Tab band karne ya Lock dabane tak ye khula rahega.',
+      passwordPlaceholder: 'Password',
+      unlockCta: 'Unlock Karo',
+      googleCta: 'Google se Confirm Karo',
+      checking: 'Check ho raha hai...',
+      enterPassword: 'Apna password daalo.',
+      lockNow: 'Lock',
     },
     authScreen: {
       signOutBtn: 'Sign out ({0})',
