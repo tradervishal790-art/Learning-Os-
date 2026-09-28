@@ -1,3 +1,4 @@
+import { authFetch } from './apiFetch';
 interface Blueprint {
   role: string;
   goal: string;
@@ -50,7 +51,7 @@ export async function expandSearchQuery(
   if (cache[key]) return cache[key];
 
   try {
-    const res = await fetch('/api/expand-query', {
+    const res = await authFetch('/api/expand-query', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userInput, blueprint }),

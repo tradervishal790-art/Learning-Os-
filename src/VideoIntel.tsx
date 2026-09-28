@@ -15,6 +15,7 @@ import { useOnborda } from './OnbordaContext';
 import { hasSeenTour, markTourSeen } from './tourStore';
 import { useTranslation } from './i18n/LanguageContext';
 import { format } from './i18n/format';
+import { authFetch } from './apiFetch';
 
 declare global {
   interface Window {
@@ -431,7 +432,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
     if (!previousFacts || !nextFacts) return; // keep the unverified baseBridge
 
     try {
-      const res = await fetch('/api/verify-bridge', {
+      const res = await authFetch('/api/verify-bridge', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -688,7 +689,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
     nextPageTokenRef.current = null; // fresh query — start pagination over
 
     try {
-      const res = await fetch(
+      const res = await authFetch(
         `/api/youtube?maxResults=12&q=${encodeURIComponent(searchQuery)}`
       );
       const data = await res.json();
@@ -741,7 +742,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
     if (!nextPageTokenRef.current) return [];
 
     try {
-      const res = await fetch(
+      const res = await authFetch(
         `/api/youtube?maxResults=12&q=${encodeURIComponent(searchQuery)}&pageToken=${encodeURIComponent(nextPageTokenRef.current)}`
       );
       const data = await res.json();

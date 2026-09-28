@@ -14,6 +14,7 @@
 // maps onto LearningProfile, same as before.
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { requireUser } from './_lib/auth.js';
 import { generateAIText } from './_lib/aiFallback.js';
 
 interface AnswerPayload {
@@ -90,6 +91,9 @@ function validateComplete(parsed: any): boolean {
 
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  const uid = await requireUser(req, res);
+  if (!uid) return;
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'POST only' });
   }

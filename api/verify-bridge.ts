@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { requireUser } from './_lib/auth.js';
 import { verifyBridgeConnection, type ConnectorFacts } from './_lib/bridgeVerify.js';
 
 // ============================================================
@@ -15,6 +16,9 @@ import { verifyBridgeConnection, type ConnectorFacts } from './_lib/bridgeVerify
 // ============================================================
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  const uid = await requireUser(req, res);
+  if (!uid) return;
+
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed' });
     return;

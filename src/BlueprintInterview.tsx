@@ -6,6 +6,7 @@ import BlueprintRadar, { getDimensionOrder } from './BlueprintRadar';
 import { getGrade, getVerdict } from './blueprintGrading';
 import { useTranslation, useLanguage } from './i18n/LanguageContext';
 import { format } from './i18n/format';
+import { authFetch } from './apiFetch';
 
 // ============================================================
 // BlueprintInterview.tsx — v2
@@ -29,7 +30,7 @@ interface AnswerRecord {
 type Phase = 'answering' | 'analyzing' | 'done' | 'error';
 
 async function callAnalysisApi(answers: AnswerRecord[], genericErrorMsg: string, locale: string): Promise<any> {
-  const response = await fetch('/api/blueprint-interview', {
+  const response = await authFetch('/api/blueprint-interview', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ answers, locale }),

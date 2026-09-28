@@ -6,6 +6,7 @@ import type { LearningProfile, TasteVideoResult } from './types';
 import HintBubble from './HintBubble';
 import { useTranslation } from './i18n/LanguageContext';
 import { format } from './i18n/format';
+import { authFetch } from './apiFetch';
 
 // ============================================================
 // TasteOnboarding.tsx
@@ -102,7 +103,7 @@ export default function TasteOnboarding({ onComplete, onClose }: TasteOnboarding
 
       updateEntry(entry.id, { status: 'analyzing' });
       try {
-        const res = await fetch('/api/analyze-taste-video', {
+        const res = await authFetch('/api/analyze-taste-video', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ videoId }),

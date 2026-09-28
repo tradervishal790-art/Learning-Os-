@@ -7,6 +7,7 @@
 // conversation content, never the key.
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { requireUser } from './_lib/auth.js';
 import { generateAIText } from './_lib/aiFallback.js';
 import { buildMentorContents, type HistoryMessage } from './_lib/mentorHistory.js';
 import { formatStudentContext } from './_lib/mentorPrompt.js';
@@ -37,6 +38,9 @@ Content Rules:
 - End mein ek clear next step suggest karein`;
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  const uid = await requireUser(req, res);
+  if (!uid) return;
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'POST only' });
   }

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Search, X } from 'lucide-react';
 import { useTranslation, useLanguage } from './i18n/LanguageContext';
+import { authFetch } from './apiFetch';
 
 interface SerpResult {
   title: string;
@@ -32,7 +33,7 @@ function displayUrl(url: string): string {
 }
 
 async function runResearch(query: string, genericErrorMsg: string, locale: string): Promise<ResearchResponse> {
-  const response = await fetch('/api/research', {
+  const response = await authFetch('/api/research', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ query, locale }),

@@ -21,6 +21,7 @@
 // Mentor.tsx/Research.tsx. Nothing here runs unless the user clicks a
 // button for it, so the feature's normal (zero-AI) cost is unchanged.
 import type { TestQuestion, MCQQuestion, SubjectiveQuestion } from './types';
+import { authFetch } from './apiFetch';
 
 // ---------- 1. Answer-key generation ----------
 
@@ -45,7 +46,7 @@ export function findMissingAnswers(questions: TestQuestion[]): TestQuestion[] {
 
 export async function generateAnswerKey(items: AnswerKeyRequestItem[]): Promise<AnswerKeyResult[]> {
   if (items.length === 0) return [];
-  const response = await fetch('/api/generate-answer-key', {
+  const response = await authFetch('/api/generate-answer-key', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ questions: items }),
@@ -92,7 +93,7 @@ export interface AnswerCheckResult {
 
 export async function checkAnswersWithAI(items: AnswerCheckRequestItem[]): Promise<AnswerCheckResult[]> {
   if (items.length === 0) return [];
-  const response = await fetch('/api/grade-answer', {
+  const response = await authFetch('/api/grade-answer', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ items }),

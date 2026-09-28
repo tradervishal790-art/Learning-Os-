@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { authFetch } from './apiFetch';
 
 // Reuses the same server proxy Mentor.tsx already calls — no new API
 // endpoint needed. We just scope the conversation to one topic and ask
@@ -9,7 +10,7 @@ async function callMentorChat(
   context: string,
   history: { role: 'user' | 'mentor'; content: string }[]
 ): Promise<string> {
-  const response = await fetch('/api/mentor-chat', {
+  const response = await authFetch('/api/mentor-chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ userMessage, context, history: history.slice(-6) }),

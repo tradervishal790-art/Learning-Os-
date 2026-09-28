@@ -28,11 +28,15 @@
 // anything under 3 minutes before returning to the client.
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { requireUser } from './_lib/auth.js';
 import { fetchVideoMeta } from './_lib/youtubeMeta.js';
 
 const MIN_DURATION_SECONDS = 180; // 3 minutes — drops YouTube Shorts
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  const uid = await requireUser(req, res);
+  if (!uid) return;
+
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'GET only' });
   }

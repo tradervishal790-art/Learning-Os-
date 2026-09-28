@@ -1,5 +1,6 @@
 import type { Topic } from './types';
 import type { AnalyzedVideo, TeachingDimensions } from './PlaylistBuilder';
+import { authFetch } from './apiFetch';
 
 // ============================================================
 // conceptVideoPool.ts
@@ -166,7 +167,7 @@ async function getCandidateVideos(
   for (const query of queries) {
     try {
       const langParam = relevanceLanguage ? `&relevanceLanguage=${relevanceLanguage}` : '';
-      const res = await fetch(
+      const res = await authFetch(
         `/api/youtube?maxResults=${perQueryLimit}&q=${encodeURIComponent(query)}${langParam}`
       );
       const data = await res.json();
@@ -218,7 +219,7 @@ async function getAnalyzedProfile(candidate: CandidateMeta): Promise<GeminiProfi
   if (cache[candidate.videoId]) return cache[candidate.videoId].profile;
 
   try {
-    const res = await fetch('/api/analyze-video', {
+    const res = await authFetch('/api/analyze-video', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

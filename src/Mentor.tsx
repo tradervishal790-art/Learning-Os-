@@ -4,6 +4,7 @@ import { useTranslation, useLanguage } from './i18n/LanguageContext';
 import { format } from './i18n/format';
 import type { TranslationShape } from './i18n/translations';
 import { buildMentorStudentContext } from './mentorContext';
+import { authFetch } from './apiFetch';
 
 const WELCOME_ID = 'welcome';
 
@@ -33,7 +34,7 @@ async function generateMentorResponse(
   locale: string
 ): Promise<string> {
   try {
-    const response = await fetch('/api/mentor-chat', {
+    const response = await authFetch('/api/mentor-chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

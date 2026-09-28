@@ -12,6 +12,7 @@ import { saveRoadmapData } from './roadmapData';
 import { getGoals, getActiveGoals, addGoal, endGoal as endGoalInStore, updateGoal, saveGoals, MAX_ACTIVE_GOALS, hydrateGoalsFromCloud } from './goalsStore';
 import { useTranslation, useLanguage, mapOnboardingLanguage } from './i18n/LanguageContext';
 import radheRadheLogo from './assets/brand/radhe-radhe.png';
+import { authFetch } from './apiFetch';
 
 // Onboarding3D is its own route ("/onboarding") — no need to ship it in the
 // initial landing/dashboard bundle, so it's loaded on demand only.
@@ -127,7 +128,7 @@ function App() {
   const generateAndSaveRoadmap = async (data: UserOnboardingData, goalId?: string): Promise<boolean> => {
     try {
       const learningProfile = getLearningProfile();
-      const res = await fetch('/api/generate-roadmap', {
+      const res = await authFetch('/api/generate-roadmap', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...data, ...(learningProfile ? { learningProfile } : {}) }),

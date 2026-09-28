@@ -20,6 +20,7 @@
 // "no live sources" instead of pretending otherwise.
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { requireUser } from './_lib/auth.js';
 import { generateAIText } from './_lib/aiFallback.js';
 
 interface ResearchResult {
@@ -128,6 +129,9 @@ async function groundedGeminiSearch(query: string, apiKey: string, locale: Local
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  const uid = await requireUser(req, res);
+  if (!uid) return;
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'POST only' });
   }

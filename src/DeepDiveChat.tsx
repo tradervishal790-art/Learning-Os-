@@ -5,13 +5,14 @@ import { getLearningProfile, mergeLearningProfile } from './learningProfileStore
 import type { LearningProfile } from './types';
 import { useTranslation } from './i18n/LanguageContext';
 import { format } from './i18n/format';
+import { authFetch } from './apiFetch';
 
 // Gemini call now happens server-side (api/deep-dive-extract.ts) — the
 // key was previously exposed in the client bundle via
 // `import.meta.env.VITE_GEMINI_API_KEY`. The prompt itself isn't
 // sensitive, so it's still built client-side and just sent along.
 async function callGemini(prompt: string): Promise<string> {
-  const response = await fetch('/api/deep-dive-extract', {
+  const response = await authFetch('/api/deep-dive-extract', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ prompt }),

@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useTranslation } from './i18n/LanguageContext';
 import type { TranslationShape } from './i18n/translations';
+import { authFetch } from './apiFetch';
 
 // Lightweight markdown renderer for myNotes (## headings, - bullets,
 // **bold**, blank-line paragraph breaks) — no react-markdown dependency
@@ -122,7 +123,7 @@ interface DeepNotesData {
 // the real transcript instead of generic title-based generation) and
 // gets the parsed notes object back.
 async function generateDeepNotes(topic: string, videoContext?: string, videoId?: string): Promise<DeepNotesData> {
-  const response = await fetch('/api/generate-notes', {
+  const response = await authFetch('/api/generate-notes', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ topic, videoContext, videoId }),
@@ -153,7 +154,7 @@ function extractVideoId(url: string): string | null {
 }
 
 async function fetchVideoMeta(videoId: string): Promise<{ title: string; description: string }> {
-  const res = await fetch(`/api/youtube?id=${encodeURIComponent(videoId)}`);
+  const res = await authFetch(`/api/youtube?id=${encodeURIComponent(videoId)}`);
   if (!res.ok) throw new Error('YouTube meta fetch failed');
   const data = await res.json();
   if (!data?.title) throw new Error('Video not found');
