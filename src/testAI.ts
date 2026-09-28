@@ -46,7 +46,7 @@ export function findMissingAnswers(questions: TestQuestion[]): TestQuestion[] {
 
 export async function generateAnswerKey(items: AnswerKeyRequestItem[]): Promise<AnswerKeyResult[]> {
   if (items.length === 0) return [];
-  const response = await authFetch('/api/generate-answer-key', {
+  const response = await authFetch('/api/extract-questions?op=answer-key', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ questions: items }),
@@ -93,7 +93,7 @@ export interface AnswerCheckResult {
 
 export async function checkAnswersWithAI(items: AnswerCheckRequestItem[]): Promise<AnswerCheckResult[]> {
   if (items.length === 0) return [];
-  const response = await authFetch('/api/grade-answer', {
+  const response = await authFetch('/api/extract-questions?op=grade', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ items }),
