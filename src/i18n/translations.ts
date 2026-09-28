@@ -446,7 +446,7 @@ export const translations: Record<Locale, TranslationShape> = {
     },
     demo: {
       title: 'How It Works',
-      subtitle: 'Three steps from sign-up to mastery',
+      subtitle: 'Everything Learning OS does, in one walkthrough',
       startCta: 'Start →',
       dashboardCta: 'Dashboard →',
       steps: [
@@ -458,15 +458,57 @@ export const translations: Record<Locale, TranslationShape> = {
         },
         {
           icon: '🗺️',
-          title: '2. Get a roadmap',
+          title: '2. Get a personalized roadmap',
           description:
-            'Instead of a generic course list, you get a topic sequence built around your goal — with a "WHY layer" explaining why each topic matters.',
+            'Instead of a generic course list, you get a topic sequence built around your goal — with a "WHY layer" explaining why each topic matters, and exam-weightage badges when you\'re prepping for something specific like JEE or board exams.',
+        },
+        {
+          icon: '🎬',
+          title: '3. Video Intel',
+          description:
+            'Pick from curated videos per topic or lock in your own. Deep Notes analyzes the transcript into a structured, section-by-section breakdown so you don\'t have to re-watch to remember what mattered.',
+        },
+        {
+          icon: '📝',
+          title: '4. Notes',
+          description:
+            'Auto-generated notes from what you actually watched — human-style writing, not a wall of AI bullet points.',
         },
         {
           icon: '🔄',
-          title: '3. Learn, watch, retain',
+          title: '5. Revision Engine',
           description:
-            'Video Intel tracks what you actually watch and understand. The Revision Engine schedules spaced repetition (Day 1, 3, 7, 15, 30, 60) so concepts stick.',
+            'Spaced repetition on a proven schedule (Day 1, 3, 7, 15, 30, 60) so what you learn actually sticks instead of fading in a week.',
+        },
+        {
+          icon: '🤖',
+          title: '6. AI Mentor',
+          description:
+            'Stuck on something? Chat with a mentor that explains in a respectful, patient tone and adapts to how you talk.',
+        },
+        {
+          icon: '🔍',
+          title: '7. Research',
+          description:
+            'Go deeper on any topic with an AI-assisted research and deep-dive tool when the roadmap isn\'t enough.',
+        },
+        {
+          icon: '📊',
+          title: '8. Progress',
+          description:
+            'Real numbers from your real activity — completion %, streak, watch time, retention, and a mastery heatmap that shows exactly where you\'re weak.',
+        },
+        {
+          icon: '🧪',
+          title: '9. Test',
+          description:
+            'NTA/JEE-style exam mode with a timer and question palette. Build tests by hand, bulk-paste questions, or import from photos/PDFs of your textbook — AI can fill a missing answer key or check subjective answers, but only if you ask it to.',
+        },
+        {
+          icon: '📖',
+          title: '10. Dictionary',
+          description:
+            'Instant word lookup with pronunciation, built right into the app so you never have to leave to check a meaning.',
         },
       ],
     },
@@ -1245,7 +1287,7 @@ export const translations: Record<Locale, TranslationShape> = {
     },
     demo: {
       title: 'यह कैसे काम करता है',
-      subtitle: 'साइन-अप से महारत तक तीन कदम',
+      subtitle: 'Learning OS जो कुछ भी करता है, एक ही जगह',
       startCta: 'शुरू करें →',
       dashboardCta: 'डैशबोर्ड →',
       steps: [
@@ -1257,15 +1299,57 @@ export const translations: Record<Locale, TranslationShape> = {
         },
         {
           icon: '🗺️',
-          title: '2. रोडमैप पाएं',
+          title: '2. अपने हिसाब से रोडमैप पाएं',
           description:
-            'सामान्य कोर्स लिस्ट के बजाय, आपको अपने लक्ष्य के हिसाब से बना टॉपिक क्रम मिलता है — साथ में एक "WHY लेयर" जो बताती है हर टॉपिक क्यों ज़रूरी है।',
+            'सामान्य कोर्स लिस्ट के बजाय, आपको अपने लक्ष्य के हिसाब से बना टॉपिक क्रम मिलता है — साथ में एक "WHY लेयर" जो बताती है हर टॉपिक क्यों ज़रूरी है, और JEE या बोर्ड जैसी परीक्षा की तैयारी में exam-weightage बैज भी।',
+        },
+        {
+          icon: '🎬',
+          title: '3. Video Intel',
+          description:
+            'हर टॉपिक के लिए चुने हुए वीडियो में से पिक करें या अपना वीडियो लॉक करें। Deep Notes ट्रांसक्रिप्ट को सेक्शन-दर-सेक्शन ब्रेकडाउन में बदल देता है ताकि दोबारा देखने की ज़रूरत न पड़े।',
+        },
+        {
+          icon: '📝',
+          title: '4. नोट्स',
+          description:
+            'आपने जो असल में देखा उससे बने ऑटो-जेनरेटेड नोट्स — इंसान जैसी लेखनी, AI बुलेट पॉइंट्स की दीवार नहीं।',
         },
         {
           icon: '🔄',
-          title: '3. सीखें, देखें, याद रखें',
+          title: '5. Revision Engine',
           description:
-            'Video Intel ट्रैक करता है कि आपने असल में क्या देखा और समझा। Revision Engine स्पेस्ड रिपिटिशन (दिन 1, 3, 7, 15, 30, 60) शेड्यूल करता है ताकि कॉन्सेप्ट याद रहें।',
+            'एक साबित शेड्यूल पर स्पेस्ड रिपिटिशन (दिन 1, 3, 7, 15, 30, 60) ताकि जो सीखा वो असल में याद रहे, एक हफ़्ते में भूले नहीं।',
+        },
+        {
+          icon: '🤖',
+          title: '6. AI Mentor',
+          description:
+            'कहीं अटक गए? एक मेंटर से बात करें जो सम्मान और धैर्य के साथ समझाता है और आपके बात करने के तरीके के हिसाब से ढल जाता है।',
+        },
+        {
+          icon: '🔍',
+          title: '7. Research',
+          description:
+            'जब रोडमैप काफ़ी न लगे, तो किसी भी टॉपिक में AI-सहायता से गहराई में जाकर रिसर्च करें।',
+        },
+        {
+          icon: '📊',
+          title: '8. Progress',
+          description:
+            'आपकी असल एक्टिविटी से असली आंकड़े — completion %, streak, watch time, retention, और एक mastery heatmap जो बिल्कुल दिखाता है कि आप कहां कमज़ोर हैं।',
+        },
+        {
+          icon: '🧪',
+          title: '9. Test',
+          description:
+            'टाइमर और question palette के साथ NTA/JEE-स्टाइल एग्ज़ाम मोड। हाथ से टेस्ट बनाएं, सवाल bulk-paste करें, या अपनी किताब की फ़ोटो/PDF से import करें — AI मिसिंग आंसर-की भर सकता है या subjective जवाब चेक कर सकता है, पर सिर्फ़ तब जब आप कहें।',
+        },
+        {
+          icon: '📖',
+          title: '10. Dictionary',
+          description:
+            'उच्चारण के साथ तुरंत शब्द खोजें, ऐप के अंदर ही — मतलब देखने के लिए कहीं और जाने की ज़रूरत नहीं।',
         },
       ],
     },
@@ -2038,7 +2122,7 @@ export const translations: Record<Locale, TranslationShape> = {
     },
     demo: {
       title: 'Ye Kaise Kaam Karta Hai',
-      subtitle: 'Sign-up se mastery tak teen steps',
+      subtitle: 'Learning OS jo bhi karta hai, ek hi jagah',
       startCta: 'Shuru Karo →',
       dashboardCta: 'Dashboard →',
       steps: [
@@ -2050,15 +2134,57 @@ export const translations: Record<Locale, TranslationShape> = {
         },
         {
           icon: '🗺️',
-          title: '2. Roadmap pao',
+          title: '2. Apne hisaab se roadmap pao',
           description:
-            'Generic course list ke bajaye, tumhe apne goal ke hisaab se bana topic sequence milta hai — ek "WHY layer" ke saath jo batata hai har topic kyun zaroori hai.',
+            'Generic course list ke bajaye, tumhe apne goal ke hisaab se bana topic sequence milta hai — ek "WHY layer" ke saath jo batata hai har topic kyun zaroori hai, aur JEE ya board jaisi exam prep ke liye exam-weightage badges bhi.',
+        },
+        {
+          icon: '🎬',
+          title: '3. Video Intel',
+          description:
+            'Har topic ke curated videos mein se pick karo ya apna video lock karo. Deep Notes transcript ko section-by-section breakdown mein badal deta hai taaki dobara dekhne ki zaroorat na pade.',
+        },
+        {
+          icon: '📝',
+          title: '4. Notes',
+          description:
+            'Tumne jo asal mein dekha usse bane auto-generated notes — insaan jaisi likhavat, AI bullet points ki deewar nahi.',
         },
         {
           icon: '🔄',
-          title: '3. Seekho, dekho, yaad rakho',
+          title: '5. Revision Engine',
           description:
-            'Video Intel track karta hai ki tumne asal mein kya dekha aur samjha. Revision Engine spaced repetition (Day 1, 3, 7, 15, 30, 60) schedule karta hai taaki concepts yaad rahein.',
+            'Ek proven schedule pe spaced repetition (Day 1, 3, 7, 15, 30, 60) taaki jo seekha wo asal mein yaad rahe, ek hafte mein bhoole nahi.',
+        },
+        {
+          icon: '🤖',
+          title: '6. AI Mentor',
+          description:
+            'Kahin atak gaye? Ek mentor se baat karo jo respect aur patience ke saath samjhata hai aur tumhare baat karne ke tarike ke hisaab se dhal jata hai.',
+        },
+        {
+          icon: '🔍',
+          title: '7. Research',
+          description:
+            'Jab roadmap kaafi na lage, toh kisi bhi topic mein AI-assisted deep-dive research karo.',
+        },
+        {
+          icon: '📊',
+          title: '8. Progress',
+          description:
+            'Tumhari asal activity se real numbers — completion %, streak, watch time, retention, aur ek mastery heatmap jo bilkul dikhata hai tum kahan weak ho.',
+        },
+        {
+          icon: '🧪',
+          title: '9. Test',
+          description:
+            'Timer aur question palette ke saath NTA/JEE-style exam mode. Haath se test banao, questions bulk-paste karo, ya apni textbook ke photo/PDF se import karo — AI missing answer-key fill kar sakta hai ya subjective answer check kar sakta hai, lekin sirf tab jab tum kaho.',
+        },
+        {
+          icon: '📖',
+          title: '10. Dictionary',
+          description:
+            'Pronunciation ke saath instant word lookup, app ke andar hi — matlab dekhne ke liye kahin aur jaane ki zaroorat nahi.',
         },
       ],
     },
