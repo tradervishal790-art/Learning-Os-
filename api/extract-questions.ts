@@ -148,7 +148,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const { text, finishReason } = await generateAIText({
       geminiApiKey,
-      geminiModels: ['gemini-3.6-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite'],
+      geminiModels: ['gemini-3.1-flash-lite', 'gemini-3.5-flash-lite', 'gemini-3.6-flash'],
       contents: [
         {
           role: 'user',
