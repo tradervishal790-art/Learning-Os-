@@ -53,6 +53,9 @@ export interface AICallParams {
   /** Optional model chain. If set, each model is tried (across the whole key pool)
    *  in order, with one backoff retry pass on 429/5xx. Overrides geminiModel. */
   geminiModels?: string[];
+  /** Chain calls only: per-attempt timeout (default 18s) and total Gemini budget (default 48s). */
+  perCallTimeoutMs?: number;
+  totalBudgetMs?: number;
   minimaxModel?: string; // default MINIMAX_MODEL env var, else 'MiniMax-M3'
   systemInstruction?: string;
   contents: GeminiContent[];
@@ -147,7 +150,13 @@ async function tryGemini(
   try {
     const res = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
-      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+        // Chain calls: cap each attempt so one hung model can't eat the whole function budget (→ 504).
+        ...(params.geminiModels?.length ? { signal: AbortSignal.timeout(params.perCallTimeoutMs ?? 18000) } : {}),
+      }
     );
 
     if (!res.ok) {
@@ -258,13 +267,16 @@ export async function generateAIText(params: AICallParams): Promise<AICallResult
   // pool before giving up on Gemini entirely.
   const models = params.geminiModels?.length ? params.geminiModels : [params.geminiModel || DEFAULT_GEMINI_MODEL];
   const passes = params.geminiModels?.length ? 2 : 1; // chain calls get one backoff retry pass
+  const deadline = Date.now() + (params.totalBudgetMs ?? 48000);
   for (let pass = 0; pass < passes; pass++) {
     if (pass > 0) {
+      if (Date.now() + 20000 > deadline) break;
       if (![0, 429, 500, 502, 503, 504].includes(lastGeminiStatus)) break;
       await new Promise((r) => setTimeout(r, 2000));
     }
     for (const model of models) {
       for (let i = 0; i < geminiKeys.length; i++) {
+        if (params.geminiModels?.length && Date.now() > deadline - 3000) break;
         const result = await tryGemini(geminiKeys[i], params, model);
         if (result.ok === true) {
           console.log(`[aiFallback] Gemini ${model} key #${i + 1}/${geminiKeys.length} succeeded (pass ${pass + 1})`);

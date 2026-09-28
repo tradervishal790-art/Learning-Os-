@@ -158,7 +158,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       generationConfig: {
         responseMimeType: 'application/json',
         responseSchema: mode === 'questions' ? questionsSchema : answersSchema,
-        maxOutputTokens: 16000,
+        maxOutputTokens: 8000,
         temperature: 0,
       },
     });
