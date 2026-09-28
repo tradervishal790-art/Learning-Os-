@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation, useLanguage } from './i18n/LanguageContext';
 import { format } from './i18n/format';
 import type { TranslationShape } from './i18n/translations';
+import { buildMentorStudentContext } from './mentorContext';
 
 const WELCOME_ID = 'welcome';
 
@@ -40,6 +41,7 @@ async function generateMentorResponse(
         context,
         history: history.slice(-6).map((m) => ({ role: m.role, content: m.content })),
         locale,
+        studentContext: buildMentorStudentContext(),
       }),
     });
 

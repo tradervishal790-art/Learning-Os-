@@ -9,6 +9,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { generateAIText } from './_lib/aiFallback.js';
 import { buildMentorContents, type HistoryMessage } from './_lib/mentorHistory.js';
+import { formatStudentContext } from './_lib/mentorPrompt.js';
 
 type Locale = 'en' | 'hi' | 'hinglish';
 
@@ -40,10 +41,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'POST only' });
   }
 
-  const { userMessage, context, history, locale: rawLocale } = (req.body ?? {}) as {
+  const { userMessage, context, history, studentContext, locale: rawLocale } = (req.body ?? {}) as {
     userMessage?: string;
     context?: string;
     history?: HistoryMessage[];
+    studentContext?: unknown;
     locale?: string;
   };
 
@@ -65,7 +67,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { text } = await generateAIText({
       geminiApiKey: apiKey,
       minimaxApiKey,
-      systemInstruction: buildSystemInstructions(topic, locale),
+      systemInstruction: buildSystemInstructions(topic, locale) + formatStudentContext(studentContext),
       contents,
       generationConfig: { maxOutputTokens: 2048, temperature: 0.7 },
     });
