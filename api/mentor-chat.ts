@@ -8,11 +8,7 @@
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { generateAIText } from './_lib/aiFallback.js';
-
-interface HistoryMessage {
-  role: 'user' | 'mentor';
-  content: string;
-}
+import { buildMentorContents, type HistoryMessage } from './_lib/mentorHistory.js';
 
 type Locale = 'en' | 'hi' | 'hinglish';
 
@@ -63,13 +59,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const topic = context || 'general learning';
-  const contents = [
-    ...(history ?? []).slice(-6).map((m) => ({
-      role: m.role === 'user' ? 'user' : 'model',
-      parts: [{ text: m.content }],
-    })),
-    { role: 'user', parts: [{ text: userMessage }] },
-  ];
+  const contents = buildMentorContents(history, userMessage);
 
   try {
     const { text } = await generateAIText({

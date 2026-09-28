@@ -4,6 +4,8 @@ import { useTranslation, useLanguage } from './i18n/LanguageContext';
 import { format } from './i18n/format';
 import type { TranslationShape } from './i18n/translations';
 
+const WELCOME_ID = 'welcome';
+
 interface Message {
   id: string;
   role: 'user' | 'mentor';
@@ -70,7 +72,7 @@ export default function Mentor() {
   const { locale } = useLanguage();
   const [messages, setMessages] = useState<Message[]>([
     {
-      id: '1',
+      id: WELCOME_ID,
       role: 'mentor',
       content: t.mentor.welcomeMessage,
       timestamp: new Date(),
@@ -105,12 +107,14 @@ export default function Mentor() {
       content: text,
       timestamp: new Date(),
     };
-    const updatedHistory = [...messages, userMsg];
-    setMessages(updatedHistory);
+    // History sent to the API = everything BEFORE this message, minus the
+    // canned welcome. The new message travels separately as `userMessage`.
+    const priorHistory = messages.filter((m) => m.id !== WELCOME_ID);
+    setMessages([...messages, userMsg]);
     setInput('');
     setLoading(true);
 
-    const reply = await generateMentorResponse(text, contextTopic, updatedHistory, t.mentor.errors, locale);
+    const reply = await generateMentorResponse(text, contextTopic, priorHistory, t.mentor.errors, locale);
 
     const mentorMsg: Message = {
       id: (Date.now() + 1).toString(),
