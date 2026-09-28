@@ -148,7 +148,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const { text, finishReason } = await generateAIText({
       geminiApiKey,
-      geminiModels: ['gemini-3.5-flash', 'gemini-flash-latest', 'gemini-3.5-flash-lite'],
+      geminiModels: ['gemini-3.6-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite'],
       contents: [
         {
           role: 'user',
@@ -159,7 +159,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         responseMimeType: 'application/json',
         responseSchema: mode === 'questions' ? questionsSchema : answersSchema,
         maxOutputTokens: 8000,
-        temperature: 0,
       },
     });
 
