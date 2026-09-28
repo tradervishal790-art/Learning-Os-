@@ -223,12 +223,12 @@ export interface TranslationShape {
   sectionLock: {
     title: string;
     subtitle: string;
-    subtitleGoogle: string;
     passwordPlaceholder: string;
     unlockCta: string;
-    googleCta: string;
     checking: string;
     enterPassword: string;
+    wrongPassword: string;
+    checkFailed: string;
     lockNow: string;
   };
   authScreen: {
@@ -1036,13 +1036,13 @@ export const translations: Record<Locale, TranslationShape> = {
     },
     sectionLock: {
       title: 'This section is locked',
-      subtitle: 'Enter your account password to open it. It stays unlocked until you close the tab or tap Lock.',
-      subtitleGoogle: 'Confirm with your Google account to open it. It stays unlocked until you close the tab or tap Lock.',
+      subtitle: 'Enter this section\'s password to open it. It stays unlocked until you close the tab or tap Lock.',
       passwordPlaceholder: 'Password',
       unlockCta: 'Unlock',
-      googleCta: 'Confirm with Google',
       checking: 'Checking...',
       enterPassword: 'Enter your password.',
+      wrongPassword: 'Wrong password. Try again.',
+      checkFailed: 'Could not check the password. Try again.',
       lockNow: 'Lock',
     },
     authScreen: {
@@ -1885,13 +1885,13 @@ export const translations: Record<Locale, TranslationShape> = {
     },
     sectionLock: {
       title: 'यह सेक्शन लॉक है',
-      subtitle: 'इसे खोलने के लिए अपने अकाउंट का पासवर्ड डालें। टैब बंद करने या Lock दबाने तक यह खुला रहेगा।',
-      subtitleGoogle: 'इसे खोलने के लिए अपने Google अकाउंट से पुष्टि करें। टैब बंद करने या Lock दबाने तक यह खुला रहेगा।',
+      subtitle: 'इसे खोलने के लिए इस सेक्शन का पासवर्ड डालें। टैब बंद करने या Lock दबाने तक यह खुला रहेगा।',
       passwordPlaceholder: 'पासवर्ड',
       unlockCta: 'अनलॉक करें',
-      googleCta: 'Google से पुष्टि करें',
       checking: 'जांच हो रही है...',
       enterPassword: 'अपना पासवर्ड डालें।',
+      wrongPassword: 'पासवर्ड गलत है। फिर कोशिश करें।',
+      checkFailed: 'पासवर्ड जांच नहीं हो पाई। फिर कोशिश करें।',
       lockNow: 'लॉक',
     },
     authScreen: {
@@ -2731,13 +2731,13 @@ export const translations: Record<Locale, TranslationShape> = {
     },
     sectionLock: {
       title: 'Ye section locked hai',
-      subtitle: 'Kholne ke liye apne account ka password daalo. Tab band karne ya Lock dabane tak ye khula rahega.',
-      subtitleGoogle: 'Kholne ke liye apne Google account se confirm karo. Tab band karne ya Lock dabane tak ye khula rahega.',
+      subtitle: 'Kholne ke liye is section ka password daalo. Tab band karne ya Lock dabane tak ye khula rahega.',
       passwordPlaceholder: 'Password',
       unlockCta: 'Unlock Karo',
-      googleCta: 'Google se Confirm Karo',
       checking: 'Check ho raha hai...',
       enterPassword: 'Apna password daalo.',
+      wrongPassword: 'Password galat hai. Phir try karo.',
+      checkFailed: 'Password check nahi ho paya. Phir try karo.',
       lockNow: 'Lock',
     },
     authScreen: {

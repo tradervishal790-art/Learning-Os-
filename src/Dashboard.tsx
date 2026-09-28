@@ -24,7 +24,7 @@ import { hasSeenTour, markTourSeen } from './tourStore';
 import { useTranslation } from './i18n/LanguageContext';
 import { format } from './i18n/format';
 import SectionLockGate from './SectionLockGate';
-import { isProtectedPage, lockSections, useSectionsUnlocked } from './sectionLock';
+import { lockSections, useAnySectionUnlocked } from './sectionLock';
 
 // Every real "page" is lazy-loaded: each one only downloads once the user
 // actually navigates to its route, instead of every page's code shipping
@@ -302,7 +302,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   );
 
   const [showSidebar, setShowSidebar] = useState(false);
-  const sectionsUnlocked = useSectionsUnlocked();
+  const sectionsUnlocked = useAnySectionUnlocked();
   const [streak, setStreak] = useState(0);
   // Bell + sound reminder — computed once when the app/home page opens (not
   // only on navigating into the Revision tab), so nothing due gets missed.
@@ -930,7 +930,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
           </div>
         )}
 
-        <SectionLockGate enabled={isProtectedPage(activePage)}>
+        <SectionLockGate page={activePage}>
         {activePage === 'roadmap' && (
           <Roadmap
             key={`${roadmapVersion}-${activeGoalId}`}
