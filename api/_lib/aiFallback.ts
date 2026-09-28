@@ -50,6 +50,9 @@ export interface AICallParams {
   geminiApiKey?: string;
   minimaxApiKey?: string;
   geminiModel?: string; // default 'gemini-flash-latest'
+  /** Optional model chain. If set, each model is tried (across the whole key pool)
+   *  in order, with one backoff retry pass on 429/5xx. Overrides geminiModel. */
+  geminiModels?: string[];
   minimaxModel?: string; // default MINIMAX_MODEL env var, else 'MiniMax-M3'
   systemInstruction?: string;
   contents: GeminiContent[];
@@ -128,9 +131,10 @@ function getGeminiKeyPool(group: 'notes' | 'research', callerKey: string | undef
 
 async function tryGemini(
   apiKey: string,
-  params: AICallParams
+  params: AICallParams,
+  modelOverride?: string
 ): Promise<{ ok: true; text: string; finishReason: string | null } | { ok: false; status: number }> {
-  const model = params.geminiModel || DEFAULT_GEMINI_MODEL;
+  const model = modelOverride || params.geminiModel || DEFAULT_GEMINI_MODEL;
 
   const body: Record<string, any> = { contents: params.contents };
   if (params.systemInstruction) {
@@ -252,15 +256,25 @@ export async function generateAIText(params: AICallParams): Promise<AICallResult
   // overload, whatever) says nothing about the NEXT key — it's a
   // completely separate account/quota — so keep going through the whole
   // pool before giving up on Gemini entirely.
-  for (let i = 0; i < geminiKeys.length; i++) {
-    const result = await tryGemini(geminiKeys[i], params);
-    if (result.ok === true) {
-      console.log(`[aiFallback] Gemini key #${i + 1}/${geminiKeys.length} succeeded`);
-      return { text: result.text, provider: 'gemini', finishReason: result.finishReason };
+  const models = params.geminiModels?.length ? params.geminiModels : [params.geminiModel || DEFAULT_GEMINI_MODEL];
+  const passes = params.geminiModels?.length ? 2 : 1; // chain calls get one backoff retry pass
+  for (let pass = 0; pass < passes; pass++) {
+    if (pass > 0) {
+      if (![0, 429, 500, 502, 503, 504].includes(lastGeminiStatus)) break;
+      await new Promise((r) => setTimeout(r, 2000));
     }
-    const failed: { ok: false; status: number } = result;
-    console.warn(`[aiFallback] Gemini key #${i + 1}/${geminiKeys.length} failed (status ${failed.status}) — trying next`);
-    lastGeminiStatus = failed.status;
+    for (const model of models) {
+      for (let i = 0; i < geminiKeys.length; i++) {
+        const result = await tryGemini(geminiKeys[i], params, model);
+        if (result.ok === true) {
+          console.log(`[aiFallback] Gemini ${model} key #${i + 1}/${geminiKeys.length} succeeded (pass ${pass + 1})`);
+          return { text: result.text, provider: 'gemini', finishReason: result.finishReason };
+        }
+        const failed: { ok: false; status: number } = result;
+        console.warn(`[aiFallback] Gemini ${model} key #${i + 1}/${geminiKeys.length} failed (status ${failed.status}) — trying next`);
+        lastGeminiStatus = failed.status;
+      }
+    }
   }
 
   if (hasVideoParts(params.contents)) {
