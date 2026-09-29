@@ -34,17 +34,16 @@ function saveAttempts(attempts: TestAttempt[]): void {
   void pushToCloud(CLOUD_KEY, attempts);
 }
 
-/** Called once, the first time the Test page is opened (see Test.tsx). */
+/** Called once, the first time the Test page is opened (see Test.tsx). Merges cloud + this device by id, so history from other devices is never lost or overwritten. */
 export async function hydrateTestAttemptsFromCloud(): Promise<void> {
-  if (loadAttempts().length > 0) return; // this device already has history — don't clobber it
   const cloud = await pullFromCloud<TestAttempt[]>(CLOUD_KEY);
-  if (cloud && cloud.length > 0) {
-    try {
-      localStorage.setItem(TEST_ATTEMPTS_STORAGE_KEY, JSON.stringify(cloud));
-    } catch {
-      // Best-effort.
-    }
-  }
+  if (!cloud || cloud.length === 0) return;
+  const local = loadAttempts();
+  const known = new Set(local.map((a) => a.id));
+  const extra = cloud.filter((a) => !known.has(a.id));
+  if (extra.length === 0) return;
+  const merged = [...local, ...extra].sort((a, b) => (a.completedAt < b.completedAt ? 1 : -1)).slice(0, MAX_STORED_ATTEMPTS);
+  saveAttempts(merged);
 }
 
 export function getTestAttempts(): TestAttempt[] {

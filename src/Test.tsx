@@ -8,6 +8,7 @@ import { getTestAttempts, saveTestAttempt, updateTestAttempt, hydrateTestAttempt
 import { buildInitialResults, selfGradeSubjective, computeTotalMarks, computeObtainedMarks, computeScorePercent, pendingSelfGradeCount, isAnswered } from './testGrading';
 import { downloadTestResultPdf } from './testPdf';
 import TestBuilder from './TestBuilder';
+import { loadDraft, saveDraft, clearDraft } from './testDraft';
 
 // ============================================================
 // Test.tsx — "Test" tab (Dashboard renders <Test /> with no props).
@@ -32,17 +33,22 @@ function formatClock(totalSeconds: number): string {
 }
 
 export default function Test() {
-  const [stage, setStage] = useState<Stage>('list');
+  // Resume an unfinished test after refresh / tab close (see testDraft.ts).
+  const [draft] = useState(() => loadDraft());
+  const [stage, setStage] = useState<Stage>(draft ? 'taking' : 'list');
   const [papers, setPapers] = useState<TestPaper[]>([]);
   const [history, setHistory] = useState<TestAttempt[]>([]);
   const [editingPaper, setEditingPaper] = useState<TestPaper | null>(null);
-  const [activePaper, setActivePaper] = useState<TestPaper | null>(null);
+  const [activePaper, setActivePaper] = useState<TestPaper | null>(draft?.paper ?? null);
 
   // ── taking-stage state ──────────────────────────────────────────────
-  const [step, setStep] = useState(0);
-  const [answers, setAnswers] = useState<TestUserAnswer[]>([]);
-  const [statusMap, setStatusMap] = useState<Record<string, QuestionStatus>>({});
-  const [secondsElapsed, setSecondsElapsed] = useState(0);
+  const [step, setStep] = useState(draft?.step ?? 0);
+  const [answers, setAnswers] = useState<TestUserAnswer[]>(draft?.answers ?? []);
+  const [statusMap, setStatusMap] = useState<Record<string, QuestionStatus>>((draft?.statusMap as Record<string, QuestionStatus>) ?? {});
+  // Wall-clock start time: the timer is derived from this, not from counting
+  // interval ticks (browsers throttle intervals in background tabs).
+  const startedAtRef = useRef<number>(draft?.startedAt ?? 0);
+  const [secondsElapsed, setSecondsElapsed] = useState(draft ? Math.floor((Date.now() - draft.startedAt) / 1000) : 0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const [attempt, setAttempt] = useState<TestAttempt | null>(null);
@@ -52,16 +58,12 @@ export default function Test() {
   // reads the current paper/answers/elapsed time instead of a stale closure.
   const activePaperRef = useRef(activePaper);
   const answersRef = useRef(answers);
-  const secondsElapsedRef = useRef(secondsElapsed);
   useEffect(() => {
     activePaperRef.current = activePaper;
   }, [activePaper]);
   useEffect(() => {
     answersRef.current = answers;
   }, [answers]);
-  useEffect(() => {
-    secondsElapsedRef.current = secondsElapsed;
-  }, [secondsElapsed]);
 
   const refresh = useCallback(() => {
     setPapers(getTestPapers());
@@ -89,11 +91,19 @@ export default function Test() {
       if (timerRef.current) clearInterval(timerRef.current);
       return;
     }
-    timerRef.current = setInterval(() => setSecondsElapsed((s) => s + 1), 1000);
+    const tick = () => setSecondsElapsed(Math.max(0, Math.floor((Date.now() - startedAtRef.current) / 1000)));
+    tick();
+    timerRef.current = setInterval(tick, 500);
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, [stage]);
+
+  // Persist progress on every change while taking a test.
+  useEffect(() => {
+    if (stage !== 'taking' || !activePaper) return;
+    saveDraft({ paper: activePaper, answers, statusMap, step, startedAt: startedAtRef.current });
+  }, [stage, activePaper, answers, statusMap, step]);
 
   const timeLimitSeconds = (activePaper?.durationMinutes ?? 0) * 60;
   const timeLeft = timeLimitSeconds > 0 ? timeLimitSeconds - secondsElapsed : null;
@@ -135,6 +145,7 @@ export default function Test() {
     setAnswers(initialAnswers);
     setStatusMap(initialStatus);
     setStep(0);
+    startedAtRef.current = Date.now();
     setSecondsElapsed(0);
     setStage('taking');
   };
@@ -186,6 +197,10 @@ export default function Test() {
     const paper = activePaperRef.current;
     if (!paper) return;
     const currentAnswers = answersRef.current;
+    const limit = paper.durationMinutes * 60;
+    const rawTaken = Math.max(0, Math.floor((Date.now() - startedAtRef.current) / 1000));
+    const timeTaken = limit > 0 ? Math.min(rawTaken, limit) : rawTaken;
+    clearDraft();
     const results = buildInitialResults(paper.questions, currentAnswers);
     const totalMarks = computeTotalMarks(paper.questions);
     const obtainedMarks = computeObtainedMarks(results);
@@ -195,7 +210,7 @@ export default function Test() {
       testTitle: paper.title,
       topic: paper.topic,
       completedAt: new Date().toISOString(),
-      timeTakenSeconds: secondsElapsedRef.current,
+      timeTakenSeconds: timeTaken,
       questions: paper.questions,
       answers: currentAnswers,
       results,

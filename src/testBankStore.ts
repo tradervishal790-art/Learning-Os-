@@ -33,17 +33,20 @@ function savePapers(papers: TestPaper[]): void {
   void pushToCloud(CLOUD_KEY, papers);
 }
 
-/** Called once, the first time the Test page is opened (see Test.tsx). */
+/** Called once, the first time the Test page is opened (see Test.tsx). Merges cloud + this device by id (newest edit wins), so papers from other devices are never lost or overwritten. */
 export async function hydrateTestBankFromCloud(): Promise<void> {
-  if (loadPapers().length > 0) return; // this device already has papers — don't clobber them
   const cloud = await pullFromCloud<TestPaper[]>(CLOUD_KEY);
-  if (cloud && cloud.length > 0) {
-    try {
-      localStorage.setItem(TEST_BANK_STORAGE_KEY, JSON.stringify(cloud));
-    } catch {
-      // Best-effort.
+  if (!cloud || cloud.length === 0) return;
+  const byId = new Map(loadPapers().map((p) => [p.id, p]));
+  let changed = false;
+  for (const c of cloud) {
+    const l = byId.get(c.id);
+    if (!l || l.updatedAt < c.updatedAt) {
+      byId.set(c.id, c);
+      changed = true;
     }
   }
+  if (changed) savePapers([...byId.values()]);
 }
 
 export function getTestPapers(): TestPaper[] {
