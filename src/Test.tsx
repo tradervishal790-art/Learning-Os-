@@ -8,13 +8,15 @@ import { getTestAttempts, saveTestAttempt, updateTestAttempt, hydrateTestAttempt
 import { buildInitialResults, selfGradeSubjective, computeTotalMarks, computeObtainedMarks, computeScorePercent, pendingSelfGradeCount, isAnswered } from './testGrading';
 import { downloadTestResultPdf } from './testPdf';
 import TestBuilder from './TestBuilder';
+import TestAnalysis from './TestAnalysis';
 import { loadDraft, saveDraft, clearDraft } from './testDraft';
 
 // ============================================================
 // Test.tsx — "Test" tab (Dashboard renders <Test /> with no props).
 // Every question is authored by hand in TestBuilder.tsx and stored in
-// testBankStore.ts. NO AI anywhere in the Test section — the only AI use is
-// reading questions/answers from photos/PDFs (PhotoImport.tsx). Flow:
+// testBankStore.ts. AI is used in exactly two places: reading questions/answers
+// from photos/PDFs (PhotoImport.tsx), and ONE study suggestion on the results
+// screen (TestAnalysis.tsx, button press only). All other analysis is on-device. Flow:
 //   list         → pick a saved test paper, or create/edit/delete one
 //   instructions → duration, marking scheme, palette legend, Start
 //   taking       → NTA/JEE-Main-style exam UI: timer, question palette,
@@ -255,6 +257,13 @@ export default function Test() {
     setAttempt(updated);
   };
 
+  const handleSaveInsight = (insight: string) => {
+    if (!attempt) return;
+    const updated: TestAttempt = { ...attempt, insight };
+    updateTestAttempt(updated);
+    setAttempt(updated);
+  };
+
   return (
     <div className="min-h-screen bg-white dark:bg-black text-black dark:text-white p-4 md:p-8">
       {stage !== 'taking' && (
@@ -301,7 +310,7 @@ export default function Test() {
       )}
 
       {stage === 'results' && attempt && (
-        <ResultsDashboard attempt={attempt} onSelfGrade={handleSelfGrade} onRetake={startOver} />
+        <ResultsDashboard attempt={attempt} allAttempts={history} onSaveInsight={handleSaveInsight} onSelfGrade={handleSelfGrade} onRetake={startOver} />
       )}
     </div>
   );
@@ -644,10 +653,14 @@ function TakingScreen({
 // ============================================================
 function ResultsDashboard({
   attempt,
+  allAttempts,
+  onSaveInsight,
   onSelfGrade,
   onRetake,
 }: {
   attempt: TestAttempt;
+  allAttempts: TestAttempt[];
+  onSaveInsight: (text: string) => void;
   onSelfGrade: (questionId: string, isCorrect: boolean, marks: number) => void;
   onRetake: () => void;
 }) {
@@ -680,6 +693,8 @@ function ResultsDashboard({
           </button>
         </div>
       </div>
+
+      <TestAnalysis attempt={attempt} allAttempts={allAttempts} onSaveInsight={onSaveInsight} />
 
       <div className="space-y-4">
         {attempt.questions.map((q, i) => {

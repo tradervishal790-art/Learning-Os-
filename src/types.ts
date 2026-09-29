@@ -384,6 +384,8 @@ export interface TestAttempt {
   totalMarks: number;
   obtainedMarks: number;
   scorePercent: number;
+  /** The one AI study suggestion for the next test, saved so reopening this result doesn't call AI again. */
+  insight?: string;
 }
 
 // ---------- localStorage cache envelopes ----------

@@ -21,6 +21,7 @@
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { generateAIText } from './_lib/aiFallback.js';
+import { handleInsight } from './_lib/testInsight.js';
 
 const FIREBASE_WEB_API_KEY = process.env.FIREBASE_WEB_API_KEY || 'AIzaSyBgRq-CzcRNch6hN9PU6OooS5dw7gd_e2M'; // public web key (same as src/firebase.ts)
 const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp', 'application/pdf']);
@@ -147,6 +148,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const uid = await verifyUser(req);
   if (!uid) return res.status(401).json({ error: 'Please sign in to import from photos.' });
   if (rateLimited(uid)) return res.status(429).json({ error: 'Too many photo imports — please wait a few minutes.' });
+
+  // Same function also serves the one-line AI study suggestion shown after a test (keeps us at 12 functions).
+  if (req.query?.op === 'insight') return handleInsight(req, res);
 
   const { mode, image } = (req.body ?? {}) as { mode?: string; image?: { mimeType?: string; data?: string } };
   if (mode !== 'questions' && mode !== 'answers') return res.status(400).json({ error: 'mode must be "questions" or "answers"' });
