@@ -862,31 +862,14 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
               ))}
             </div>
 
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5, duration: 0.5 }}
-              className="p-6 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 flex items-center gap-4 flex-wrap"
-            >
-              <div className="flex-1 min-w-[200px]">
-                <div className="text-xs uppercase tracking-wider text-gray-400 dark:text-white/40 mb-1">{t.dashboard.home.suggestion.label}</div>
-                <p className="text-sm">Try: React Visual Guide</p>
-              </div>
-              <div className="flex flex-col sm:flex-row gap-2">
-                <button
-                  onClick={() => setShowCustomPlaylist(true)}
-                  className="px-4 py-2 rounded-full border border-gray-300 dark:border-white/10 text-sm font-medium hover:bg-gray-100 dark:hover:bg-white/10 transition whitespace-nowrap"
-                >
-                  {t.dashboard.home.suggestion.customCta}
-                </button>
-                <button
-                  onClick={() => setActivePage('videos')}
-                  className="px-4 py-2 rounded-full bg-black text-white dark:bg-white dark:text-black text-sm font-medium hover:opacity-80 transition whitespace-nowrap"
-                >
-                  {t.dashboard.home.suggestion.watchCta}
-                </button>
-              </div>
-            </motion.div>
+            <div className="flex justify-end">
+              <button
+                onClick={() => setActivePage('videos')}
+                className="px-4 py-2 rounded-full bg-black text-white dark:bg-white dark:text-black text-sm font-medium hover:opacity-80 transition whitespace-nowrap"
+              >
+                {t.dashboard.home.suggestion.watchCta}
+              </button>
+            </div>
 
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -948,12 +931,20 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
         )}
         {activePage === 'revision' && <Revision goals={goals} />}
         {activePage === 'videos' && (
-          <VideoIntel
-            initialPlaylist={preloadedPlaylist}
-            activeGoalId={activeGoalId}
-            activeTopicId={viewingTopicId}
-            allGoalIds={goals.filter((g) => g.status === 'active').map((g) => g.id)}
-          />
+          <div className="relative">
+            <button
+              onClick={() => setShowCustomPlaylist(true)}
+              className="absolute top-0 right-0 z-10 px-3 py-1.5 rounded-full border border-gray-300 dark:border-white/15 bg-white dark:bg-black text-xs font-medium text-gray-600 dark:text-white/60 hover:text-black dark:hover:text-white hover:border-gray-400 dark:hover:border-white/30 transition"
+            >
+              {t.dashboard.home.suggestion.customCta}
+            </button>
+            <VideoIntel
+              initialPlaylist={preloadedPlaylist}
+              activeGoalId={activeGoalId}
+              activeTopicId={viewingTopicId}
+              allGoalIds={goals.filter((g) => g.status === 'active').map((g) => g.id)}
+            />
+          </div>
         )}
         {activePage === 'mentor' && <Mentor />}
         {activePage === 'notes' && <Notes />}
