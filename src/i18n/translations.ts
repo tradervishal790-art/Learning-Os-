@@ -513,7 +513,7 @@ export const translations: Record<Locale, TranslationShape> = {
           icon: '🧪',
           title: '9. Test',
           description:
-            'NTA/JEE-style exam mode with a timer and question palette. Build tests by hand, bulk-paste questions, or import from photos/PDFs of your textbook — AI can fill a missing answer key or check subjective answers, but only if you ask it to.',
+            'NTA/JEE-style exam mode with a timer and question palette. Build tests by hand, bulk-paste questions, or import from photos/PDFs of your textbook — AI is used only to read the photos/PDFs.',
         },
         {
           icon: '📖',
@@ -1365,7 +1365,7 @@ export const translations: Record<Locale, TranslationShape> = {
           icon: '🧪',
           title: '9. Test',
           description:
-            'टाइमर और question palette के साथ NTA/JEE-स्टाइल एग्ज़ाम मोड। हाथ से टेस्ट बनाएं, सवाल bulk-paste करें, या अपनी किताब की फ़ोटो/PDF से import करें — AI मिसिंग आंसर-की भर सकता है या subjective जवाब चेक कर सकता है, पर सिर्फ़ तब जब आप कहें।',
+            'टाइमर और question palette के साथ NTA/JEE-स्टाइल एग्ज़ाम मोड। हाथ से टेस्ट बनाएं, सवाल bulk-paste करें, या अपनी किताब की फ़ोटो/PDF से import करें — AI सिर्फ़ फ़ोटो/PDF पढ़ने के लिए इस्तेमाल होता है।',
         },
         {
           icon: '📖',
@@ -2211,7 +2211,7 @@ export const translations: Record<Locale, TranslationShape> = {
           icon: '🧪',
           title: '9. Test',
           description:
-            'Timer aur question palette ke saath NTA/JEE-style exam mode. Haath se test banao, questions bulk-paste karo, ya apni textbook ke photo/PDF se import karo — AI missing answer-key fill kar sakta hai ya subjective answer check kar sakta hai, lekin sirf tab jab tum kaho.',
+            'Timer aur question palette ke saath NTA/JEE-style exam mode. Haath se test banao, questions bulk-paste karo, ya apni textbook ke photo/PDF se import karo — AI sirf photo/PDF padhne ke liye use hota hai.',
         },
         {
           icon: '📖',
