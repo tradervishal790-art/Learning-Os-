@@ -19,8 +19,12 @@ export interface PhotoPayload {
 
 export interface ExtractedQuestion {
   type: 'mcq' | 'subjective';
+  number?: number | null;
   question: string;
   options: string[];
+  /** Only when the file itself prints the answer — never AI-solved. */
+  answer?: string;
+  explanation?: string;
   incomplete: boolean;
 }
 
@@ -132,9 +136,9 @@ async function callExtract<T>(mode: 'questions' | 'answers', image: PhotoPayload
   return data as T;
 }
 
-export async function extractQuestionsFromPhoto(image: PhotoPayload): Promise<ExtractedQuestion[]> {
-  const data = await callExtract<{ questions: ExtractedQuestion[] }>('questions', image);
-  return data.questions ?? [];
+export async function extractQuestionsFromPhoto(image: PhotoPayload): Promise<{ questions: ExtractedQuestion[]; answerKey: ExtractedAnswer[] }> {
+  const data = await callExtract<{ questions: ExtractedQuestion[]; answerKey?: ExtractedAnswer[] }>('questions', image);
+  return { questions: data.questions ?? [], answerKey: data.answerKey ?? [] };
 }
 
 export async function extractAnswersFromPhoto(image: PhotoPayload): Promise<ExtractedAnswer[]> {
@@ -145,21 +149,67 @@ export async function extractAnswersFromPhoto(image: PhotoPayload): Promise<Extr
 const DEFAULT_MARKS = 4;
 const DEFAULT_NEGATIVE = 1;
 
-/** Turns extracted questions into builder questions. MCQ correct answer is left UNSET (-1) until an answer is supplied. No count limit. */
-export function toBuilderQuestions(extracted: ExtractedQuestion[]): { questions: TestQuestion[]; warnings: string[] } {
+/** Applies one printed answer to one builder question. Returns the question and whether an answer was actually set. */
+function withPrintedAnswer(q: TestQuestion, raw: string, explanation: string): { q: TestQuestion; set: boolean } {
+  if (q.type === 'mcq') {
+    const idx = parseMcqAnswer(raw, q.options);
+    if (idx < 0) return { q, set: false };
+    return { q: { ...q, correctIndex: idx, explanation: explanation || q.explanation }, set: true };
+  }
+  if (!raw.trim()) return { q, set: false };
+  return { q: { ...q, modelAnswer: raw.trim(), explanation: explanation || q.explanation }, set: true };
+}
+
+/**
+ * Turns extracted questions into builder questions.
+ * Answers are filled ONLY when the file printed them (attached to the question, or in an answer key
+ * found in the same upload, matched by printed number or — if counts are equal — by order).
+ * Anything else stays unset (-1 / empty) for the user to fill in. No count limit.
+ */
+export function toBuilderQuestions(extracted: ExtractedQuestion[], answerKey: ExtractedAnswer[] = []): { questions: TestQuestion[]; warnings: string[] } {
   const warnings: string[] = [];
+  const keyByNumber = new Map<number, ExtractedAnswer>();
+  answerKey.forEach((a) => {
+    if (a.number !== null && a.number !== undefined && !keyByNumber.has(a.number)) keyByNumber.set(a.number, a);
+  });
+  const keyBySequence = answerKey.length > 0 && answerKey.length === extracted.length && keyByNumber.size === 0;
+
+  let filled = 0;
+  let keyUnmatched = false;
   const questions = extracted.map((e, i): TestQuestion => {
+    let base: TestQuestion;
     if (e.type === 'mcq') {
       const options = e.options.slice(0, MAX_OPTIONS);
       if (e.options.length > MAX_OPTIONS) warnings.push(`Photo question ${i + 1}: had ${e.options.length} options, only the first ${MAX_OPTIONS} were kept — check it.`);
-      if (e.incomplete) warnings.push(`Photo question ${i + 1}: looked cut off — check the text.`);
-      const q: MCQQuestion = { id: newId(), type: 'mcq', question: e.question, options, correctIndex: -1, explanation: '', marks: DEFAULT_MARKS, negativeMarks: DEFAULT_NEGATIVE };
-      return q;
+      const m: MCQQuestion = { id: newId(), type: 'mcq', question: e.question, options, correctIndex: -1, explanation: '', marks: DEFAULT_MARKS, negativeMarks: DEFAULT_NEGATIVE };
+      base = m;
+    } else {
+      const sq: SubjectiveQuestion = { id: newId(), type: 'subjective', question: e.question, modelAnswer: '', explanation: '', marks: DEFAULT_MARKS };
+      base = sq;
     }
     if (e.incomplete) warnings.push(`Photo question ${i + 1}: looked cut off — check the text.`);
-    const q: SubjectiveQuestion = { id: newId(), type: 'subjective', question: e.question, modelAnswer: '', explanation: '', marks: DEFAULT_MARKS };
-    return q;
+
+    let raw = (e.answer ?? '').trim();
+    let why = (e.explanation ?? '').trim();
+    if (!raw) {
+      const fromKey = e.number != null && keyByNumber.has(e.number) ? keyByNumber.get(e.number) : keyBySequence ? answerKey[i] : undefined;
+      if (fromKey) {
+        raw = fromKey.answer.trim();
+        why = why || fromKey.explanation.trim();
+      }
+    }
+    if (!raw) return base;
+    const res = withPrintedAnswer(base, raw, why);
+    if (res.set) filled++;
+    else warnings.push(`Photo question ${i + 1}: printed answer "${raw}" could not be matched — select it manually.`);
+    return res.q;
   });
+
+  if (answerKey.length > 0 && keyByNumber.size === 0 && !keyBySequence) keyUnmatched = true;
+  if (keyUnmatched) warnings.push('An answer key was found in the file but could not be matched to the questions — use the answer sheet section below.');
+  const missing = questions.length - filled;
+  if (filled > 0) warnings.unshift(`${filled} answer(s) were read from the file. ${missing > 0 ? `${missing} question(s) have no printed answer — fill them in yourself.` : 'All questions have answers — please double-check.'}`);
+  else if (questions.length > 0) warnings.unshift('No printed answers were found in the file — fill them in yourself (or use the answer sheet section below).');
   return { questions, warnings };
 }
 

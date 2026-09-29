@@ -30,7 +30,7 @@ const TEXT = {
   en: {
     title: 'Add from photos or PDF (optional)',
     qTitle: '1. Add questions from photos or PDF',
-    qHelp: `Choose up to ${MAX_IMPORT_PHOTOS} files: clear, straight photos and/or PDFs (up to ${MAX_PDF_PAGES} pages each) of your question paper. Select them in order. Every question found is added — no limit. Nothing is saved until you press Save Test.`,
+    qHelp: `Choose up to ${MAX_IMPORT_PHOTOS} files: clear, straight photos and/or PDFs (up to ${MAX_PDF_PAGES} pages each) of your question paper. Select them in order. Every question found is added — no limit. If the file also has the answers printed, they are filled in automatically; if not, you fill them in yourself. Nothing is saved until you press Save Test.`,
     qButton: 'Read questions',
     aTitle: '2. Add answers (answer sheet — photo or PDF)',
     aInstructionTitle: 'Answer sheet instructions',
@@ -54,7 +54,7 @@ const TEXT = {
   hi: {
     title: 'फोटो या PDF से जोड़ें (वैकल्पिक)',
     qTitle: '1. फोटो या PDF से सवाल जोड़ें',
-    qHelp: `अपने प्रश्न-पत्र की ज़्यादा से ज़्यादा ${MAX_IMPORT_PHOTOS} फाइलें चुनें: साफ़, सीधी फोटो और/या PDF (हर PDF में ज़्यादा से ज़्यादा ${MAX_PDF_PAGES} पेज), और उन्हें क्रम से चुनें। इनमें जितने भी सवाल होंगे सब जुड़ जाएँगे — कोई सीमा नहीं। "Save Test" दबाने तक कुछ सेव नहीं होता।`,
+    qHelp: `अपने प्रश्न-पत्र की ज़्यादा से ज़्यादा ${MAX_IMPORT_PHOTOS} फाइलें चुनें: साफ़, सीधी फोटो और/या PDF (हर PDF में ज़्यादा से ज़्यादा ${MAX_PDF_PAGES} पेज), और उन्हें क्रम से चुनें। इनमें जितने भी सवाल होंगे सब जुड़ जाएँगे — कोई सीमा नहीं। अगर फाइल में जवाब भी छपे हैं तो वे अपने-आप भर जाएँगे, नहीं तो आप खुद भरें। "Save Test" दबाने तक कुछ सेव नहीं होता।`,
     qButton: 'सवाल पढ़ें',
     aTitle: '2. जवाब जोड़ें (आंसर शीट — फोटो या PDF)',
     aInstructionTitle: 'आंसर शीट के निर्देश',
@@ -165,16 +165,19 @@ export default function PhotoImport({ questions, onAppendQuestions, onReplaceQue
     setWarnings([]);
     try {
       const all: ExtractedQuestion[] = [];
+      const allKey: ExtractedAnswer[] = [];
       for (let i = 0; i < qFiles.length; i++) {
         setProgress(t.reading(i + 1, qFiles.length));
         for (const part of await prepareUpload(qFiles[i])) {
-          all.push(...(await extractQuestionsFromPhoto(part)));
+          const r = await extractQuestionsFromPhoto(part);
+          all.push(...r.questions);
+          allKey.push(...r.answerKey);
         }
       }
       if (all.length === 0) {
         setError(t.none);
       } else {
-        const { questions: qs, warnings: w } = toBuilderQuestions(all);
+        const { questions: qs, warnings: w } = toBuilderQuestions(all, allKey);
         onAppendQuestions(qs);
         setWarnings(w);
         setInfo(t.addedQ(qs.length));
