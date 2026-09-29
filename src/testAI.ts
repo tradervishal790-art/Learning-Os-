@@ -22,6 +22,7 @@
 // button for it, so the feature's normal (zero-AI) cost is unchanged.
 import type { TestQuestion, MCQQuestion, SubjectiveQuestion } from './types';
 import { authFetch } from './apiFetch';
+import { hasValidCorrect } from './testConfig';
 
 // ---------- 1. Answer-key generation ----------
 
@@ -41,7 +42,7 @@ export interface AnswerKeyResult {
 
 /** Questions from a builder's list that still need an answer before they can be saved. */
 export function findMissingAnswers(questions: TestQuestion[]): TestQuestion[] {
-  return questions.filter((q) => (q.type === 'mcq' ? q.correctIndex < 0 || q.correctIndex > 3 : !q.modelAnswer.trim()));
+  return questions.filter((q) => (q.type === 'mcq' ? !hasValidCorrect(q) : !q.modelAnswer.trim()));
 }
 
 export async function generateAnswerKey(items: AnswerKeyRequestItem[]): Promise<AnswerKeyResult[]> {
@@ -63,9 +64,9 @@ export function applyAnswerKey(questions: TestQuestion[], results: AnswerKeyResu
     const r = byId.get(q.id);
     if (!r) return q;
     if (q.type === 'mcq') {
-      if (q.correctIndex >= 0 && q.correctIndex <= 3) return q;
+      if (hasValidCorrect(q)) return q;
       const idx = typeof r.correctIndex === 'number' ? r.correctIndex : -1;
-      if (idx < 0 || idx > 3) return q;
+      if (!hasValidCorrect({ options: q.options, correctIndex: idx })) return q; // out-of-range for THIS question's option count — never guess
       const patched: MCQQuestion = { ...q, correctIndex: idx, explanation: q.explanation || r.explanation };
       return patched;
     }

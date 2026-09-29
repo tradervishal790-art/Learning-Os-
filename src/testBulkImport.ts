@@ -23,10 +23,12 @@
 //   MARKS: 5
 //   EXPLANATION: Tests whether the learner can restate F=ma with intuition.
 //
-// A question is treated as MCQ if it has an "ANSWER:" line, or subjective if it
-// A/B/C/D lines are present (MCQ), or subjective if an ANSWER: line is present
-// instead. MARKS/NEGATIVE/EXPLANATION are optional (default 4/1/'').
+// A question is an MCQ if it has option lines, or subjective if an ANSWER: line
+// is present instead. An MCQ needs 2 to 4 options: A and B are required, C and D
+// are optional (but D needs C). CORRECT must be one of the options you gave.
+// MARKS/NEGATIVE/EXPLANATION are optional (default 4/1/'').
 import type { TestQuestion, MCQQuestion, SubjectiveQuestion } from './types';
+import { MIN_OPTIONS, MAX_OPTIONS, optionLabel } from './testConfig';
 
 const newId = () =>
   typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `q_${Date.now()}_${Math.random().toString(36).slice(2)}`;
@@ -104,15 +106,19 @@ export function parseBulkQuestions(raw: string): BulkImportResult {
       return;
     }
 
-    const options = [fields.A, fields.B, fields.C, fields.D];
-    if (options.some((o) => !o?.trim())) {
-      errors.push(`${label}: MCQ needs all of A/B/C/D filled (or use "ANSWER:" for a subjective question) — skipped.`);
+    const rawOptions = [fields.A, fields.B, fields.C, fields.D].slice(0, MAX_OPTIONS);
+    // Options must run A, B, C... with no gaps (a "D" without a "C" is almost certainly a typo).
+    const filled = rawOptions.filter((o) => o?.trim()).length;
+    const contiguous = rawOptions.every((o, i) => (i < filled ? !!o?.trim() : !o?.trim()));
+    if (filled < MIN_OPTIONS || !contiguous) {
+      errors.push(`${label}: MCQ needs ${MIN_OPTIONS}–${MAX_OPTIONS} options filled in order (A, B, then optionally C, D) — or use "ANSWER:" for a subjective question — skipped.`);
       return;
     }
+    const options = rawOptions.slice(0, filled);
     const correctLetter = fields.CORRECT?.trim().toUpperCase();
-    const correctIndex = correctLetter ? 'ABCD'.indexOf(correctLetter) : -1;
+    const correctIndex = correctLetter ? options.map((_, i) => optionLabel(i)).indexOf(correctLetter) : -1;
     if (correctIndex === -1) {
-      errors.push(`${label}: "CORRECT:" must be A, B, C, or D — skipped.`);
+      errors.push(`${label}: "CORRECT:" must be one of ${options.map((_, i) => optionLabel(i)).join(', ')} — skipped.`);
       return;
     }
 

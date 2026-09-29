@@ -312,8 +312,8 @@ export interface MCQQuestion {
   id: string;
   type: 'mcq';
   question: string;
-  options: string[]; // always 4
-  correctIndex: number; // 0-3
+  options: string[]; // 2 to 4 (see testConfig.ts)
+  correctIndex: number; // 0 .. options.length-1 (-1 = answer not set yet)
   explanation: string;
   marks: number; // awarded when correct
   negativeMarks: number; // deducted when answered wrong (0 disables negative marking for this question)

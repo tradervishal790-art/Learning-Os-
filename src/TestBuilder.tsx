@@ -1,14 +1,15 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Trash2, ChevronUp, ChevronDown, ListChecks, PenLine, ClipboardPaste, X } from 'lucide-react';
+import { Trash2, ChevronUp, ChevronDown, ListChecks, PenLine, ClipboardPaste, X, Plus } from 'lucide-react';
 import type { TestPaper, TestQuestion, MCQQuestion, SubjectiveQuestion } from './types';
 import PhotoImport from './PhotoImport';
 import { parseBulkQuestions, BULK_IMPORT_EXAMPLE } from './testBulkImport';
+import { MIN_OPTIONS, MAX_OPTIONS, optionLabel, filledOptionCount, compactMcq, compactQuestion } from './testConfig';
 
 // ============================================================
 // TestBuilder.tsx
 // The "author a test paper by hand" form — this is what replaces AI
-// generation. Vishal types every question himself: MCQs (4 options,
+// generation. Vishal types every question himself: MCQs (2 to 4 options,
 // correct answer, marks, negative marking) or subjective questions
 // (model answer + marks), in whatever order and quantity he wants.
 // Used for both creating a new TestPaper and editing an existing one
@@ -91,8 +92,8 @@ export default function TestBuilder({ initialPaper, onSave, onCancel }: TestBuil
     if (questions.length === 0) return setError('Add at least one question.');
     for (const [i, q] of questions.entries()) {
       if (!q.question.trim()) return setError(`Question ${i + 1} is empty.`);
-      if (q.type === 'mcq' && q.options.some((o) => !o.trim())) return setError(`Question ${i + 1}: fill all 4 options.`);
-      if (q.type === 'mcq' && (q.correctIndex < 0 || q.correctIndex > 3)) return setError(`Question ${i + 1}: select the correct option (or add the answer sheet).`);
+      if (q.type === 'mcq' && filledOptionCount(q.options) < MIN_OPTIONS) return setError(`Question ${i + 1}: fill at least ${MIN_OPTIONS} options.`);
+      if (q.type === 'mcq' && compactMcq(q).correctIndex < 0) return setError(`Question ${i + 1}: select the correct option (it must be one of the filled options), or add the answer sheet.`);
       if (q.type === 'subjective' && !q.modelAnswer.trim()) return setError(`Question ${i + 1}: add a model answer.`);
     }
 
@@ -102,7 +103,7 @@ export default function TestBuilder({ initialPaper, onSave, onCancel }: TestBuil
       title: title.trim(),
       topic: topic.trim(),
       durationMinutes: Math.max(0, Math.round(durationMinutes)),
-      questions,
+      questions: questions.map(compactQuestion), // empty options are dropped; correctIndex remapped
       createdAt: initialPaper?.createdAt ?? now,
       updatedAt: now,
     });
@@ -317,12 +318,34 @@ function QuestionCard({
                   options[oi] = e.target.value;
                   onChange({ options });
                 }}
-                placeholder={`Option ${String.fromCharCode(65 + oi)}`}
+                placeholder={`Option ${optionLabel(oi)}`}
                 className="flex-1 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-black dark:focus:border-white"
               />
+              {(question as MCQQuestion).options.length > MIN_OPTIONS && (
+                <button
+                  onClick={() => {
+                    const q = question as MCQQuestion;
+                    const options = q.options.filter((_, i) => i !== oi);
+                    const correctIndex = q.correctIndex === oi ? -1 : q.correctIndex > oi ? q.correctIndex - 1 : q.correctIndex;
+                    onChange({ options, correctIndex });
+                  }}
+                  className="p-1.5 rounded-lg hover:bg-red-100 dark:hover:bg-red-500/10 text-red-500"
+                  aria-label={`Remove option ${optionLabel(oi)}`}
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
             </div>
           ))}
-          <p className="text-xs text-gray-400 dark:text-white/40 pl-6">Select the radio button next to the correct option.</p>
+          {(question as MCQQuestion).options.length < MAX_OPTIONS && (
+            <button
+              onClick={() => onChange({ options: [...(question as MCQQuestion).options, ''] })}
+              className="flex items-center gap-1.5 ml-6 px-3 py-1.5 rounded-lg border border-dashed border-gray-300 dark:border-white/20 text-xs font-medium text-gray-500 dark:text-white/60 hover:bg-gray-100 dark:hover:bg-white/10 transition"
+            >
+              <Plus className="w-3.5 h-3.5" /> Add option
+            </button>
+          )}
+          <p className="text-xs text-gray-400 dark:text-white/40 pl-6">Select the radio button next to the correct option. {MIN_OPTIONS}–{MAX_OPTIONS} options allowed; empty options are dropped when you save.</p>
         </div>
       ) : (
         <textarea

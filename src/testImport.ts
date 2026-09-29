@@ -6,6 +6,7 @@
 import { auth } from './firebase';
 import type { TestQuestion, MCQQuestion, SubjectiveQuestion } from './types';
 import { normalizeAnswer } from './testGrading';
+import { MAX_OPTIONS } from './testConfig';
 
 export const MAX_IMPORT_PHOTOS = 4; // max files per import (photos and/or PDFs)
 export const MAX_PDF_PAGES = 30; // per PDF, to keep AI cost bounded
@@ -149,10 +150,8 @@ export function toBuilderQuestions(extracted: ExtractedQuestion[]): { questions:
   const warnings: string[] = [];
   const questions = extracted.map((e, i): TestQuestion => {
     if (e.type === 'mcq') {
-      let options = e.options.slice(0, 4);
-      if (e.options.length > 4) warnings.push(`Photo question ${i + 1}: had ${e.options.length} options, only the first 4 were kept — check it.`);
-      while (options.length < 4) options = [...options, ''];
-      if (e.options.length < 4) warnings.push(`Photo question ${i + 1}: had only ${e.options.length} options — fill the missing ones.`);
+      const options = e.options.slice(0, MAX_OPTIONS);
+      if (e.options.length > MAX_OPTIONS) warnings.push(`Photo question ${i + 1}: had ${e.options.length} options, only the first ${MAX_OPTIONS} were kept — check it.`);
       if (e.incomplete) warnings.push(`Photo question ${i + 1}: looked cut off — check the text.`);
       const q: MCQQuestion = { id: newId(), type: 'mcq', question: e.question, options, correctIndex: -1, explanation: '', marks: DEFAULT_MARKS, negativeMarks: DEFAULT_NEGATIVE };
       return q;
@@ -183,7 +182,8 @@ export function parseMcqAnswer(raw: string, options: string[]): number {
   const m = s.match(/^[([]?\s*([A-Da-d1-4अबसदकखगघ])\s*[)\].:\-–]?(\s|$)/);
   if (m) {
     const key = m[1].toLowerCase();
-    return key in LETTER_INDEX ? LETTER_INDEX[key] : -1;
+    const idx = key in LETTER_INDEX ? LETTER_INDEX[key] : -1;
+    return idx < options.length && options[idx]?.trim() ? idx : -1; // e.g. "D" for a 3-option question is not a valid answer
   }
   return -1;
 }
