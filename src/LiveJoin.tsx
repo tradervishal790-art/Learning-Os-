@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import type { TestPaper, TestUserAnswer } from './types';
 import { isAnswered } from './testGrading';
 import { TakingScreen, type QuestionStatus } from './Test';
-import { joinLiveSession, normalizeCode, normalizePhone, submitLiveAnswers, subscribeSession, type LiveSession } from './liveTest';
+import { JoinError, joinLiveSession, normalizeCode, normalizePhone, submitLiveAnswers, subscribeSession, type LiveSession } from './liveTest';
 import { loadSavedTheme } from './ThemeContext';
 
 // ============================================================
@@ -91,14 +91,25 @@ export default function LiveJoin() {
       setBusy(true);
       setFormError('');
       try {
-        const offset = await joinLiveSession(code, n, phone);
-        setOffsetMs(offset);
-        const p = { name: n, phone };
+        const res = await joinLiveSession(code, n, phone);
+        setOffsetMs(res.offsetMs);
+        const p = { name: res.name, phone };
         writeJson(playerKey(code), p);
         setPlayer(p);
         setJoined(true);
-      } catch {
-        setFormError('Could not join. Check your internet and try again.');
+      } catch (e) {
+        const reason = e instanceof JoinError ? e.reason : null;
+        if (reason === 'ALREADY_DONE') {
+          localStorage.setItem(doneKey(code), '1');
+          setSubmitted(true);
+          setSubmitNote('already-or-closed');
+        } else if (reason === 'NOT_ALLOWED') {
+          setFormError('This phone number is not on the list for this test. Please contact your host.');
+        } else if (reason === 'OTHER_DEVICE') {
+          setFormError('This number is already in use on another device. Ask your host to unlock it.');
+        } else {
+          setFormError('Could not join. Check your internet and try again.');
+        }
       } finally {
         setBusy(false);
       }

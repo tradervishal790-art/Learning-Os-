@@ -133,7 +133,7 @@ const LB_CSS = `
 
 const fmtTime = (sec: number): string => (sec > 0 ? `${Math.floor(sec / 60)}m ${sec % 60}s` : '—');
 
-function buildLeaderboardHtml(title: string, rows: LiveRow[], totalMarks: number, joined: number): string {
+function buildLeaderboardHtml(title: string, rows: LiveRow[], totalMarks: number, joined: number, enrolled: number): string {
   const submitted = rows.filter((r) => r.submitted);
   const highest = submitted.length ? Math.max(...submitted.map((r) => r.obtained)) : 0;
   const avg = submitted.length ? submitted.reduce((s, r) => s + r.obtained, 0) / submitted.length : 0;
@@ -154,7 +154,7 @@ function buildLeaderboardHtml(title: string, rows: LiveRow[], totalMarks: number
   return `<!doctype html><html><head><meta charset="utf-8"><title>${esc(title)} — Ranking</title><style>${CSS}${LB_CSS}</style></head><body>
     <h1>${esc(title)} — Ranking</h1>
     <div class="meta">Generated: ${esc(new Date().toLocaleString())}</div>
-    <div class="meta">Joined: ${joined} &nbsp;•&nbsp; Submitted: ${submitted.length} &nbsp;•&nbsp; Total marks: ${totalMarks} &nbsp;•&nbsp; Highest: ${highest} &nbsp;•&nbsp; Average: ${avg.toFixed(1)}</div>
+    <div class="meta">Enrolled: ${enrolled} &nbsp;•&nbsp; Joined: ${joined} &nbsp;•&nbsp; Submitted: ${submitted.length} &nbsp;•&nbsp; Total marks: ${totalMarks} &nbsp;•&nbsp; Highest: ${highest} &nbsp;•&nbsp; Average: ${avg.toFixed(1)}</div>
     <table>
       <thead><tr><th class="n">Rank</th><th>Name</th><th>Phone</th><th class="n">Marks</th><th class="n">%</th><th class="n">Correct</th><th class="n">Wrong</th><th class="n">Time</th></tr></thead>
       <tbody>${body}</tbody>
@@ -163,6 +163,6 @@ function buildLeaderboardHtml(title: string, rows: LiveRow[], totalMarks: number
 }
 
 /** Ranking sheet for a Live Test — every participant, highest marks first. */
-export function downloadLeaderboardPdf(title: string, rows: LiveRow[], totalMarks: number, joined: number): void {
-  printHtml(buildLeaderboardHtml(title, rows, totalMarks, joined));
+export function downloadLeaderboardPdf(title: string, rows: LiveRow[], totalMarks: number, joined: number, enrolled: number): void {
+  printHtml(buildLeaderboardHtml(title, rows, totalMarks, joined, enrolled));
 }

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, Check, Clock, Copy, Download, Play, Square, Users } from 'lucide-react';
+import { ArrowLeft, Check, Clock, Copy, Download, Play, RotateCcw, Square, Users, X } from 'lucide-react';
 import type { TestPaper, TestQuestion } from './types';
 import {
   buildLeaderboard,
@@ -12,6 +12,11 @@ import {
   subscribeRoster,
   subscribeSession,
   ensureSignedIn,
+  addAllowed,
+  removeAllowed,
+  resetPlayer,
+  parseAllowedInput,
+  type LiveAllowed,
   type LivePlayer,
   type LiveSession,
   type LiveSubmission,
@@ -45,6 +50,7 @@ export default function LiveHost({ paper, onExit }: { paper: TestPaper; onExit: 
   const [session, setSession] = useState<LiveSession | null>(null);
   const [players, setPlayers] = useState<LivePlayer[]>([]);
   const [submissions, setSubmissions] = useState<LiveSubmission[]>([]);
+  const [allowed, setAllowed] = useState<LiveAllowed[]>([]);
   const [keyQuestions, setKeyQuestions] = useState<TestQuestion[] | null>(null);
   const [now, setNow] = useState(Date.now());
   const [copied, setCopied] = useState<'code' | 'link' | null>(null);
@@ -74,7 +80,7 @@ export default function LiveHost({ paper, onExit }: { paper: TestPaper; onExit: 
   useEffect(() => {
     if (!code) return;
     const unsubSession = subscribeSession(code, setSession);
-    const unsubRoster = subscribeRoster(code, setPlayers, setSubmissions);
+    const unsubRoster = subscribeRoster(code, setPlayers, setSubmissions, setAllowed);
     void fetchHostQuestions(code).then(setKeyQuestions).catch(() => setError('Could not load the answer key.'));
     return () => {
       unsubSession();
@@ -108,6 +114,7 @@ export default function LiveHost({ paper, onExit }: { paper: TestPaper; onExit: 
       setSession(null);
       setPlayers([]);
       setSubmissions([]);
+      setAllowed([]);
       setCode(c);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not create the session.');
@@ -162,13 +169,26 @@ export default function LiveHost({ paper, onExit }: { paper: TestPaper; onExit: 
     setSession(null);
     setPlayers([]);
     setSubmissions([]);
+    setAllowed([]);
     setKeyQuestions(null);
   };
 
+  // Everyone on the guest list (even if they never joined) shows up in the ranking sheet.
+  const roster = useMemo<LivePlayer[]>(() => {
+    const joinedName = new Map(players.map((p) => [p.phone, p.name]));
+    const list = allowed.map((a) => ({ phone: a.phone, name: joinedName.get(a.phone) || a.name || a.phone }));
+    const known = new Set(allowed.map((a) => a.phone));
+    return [...list, ...players.filter((p) => !known.has(p.phone))];
+  }, [allowed, players]);
+
   const rows = useMemo(
-    () => (session?.status === 'ended' && keyQuestions ? buildLeaderboard(keyQuestions, players, submissions) : []),
-    [session?.status, keyQuestions, players, submissions]
+    () => (session?.status === 'ended' && keyQuestions ? buildLeaderboard(keyQuestions, roster, submissions) : []),
+    [session?.status, keyQuestions, roster, submissions]
   );
+
+  const guestPanel = code ? (
+    <GuestList code={code} allowed={allowed} players={players} submissions={submissions} locked={session?.status === 'ended'} onError={setError} />
+  ) : null;
 
   const card = 'bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl p-6';
   const primaryBtn = 'px-5 py-3 rounded-xl bg-black text-white dark:bg-white dark:text-black font-semibold transition disabled:opacity-40';
@@ -229,26 +249,12 @@ export default function LiveHost({ paper, onExit }: { paper: TestPaper; onExit: 
             </div>
           </div>
 
-          <div className={card}>
-            <p className="flex items-center gap-2 font-semibold mb-3">
-              <Users className="w-4 h-4" /> {players.length} joined
-            </p>
-            {players.length === 0 ? (
-              <p className="text-sm text-gray-400 dark:text-white/40">Waiting for people to join...</p>
-            ) : (
-              <div className="max-h-56 overflow-auto flex flex-wrap gap-2">
-                {players.map((p) => (
-                  <span key={p.phone} className="px-3 py-1 rounded-full bg-white dark:bg-white/10 border border-gray-200 dark:border-white/10 text-sm">
-                    {p.name}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
+          {guestPanel}
 
-          <button onClick={handleStart} disabled={busy || players.length === 0} className={`${primaryBtn} flex items-center gap-2`}>
+          <button onClick={handleStart} disabled={busy || allowed.length === 0} className={`${primaryBtn} flex items-center gap-2`}>
             <Play className="w-4 h-4" /> Start test for everyone
           </button>
+          {allowed.length === 0 && <p className="text-xs text-gray-400 dark:text-white/40">Add at least one phone number above to start.</p>}
         </div>
       )}
 
@@ -274,6 +280,7 @@ export default function LiveHost({ paper, onExit }: { paper: TestPaper; onExit: 
             <Square className="w-4 h-4" /> End test &amp; show ranking
           </button>
           <p className="text-xs text-gray-400 dark:text-white/40">People who join late still get only the remaining time.</p>
+          {guestPanel}
         </div>
       )}
 
@@ -285,13 +292,13 @@ export default function LiveHost({ paper, onExit }: { paper: TestPaper; onExit: 
           ) : (
             <>
               <div className="grid grid-cols-3 gap-3">
-                <Stat label="Joined" value={String(players.length)} />
+                <Stat label="Enrolled" value={String(roster.length)} />
                 <Stat label="Submitted" value={String(submissions.length)} />
                 <Stat label="Top score" value={rows.find((r) => r.submitted) ? `${rows.find((r) => r.submitted)!.obtained}/${session.totalMarks}` : '—'} />
               </div>
 
               <button
-                onClick={() => downloadLeaderboardPdf(session.title, rows, session.totalMarks, players.length)}
+                onClick={() => downloadLeaderboardPdf(session.title, rows, session.totalMarks, players.length, roster.length)}
                 className={`${primaryBtn} flex items-center gap-2`}
               >
                 <Download className="w-4 h-4" /> Download ranking PDF
@@ -341,6 +348,114 @@ function Stat({ label, value, icon }: { label: string; value: string; icon?: boo
         {icon && <Clock className="w-4 h-4" />}
         {value}
       </p>
+    </div>
+  );
+}
+
+function GuestList({
+  code,
+  allowed,
+  players,
+  submissions,
+  locked,
+  onError,
+}: {
+  code: string;
+  allowed: LiveAllowed[];
+  players: LivePlayer[];
+  submissions: LiveSubmission[];
+  locked: boolean;
+  onError: (m: string) => void;
+}) {
+  const [text, setText] = useState('');
+  const [note, setNote] = useState('');
+  const [busy, setBusy] = useState(false);
+  const joined = new Map(players.map((p) => [p.phone, p.name]));
+  const done = new Set(submissions.map((s) => s.phone));
+
+  const add = async () => {
+    const { entries, invalid } = parseAllowedInput(text);
+    if (entries.length === 0) {
+      setNote(invalid.length ? `No valid 10-digit number found (${invalid.length} line(s) skipped).` : 'Type or paste phone numbers first.');
+      return;
+    }
+    setBusy(true);
+    onError('');
+    try {
+      await addAllowed(code, entries);
+      setText('');
+      setNote(`${entries.length} added${invalid.length ? `, ${invalid.length} invalid skipped` : ''}.`);
+    } catch {
+      onError('Could not save the numbers. Check your internet and try again.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const sorted = [...allowed].sort((a, b) => (joined.get(a.phone) || a.name || a.phone).localeCompare(joined.get(b.phone) || b.name || b.phone));
+  const joinedCount = allowed.filter((a) => joined.has(a.phone)).length;
+
+  return (
+    <div className="bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl p-6">
+      <p className="flex items-center gap-2 font-semibold mb-1">
+        <Users className="w-4 h-4" /> Allowed students · {allowed.length} added · {joinedCount} joined
+      </p>
+      <p className="text-xs text-gray-500 dark:text-white/60 mb-3">Only these phone numbers can join, and each number can take the test only once.</p>
+
+      {!locked && (
+        <>
+          <textarea
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            rows={4}
+            placeholder={'One per line — number, or "Name, number"\n9876543210\nRavi Kumar, 98765 43211'}
+            className="w-full bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-black dark:focus:border-white resize-none"
+          />
+          <div className="flex items-center gap-3 mt-2 mb-4">
+            <button onClick={add} disabled={busy} className="px-4 py-2 rounded-xl bg-black text-white dark:bg-white dark:text-black text-sm font-semibold disabled:opacity-40">
+              {busy ? 'Adding...' : 'Add numbers'}
+            </button>
+            {note && <span className="text-xs text-gray-500 dark:text-white/60">{note}</span>}
+          </div>
+        </>
+      )}
+
+      {sorted.length > 0 && (
+        <div className="max-h-72 overflow-auto rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-black/20">
+          {sorted.map((a) => {
+            const isJoined = joined.has(a.phone);
+            const isDone = done.has(a.phone);
+            const label = joined.get(a.phone) || a.name;
+            return (
+              <div key={a.phone} className="flex items-center justify-between gap-2 px-3 py-2 text-sm border-b last:border-b-0 border-gray-100 dark:border-white/10">
+                <div className="min-w-0">
+                  <span className="font-medium">{label || a.phone}</span>
+                  {label && <span className="text-gray-400 dark:text-white/40"> · {a.phone}</span>}
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <span className={`text-xs ${isDone ? 'text-emerald-600 dark:text-emerald-400' : isJoined ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 dark:text-white/40'}`}>
+                    {isDone ? 'Submitted' : isJoined ? 'Joined' : 'Not joined'}
+                  </span>
+                  {!locked && isJoined && !isDone && (
+                    <button
+                      onClick={() => void resetPlayer(code, a.phone)}
+                      title="Unlock this number so the student can join again from another phone"
+                      className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                  {!locked && !isDone && (
+                    <button onClick={() => void removeAllowed(code, a.phone)} title="Remove from the list" className="p-1.5 rounded-lg hover:bg-red-100 dark:hover:bg-red-500/10 text-red-500">
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

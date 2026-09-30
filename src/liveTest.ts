@@ -7,8 +7,10 @@
 // Firestore layout:
 //   liveTests/{code}                  public: title, timer, status, questions WITHOUT answers
 //   liveTests/{code}/private/paper    host-only: the same questions WITH the answer key
-//   liveTests/{code}/players/{phone}  who joined (doc id = phone → one entry per person)
+//   liveTests/{code}/allowed/{phone}  the host's guest list — ONLY these numbers can join
+//   liveTests/{code}/players/{phone}  who joined (doc id = phone; locked to the first device)
 //   liveTests/{code}/submissions/{phone}  final answers (create-only → one submission per phone)
+//   liveTests/{code}/done/{phone}     tiny marker so a finished student cannot re-open the test
 //
 // Participants never receive the answer key. The host's device grades
 // everyone at the end, so nobody can read the key from the network tab.
@@ -21,6 +23,8 @@ import {
   getDoc,
   getDocFromServer,
   updateDoc,
+  deleteDoc,
+  writeBatch,
   onSnapshot,
   serverTimestamp,
   type Unsubscribe,
@@ -48,6 +52,11 @@ export interface LiveSession {
 export interface LivePlayer {
   phone: string;
   name: string;
+}
+
+export interface LiveAllowed {
+  phone: string;
+  name: string; // optional label typed by the host ('' if none)
 }
 
 export interface LiveSubmission {
@@ -167,7 +176,8 @@ export async function getSessionOnce(code: string): Promise<LiveSession | null> 
 export function subscribeRoster(
   code: string,
   onPlayers: (p: LivePlayer[]) => void,
-  onSubmissions: (s: LiveSubmission[]) => void
+  onSubmissions: (s: LiveSubmission[]) => void,
+  onAllowed: (a: LiveAllowed[]) => void
 ): Unsubscribe {
   const u1 = onSnapshot(
     collection(db, 'liveTests', code, 'players'),
@@ -190,10 +200,65 @@ export function subscribeRoster(
       ),
     (e) => console.warn('submissions listener', e)
   );
+  const u3 = onSnapshot(
+    collection(db, 'liveTests', code, 'allowed'),
+    (snap) => onAllowed(snap.docs.map((d) => ({ phone: d.id, name: String(d.data().name ?? '') }))),
+    (e) => console.warn('allowed listener', e)
+  );
   return () => {
     u1();
     u2();
+    u3();
   };
+}
+
+// ---------- host: guest list ----------
+
+/** Turns pasted text into phone entries. Accepts one number per line, "Name, number", or many numbers separated by commas/spaces. */
+export function parseAllowedInput(text: string): { entries: LiveAllowed[]; invalid: string[] } {
+  const entries = new Map<string, LiveAllowed>();
+  const invalid: string[] = [];
+  const NUM = /\+?\d[\d\s-]{8,}\d/g;
+  for (const rawLine of text.split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line) continue;
+    const hasLetters = /\p{L}/u.test(line);
+    const matches = line.match(NUM) ?? [];
+    if (matches.length === 0) {
+      invalid.push(line);
+      continue;
+    }
+    const used = hasLetters ? matches.slice(0, 1) : matches;
+    for (const m of used) {
+      const phone = normalizePhone(m);
+      if (!phone) {
+        invalid.push(m.trim());
+        continue;
+      }
+      const name = hasLetters ? line.replace(m, ' ').replace(/[,;:|\-]+/g, ' ').replace(/\s+/g, ' ').trim() : '';
+      entries.set(phone, { phone, name });
+    }
+  }
+  return { entries: [...entries.values()], invalid };
+}
+
+export async function addAllowed(code: string, entries: LiveAllowed[]): Promise<void> {
+  for (let i = 0; i < entries.length; i += 400) {
+    const batch = writeBatch(db);
+    for (const e of entries.slice(i, i + 400)) {
+      batch.set(doc(db, 'liveTests', code, 'allowed', e.phone), { phone: e.phone, name: e.name });
+    }
+    await batch.commit();
+  }
+}
+
+export async function removeAllowed(code: string, phone: string): Promise<void> {
+  await deleteDoc(doc(db, 'liveTests', code, 'allowed', phone));
+}
+
+/** Frees a number that is locked to a lost/dead device so the student can join again. */
+export async function resetPlayer(code: string, phone: string): Promise<void> {
+  await deleteDoc(doc(db, 'liveTests', code, 'players', phone));
 }
 
 // ---------- shared ----------
@@ -226,24 +291,44 @@ export function subscribeSession(code: string, onData: (s: LiveSession | null) =
 
 // ---------- participant ----------
 
-/** Registers the participant and returns (server clock − device clock) in ms,
- *  so every phone counts the same countdown even if its own clock is off. */
-export async function joinLiveSession(code: string, name: string, phone: string): Promise<number> {
+export type JoinFailure = 'NOT_ALLOWED' | 'ALREADY_DONE' | 'OTHER_DEVICE';
+
+export class JoinError extends Error {
+  reason: JoinFailure;
+  constructor(reason: JoinFailure) {
+    super(reason);
+    this.reason = reason;
+  }
+}
+
+/** Checks the host's guest list, registers the participant and returns the name to use
+ *  plus (server clock − device clock) in ms, so every phone counts the same countdown. */
+export async function joinLiveSession(code: string, typedName: string, phone: string): Promise<{ offsetMs: number; name: string }> {
   const uid = await ensureSignedIn();
+  const allowedSnap = await getDoc(doc(db, 'liveTests', code, 'allowed', phone));
+  if (!allowedSnap.exists()) throw new JoinError('NOT_ALLOWED');
+  if ((await getDoc(doc(db, 'liveTests', code, 'done', phone))).exists()) throw new JoinError('ALREADY_DONE');
+
+  const hostName = String(allowedSnap.data().name ?? '').trim();
+  const name = hostName || typedName;
   const ref = doc(db, 'liveTests', code, 'players', phone);
   const before = Date.now();
-  await setDoc(ref, { uid, name, phone, joinedAt: serverTimestamp() });
+  try {
+    await setDoc(ref, { uid, name, phone, joinedAt: serverTimestamp() });
+  } catch (e) {
+    if ((e as { code?: string })?.code?.includes('permission-denied')) throw new JoinError('OTHER_DEVICE');
+    throw e;
+  }
   try {
     const snap = await getDocFromServer(ref);
     const joined = snap.data()?.joinedAt as { toMillis?: () => number } | undefined;
     if (joined && typeof joined.toMillis === 'function') {
-      const mid = (before + Date.now()) / 2;
-      return joined.toMillis() - mid;
+      return { offsetMs: joined.toMillis() - (before + Date.now()) / 2, name };
     }
   } catch {
-    // fall through — offset 0 is fine, only a few seconds off at worst
+    // offset 0 is fine — only a few seconds off at worst
   }
-  return 0;
+  return { offsetMs: 0, name };
 }
 
 export async function submitLiveAnswers(
@@ -254,7 +339,8 @@ export async function submitLiveAnswers(
   timeTakenSeconds: number
 ): Promise<void> {
   const uid = await ensureSignedIn();
-  await setDoc(doc(db, 'liveTests', code, 'submissions', phone), {
+  const batch = writeBatch(db);
+  batch.set(doc(db, 'liveTests', code, 'submissions', phone), {
     uid,
     name,
     phone,
@@ -262,6 +348,8 @@ export async function submitLiveAnswers(
     timeTakenSeconds,
     submittedAt: serverTimestamp(),
   });
+  batch.set(doc(db, 'liveTests', code, 'done', phone), { uid, phone });
+  await batch.commit();
 }
 
 // ---------- ranking ----------
