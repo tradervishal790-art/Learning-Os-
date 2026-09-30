@@ -10,6 +10,7 @@
 // the user's system fonts. Everything shown is exactly what the author
 // wrote — nothing is translated or altered.
 import type { TestAttempt, MCQQuestion, SubjectiveQuestion } from './types';
+import type { LiveRow } from './liveTest';
 
 const esc = (s: string): string =>
   String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
@@ -88,8 +89,8 @@ function buildHtml(attempt: TestAttempt): string {
   </body></html>`;
 }
 
-/** Opens the browser's print dialog for the report — choose "Save as PDF". */
-export function downloadTestResultPdf(attempt: TestAttempt): void {
+/** Renders HTML in a hidden iframe and opens the browser's print dialog ("Save as PDF"). */
+function printHtml(html: string): void {
   const iframe = document.createElement('iframe');
   iframe.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;';
   document.body.appendChild(iframe);
@@ -99,7 +100,7 @@ export function downloadTestResultPdf(attempt: TestAttempt): void {
     return;
   }
   doc.open();
-  doc.write(buildHtml(attempt));
+  doc.write(html);
   doc.close();
 
   const win = iframe.contentWindow;
@@ -110,4 +111,58 @@ export function downloadTestResultPdf(attempt: TestAttempt): void {
     win.focus();
     win.print();
   }, 250);
+}
+
+/** Opens the browser's print dialog for the report — choose "Save as PDF". */
+export function downloadTestResultPdf(attempt: TestAttempt): void {
+  printHtml(buildHtml(attempt));
+}
+
+// ---------- Live Test leaderboard (all participants, ranked by marks) ----------
+
+const LB_CSS = `
+  table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 10.5pt; }
+  thead { display: table-header-group; }
+  th { text-align: left; background: #f1f1f1; padding: 6px 8px; border-bottom: 2px solid #999; }
+  td { padding: 5px 8px; border-bottom: 1px solid #e3e3e3; }
+  tr { page-break-inside: avoid; }
+  td.n, th.n { text-align: right; white-space: nowrap; }
+  tr.top td { font-weight: 700; background: #fff8e1; }
+  tr.absent td { color: #888; }
+`;
+
+const fmtTime = (sec: number): string => (sec > 0 ? `${Math.floor(sec / 60)}m ${sec % 60}s` : '—');
+
+function buildLeaderboardHtml(title: string, rows: LiveRow[], totalMarks: number, joined: number): string {
+  const submitted = rows.filter((r) => r.submitted);
+  const highest = submitted.length ? Math.max(...submitted.map((r) => r.obtained)) : 0;
+  const avg = submitted.length ? submitted.reduce((s, r) => s + r.obtained, 0) / submitted.length : 0;
+  const body = rows
+    .map(
+      (r) => `<tr class="${!r.submitted ? 'absent' : r.rank !== null && r.rank <= 3 ? 'top' : ''}">
+        <td class="n">${r.rank ?? '—'}</td>
+        <td>${esc(r.name)}</td>
+        <td>${esc(r.phone)}</td>
+        <td class="n">${r.submitted ? `${r.obtained} / ${r.total}` : 'Not submitted'}</td>
+        <td class="n">${r.submitted ? r.percent + '%' : '—'}</td>
+        <td class="n">${r.submitted ? r.correct : '—'}</td>
+        <td class="n">${r.submitted ? r.wrong : '—'}</td>
+        <td class="n">${r.submitted ? fmtTime(r.timeTakenSeconds) : '—'}</td>
+      </tr>`
+    )
+    .join('');
+  return `<!doctype html><html><head><meta charset="utf-8"><title>${esc(title)} — Ranking</title><style>${CSS}${LB_CSS}</style></head><body>
+    <h1>${esc(title)} — Ranking</h1>
+    <div class="meta">Generated: ${esc(new Date().toLocaleString())}</div>
+    <div class="meta">Joined: ${joined} &nbsp;•&nbsp; Submitted: ${submitted.length} &nbsp;•&nbsp; Total marks: ${totalMarks} &nbsp;•&nbsp; Highest: ${highest} &nbsp;•&nbsp; Average: ${avg.toFixed(1)}</div>
+    <table>
+      <thead><tr><th class="n">Rank</th><th>Name</th><th>Phone</th><th class="n">Marks</th><th class="n">%</th><th class="n">Correct</th><th class="n">Wrong</th><th class="n">Time</th></tr></thead>
+      <tbody>${body}</tbody>
+    </table>
+  </body></html>`;
+}
+
+/** Ranking sheet for a Live Test — every participant, highest marks first. */
+export function downloadLeaderboardPdf(title: string, rows: LiveRow[], totalMarks: number, joined: number): void {
+  printHtml(buildLeaderboardHtml(title, rows, totalMarks, joined));
 }

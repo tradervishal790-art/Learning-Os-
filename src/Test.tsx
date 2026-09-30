@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Download, RotateCcw, CheckCircle2, XCircle, HelpCircle, History, Plus, Pencil, Trash2, Clock, Flag } from 'lucide-react';
+import { Download, RotateCcw, CheckCircle2, XCircle, HelpCircle, History, Plus, Pencil, Trash2, Clock, Flag, Users } from 'lucide-react';
 import type { TestPaper, TestQuestion, TestUserAnswer, TestAttempt, MCQQuestion, SubjectiveQuestion } from './types';
 import { getTestPapers, saveTestPaper, deleteTestPaper, hydrateTestBankFromCloud } from './testBankStore';
 import { OFFICIAL_TESTS } from './officialTests';
@@ -9,6 +9,7 @@ import { buildInitialResults, selfGradeSubjective, computeTotalMarks, computeObt
 import { downloadTestResultPdf } from './testPdf';
 import TestBuilder from './TestBuilder';
 import TestAnalysis from './TestAnalysis';
+import LiveHost from './LiveHost';
 import { loadDraft, saveDraft, clearDraft } from './testDraft';
 
 // ============================================================
@@ -24,8 +25,8 @@ import { loadDraft, saveDraft, clearDraft } from './testDraft';
 //   results      → score, self-grade subjective answers, PDF export
 // ============================================================
 
-type Stage = 'list' | 'builder' | 'instructions' | 'taking' | 'results';
-type QuestionStatus = 'not-visited' | 'not-answered' | 'answered' | 'marked' | 'answered-marked';
+type Stage = 'list' | 'builder' | 'instructions' | 'taking' | 'results' | 'live';
+export type QuestionStatus = 'not-visited' | 'not-answered' | 'answered' | 'marked' | 'answered-marked';
 
 function formatClock(totalSeconds: number): string {
   const s = Math.max(0, totalSeconds);
@@ -41,6 +42,7 @@ export default function Test() {
   const [papers, setPapers] = useState<TestPaper[]>([]);
   const [history, setHistory] = useState<TestAttempt[]>([]);
   const [editingPaper, setEditingPaper] = useState<TestPaper | null>(null);
+  const [livePaper, setLivePaper] = useState<TestPaper | null>(null);
   const [activePaper, setActivePaper] = useState<TestPaper | null>(draft?.paper ?? null);
 
   // ── taking-stage state ──────────────────────────────────────────────
@@ -133,6 +135,11 @@ export default function Test() {
   const startInstructions = (p: TestPaper) => {
     setActivePaper(p);
     setStage('instructions');
+  };
+
+  const startLive = (p: TestPaper) => {
+    setLivePaper(p);
+    setStage('live');
   };
 
   const beginTest = () => {
@@ -281,9 +288,12 @@ export default function Test() {
           onEdit={openEdit}
           onDelete={handleDeletePaper}
           onTake={startInstructions}
+          onLive={startLive}
           onOpenAttempt={openPastAttempt}
         />
       )}
+
+      {stage === 'live' && livePaper && <LiveHost paper={livePaper} onExit={() => setStage('list')} />}
 
       {stage === 'builder' && <TestBuilder initialPaper={editingPaper} onSave={handleSavePaper} onCancel={() => setStage('list')} />}
 
@@ -326,6 +336,7 @@ function TestList({
   onEdit,
   onDelete,
   onTake,
+  onLive,
   onOpenAttempt,
 }: {
   papers: TestPaper[];
@@ -334,6 +345,7 @@ function TestList({
   onEdit: (p: TestPaper) => void;
   onDelete: (id: string) => void;
   onTake: (p: TestPaper) => void;
+  onLive: (p: TestPaper) => void;
   onOpenAttempt: (a: TestAttempt) => void;
 }) {
   return (
@@ -354,9 +366,14 @@ function TestList({
                     {p.durationMinutes > 0 ? ` · ${p.durationMinutes} min` : ' · no timer'}
                   </p>
                 </div>
-                <button onClick={() => onTake(p)} className="px-4 py-2 rounded-lg bg-black text-white dark:bg-white dark:text-black text-sm font-semibold transition flex-shrink-0">
-                  Take Test
-                </button>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <button onClick={() => onLive(p)} className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-gray-300 dark:border-white/20 text-sm font-semibold transition" title="Run this test live for many people">
+                    <Users className="w-4 h-4" /> Live
+                  </button>
+                  <button onClick={() => onTake(p)} className="px-4 py-2 rounded-lg bg-black text-white dark:bg-white dark:text-black text-sm font-semibold transition">
+                    Take Test
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -393,6 +410,9 @@ function TestList({
                 </button>
                 <button onClick={() => onDelete(p.id)} className="p-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-500/10 text-red-500" aria-label="Delete test">
                   <Trash2 className="w-4 h-4" />
+                </button>
+                <button onClick={() => onLive(p)} className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-gray-300 dark:border-white/20 text-sm font-semibold transition" title="Run this test live for many people">
+                  <Users className="w-4 h-4" /> Live
                 </button>
                 <button onClick={() => onTake(p)} className="px-4 py-2 rounded-lg bg-black text-white dark:bg-white dark:text-black text-sm font-semibold transition">
                   Take Test
@@ -500,7 +520,7 @@ function LegendRow({ color, label, dot }: { color: string; label: string; dot?: 
 // ============================================================
 // Taking screen — timer, single question, palette, nav buttons
 // ============================================================
-function TakingScreen({
+export function TakingScreen({
   paper,
   step,
   currentQuestion,
