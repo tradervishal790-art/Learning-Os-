@@ -8,7 +8,7 @@
 //   liveTests/{code}                  public: title, timer, status, questions WITHOUT answers
 //   liveTests/{code}/private/paper    host-only: the same questions WITH the answer key
 //   liveTests/{code}/allowed/{phone}  the host's guest list — ONLY these numbers can join
-//   liveTests/{code}/players/{phone}  who joined (doc id = phone; locked to the first device)
+//   liveTests/{code}/players/{phone}  who joined + when they pressed Start (doc id = phone; locked to the first device)
 //   liveTests/{code}/submissions/{phone}  final answers (create-only → one submission per phone)
 //   liveTests/{code}/done/{phone}     tiny marker so a finished student cannot re-open the test
 //
@@ -52,6 +52,8 @@ export interface LiveSession {
 export interface LivePlayer {
   phone: string;
   name: string;
+  /** Server time (ms) when this student pressed Start; null = joined but not started yet. */
+  startedAtMs?: number | null;
 }
 
 export interface LiveAllowed {
@@ -143,7 +145,7 @@ export async function createLiveSession(paper: TestPaper, questions: TestQuestio
         title: paper.title,
         topic: paper.topic,
         durationMinutes: paper.durationMinutes,
-        status: 'lobby',
+        status: 'running', // live from the moment it is created — each student starts on their own
         questions: questions.map(publicQuestion),
         totalMarks: computeTotalMarks(questions),
       }),
@@ -153,10 +155,6 @@ export async function createLiveSession(paper: TestPaper, questions: TestQuestio
     return code;
   }
   throw new Error('Could not create a unique code — please try again.');
-}
-
-export async function startLiveSession(code: string): Promise<void> {
-  await updateDoc(doc(db, 'liveTests', code), { status: 'running', startedAt: serverTimestamp() });
 }
 
 export async function endLiveSession(code: string): Promise<void> {
@@ -181,7 +179,13 @@ export function subscribeRoster(
 ): Unsubscribe {
   const u1 = onSnapshot(
     collection(db, 'liveTests', code, 'players'),
-    (snap) => onPlayers(snap.docs.map((d) => ({ phone: d.id, name: String(d.data().name ?? '') }))),
+    (snap) =>
+      onPlayers(
+        snap.docs.map((d) => {
+          const st = d.data().startedAt as { toMillis?: () => number } | null | undefined;
+          return { phone: d.id, name: String(d.data().name ?? ''), startedAtMs: st && typeof st.toMillis === 'function' ? st.toMillis() : null };
+        })
+      ),
     (e) => console.warn('players listener', e)
   );
   const u2 = onSnapshot(
@@ -301,9 +305,14 @@ export class JoinError extends Error {
   }
 }
 
-/** Checks the host's guest list, registers the participant and returns the name to use
- *  plus (server clock − device clock) in ms, so every phone counts the same countdown. */
-export async function joinLiveSession(code: string, typedName: string, phone: string): Promise<{ offsetMs: number; name: string }> {
+/** Checks the host's guest list and registers the participant. Returns the name to use,
+ *  (server clock − device clock) in ms, and — if this student already pressed Start earlier
+ *  (refresh / reopened page) — when they started, so the countdown carries on. */
+export async function joinLiveSession(
+  code: string,
+  typedName: string,
+  phone: string
+): Promise<{ offsetMs: number; name: string; startedAtMs: number | null }> {
   const uid = await ensureSignedIn();
   const allowedSnap = await getDoc(doc(db, 'liveTests', code, 'allowed', phone));
   if (!allowedSnap.exists()) throw new JoinError('NOT_ALLOWED');
@@ -314,21 +323,44 @@ export async function joinLiveSession(code: string, typedName: string, phone: st
   const ref = doc(db, 'liveTests', code, 'players', phone);
   const before = Date.now();
   try {
-    await setDoc(ref, { uid, name, phone, joinedAt: serverTimestamp() });
+    // merge: a returning student keeps the startedAt they already have
+    await setDoc(ref, { uid, name, phone, joinedAt: serverTimestamp() }, { merge: true });
   } catch (e) {
     if ((e as { code?: string })?.code?.includes('permission-denied')) throw new JoinError('OTHER_DEVICE');
     throw e;
   }
+  return readClock(ref, before, name, 'joinedAt');
+}
+
+async function readClock(
+  ref: ReturnType<typeof doc>,
+  before: number,
+  name: string,
+  stamped: 'joinedAt' | 'startedAt'
+): Promise<{ offsetMs: number; name: string; startedAtMs: number | null }> {
   try {
     const snap = await getDocFromServer(ref);
-    const joined = snap.data()?.joinedAt as { toMillis?: () => number } | undefined;
-    if (joined && typeof joined.toMillis === 'function') {
-      return { offsetMs: joined.toMillis() - (before + Date.now()) / 2, name };
-    }
+    const x = snap.data();
+    const stampedAt = x?.[stamped] as { toMillis?: () => number } | undefined; // the field this call just wrote
+    const st = x?.startedAt as { toMillis?: () => number } | undefined;
+    return {
+      offsetMs: stampedAt && typeof stampedAt.toMillis === 'function' ? stampedAt.toMillis() - (before + Date.now()) / 2 : 0,
+      name,
+      startedAtMs: st && typeof st.toMillis === 'function' ? st.toMillis() : null,
+    };
   } catch {
-    // offset 0 is fine — only a few seconds off at worst
+    return { offsetMs: 0, name, startedAtMs: null }; // offset 0 is fine — only a few seconds off at worst
   }
-  return { offsetMs: 0, name };
+}
+
+/** The student pressed Start: the server stamps the time, so the personal timer cannot be reset. */
+export async function beginLiveAttempt(code: string, phone: string): Promise<{ offsetMs: number; startedAtMs: number | null }> {
+  await ensureSignedIn();
+  const ref = doc(db, 'liveTests', code, 'players', phone);
+  const before = Date.now();
+  await updateDoc(ref, { startedAt: serverTimestamp() });
+  const r = await readClock(ref, before, '', 'startedAt');
+  return { offsetMs: r.offsetMs, startedAtMs: r.startedAtMs };
 }
 
 export async function submitLiveAnswers(

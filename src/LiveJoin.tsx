@@ -3,13 +3,14 @@ import { useLocation } from 'react-router-dom';
 import type { TestPaper, TestUserAnswer } from './types';
 import { isAnswered } from './testGrading';
 import { TakingScreen, type QuestionStatus } from './Test';
-import { JoinError, joinLiveSession, normalizeCode, normalizePhone, submitLiveAnswers, subscribeSession, type LiveSession } from './liveTest';
+import { JoinError, beginLiveAttempt, joinLiveSession, normalizeCode, normalizePhone, submitLiveAnswers, subscribeSession, type LiveSession } from './liveTest';
 import { loadSavedTheme } from './ThemeContext';
 
 // ============================================================
 // LiveJoin.tsx — public page at /live/:code (outside the login gate).
-// A participant types name + phone, waits for the host to press Start,
-// then takes the same NTA-style test. Answers are sent once, at submit
+// A participant types name + phone (must be on the host's list), presses
+// Start whenever they are ready — their own timer begins then — and takes
+// the same NTA-style test. Answers are sent once, at submit
 // (or automatically when the timer ends). No answer key ever reaches
 // this page — the host's device grades everyone.
 // ============================================================
@@ -52,6 +53,7 @@ export default function LiveJoin() {
   const [player, setPlayer] = useState<SavedPlayer | null>(() => readJson<SavedPlayer>(playerKey(code)));
   const [joined, setJoined] = useState(false);
   const [offsetMs, setOffsetMs] = useState(0);
+  const [startedAtMs, setStartedAtMs] = useState<number | null>(null);
   const [name, setName] = useState(player?.name ?? '');
   const [phoneInput, setPhoneInput] = useState(player?.phone ?? '');
   const [formError, setFormError] = useState('');
@@ -93,6 +95,7 @@ export default function LiveJoin() {
       try {
         const res = await joinLiveSession(code, n, phone);
         setOffsetMs(res.offsetMs);
+        setStartedAtMs(res.startedAtMs);
         const p = { name: res.name, phone };
         writeJson(playerKey(code), p);
         setPlayer(p);
@@ -143,7 +146,7 @@ export default function LiveJoin() {
     [live]
   );
 
-  const isRunning = live?.status === 'running' && joined && !submitted;
+  const isRunning = !!live && live.status !== 'ended' && joined && !submitted && startedAtMs !== null;
 
   // Set up answers/palette once the test is running (restoring a saved draft after refresh).
   useEffect(() => {
@@ -172,8 +175,8 @@ export default function LiveJoin() {
     writeJson(draftKey(code, player.phone), { answers, statusMap, step });
   }, [isRunning, player, code, answers, statusMap, step]);
 
-  // Shared countdown: host's start time + this device's measured clock offset.
-  const elapsed = live?.startedAtMs ? Math.max(0, Math.floor((now + offsetMs - live.startedAtMs) / 1000)) : 0;
+  // Personal countdown: the server-stamped moment THIS student pressed Start + this device's clock offset.
+  const elapsed = startedAtMs ? Math.max(0, Math.floor((now + offsetMs - startedAtMs) / 1000)) : 0;
   const durationSec = (live?.durationMinutes ?? 0) * 60;
   const timeLeft = durationSec > 0 ? durationSec - elapsed : null;
 
@@ -218,6 +221,21 @@ export default function LiveJoin() {
   useEffect(() => {
     if (live?.status === 'ended' && joined && !submitted && answers.length > 0) void doSubmit();
   }, [live?.status, joined, submitted, answers.length, doSubmit]);
+
+  const handleBegin = async () => {
+    if (!player) return;
+    setBusy(true);
+    setFormError('');
+    try {
+      const r = await beginLiveAttempt(code, player.phone);
+      setOffsetMs(r.offsetMs);
+      setStartedAtMs(r.startedAtMs);
+    } catch {
+      setFormError('Could not start. Check your internet and try again.');
+    } finally {
+      setBusy(false);
+    }
+  };
 
   // ── palette handlers (same behaviour as Test.tsx) ──
   const currentQuestion = paper?.questions[step];
@@ -326,11 +344,30 @@ export default function LiveJoin() {
     );
   }
 
-  if (live.status === 'lobby') {
+  if (live.status === 'ended' && startedAtMs === null) {
     return shell(
       <div className={box}>
-        <p className="font-semibold mb-1">You're in, {player?.name} ✓</p>
-        <p className="text-sm text-gray-500 dark:text-white/60">Waiting for the host to start the test. Keep this page open.</p>
+        <p className="font-semibold mb-1">{live.title}</p>
+        <p className="text-sm text-gray-500 dark:text-white/60">The host has closed this test.</p>
+      </div>
+    );
+  }
+
+  if (startedAtMs === null) {
+    return shell(
+      <div className={box}>
+        <p className="text-xs uppercase tracking-wide text-gray-400 dark:text-white/40 mb-1">Ready, {player?.name}?</p>
+        <h1 className="text-2xl font-bold mb-3">{live.title}</h1>
+        <ul className="text-sm text-gray-500 dark:text-white/60 text-left space-y-1.5 mb-5 list-disc pl-5">
+          <li>{live.questions.length} questions</li>
+          <li>{live.durationMinutes > 0 ? `${live.durationMinutes} minutes — the timer starts when you press Start` : 'No timer'}</li>
+          <li>You can take this test only once</li>
+          <li>Keep this page open until you submit</li>
+        </ul>
+        {formError && <p className="text-sm text-red-500 mb-3">{formError}</p>}
+        <button onClick={handleBegin} disabled={busy} className="w-full py-3 rounded-xl bg-black text-white dark:bg-white dark:text-black font-semibold disabled:opacity-40">
+          {busy ? 'Starting...' : 'Start test'}
+        </button>
       </div>
     );
   }

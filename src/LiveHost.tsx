@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, Check, Clock, Copy, Download, Play, RotateCcw, Square, Users, X } from 'lucide-react';
+import { ArrowLeft, Check, Copy, Download, RotateCcw, Square, Users, X } from 'lucide-react';
 import type { TestPaper, TestQuestion } from './types';
 import {
   buildLeaderboard,
@@ -8,7 +8,6 @@ import {
   fetchHostQuestions,
   getSessionOnce,
   splitPlayable,
-  startLiveSession,
   subscribeRoster,
   subscribeSession,
   ensureSignedIn,
@@ -25,17 +24,16 @@ import { downloadLeaderboardPdf } from './testPdf';
 
 // ============================================================
 // LiveHost.tsx — the host's control room for a Live Test.
-//   1. Create session  → 6-character code + join link
-//   2. Lobby           → watch people join, press Start for everyone
-//   3. Running         → joined / submitted counters, countdown, End
-//   4. Ended           → ranking table + "Download PDF"
+//   1. Create session  → 6-character code + join link (live immediately)
+//   2. Live            → add allowed numbers any time; each student starts whenever
+//                        they like and gets the full time from THEIR own Start.
+//                        Stays live until the host presses End.
+//   3. Ended           → ranking table + "Download PDF"
 // The answer key lives only in the host-only Firestore doc; grading
 // happens here, on the host's device, when the results are shown.
 // ============================================================
 
 const HOST_KEY = (paperId: string) => `learning_os_live_host_${paperId}`;
-const END_GRACE_SECONDS = 20; // let last auto-submits reach Firestore before the host can close
-
 function formatClock(totalSeconds: number): string {
   const s = Math.max(0, totalSeconds);
   return `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
@@ -52,7 +50,6 @@ export default function LiveHost({ paper, onExit }: { paper: TestPaper; onExit: 
   const [submissions, setSubmissions] = useState<LiveSubmission[]>([]);
   const [allowed, setAllowed] = useState<LiveAllowed[]>([]);
   const [keyQuestions, setKeyQuestions] = useState<TestQuestion[] | null>(null);
-  const [now, setNow] = useState(Date.now());
   const [copied, setCopied] = useState<'code' | 'link' | null>(null);
 
   // Resume a session this host already created for this paper (refresh-safe).
@@ -88,11 +85,6 @@ export default function LiveHost({ paper, onExit }: { paper: TestPaper; onExit: 
     };
   }, [code]);
 
-  useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(t);
-  }, []);
-
   const joinLink = code ? `${window.location.origin}/live/${code}` : '';
 
   const copy = async (what: 'code' | 'link') => {
@@ -123,33 +115,15 @@ export default function LiveHost({ paper, onExit }: { paper: TestPaper; onExit: 
     }
   };
 
-  const handleStart = async () => {
-    if (!code) return;
-    setBusy(true);
-    setError('');
-    try {
-      await startLiveSession(code);
-    } catch {
-      setError('Could not start the test. Check your internet and try again.');
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const durationSec = (session?.durationMinutes ?? 0) * 60;
-  const elapsed = session?.startedAtMs ? Math.floor((now - session.startedAtMs) / 1000) : 0;
-  const timeLeft = durationSec > 0 ? durationSec - elapsed : null;
-  const secondsSinceExpiry = timeLeft !== null && timeLeft <= 0 ? -timeLeft : 0;
-  const graceLeft = timeLeft !== null && timeLeft <= 0 ? Math.max(0, END_GRACE_SECONDS - secondsSinceExpiry) : 0;
+  const takingNow = players.filter((p) => p.startedAtMs && !submissions.some((s) => s.phone === p.phone)).length;
 
   const handleEnd = async () => {
     if (!code) return;
-    const waiting = players.length - submissions.length;
     const msg =
-      timeLeft !== null && timeLeft > 0
-        ? `Time is still left (${formatClock(timeLeft)}). End the test for everyone now?`
-        : waiting > 0
-          ? `${waiting} joined person(s) have not submitted. End the test anyway?`
+      takingNow > 0
+        ? `${takingNow} student(s) are still taking the test right now. Their unsent answers will be lost if you end it. End anyway?`
+        : allowed.length - submissions.length > 0
+          ? `${allowed.length - submissions.length} student(s) on the list have not taken the test. Once you end it, nobody can join. End now?`
           : 'End the test and show the ranking?';
     if (!confirm(msg)) return;
     setBusy(true);
@@ -229,10 +203,13 @@ export default function LiveHost({ paper, onExit }: { paper: TestPaper; onExit: 
 
       {code && !session && <p className="text-gray-400">Loading session...</p>}
 
-      {/* ---------- 2. lobby ---------- */}
-      {code && session?.status === 'lobby' && (
+      {/* ---------- 2. live ---------- */}
+      {code && session && session.status !== 'ended' && (
         <div className="space-y-5">
           <div className={card}>
+            <p className="flex items-center gap-2 text-sm font-semibold text-emerald-600 dark:text-emerald-400 mb-3">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> LIVE — students on the list can take the test any time until you end it
+            </p>
             <p className="text-xs uppercase tracking-wide text-gray-400 dark:text-white/40 mb-1">Join code</p>
             <div className="flex items-center gap-3 flex-wrap">
               <span className="text-4xl font-mono font-bold tracking-[0.3em]">{code}</span>
@@ -247,40 +224,22 @@ export default function LiveHost({ paper, onExit }: { paper: TestPaper; onExit: 
                 {copied === 'link' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />} Copy link
               </button>
             </div>
+            <p className="text-xs text-gray-400 dark:text-white/40 mt-4">
+              {paper.durationMinutes > 0 ? `Each student gets ${paper.durationMinutes} min from the moment THEY press Start.` : 'No timer — each student finishes when they submit.'}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-3 gap-3">
+            <Stat label="On list" value={String(allowed.length)} />
+            <Stat label="Taking now" value={String(takingNow)} />
+            <Stat label="Submitted" value={String(submissions.length)} />
           </div>
 
           {guestPanel}
 
-          <button onClick={handleStart} disabled={busy || allowed.length === 0} className={`${primaryBtn} flex items-center gap-2`}>
-            <Play className="w-4 h-4" /> Start test for everyone
-          </button>
-          {allowed.length === 0 && <p className="text-xs text-gray-400 dark:text-white/40">Add at least one phone number above to start.</p>}
-        </div>
-      )}
-
-      {/* ---------- 3. running ---------- */}
-      {code && session?.status === 'running' && (
-        <div className="space-y-5">
-          <div className="grid grid-cols-3 gap-3">
-            <Stat label="Joined" value={String(players.length)} />
-            <Stat label="Submitted" value={`${submissions.length}`} />
-            <Stat label={timeLeft !== null ? 'Time left' : 'Elapsed'} value={formatClock(timeLeft !== null ? timeLeft : elapsed)} icon />
-          </div>
-
-          <div className="h-2 rounded-full bg-gray-200 dark:bg-white/10 overflow-hidden">
-            <div
-              className="h-full bg-emerald-500 transition-all"
-              style={{ width: `${players.length ? Math.min(100, (submissions.length / players.length) * 100) : 0}%` }}
-            />
-          </div>
-
-          {graceLeft > 0 && <p className="text-sm text-gray-500 dark:text-white/60">Time is up. Waiting {graceLeft}s so everyone's answers reach the server...</p>}
-
-          <button onClick={handleEnd} disabled={busy || graceLeft > 0} className={`${primaryBtn} flex items-center gap-2 !bg-red-500 !text-white`}>
+          <button onClick={handleEnd} disabled={busy} className={`${primaryBtn} flex items-center gap-2 !bg-red-500 !text-white`}>
             <Square className="w-4 h-4" /> End test &amp; show ranking
           </button>
-          <p className="text-xs text-gray-400 dark:text-white/40">People who join late still get only the remaining time.</p>
-          {guestPanel}
         </div>
       )}
 
@@ -340,12 +299,11 @@ export default function LiveHost({ paper, onExit }: { paper: TestPaper; onExit: 
   );
 }
 
-function Stat({ label, value, icon }: { label: string; value: string; icon?: boolean }) {
+function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl p-4 text-center">
       <p className="text-xs uppercase tracking-wide text-gray-400 dark:text-white/40 mb-1">{label}</p>
       <p className="text-2xl font-bold flex items-center justify-center gap-1.5">
-        {icon && <Clock className="w-4 h-4" />}
         {value}
       </p>
     </div>
