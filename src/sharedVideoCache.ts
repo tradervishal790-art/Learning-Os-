@@ -91,6 +91,34 @@ export function pushSharedTopicPool<T>(poolCacheKey: string, candidates: T[]): v
   });
 }
 
+/**
+ * Shared cache for the Videos section's manual search (page 1 only).
+ * Reuses the existing `shared_topic_pools` collection (key prefixed `search_`),
+ * so NO new Firestore rule is needed.
+ */
+export async function pullSharedSearch<T>(searchKey: string): Promise<{ items: T[]; nextPageToken: string | null } | null> {
+  if (!isSignedIn()) return null;
+  try {
+    const snap = await getDoc(doc(db, 'shared_topic_pools', searchKey));
+    if (!snap.exists()) return null;
+    const data = snap.data();
+    if (!Array.isArray(data?.candidates) || data.candidates.length === 0) return null;
+    return { items: data.candidates as T[], nextPageToken: data.nextPageToken ?? null };
+  } catch {
+    return null;
+  }
+}
+
+/** Fire-and-forget: saves a search's first page so the next user who searches the same thing costs 0 quota. */
+export function pushSharedSearch<T>(searchKey: string, items: T[], nextPageToken: string | null): void {
+  if (!isSignedIn() || items.length === 0) return;
+  void setDoc(doc(db, 'shared_topic_pools', searchKey), {
+    candidates: items,
+    nextPageToken,
+    updatedAt: new Date().toISOString(),
+  }).catch(() => {});
+}
+
 // ------------------------------------------------------------------------
 // FIRESTORE RULES — add this alongside the existing users/{uid}/... rule
 // in the Firebase console (Firestore Database -> Rules). Without it, every

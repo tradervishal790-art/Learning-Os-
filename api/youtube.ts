@@ -106,6 +106,10 @@ async function handleSearch(req: VercelRequest, q: string, apiKey: string, res: 
 
     if (!ytRes.ok) {
       console.error('YouTube search error:', ytRes.status, data);
+      const reason = data?.error?.errors?.[0]?.reason;
+      if (reason === 'quotaExceeded' || reason === 'dailyLimitExceeded') {
+        return res.status(429).json({ error: 'Video search is busy right now. Please try again a little later.' });
+      }
       return res.status(502).json({ error: data?.error?.message || 'YouTube API error' });
     }
 

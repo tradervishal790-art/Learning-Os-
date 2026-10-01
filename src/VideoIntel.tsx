@@ -16,6 +16,7 @@ import { hasSeenTour, markTourSeen } from './tourStore';
 import { useTranslation } from './i18n/LanguageContext';
 import { format } from './i18n/format';
 import { authFetch } from './apiFetch';
+import { pullSharedSearch, pushSharedSearch } from './sharedVideoCache';
 
 declare global {
   interface Window {
@@ -689,6 +690,15 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
     nextPageTokenRef.current = null; // fresh query — start pagination over
 
     try {
+      // Shared cache first — same search by any earlier user = 0 YouTube quota.
+      const searchKey = `search_${searchQuery.trim().toLowerCase().replace(/\s+/g, ' ').slice(0, 150)}`;
+      const shared = await pullSharedSearch<Video>(searchKey);
+      if (shared) {
+        nextPageTokenRef.current = shared.nextPageToken;
+        setVideos(shared.items);
+        return;
+      }
+
       const res = await authFetch(
         `/api/youtube?maxResults=12&q=${encodeURIComponent(searchQuery)}`
       );
@@ -705,19 +715,19 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
 
       nextPageTokenRef.current = data.nextPageToken ?? null;
 
-      setVideos(
-        data.items.map(
-          (item: any): Video => ({
-            id: item.id.videoId,
-            title: item.snippet.title,
-            thumbnail: item.snippet.thumbnails?.medium?.url ?? item.snippet.thumbnails?.default?.url,
-            channel: item.snippet.channelTitle,
-            channelId: item.snippet.channelId,
-            views: '—',
-            duration: '—',
-          })
-        )
+      const mapped: Video[] = data.items.map(
+        (item: any): Video => ({
+          id: item.id.videoId,
+          title: item.snippet.title,
+          thumbnail: item.snippet.thumbnails?.medium?.url ?? item.snippet.thumbnails?.default?.url,
+          channel: item.snippet.channelTitle,
+          channelId: item.snippet.channelId,
+          views: '—',
+          duration: '—',
+        })
       );
+      setVideos(mapped);
+      pushSharedSearch(searchKey, mapped, nextPageTokenRef.current);
     } catch (err: any) {
       setErrorMessage(err.message || t.videos.errors.searchFailed);
       setVideos([]);
