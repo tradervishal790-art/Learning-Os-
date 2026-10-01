@@ -1,6 +1,7 @@
 import type { Topic } from './types';
 import type { AnalyzedVideo, TeachingDimensions } from './PlaylistBuilder';
 import { authFetch } from './apiFetch';
+import { pullSharedVideoAnalysis, pushSharedVideoAnalysis, pullSharedTopicPool, pushSharedTopicPool } from './sharedVideoCache';
 
 // ============================================================
 // conceptVideoPool.ts
@@ -159,6 +160,22 @@ async function getCandidateVideos(
   const cached = cache[cacheKey];
   if (!forceRefresh && cached && cached.candidates.length > 0) return cached.candidates;
 
+  // SHARED CACHE CHECK — topic.id is unique per roadmap generation (see
+  // generate-roadmap.ts), so it can't be part of a key meant to match
+  // across different users/sessions. sharedPoolKey below uses only the
+  // topic's TITLE + language, which genuinely is the same for every
+  // student studying e.g. "Binary Search Trees" — that's what makes this
+  // worth sharing. A hit here skips the YouTube search entirely.
+  const sharedPoolKey = `pool_${cleanTitleForSearch(topic.title).toLowerCase().slice(0, 150)}__${relevanceLanguage ?? 'any'}`;
+  if (!forceRefresh) {
+    const shared = await pullSharedTopicPool<CandidateMeta>(sharedPoolKey);
+    if (shared && shared.length > 0) {
+      cache[cacheKey] = { candidates: shared, cachedAt: new Date().toISOString() };
+      writeCache(SEARCH_CACHE_KEY, cache);
+      return shared;
+    }
+  }
+
   // Multi-query search — split YouTube quota across queries, merge + dedupe
   const seen = new Set<string>();
   const allCandidates: CandidateMeta[] = [];
@@ -205,6 +222,7 @@ async function getCandidateVideos(
   // Cache non-empty results — empty might be transient, worth retrying
   cache[cacheKey] = { candidates: allCandidates, cachedAt: new Date().toISOString() };
   writeCache(SEARCH_CACHE_KEY, cache);
+  pushSharedTopicPool(sharedPoolKey, allCandidates); // fire-and-forget — next student studying this topic skips YouTube entirely
 
   return allCandidates;
 }
@@ -217,6 +235,22 @@ async function getCandidateVideos(
 async function getAnalyzedProfile(candidate: CandidateMeta): Promise<GeminiProfile | null> {
   const cache = readCache<CachedVideoAnalysis>(ANALYSIS_CACHE_KEY);
   if (cache[candidate.videoId]) return cache[candidate.videoId].profile;
+
+  // SHARED CACHE CHECK — keyed purely by videoId (no topic/user involved),
+  // so this is the biggest win: once ANY student's device has analyzed a
+  // given video, every other student who encounters that same video
+  // (same topic or a totally different one) gets it for free — no Gemini
+  // call, no quota spent.
+  const shared = await pullSharedVideoAnalysis<GeminiProfile>(candidate.videoId);
+  if (shared) {
+    cache[candidate.videoId] = {
+      profile: shared.profile,
+      analysisSource: shared.analysisSource as CachedVideoAnalysis['analysisSource'],
+      cachedAt: new Date().toISOString(),
+    };
+    writeCache(ANALYSIS_CACHE_KEY, cache);
+    return shared.profile;
+  }
 
   try {
     const res = await authFetch('/api/analyze-video', {
@@ -240,6 +274,7 @@ async function getAnalyzedProfile(candidate: CandidateMeta): Promise<GeminiProfi
       cachedAt: new Date().toISOString(),
     };
     writeCache(ANALYSIS_CACHE_KEY, cache);
+    pushSharedVideoAnalysis(candidate.videoId, data.profile, data.analysisSource); // fire-and-forget — saves this video's analysis for every future student
 
     if (data.analysisSource === 'metadata-fallback') {
       console.info(`[conceptVideoPool] ${candidate.videoId} analyzed via metadata fallback (no transcript available).`);
