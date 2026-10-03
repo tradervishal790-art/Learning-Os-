@@ -124,8 +124,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
   const cleanVideoId = videoId.trim();
 
-  const youtubeApiKey = process.env.YOUTUBE_API_KEY || process.env.VITE_YOUTUBE_API_KEY;
-  const geminiApiKey = process.env.VITE_GEMINI_API_KEY;
+  const youtubeApiKey = process.env.YOUTUBE_API_KEY;
+  const geminiApiKey = process.env.GEMINI_API_KEY;
   const minimaxApiKey = process.env.MINIMAX_API_KEY;
 
   if (!youtubeApiKey) {

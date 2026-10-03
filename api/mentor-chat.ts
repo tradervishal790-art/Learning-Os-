@@ -58,10 +58,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
   const locale: Locale = rawLocale === 'hi' || rawLocale === 'en' ? rawLocale : 'hinglish';
 
-  const apiKey = process.env.VITE_GEMINI_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
   const minimaxApiKey = process.env.MINIMAX_API_KEY;
   if (!apiKey && !minimaxApiKey) {
-    return res.status(500).json({ error: 'No AI provider configured on server (VITE_GEMINI_API_KEY / MINIMAX_API_KEY both missing)' });
+    return res.status(500).json({ error: 'No AI provider configured on server (GEMINI_API_KEY / MINIMAX_API_KEY both missing)' });
   }
 
   const topic = context || 'general learning';

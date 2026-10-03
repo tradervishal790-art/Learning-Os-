@@ -25,8 +25,8 @@ import { scoreTeachingStyle } from './_lib/teachingStyle.js';
 // which path was used so failures stay diagnosable, not silent.
 // ─────────────────────────────────────────────────────────────────────────
 //
-// Env var used: VITE_GEMINI_API_KEY — same key as api/expand-query.ts.
-// Do not confuse with VITE_YOUTUBE_API_KEY (different service, different key).
+// Env var used: GEMINI_API_KEY — same key as api/expand-query.ts.
+// Do not confuse with YOUTUBE_API_KEY (different service, different key).
 // ============================================================
 
 
@@ -61,10 +61,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
-  const apiKey = process.env.VITE_GEMINI_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
   const minimaxApiKey = process.env.MINIMAX_API_KEY;
   if (!apiKey && !minimaxApiKey) {
-    res.status(500).json({ error: 'No AI provider configured on server (VITE_GEMINI_API_KEY / MINIMAX_API_KEY both missing)' });
+    res.status(500).json({ error: 'No AI provider configured on server (GEMINI_API_KEY / MINIMAX_API_KEY both missing)' });
     return;
   }
 

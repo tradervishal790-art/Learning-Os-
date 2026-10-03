@@ -43,7 +43,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const { id, q } = req.query as { id?: string; q?: string };
 
-  const apiKey = process.env.YOUTUBE_API_KEY || process.env.VITE_YOUTUBE_API_KEY;
+  const apiKey = process.env.YOUTUBE_API_KEY;
   if (!apiKey) {
     return res.status(500).json({ error: 'YouTube API key not configured on server' });
   }

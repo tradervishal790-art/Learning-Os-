@@ -162,7 +162,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
   if (image.data.length > MAX_BASE64_CHARS) return res.status(413).json({ error: 'File is too large — try again with a smaller one.' });
 
-  const geminiApiKey = process.env.VITE_GEMINI_API_KEY;
+  const geminiApiKey = process.env.GEMINI_API_KEY;
   if (!geminiApiKey && !process.env.GEMINI_API_KEY_2) {
     return res.status(500).json({ error: 'No AI provider configured on server.' });
   }

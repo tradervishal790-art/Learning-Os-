@@ -28,7 +28,7 @@ export async function handleInsight(req: VercelRequest, res: VercelResponse) {
   const json = JSON.stringify(summary);
   if (json.length > MAX_PAYLOAD_CHARS) return res.status(413).json({ error: 'Summary too large.' });
 
-  const geminiApiKey = process.env.VITE_GEMINI_API_KEY;
+  const geminiApiKey = process.env.GEMINI_API_KEY;
   const minimaxApiKey = process.env.MINIMAX_API_KEY;
   if (!geminiApiKey && !minimaxApiKey) return res.status(500).json({ error: 'No AI provider configured on server.' });
 

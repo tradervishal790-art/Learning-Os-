@@ -1,7 +1,7 @@
 // api/_lib/aiFallback.ts
 //
 // Shared engine every api/*.ts Gemini-calling endpoint routes through.
-// PRIMARY: Gemini (VITE_GEMINI_API_KEY, existing).
+// PRIMARY: Gemini (GEMINI_API_KEY, existing).
 // FALLBACK: MiniMax (MINIMAX_API_KEY, new) — triggered automatically
 // whenever Gemini fails for ANY reason: network error, non-2xx response
 // (rate limit / quota exhausted / model overloaded / upstream 5xx), or an
@@ -10,7 +10,7 @@
 // their own existing JSON-parsing / validation logic unchanged.
 //
 // Env vars:
-//   VITE_GEMINI_API_KEY  — existing, required for the primary path
+//   GEMINI_API_KEY  — existing, required for the primary path
 //   MINIMAX_API_KEY      — NEW, required for the fallback path. If missing,
 //                          fallback is skipped and Gemini's own error
 //                          surfaces exactly as it did before this file
@@ -18,7 +18,7 @@
 //   MINIMAX_MODEL         — optional, defaults to 'MiniMax-M3'
 //
 // Add MINIMAX_API_KEY in Vercel → Project → Settings → Environment
-// Variables (same place VITE_GEMINI_API_KEY already lives).
+// Variables (same place GEMINI_API_KEY already lives).
 //
 // NOTE ON MINIMAX ENDPOINT DETAILS: base URL, model names, and request
 // shape below are based on MiniMax's public OpenAI-compatible docs as of
@@ -113,20 +113,20 @@ const MINIMAX_URL = 'https://api.minimax.io/v1/chat/completions';
 //   'notes'    — generate-notes, generate-roadmap, mentor-chat,
 //                blueprint-interview, deep-dive-extract, analyze-video,
 //                analyze-taste-video. Gets 2 keys (heavier group).
-//     VITE_GEMINI_API_KEY  — primary (existing)
+//     GEMINI_API_KEY  — primary (existing)
 //     GEMINI_API_KEY_2     — backup
 //   'research' — research, expand-query. Gets its own dedicated key.
 //     GEMINI_API_KEY_3     — dedicated to this group
 //
 // The caller's own geminiApiKey param (whatever it read from
-// VITE_GEMINI_API_KEY itself) is always appended as a last-resort safety
+// GEMINI_API_KEY itself) is always appended as a last-resort safety
 // net — so if a group's dedicated env vars aren't set yet, it still has
 // at least one key to try instead of going straight to MiniMax.
 function getGeminiKeyPool(group: 'notes' | 'research', callerKey: string | undefined): string[] {
   const keys =
     group === 'research'
       ? [process.env.GEMINI_API_KEY_3, callerKey]
-      : [process.env.VITE_GEMINI_API_KEY, process.env.GEMINI_API_KEY_2, callerKey];
+      : [process.env.GEMINI_API_KEY, process.env.GEMINI_API_KEY_2, callerKey];
   const cleaned = keys.filter((k): k is string => !!k && k.trim().length > 0);
   // Dedup in case the same key ended up in two env vars/params.
   return Array.from(new Set(cleaned));

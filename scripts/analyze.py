@@ -6,7 +6,7 @@ import time
 from dotenv import load_dotenv
 
 load_dotenv(dotenv_path=".env.local")
-genai.configure(api_key=os.getenv("VITE_GEMINI_API_KEY"))
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 # Yahan apne saare video IDs daalo
 VIDEO_IDS = [
