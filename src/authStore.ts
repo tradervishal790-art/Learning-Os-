@@ -12,7 +12,6 @@ import {
   type User,
 } from 'firebase/auth';
 import { auth } from './firebase';
-import { lockSections } from './sectionLock';
 import type { TranslationShape } from './i18n/translations';
 
 // ============================================================
@@ -38,7 +37,6 @@ export function getCurrentUser(): User | null {
 }
 
 export async function signOutOfApp(): Promise<void> {
-  lockSections();
   await signOut(auth);
 }
 

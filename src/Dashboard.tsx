@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState, lazy, Suspense } from 'react';
 import type { ComponentType } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Film, BookOpen, ClipboardCheck, Lock } from 'lucide-react';
+import { Search, Film, BookOpen, ClipboardCheck } from 'lucide-react';
 import PagePlaceholder from './PagePlaceholder';
 import { getRoadmapData, getCurrentTopic } from './roadmapData';
 import { getRevisionStats, getRevisionDataForGoals } from './revisionData';
@@ -23,8 +23,6 @@ import type { Tour } from './onbordaTypes';
 import { hasSeenTour, markTourSeen } from './tourStore';
 import { useTranslation } from './i18n/LanguageContext';
 import { format } from './i18n/format';
-import SectionLockGate from './SectionLockGate';
-import { lockSections, useAnySectionUnlocked } from './sectionLock';
 
 // Every real "page" is lazy-loaded: each one only downloads once the user
 // actually navigates to its route, instead of every page's code shipping
@@ -302,7 +300,6 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   );
 
   const [showSidebar, setShowSidebar] = useState(false);
-  const sectionsUnlocked = useAnySectionUnlocked();
   const [streak, setStreak] = useState(0);
   // Bell + sound reminder — computed once when the app/home page opens (not
   // only on navigating into the Revision tab), so nothing due gets missed.
@@ -688,16 +685,6 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
             <div className="text-sm font-medium bg-gradient-to-r from-purple-500 via-pink-500 to-orange-400 bg-clip-text text-transparent truncate">{displayName}</div>
             <div className="text-xs text-gray-400 dark:text-white/40 truncate">{userData?.role ? userData.role : 'Learner'}</div>
           </div>
-          {sectionsUnlocked && (
-            <button
-              onClick={() => lockSections()}
-              title={t.sectionLock.lockNow}
-              aria-label={t.sectionLock.lockNow}
-              className="w-8 h-8 rounded-full border border-gray-200 dark:border-white/10 flex items-center justify-center text-gray-500 dark:text-white/50 hover:text-black dark:hover:text-white flex-shrink-0"
-            >
-              <Lock className="w-3.5 h-3.5" />
-            </button>
-          )}
         </div>
       </div>
     </>
@@ -913,7 +900,6 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
           </div>
         )}
 
-        <SectionLockGate page={activePage}>
         {activePage === 'roadmap' && (
           <Roadmap
             key={`${roadmapVersion}-${activeGoalId}`}
@@ -952,7 +938,6 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
         {activePage === 'progress' && <Progress goals={goals} />}
         {activePage === 'research' && <Research />}
         {activePage === 'dictionary' && <Dictionary />}
-        </SectionLockGate>
 
         {config && (
           <PagePlaceholder
