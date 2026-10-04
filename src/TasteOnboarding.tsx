@@ -7,6 +7,7 @@ import HintBubble from './HintBubble';
 import { useTranslation } from './i18n/LanguageContext';
 import { format } from './i18n/format';
 import { authFetch } from './apiFetch';
+import { extractYouTubeId } from './youtubeId';
 
 // ============================================================
 // TasteOnboarding.tsx
@@ -44,15 +45,7 @@ interface VideoEntry {
 }
 
 function extractVideoId(url: string): string | null {
-  const trimmed = url.trim();
-  const patterns = [
-    /(?:youtube\.com\/watch\?v=|youtube\.com\/shorts\/|youtu\.be\/|m\.youtube\.com\/watch\?v=)([a-zA-Z0-9_-]{11})/,
-  ];
-  for (const p of patterns) {
-    const match = trimmed.match(p);
-    if (match) return match[1];
-  }
-  return null;
+  return extractYouTubeId(url);
 }
 
 function makeEmptyEntry(id: string): VideoEntry {

@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { useTranslation } from './i18n/LanguageContext';
 import type { TranslationShape } from './i18n/translations';
 import { authFetch } from './apiFetch';
+import { extractYouTubeId } from './youtubeId';
 
 // Lightweight markdown renderer for myNotes (## headings, - bullets,
 // **bold**, blank-line paragraph breaks) — no react-markdown dependency
@@ -140,17 +141,7 @@ async function generateDeepNotes(topic: string, videoContext?: string, videoId?:
 }
 
 function extractVideoId(url: string): string | null {
-  const patterns = [
-    /(?:youtube\.com\/watch\?v=)([\w-]{11})/,
-    /(?:youtu\.be\/)([\w-]{11})/,
-    /(?:youtube\.com\/embed\/)([\w-]{11})/,
-    /(?:youtube\.com\/shorts\/)([\w-]{11})/,
-  ];
-  for (const p of patterns) {
-    const m = url.match(p);
-    if (m) return m[1];
-  }
-  return null;
+  return extractYouTubeId(url);
 }
 
 async function fetchVideoMeta(videoId: string): Promise<{ title: string; description: string }> {
