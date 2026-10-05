@@ -223,7 +223,8 @@ export type DashboardPageId =
   | 'progress'
   | 'research'
   | 'dictionary'
-  | 'test';
+  | 'test'
+  | 'current-affairs';
   // ---------- Learning Style Profile ----------
 export interface LearningProfile {
   pace: number;

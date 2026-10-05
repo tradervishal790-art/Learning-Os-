@@ -13,6 +13,8 @@ Use this file as persistent context. Read before starting new work; append new d
 - Pushes to origin only on explicit request; token never persisted.
 - Every commit verified with `tsc -b` + `vite build` first.
 
+- Current Affairs: general mix for govt exams (SSC/Banking/UPSC), not one exam. Content is AI-summarised from public RSS headlines only (no invented facts, own words, source shown on each point), generated once per day per language and shared across users. No cron: first opener triggers it.
+
 ## Rejected paths (don't re-propose without new reasoning)
 - LangChain — unnecessary abstraction here.
 - Flowise / Bubble — incompatible with custom logic.

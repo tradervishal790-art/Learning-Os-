@@ -33,6 +33,8 @@ scripts/    → build/utility scripts
 - `hintsStore.ts` + `HintBubble.tsx` — section-by-section feature hints, static copy only (zero AI cost), global "Skip tour".
 - `src/i18n/LanguageContext.tsx` (+ `translations.ts`) — i18n foundation; `Locale = 'en' | 'hi' | 'hinglish'`, currently behind a `LOCKED_TO_ENGLISH` flag.
 
+- `src/CurrentAffairs.tsx` + `src/currentAffairsStore.ts` + `api/_lib/currentAffairs.ts` — daily Current Affairs (general mix for govt exams). Server fetches public news RSS (The Hindu, Indian Express) and makes ONE AI call -> 10-15 short points + 5 MCQs. Served via `api/research.ts?op=current-affairs` (12-function Hobby limit). First student of the day per language generates it; saved to Firestore `shared_current_affairs/{IST-date}_{locale}` so everyone else costs 0 AI. Private progress (quiz score, streak, last missed questions) in localStorage + cloudSync key `currentAffairsProgress`.
+
 ## AI call bundling
 Where possible, related AI outputs are bundled into a single Gemini call to control cost — e.g. Blueprint Interview scoring, `deepDiveChat` + `deepDiveQuestions`.
 

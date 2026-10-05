@@ -60,6 +60,7 @@ export interface TranslationShape {
       research: string;
       dictionary: string;
       test: string;
+      currentAffairs: string;
     };
     greeting: {
       morning: string;
@@ -433,6 +434,27 @@ export interface TranslationShape {
     closeAria: string;
     emptyState: { title: string; subtitle: string };
   };
+  currentAffairs: {
+    title: string;
+    subtitle: string;
+    streak: string; // "{0}-day streak"
+    previousDays: string;
+    today: string;
+    loading: string;
+    retry: string;
+    dayNotAvailable: string;
+    tabs: { all: string; national: string; international: string; economy: string; sports: string; scitech: string };
+    sourceLabel: string;
+    aiNote: string;
+    quizTitle: string;
+    quizSubtitle: string;
+    correct: string;
+    wrong: string;
+    scoreLine: string; // "You scored {0} / {1}"
+    streakDone: string;
+    mistakesTitle: string;
+    correctAnswerLabel: string;
+  };
 }
 
 export const translations: Record<Locale, TranslationShape> = {
@@ -560,6 +582,7 @@ export const translations: Record<Locale, TranslationShape> = {
         research: 'Research',
         dictionary: 'Dictionary',
         test: 'Test',
+        currentAffairs: 'Current Affairs',
       },
       greeting: {
         morning: 'Good Morning',
@@ -1275,6 +1298,27 @@ export const translations: Record<Locale, TranslationShape> = {
       closeAria: 'Close research panel',
       emptyState: { title: 'Search any topic', subtitle: 'You can also open this alongside a video — from the Videos page' },
     },
+    currentAffairs: {
+      title: 'Current Affairs',
+      subtitle: "Today's key news for competitive exams, in short points",
+      streak: '{0}-day streak',
+      previousDays: 'Previous days',
+      today: 'Today',
+      loading: "Preparing today's Current Affairs…",
+      retry: 'Try again',
+      dayNotAvailable: 'This day is not available.',
+      tabs: { all: 'All', national: 'National', international: 'International', economy: 'Economy', sports: 'Sports', scitech: 'Sci & Tech' },
+      sourceLabel: 'Source',
+      aiNote: 'Summarised from public news by AI. For anything important, check the original source.',
+      quizTitle: 'Quick quiz',
+      quizSubtitle: '5 questions from today\'s points',
+      correct: 'Correct!',
+      wrong: 'Not quite.',
+      scoreLine: 'You scored {0} / {1}',
+      streakDone: "Today's Current Affairs done",
+      mistakesTitle: 'Questions you missed',
+      correctAnswerLabel: 'Correct answer',
+    },
   },
 
   hi: {
@@ -1401,6 +1445,7 @@ export const translations: Record<Locale, TranslationShape> = {
         research: 'रिसर्च',
         dictionary: 'शब्दकोश',
         test: 'टेस्ट',
+        currentAffairs: 'करंट अफेयर्स',
       },
       greeting: {
         morning: 'सुप्रभात',
@@ -2110,6 +2155,27 @@ export const translations: Record<Locale, TranslationShape> = {
       closeAria: 'रिसर्च पैनल बंद करें',
       emptyState: { title: 'कोई भी टॉपिक खोजें', subtitle: 'वीडियो देखते हुए भी इसे साथ में खोल सकते हैं — Videos पेज से' },
     },
+    currentAffairs: {
+      title: 'करंट अफेयर्स',
+      subtitle: 'प्रतियोगी परीक्षाओं के लिए आज की मुख्य खबरें, छोटे पॉइंट्स में',
+      streak: '{0} दिन की स्ट्रीक',
+      previousDays: 'पिछले दिन',
+      today: 'आज',
+      loading: 'आज के करंट अफेयर्स तैयार हो रहे हैं…',
+      retry: 'फिर कोशिश करें',
+      dayNotAvailable: 'यह दिन उपलब्ध नहीं है।',
+      tabs: { all: 'सभी', national: 'राष्ट्रीय', international: 'अंतरराष्ट्रीय', economy: 'अर्थव्यवस्था', sports: 'खेल', scitech: 'विज्ञान और तकनीक' },
+      sourceLabel: 'स्रोत',
+      aiNote: 'यह सार्वजनिक खबरों से AI द्वारा संक्षेप में तैयार किया गया है। ज़रूरी बात के लिए मूल स्रोत ज़रूर देखें।',
+      quizTitle: 'क्विक क्विज़',
+      quizSubtitle: 'आज के पॉइंट्स से 5 सवाल',
+      correct: 'सही!',
+      wrong: 'सही नहीं।',
+      scoreLine: 'आपका स्कोर {0} / {1}',
+      streakDone: 'आज के करंट अफेयर्स पूरे',
+      mistakesTitle: 'जो सवाल छूट गए',
+      correctAnswerLabel: 'सही उत्तर',
+    },
   },
 
   hinglish: {
@@ -2236,6 +2302,7 @@ export const translations: Record<Locale, TranslationShape> = {
         research: 'Research',
         dictionary: 'Dictionary',
         test: 'Test',
+        currentAffairs: 'Current Affairs',
       },
       greeting: {
         morning: 'Good Morning',
@@ -2947,6 +3014,27 @@ export const translations: Record<Locale, TranslationShape> = {
       embedded: { title: 'Research (video ke saath saath)', hint: 'Kuch bhi search karo — video chalti rahegi.' },
       closeAria: 'Close research panel',
       emptyState: { title: 'Koi bhi topic search karo', subtitle: 'Video dekhte hue side mein bhi khol sakte ho — Videos page se' },
+    },
+    currentAffairs: {
+      title: 'Current Affairs',
+      subtitle: 'Competitive exams ke liye aaj ki main khabrein, chhote points mein',
+      streak: '{0} din ki streak',
+      previousDays: 'Pichhle din',
+      today: 'Aaj',
+      loading: 'Aaj ka Current Affairs ban raha hai…',
+      retry: 'Phir se try karo',
+      dayNotAvailable: 'Ye din available nahi hai.',
+      tabs: { all: 'Sab', national: 'National', international: 'International', economy: 'Economy', sports: 'Sports', scitech: 'Sci & Tech' },
+      sourceLabel: 'Source',
+      aiNote: 'Ye public news se AI ne short mein banaya hai. Zaroori baat ke liye original source zaroor check karo.',
+      quizTitle: 'Quick quiz',
+      quizSubtitle: 'Aaj ke points se 5 sawaal',
+      correct: 'Sahi!',
+      wrong: 'Sahi nahi.',
+      scoreLine: 'Tumhara score {0} / {1}',
+      streakDone: 'Aaj ka Current Affairs complete',
+      mistakesTitle: 'Jo sawaal chhoot gaye',
+      correctAnswerLabel: 'Sahi jawab',
     },
   },
 };

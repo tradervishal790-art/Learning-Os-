@@ -14,6 +14,11 @@
 - [ ] Add transcript-based human-style notes section (prompt already drafted)
 - [ ] Add revision-due reminder with sound, triggered on app open/home load (in-app only, no FCM)
 
+## Current Affairs (built, committed locally, not pushed)
+- [x] Sidebar section, daily points + category tabs, 5-question quiz with instant feedback, streak, last-6-days picker, missed-questions list
+- [ ] Paste Firestore rule for `shared_current_affairs` (see bottom of `src/currentAffairsStore.ts`) in Firebase Console
+- [ ] Not done: "today's CA done" tick on the home Get Started card; sending wrong answers into Revision (Revision is roadmap-topic based, so misses are kept in a small list inside Current Affairs instead)
+
 ## Known gaps
 - [ ] `api/blueprint-interview.ts` hardcodes Hinglish report output regardless of input language — needs language-aware instruction.
 

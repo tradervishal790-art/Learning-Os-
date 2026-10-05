@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState, lazy, Suspense } from 'react';
 import type { ComponentType } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Film, BookOpen, ClipboardCheck } from 'lucide-react';
+import { Search, Film, BookOpen, ClipboardCheck, Newspaper } from 'lucide-react';
 import PagePlaceholder from './PagePlaceholder';
 import { getRoadmapData, getCurrentTopic } from './roadmapData';
 import { getRevisionStats, getRevisionDataForGoals } from './revisionData';
@@ -39,6 +39,7 @@ const Notes = lazy(() => import('./Notes'));
 const Progress = lazy(() => import('./progress'));
 const Research = lazy(() => import('./Research'));
 const Dictionary = lazy(() => import('./Dictionary'));
+const CurrentAffairs = lazy(() => import('./CurrentAffairs'));
 const Test = lazy(() => import('./Test'));
 
 // Small, centered loading indicator shown while a lazy page's chunk is
@@ -193,6 +194,7 @@ function getSidebarItems(t: ReturnType<typeof useTranslation>): { id: DashboardP
     { id: 'progress', label: t.dashboard.sidebar.progress },
     { id: 'research', label: t.dashboard.sidebar.research, icon: Search },
     { id: 'dictionary', label: t.dashboard.sidebar.dictionary, icon: BookOpen },
+    { id: 'current-affairs', label: t.dashboard.sidebar.currentAffairs, icon: Newspaper },
   ];
 }
 
@@ -938,6 +940,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
         {activePage === 'progress' && <Progress goals={goals} />}
         {activePage === 'research' && <Research />}
         {activePage === 'dictionary' && <Dictionary />}
+        {activePage === 'current-affairs' && <CurrentAffairs />}
 
         {config && (
           <PagePlaceholder
