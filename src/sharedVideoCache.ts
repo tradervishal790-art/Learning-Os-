@@ -103,6 +103,9 @@ export async function pullSharedSearch<T>(searchKey: string): Promise<{ items: T
     if (!snap.exists()) return null;
     const data = snap.data();
     if (!Array.isArray(data?.candidates) || data.candidates.length === 0) return null;
+    // Refresh after 30 days so we never serve stale YouTube data.
+    const age = Date.now() - new Date(data.updatedAt ?? 0).getTime();
+    if (!(age < 30 * 24 * 60 * 60 * 1000)) return null;
     return { items: data.candidates as T[], nextPageToken: data.nextPageToken ?? null };
   } catch {
     return null;

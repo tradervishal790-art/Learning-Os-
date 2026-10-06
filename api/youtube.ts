@@ -78,7 +78,8 @@ async function handleVideoLookup(id: string, apiKey: string, res: VercelResponse
 
 // --- search (was api/youtube-search.ts) ---
 async function handleSearch(req: VercelRequest, q: string, apiKey: string, res: VercelResponse) {
-  const { maxResults, pageToken, relevanceLanguage } = req.query as {
+  const { maxResults, pageToken, relevanceLanguage, shorts } = req.query as {
+    shorts?: string;
     maxResults?: string;
     pageToken?: string;
     relevanceLanguage?: string;
@@ -97,6 +98,10 @@ async function handleSearch(req: VercelRequest, q: string, apiKey: string, res: 
     q,
     key: apiKey,
   });
+  // shorts=1 -> Break Feed mode: ask YouTube for short videos and KEEP the <=3 min ones
+  // (normal mode does the opposite: it drops them).
+  const isShorts = shorts === '1';
+  if (isShorts) searchParams.set('videoDuration', 'short');
   if (pageToken) searchParams.set('pageToken', pageToken);
   if (relevanceLanguage) searchParams.set('relevanceLanguage', relevanceLanguage);
 
@@ -141,7 +146,8 @@ async function handleSearch(req: VercelRequest, q: string, apiKey: string, res: 
       durationById.size > 0
         ? rawItems.filter((item: any) => {
             const seconds = durationById.get(item.id?.videoId);
-            return typeof seconds === 'number' && seconds >= MIN_DURATION_SECONDS;
+            if (typeof seconds !== 'number') return false;
+            return isShorts ? seconds > 0 && seconds <= MIN_DURATION_SECONDS : seconds >= MIN_DURATION_SECONDS;
           })
         : rawItems;
 

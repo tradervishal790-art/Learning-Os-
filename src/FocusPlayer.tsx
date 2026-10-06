@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { authFetch } from './apiFetch';
 import { pullSharedSearch, pushSharedSearch } from './sharedVideoCache';
+import BreakFeed from './BreakFeed';
 
 // ============================================================
 // FocusPlayer.tsx — standalone, distraction-free learning player.
@@ -27,6 +28,18 @@ type Lang = 'any' | 'hi' | 'en';
 
 const NOTES_PREFIX = 'learning_os_focus_notes_';
 const LAST_TOPIC_KEY = 'learning_os_focus_last_topic';
+const BREAK_PREFS_KEY = 'learning_os_focus_break_prefs';
+const BREAK_MINUTES = 5;
+const INTEREST_OPTIONS = ['Cricket', 'Comedy', 'Music', 'Tech', 'Motivation', 'Science', 'Gaming', 'Food'];
+
+function loadBreakPrefs(): { breaks: number; interests: string[] } {
+  try {
+    const p = JSON.parse(localStorage.getItem(BREAK_PREFS_KEY) ?? '');
+    return { breaks: Math.min(3, Math.max(0, Number(p.breaks) || 0)), interests: Array.isArray(p.interests) ? p.interests.slice(0, 3) : [] };
+  } catch {
+    return { breaks: 0, interests: [] };
+  }
+}
 
 // "Best 3": keep YouTube's relevance order, but at most one video per channel,
 // so the 3 choices are genuinely different teachers.
@@ -78,6 +91,11 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [notes, setNotes] = useState('');
+  const [breakPrefs, setBreakPrefs] = useState(loadBreakPrefs);
+  const [breaksLeft, setBreaksLeft] = useState(0);
+  const [breakPrompt, setBreakPrompt] = useState(false);
+  const [breakOpen, setBreakOpen] = useState(false);
+  const milestoneRef = useRef(0); // how many auto-prompts already shown for this video
   const playerRef = useRef<any>(null);
   const notesRef = useRef<HTMLTextAreaElement>(null);
 
@@ -126,6 +144,54 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
     if (initialTopic) void search(initialTopic, 'any');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem(BREAK_PREFS_KEY, JSON.stringify(breakPrefs));
+  }, [breakPrefs]);
+
+  // Fresh break bank every time a video is opened.
+  useEffect(() => {
+    if (!active) return;
+    const usable = breakPrefs.interests.length > 0 ? breakPrefs.breaks : 0;
+    setBreaksLeft(usable);
+    milestoneRef.current = 0;
+    setBreakPrompt(false);
+    setBreakOpen(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active]);
+
+  // Watch progress: at 1/(n+1), 2/(n+1)... of the video, pause and offer a break.
+  useEffect(() => {
+    if (!active) return;
+    const total = breakPrefs.interests.length > 0 ? breakPrefs.breaks : 0;
+    if (total === 0) return;
+    const id = setInterval(() => {
+      const p = playerRef.current;
+      if (!p?.getDuration || breakOpen || breakPrompt) return;
+      const dur = p.getDuration();
+      if (!dur || p.getPlayerState?.() !== 1) return;
+      const next = milestoneRef.current;
+      if (next >= total) return;
+      if (p.getCurrentTime() >= (dur * (next + 1)) / (total + 1)) {
+        milestoneRef.current = next + 1;
+        p.pauseVideo();
+        setBreakPrompt(true);
+      }
+    }, 1000);
+    return () => clearInterval(id);
+  }, [active, breakPrefs, breakOpen, breakPrompt]);
+
+  const startBreak = () => {
+    if (breaksLeft <= 0) return;
+    playerRef.current?.pauseVideo?.();
+    setBreaksLeft((n) => n - 1);
+    setBreakPrompt(false);
+    setBreakOpen(true);
+  };
+  const endBreak = () => {
+    setBreakOpen(false);
+    playerRef.current?.playVideo?.();
+  };
 
   // Load saved notes when a video is opened.
   useEffect(() => {
@@ -184,8 +250,38 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
           <button onClick={() => setActive(null)} className="rounded-lg px-3 py-1.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/10">
             ← Back
           </button>
-          <p className="truncate text-sm font-medium">{active.title}</p>
+          <p className="min-w-0 flex-1 truncate text-sm font-medium">{active.title}</p>
+          {breakPrefs.breaks > 0 && breakPrefs.interests.length > 0 && (
+            <button
+              onClick={startBreak}
+              disabled={breaksLeft <= 0}
+              className="shrink-0 rounded-lg border border-black/15 px-3 py-1.5 text-sm disabled:opacity-40 dark:border-white/20"
+            >
+              Break ({breaksLeft})
+            </button>
+          )}
         </div>
+        {breakPrompt && (
+          <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 p-6">
+            <div className="w-full max-w-sm rounded-2xl bg-white p-6 text-center text-black dark:bg-neutral-900 dark:text-white">
+              <p className="text-lg font-semibold">Nice focus! Take a {BREAK_MINUTES}-min break?</p>
+              <p className="mt-1 text-sm opacity-60">Your video is paused and will resume right here.</p>
+              <button onClick={startBreak} className="mt-5 w-full rounded-xl bg-black px-4 py-3 font-medium text-white dark:bg-white dark:text-black">
+                Take break
+              </button>
+              <button
+                onClick={() => {
+                  setBreakPrompt(false);
+                  playerRef.current?.playVideo?.();
+                }}
+                className="mt-2 w-full rounded-xl px-4 py-3 text-sm opacity-70"
+              >
+                Not now (keep it for later)
+              </button>
+            </div>
+          </div>
+        )}
+        {breakOpen && <BreakFeed interests={breakPrefs.interests} minutes={BREAK_MINUTES} onDone={endBreak} />}
         <div className="mx-auto grid w-full max-w-6xl flex-1 gap-4 p-4 lg:grid-cols-[2fr_1fr]">
           <div className="aspect-video w-full overflow-hidden rounded-xl bg-black">
             <div id="focus-yt-player" className="h-full w-full" />
@@ -247,6 +343,46 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
           >
             {loading ? 'Finding…' : 'Show me'}
           </button>
+        </div>
+
+        <div className="mt-6 rounded-2xl border border-black/10 p-4 dark:border-white/15">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-sm font-medium">Breaks while watching ({BREAK_MINUTES} min each)</p>
+            <select
+              value={breakPrefs.breaks}
+              onChange={(e) => setBreakPrefs((p) => ({ ...p, breaks: Number(e.target.value) }))}
+              className={`${inputCls} py-1.5 text-sm`}
+            >
+              <option value={0}>No breaks</option>
+              <option value={1}>1 break</option>
+              <option value={2}>2 breaks</option>
+              <option value={3}>3 breaks</option>
+            </select>
+          </div>
+          {breakPrefs.breaks > 0 && (
+            <>
+              <p className="mt-3 text-xs opacity-60">Pick up to 3 interests for your break feed</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {INTEREST_OPTIONS.map((name) => {
+                  const on = breakPrefs.interests.includes(name);
+                  return (
+                    <button
+                      key={name}
+                      onClick={() =>
+                        setBreakPrefs((p) => ({
+                          ...p,
+                          interests: on ? p.interests.filter((x) => x !== name) : p.interests.length < 3 ? [...p.interests, name] : p.interests,
+                        }))
+                      }
+                      className={`rounded-full border px-3 py-1 text-sm ${on ? 'border-black bg-black text-white dark:border-white dark:bg-white dark:text-black' : 'border-black/15 dark:border-white/20'}`}
+                    >
+                      {name}
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          )}
         </div>
 
         {error && <p className="mt-6 text-sm text-red-600 dark:text-red-400">{error}</p>}
