@@ -23,7 +23,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { requireUser } from './_lib/auth.js';
 import { generateAIText } from './_lib/aiFallback.js';
 import { handleCurrentAffairs } from './_lib/currentAffairs.js';
-import { handleChannelResolve, handleChannelDigest } from './_lib/channelDigest.js';
+import { handleChannelResolve, handleChannelVideos, handleVideoSummary } from './_lib/channelDigest.js';
 
 interface ResearchResult {
   title: string;
@@ -142,7 +142,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.query?.op === 'current-affairs') return handleCurrentAffairs(req, res);
   // YouTube-channel digest (also lives here for the 12-function limit).
   if (req.query?.op === 'channel-resolve') return handleChannelResolve(req, res);
-  if (req.query?.op === 'channel-digest') return handleChannelDigest(req, res);
+  if (req.query?.op === 'channel-videos') return handleChannelVideos(req, res);
+  if (req.query?.op === 'video-summary') return handleVideoSummary(req, res);
 
   const { query, locale: rawLocale } = (req.body ?? {}) as { query?: string; locale?: string };
   if (!query?.trim()) {
