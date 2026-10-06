@@ -10,6 +10,8 @@ import { LanguageProvider } from './i18n/LanguageContext.tsx'
 // Live Test join page is public (participants have no account) — it must
 // render outside the login gate and the dashboard app.
 const LiveJoin = lazy(() => import('./LiveJoin.tsx'))
+// Focus Player: standalone distraction-free player (login required, so it sits inside AuthGate).
+const FocusPlayer = lazy(() => import('./FocusPlayer.tsx'))
 
 function Root() {
   const { pathname } = useLocation()
@@ -18,6 +20,15 @@ function Root() {
       <Suspense fallback={null}>
         <LiveJoin />
       </Suspense>
+    )
+  }
+  if (pathname.startsWith('/focus')) {
+    return (
+      <AuthGate>
+        <Suspense fallback={null}>
+          <FocusPlayer />
+        </Suspense>
+      </AuthGate>
     )
   }
   return (
