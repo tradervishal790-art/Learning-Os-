@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Newspaper, Flame, RotateCw, Check, X, ExternalLink } from 'lucide-react';
+import { Newspaper, Flame, RotateCw, Check, X } from 'lucide-react';
 import { useTranslation, useLanguage } from './i18n/LanguageContext';
 import { format } from './i18n/format';
 import {
@@ -153,22 +153,16 @@ export default function CurrentAffairs() {
             {visiblePoints.map((p, i) => (
               <li key={`${tab}-${i}`} className="border border-gray-200 dark:border-white/10 rounded-lg p-4">
                 <p className="leading-relaxed">{p.text}</p>
-                <div className="mt-2 flex items-center justify-between gap-3 text-xs text-gray-400 dark:text-white/30">
-                  <span>
-                    {c.tabs[p.category]} · {c.sourceLabel}: {p.source}
-                  </span>
-                  {p.link && /^https?:\/\//i.test(p.link) && (
-                    <a
-                      href={p.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 shrink-0 text-gray-600 dark:text-white/60 hover:underline"
-                    >
-                      {c.readSource}
-                      <ExternalLink className="w-3 h-3" />
+                <p className="mt-2 text-xs text-gray-500 dark:text-white/50">
+                  {c.sourceLabel}:{' '}
+                  {p.link && /^https?:\/\//i.test(p.link) ? (
+                    <a href={p.link} target="_blank" rel="noopener noreferrer" className="underline hover:text-black dark:hover:text-white">
+                      {p.source}
                     </a>
+                  ) : (
+                    p.source
                   )}
-                </div>
+                </p>
               </li>
             ))}
           </ul>
