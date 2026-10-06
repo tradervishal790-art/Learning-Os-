@@ -75,6 +75,11 @@ export default function Dictionary() {
     });
   };
 
+  // Hindi meanings across all senses, de-duplicated — shown together with Sanskrit up top.
+  const hindiSummary = entry
+    ? Array.from(new Set(entry.senses.flatMap((sn) => sn.hindi))).slice(0, 6)
+    : [];
+
   return (
     <div className="max-w-3xl mx-auto">
       <div className="relative">
@@ -155,6 +160,19 @@ export default function Dictionary() {
             )}
           </div>
 
+          <div className="rounded-lg bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 p-4 space-y-1">
+            <p>
+              <span className="text-gray-500 dark:text-white/40">Hindi: </span>
+              <span className="text-lg">{hindiSummary.join(', ') || '—'}</span>
+            </p>
+            <p>
+              <span className="text-gray-500 dark:text-white/40">Sanskrit: </span>
+              <span className="text-lg">
+                {entry.sanskritMatches?.map((m) => m.devanagari).join(', ') || '—'}
+              </span>
+            </p>
+          </div>
+
           <div className="space-y-4">
             {entry.senses.map((sense, i) => (
               <div key={i} className="border border-gray-200 dark:border-white/10 rounded-lg p-4">
@@ -175,28 +193,35 @@ export default function Dictionary() {
             ))}
           </div>
 
-          {entry.sanskritMatches && entry.sanskritMatches.length > 0 && (
-            <div className="border border-gray-200 dark:border-white/10 rounded-lg p-4">
-              <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-white/40 mb-2">
-                Sanskrit root
+          <div className="border border-gray-200 dark:border-white/10 rounded-lg p-4">
+            <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-white/40 mb-2">Sanskrit</p>
+            {entry.sanskritMatches && entry.sanskritMatches.length > 0 ? (
+              <>
+                <div className="space-y-2">
+                  {entry.sanskritMatches.map((m, i) => (
+                    <div key={i}>
+                      <span className="text-lg">{m.devanagari}</span>
+                      <span className="text-sm text-gray-500 dark:text-white/40"> ({m.slp1})</span>
+                      {m.meaning && (
+                        <span className="text-xs text-gray-400 dark:text-white/30"> · {m.meaning}</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-400 dark:text-white/30 mt-2">
+                  {entry.sanskritMatches[0].src === 'a'
+                    ? "From Apte's Student's English–Sanskrit Dictionary (1920)."
+                    : entry.sanskritMatches[0].src === 'm'
+                      ? "From Monier-Williams' English–Sanskrit Dictionary (1851) — older and less precise, verify before relying on it."
+                      : 'Approximate: matched through the Hindi meaning, so a rare unrelated word is possible.'}
+                </p>
+              </>
+            ) : (
+              <p className="text-sm text-gray-500 dark:text-white/40">
+                No Sanskrit equivalent found — modern words often have none in classical Sanskrit.
               </p>
-              <div className="space-y-2">
-                {entry.sanskritMatches.map((m, i) => (
-                  <div key={i}>
-                    <span className="text-lg">{m.devanagari}</span>
-                    <span className="text-sm text-gray-500 dark:text-white/40"> ({m.slp1})</span>
-                    {m.meaning && (
-                      <p className="text-sm text-gray-500 dark:text-white/50">{m.meaning}</p>
-                    )}
-                  </div>
-                ))}
-              </div>
-              <p className="text-xs text-gray-400 dark:text-white/30 mt-2">
-                Found via the Hindi meaning above matching a Sanskrit dictionary headword — reliable
-                for most words, but a rare shared spelling with an unrelated Sanskrit word is possible.
-              </p>
-            </div>
-          )}
+            )}
+          </div>
 
           {entry.forms && entry.forms.length > 0 && (
             <p className="text-sm text-gray-500 dark:text-white/40">Other forms: {entry.forms.join(', ')}</p>

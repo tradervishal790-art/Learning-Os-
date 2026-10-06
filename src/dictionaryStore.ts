@@ -15,7 +15,11 @@ export interface DictionarySense {
 export interface SanskritMatch {
   devanagari: string;
   slp1: string;
+  /** Part of speech for dictionary-sourced matches; a short gloss for legacy ones. */
   meaning: string;
+  /** a = Apte English-Sanskrit (reliable), m = Monier-Williams English-Sanskrit
+   *  (older, less precise), h = matched via the Hindi meaning (approximate). */
+  src: 'a' | 'm' | 'h';
 }
 
 export interface DictionaryEntry {
@@ -27,9 +31,8 @@ export interface DictionaryEntry {
   level?: string;
   frequencyRank?: number;
   forms?: string[];
-  /** Best-effort English->Sanskrit suggestions (see sk field below) — computed
-   *  from keyword frequency over the 1899 Monier-Williams dictionary, so
-   *  treat as approximate, not authoritative. Always show as "suggestions". */
+  /** English->Sanskrit equivalents, built by scripts/merge_sanskrit.py. Check
+   *  each match's `src` for how much to trust it. */
   sanskritMatches?: SanskritMatch[];
 }
 
@@ -45,14 +48,14 @@ interface RawEntry {
   a?: string;
   l?: string;
   fr?: number;
-  sk?: { deva: string; slp1: string; meaning: string }[];
+  sk?: { deva: string; slp1: string; meaning: string; src?: 'a' | 'm' | 'h' }[];
 }
 
 // Bump DICTIONARY_VERSION whenever public/data/dictionary.json is rebuilt.
 // The version is part of the URL, so (a) the browser/CDN can cache the file
 // as "immutable" and (b) our own persistent cache below is invalidated
 // automatically — old versions are deleted the next time a new one is stored.
-const DICTIONARY_VERSION = '1';
+const DICTIONARY_VERSION = '2'; // v2: Sanskrit equivalents rebuilt from Apte + Monier-Williams English-Sanskrit
 const DICTIONARY_URL = `/data/dictionary.json?v=${DICTIONARY_VERSION}`;
 const DATA_CACHE = 'learning-os-data-v1';
 
@@ -144,7 +147,7 @@ function toEntry(raw: RawEntry): DictionaryEntry {
     level: raw.l,
     frequencyRank: raw.fr,
     forms: raw.f,
-    sanskritMatches: raw.sk?.map((m) => ({ devanagari: m.deva, slp1: m.slp1, meaning: m.meaning })),
+    sanskritMatches: raw.sk?.map((m) => ({ devanagari: m.deva, slp1: m.slp1, meaning: m.meaning, src: m.src ?? 'h' })),
   };
 }
 
