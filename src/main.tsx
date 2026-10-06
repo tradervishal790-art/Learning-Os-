@@ -6,6 +6,7 @@ import App from './App.tsx'
 import ErrorBoundary from './ErrorBoundary.tsx'
 import AuthGate from './AuthGate.tsx'
 import { LanguageProvider } from './i18n/LanguageContext.tsx'
+import CacheWarmup from './cacheWarmup.tsx'
 
 // Live Test join page is public (participants have no account) — it must
 // render outside the login gate and the dashboard app.
@@ -33,6 +34,7 @@ function Root() {
   }
   return (
     <AuthGate>
+      <CacheWarmup />
       <App />
     </AuthGate>
   )

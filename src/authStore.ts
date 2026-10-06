@@ -11,6 +11,7 @@ import {
   signOut,
   type User,
 } from 'firebase/auth';
+import { clearAllMentorChats } from './mentorChatStore';
 import { auth } from './firebase';
 import type { TranslationShape } from './i18n/translations';
 
@@ -37,6 +38,7 @@ export function getCurrentUser(): User | null {
 }
 
 export async function signOutOfApp(): Promise<void> {
+  clearAllMentorChats(); // shared-phone safety: don't leave this student's chat on the device
   await signOut(auth);
 }
 

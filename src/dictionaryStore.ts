@@ -48,17 +48,51 @@ interface RawEntry {
   sk?: { deva: string; slp1: string; meaning: string }[];
 }
 
-const DICTIONARY_URL = '/data/dictionary.json';
+// Bump DICTIONARY_VERSION whenever public/data/dictionary.json is rebuilt.
+// The version is part of the URL, so (a) the browser/CDN can cache the file
+// as "immutable" and (b) our own persistent cache below is invalidated
+// automatically — old versions are deleted the next time a new one is stored.
+const DICTIONARY_VERSION = '1';
+const DICTIONARY_URL = `/data/dictionary.json?v=${DICTIONARY_VERSION}`;
+const DATA_CACHE = 'learning-os-data-v1';
 
 let dictionaryData: Record<string, RawEntry> | null = null;
 let sortedWords: string[] | null = null;
 let loadingPromise: Promise<Record<string, RawEntry>> | null = null;
 
+/** Saves the response in the persistent Cache API (survives restarts, works
+ *  offline) and drops entries from older dictionary versions. */
+async function storeDictionary(cache: Cache, res: Response): Promise<void> {
+  const current = new URL(DICTIONARY_URL, location.origin).href;
+  await cache.put(DICTIONARY_URL, res);
+  const keys = await cache.keys();
+  await Promise.all(keys.filter((k) => k.url !== current).map((k) => cache.delete(k)));
+}
+
+/** Cache-first: the ~20MB file is downloaded once per device, then served
+ *  from local storage on every later visit. Any cache failure (private
+ *  mode, quota, unsupported browser) silently falls back to plain network. */
+async function fetchDictionaryResponse(): Promise<Response> {
+  let cache: Cache | null = null;
+  if (typeof caches !== 'undefined') {
+    try {
+      cache = await caches.open(DATA_CACHE);
+      const hit = await cache.match(DICTIONARY_URL);
+      if (hit) return hit;
+    } catch {
+      cache = null;
+    }
+  }
+  const res = await fetch(DICTIONARY_URL);
+  if (res.ok && cache) void storeDictionary(cache, res.clone()).catch(() => {});
+  return res;
+}
+
 function loadDictionary(): Promise<Record<string, RawEntry>> {
   if (dictionaryData) return Promise.resolve(dictionaryData);
   if (loadingPromise) return loadingPromise;
 
-  loadingPromise = fetch(DICTIONARY_URL)
+  loadingPromise = fetchDictionaryResponse()
     .then((res) => {
       if (!res.ok) throw new Error(`Failed to load dictionary (${res.status})`);
       return res.json() as Promise<Record<string, RawEntry>>;
@@ -74,6 +108,16 @@ function loadDictionary(): Promise<Record<string, RawEntry>> {
     });
 
   return loadingPromise;
+}
+
+/** Downloads the dictionary into the persistent cache WITHOUT parsing it
+ *  (no 20MB JSON in memory), so the first real lookup is instant. */
+export async function warmDictionaryCache(): Promise<void> {
+  if (dictionaryData || loadingPromise || typeof caches === 'undefined') return;
+  const cache = await caches.open(DATA_CACHE);
+  if (await cache.match(DICTIONARY_URL)) return;
+  const res = await fetch(DICTIONARY_URL);
+  if (res.ok) await storeDictionary(cache, res);
 }
 
 export function isDictionaryLoaded(): boolean {

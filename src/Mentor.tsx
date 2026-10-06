@@ -5,6 +5,7 @@ import { format } from './i18n/format';
 import type { TranslationShape } from './i18n/translations';
 import { buildMentorStudentContext } from './mentorContext';
 import { authFetch } from './apiFetch';
+import { loadMentorChat, saveMentorChat } from './mentorChatStore';
 
 const WELCOME_ID = 'welcome';
 
@@ -73,13 +74,15 @@ async function generateMentorResponse(
 export default function Mentor() {
   const t = useTranslation();
   const { locale } = useLanguage();
-  const [messages, setMessages] = useState<Message[]>([
+  const [messages, setMessages] = useState<Message[]>(() => [
     {
       id: WELCOME_ID,
       role: 'mentor',
       content: t.mentor.welcomeMessage,
       timestamp: new Date(),
     },
+    // Restore this user's earlier conversation from the device.
+    ...loadMentorChat().map((m) => ({ ...m, timestamp: new Date(m.timestamp) })),
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -88,6 +91,12 @@ export default function Mentor() {
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    // Persist everything except the localized welcome (rebuilt on every open).
+    saveMentorChat(
+      messages
+        .filter((m) => m.id !== WELCOME_ID)
+        .map((m) => ({ id: m.id, role: m.role, content: m.content, timestamp: m.timestamp.toISOString() }))
+    );
   }, [messages]);
 
   // Watch history se context nikaal lo — used internally to give Gemini
