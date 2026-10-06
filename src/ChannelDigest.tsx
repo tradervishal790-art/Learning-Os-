@@ -113,12 +113,15 @@ export default function ChannelDigest() {
     );
   }, [selected, date, summariseMany]);
 
+  // Cancels whatever is still running for the previous channel (its results are then ignored).
+  const cancelRun = useCallback(() => {
+    runIdRef.current++;
+  }, []);
+
   useEffect(() => {
     void start();
-    return () => {
-      runIdRef.current++; // cancel whatever is still running for the previous channel
-    };
-  }, [start]);
+    return cancelRun;
+  }, [start, cancelRun]);
 
   function retryFailed() {
     const ids = Object.keys(failed);
