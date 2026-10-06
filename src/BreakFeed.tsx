@@ -18,6 +18,25 @@ interface Short {
 
 const EXTRA_SECONDS = 120;
 
+// Friendly, funny nudges. They joke WITH the user (never at them), so nobody's ego gets poked.
+const NEAR_END_MSGS = [
+  'Aapke thumb ko bhi chhutti chahiye, bechara kab se scroll kar raha hai 😄👍',
+  'Aapka lecture bol raha hai: "Main yahin hoon, kahin nahi ja raha" 🎓😂',
+  'Chai ka time almost khatam, ab asli kahani wapas chalu hone wali hai ☕😄',
+  'Dimaag ne kaha: "Mazaa aa gaya, ab thoda champion mode on karte hain" 💪😎',
+  'Shorts khatam hone wale hain, par aapke marks ki story abhi shuru hogi 🚀😁',
+  'Thumb ko 5 second ki chhutti do, wo bhi aapko thank you bolega 🙏😆',
+  'Video wahan akela baitha hai aur bol raha hai: "Koi mujhe bhi dekh lo" 🥺😂',
+  'Scroll scroll scroll... ab thoda "scroll up" aapke marks ke liye 📈😜',
+];
+const TIME_UP_MSGS = [
+  'Shorts ne kaha "ruko na!", aapne kaha "padhai bula rahi hai" 📚😎',
+  'Break ho gaya, ab dobara focus wala hero entry maarta hai 🎬🔥',
+  'Aaj ka motto: Shorts thode, topper wali feeling zyada 😄🏆',
+  'Aapki padhai ne wapas aate hi bola: "Welcome back, boss" 😂🤝',
+];
+const pick = (arr: string[]) => arr[Math.floor(Math.random() * arr.length)];
+
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
@@ -62,6 +81,8 @@ export default function BreakFeed({
   const [now, setNow] = useState(Date.now());
   const [extended, setExtended] = useState(false);
   const touchY = useRef<number | null>(null);
+  const [nearMsg, setNearMsg] = useState<{ text: string; at: number; key: number } | null>(null);
+  const [upMsg] = useState(() => pick(TIME_UP_MSGS));
 
   useEffect(() => {
     let cancelled = false;
@@ -92,6 +113,14 @@ export default function BreakFeed({
   const timeUp = remaining === 0;
   // Timeline: a quiet bar that fills slowly under the Short (no ticking numbers).
   const progress = Math.min(1, Math.max(0, (now - start) / Math.max(1, deadline - start)));
+  // Near the end of the break, show ONE small funny message for ~8 seconds.
+  useEffect(() => {
+    if (progress >= 0.8 && !timeUp && (!nearMsg || nearMsg.key !== start)) {
+      setNearMsg({ text: pick(NEAR_END_MSGS), at: Date.now(), key: start });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [progress, timeUp, start]);
+  const showNear = !!nearMsg && nearMsg.key === start && !timeUp && now - nearMsg.at < 8000;
   const current = shorts[index];
   const go = (d: number) => setIndex((i) => Math.min(Math.max(i + d, 0), Math.max(shorts.length - 1, 0)));
 
@@ -135,6 +164,16 @@ export default function BreakFeed({
           </>
         )}
 
+        {showNear && nearMsg && (
+          <div
+            role="status"
+            aria-live="polite"
+            className="absolute inset-x-3 top-2 z-10 rounded-xl bg-white/95 px-3 py-2 text-center text-sm font-medium text-black"
+          >
+            {nearMsg.text}
+          </div>
+        )}
+
         {!timeUp && !loading && current && (
           <div className="absolute inset-x-0 bottom-0">
             <div
@@ -156,7 +195,8 @@ export default function BreakFeed({
         {timeUp && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black px-6 text-center">
             <p className="text-xl font-semibold">Break time is up</p>
-            <p className="text-sm opacity-60">Your video is waiting where you left it.</p>
+            <p className="text-sm">{upMsg}</p>
+            <p className="text-xs opacity-60">Your video is waiting where you left it.</p>
             <button onClick={onDone} className="rounded-xl bg-white px-6 py-3 font-medium text-black">
               Back to video
             </button>
