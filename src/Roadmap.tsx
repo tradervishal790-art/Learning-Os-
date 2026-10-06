@@ -138,7 +138,7 @@ export default function Roadmap({
   const activeGoals = goals.filter((g) => g.status === 'active');
   const canAddGoal = activeGoals.length < MAX_ACTIVE_GOALS;
 
-  const roadmap = getRoadmapData(activeGoalId ?? undefined);
+  const roadmap = getRoadmapData(activeGoalId);
   const { total: totalTopics, completed: completedTopics, learning: learningTopics, percent: progressPercent } =
     getRoadmapProgress(roadmap);
 

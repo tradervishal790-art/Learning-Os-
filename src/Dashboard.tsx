@@ -559,7 +559,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   }
 
   const displayName = userData?.name?.trim() || 'Learner';
-  const currentTopic = getCurrentTopic(getRoadmapData(activeGoalId ?? undefined));
+  const currentTopic = getCurrentTopic(getRoadmapData(activeGoalId));
   const revisionStats = getRevisionStats(getRevisionDataForGoals(t.revisionTasks, goals));
 
   // ---------- "Get Started" checklist (new-user guidance) ----------
@@ -1223,7 +1223,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
 
                 <div className="flex flex-wrap gap-2">
                   <span className="text-xs text-gray-400 dark:text-white/40 mr-1 self-center">{t.customPlaylistModal.quickLabel}</span>
-                  {(getRoadmapData(activeGoalId ?? undefined)?.children ?? [])
+                  {(getRoadmapData(activeGoalId)?.children ?? [])
                     .filter((topic) => topic.status !== 'locked')
                     .slice(0, 6)
                     .map((topic) => (

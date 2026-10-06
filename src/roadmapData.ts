@@ -44,7 +44,10 @@ function cloudKeyFor(goalId?: string): string {
 
 /** Reads the AI-generated roadmap for a given goal (or the legacy/primary
  *  roadmap if no goalId is passed) saved to localStorage after onboarding. */
-export function getRoadmapData(goalId?: string): Topic {
+export function getRoadmapData(goalId?: string | null): Topic {
+  // null = "there is no active goal" -> never fall back to the legacy flat key,
+  // otherwise an old/ended goal's roadmap shows up with no goal attached.
+  if (goalId === null) return FALLBACK_ROADMAP;
   try {
     const saved = localStorage.getItem(storageKeyFor(goalId));
     if (!saved) return FALLBACK_ROADMAP;
