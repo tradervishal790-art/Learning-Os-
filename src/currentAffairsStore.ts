@@ -24,6 +24,7 @@ export interface CAPoint {
   category: CACategory;
   text: string;
   source: string;
+  link?: string; // original article (absent on very old cached days)
 }
 export interface CAQuizQuestion {
   question: string;
@@ -38,6 +39,8 @@ export interface CADay {
   quiz: CAQuizQuestion[];
 }
 
+// Bump when the content format changes so older cached/shared copies are ignored.
+const CONTENT_VERSION = 'v2';
 const DAY_KEY_PREFIX = 'learning_os_ca_day_';
 const PROGRESS_KEY = 'learning_os_ca_progress';
 const CLOUD_KEY = 'currentAffairsProgress';
@@ -51,7 +54,7 @@ export function istDateKey(daysAgo = 0): string {
 
 // ── Daily content ───────────────────────────────────────────────────────────
 function localKey(date: string, locale: string): string {
-  return `${DAY_KEY_PREFIX}${date}_${locale}`;
+  return `${DAY_KEY_PREFIX}${date}_${locale}_${CONTENT_VERSION}`;
 }
 
 function readLocal(date: string, locale: string): CADay | null {
@@ -84,7 +87,7 @@ function writeLocal(day: CADay): void {
 async function pullShared(date: string, locale: string): Promise<CADay | null> {
   if (!auth.currentUser) return null;
   try {
-    const snap = await getDoc(doc(db, 'shared_current_affairs', `${date}_${locale}`));
+    const snap = await getDoc(doc(db, 'shared_current_affairs', `${date}_${locale}_${CONTENT_VERSION}`));
     if (!snap.exists()) return null;
     const d = snap.data();
     if (!Array.isArray(d?.points) || d.points.length === 0) return null;
@@ -96,7 +99,7 @@ async function pullShared(date: string, locale: string): Promise<CADay | null> {
 
 function pushShared(day: CADay): void {
   if (!auth.currentUser) return;
-  void setDoc(doc(db, 'shared_current_affairs', `${day.date}_${day.locale}`), {
+  void setDoc(doc(db, 'shared_current_affairs', `${day.date}_${day.locale}_${CONTENT_VERSION}`), {
     points: day.points,
     quiz: day.quiz,
     updatedAt: new Date().toISOString(),

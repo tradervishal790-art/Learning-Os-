@@ -445,6 +445,7 @@ export interface TranslationShape {
     dayNotAvailable: string;
     tabs: { all: string; national: string; international: string; economy: string; sports: string; scitech: string };
     sourceLabel: string;
+    readSource: string;
     aiNote: string;
     quizTitle: string;
     quizSubtitle: string;
@@ -1309,6 +1310,7 @@ export const translations: Record<Locale, TranslationShape> = {
       dayNotAvailable: 'This day is not available.',
       tabs: { all: 'All', national: 'National', international: 'International', economy: 'Economy', sports: 'Sports', scitech: 'Sci & Tech' },
       sourceLabel: 'Source',
+      readSource: 'Read full article',
       aiNote: 'Summarised from public news by AI. For anything important, check the original source.',
       quizTitle: 'Quick quiz',
       quizSubtitle: '5 questions from today\'s points',
@@ -2166,6 +2168,7 @@ export const translations: Record<Locale, TranslationShape> = {
       dayNotAvailable: 'यह दिन उपलब्ध नहीं है।',
       tabs: { all: 'सभी', national: 'राष्ट्रीय', international: 'अंतरराष्ट्रीय', economy: 'अर्थव्यवस्था', sports: 'खेल', scitech: 'विज्ञान और तकनीक' },
       sourceLabel: 'स्रोत',
+      readSource: 'पूरा लेख पढ़ें',
       aiNote: 'यह सार्वजनिक खबरों से AI द्वारा संक्षेप में तैयार किया गया है। ज़रूरी बात के लिए मूल स्रोत ज़रूर देखें।',
       quizTitle: 'क्विक क्विज़',
       quizSubtitle: 'आज के पॉइंट्स से 5 सवाल',
@@ -3026,6 +3029,7 @@ export const translations: Record<Locale, TranslationShape> = {
       dayNotAvailable: 'Ye din available nahi hai.',
       tabs: { all: 'Sab', national: 'National', international: 'International', economy: 'Economy', sports: 'Sports', scitech: 'Sci & Tech' },
       sourceLabel: 'Source',
+      readSource: 'Poora article padho',
       aiNote: 'Ye public news se AI ne short mein banaya hai. Zaroori baat ke liye original source zaroor check karo.',
       quizTitle: 'Quick quiz',
       quizSubtitle: 'Aaj ke points se 5 sawaal',
