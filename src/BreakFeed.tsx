@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { authFetch } from './apiFetch';
-import { pullSharedSearch, pushSharedSearch } from './sharedVideoCache';
+import { loadShorts, type Short } from './shortsData';
 
 // ============================================================
 // BreakFeed.tsx — the in-app "reels-style" break.
@@ -9,12 +8,6 @@ import { pullSharedSearch, pushSharedSearch } from './sharedVideoCache';
 // the clock: countdown, then a SOFT landing ("+2 min once" or "back to video")
 // instead of a sudden cut.
 // ============================================================
-
-interface Short {
-  id: string;
-  title: string;
-  channel: string;
-}
 
 const EXTRA_SECONDS = 120;
 const MAX_EXTENSIONS = 3; // at most 3 x 2 min spent from the bank in one break
@@ -128,23 +121,6 @@ function shuffle<T>(arr: T[]): T[] {
     [a[i], a[j]] = [a[j], a[i]];
   }
   return a;
-}
-
-async function loadShorts(interest: string): Promise<Short[]> {
-  const key = `search_shorts_${interest.trim().toLowerCase().replace(/\s+/g, ' ').slice(0, 80)}`;
-  const shared = await pullSharedSearch<Short>(key);
-  if (shared) return shared.items;
-  const params = new URLSearchParams({ shorts: '1', maxResults: '25', q: `${interest} shorts` });
-  const res = await authFetch(`/api/youtube?${params.toString()}`);
-  const data = await res.json();
-  if (!res.ok) throw new Error(data?.error || 'Could not load shorts');
-  const items: Short[] = (data.items ?? []).map((it: any) => ({
-    id: it.id.videoId,
-    title: it.snippet.title,
-    channel: it.snippet.channelTitle,
-  }));
-  pushSharedSearch(key, items, null);
-  return items;
 }
 
 export default function BreakFeed({

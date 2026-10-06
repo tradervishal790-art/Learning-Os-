@@ -2,6 +2,20 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { authFetch } from './apiFetch';
 import { pullSharedSearch, pushSharedSearch } from './sharedVideoCache';
 import BreakFeed from './BreakFeed';
+import ShortsBank from './ShortsBank';
+import { cacheGet, cacheSet } from './mediaCache';
+import { loadShorts, prefetchShorts } from './shortsData';
+import {
+  MAX_SAVED,
+  SAVED_KEY,
+  getLocalTs,
+  loadSaved,
+  pullFocusState,
+  pushFocusState,
+  sanitizeSaved,
+  setLocalTs,
+  type SavedShort,
+} from './focusStore';
 
 // ============================================================
 // FocusPlayer.tsx — standalone, distraction-free learning player.
@@ -44,20 +58,23 @@ interface BreakPrefs {
   interests: string[];
 }
 
+function sanitizePrefs(p: any): BreakPrefs {
+  const every = Number(p?.everyMin);
+  const m = Number(p?.minutes);
+  return {
+    everyMin: EVERY_OPTIONS.includes(every) ? every : 0,
+    bonusSec: Math.min(MAX_FOCUS_MIN * 60, Math.max(0, Number(p?.bonusSec) || 0)),
+    minutes: MINUTE_OPTIONS.includes(m) ? m : 5,
+    locked: p?.locked === true,
+    interests: Array.isArray(p?.interests) ? p.interests.filter((x: unknown) => typeof x === 'string').slice(0, 3) : [],
+  };
+}
+
 function loadBreakPrefs(): BreakPrefs {
   try {
-    const p = JSON.parse(localStorage.getItem(BREAK_PREFS_KEY) ?? '');
-    const every = Number(p.everyMin);
-    const m = Number(p.minutes);
-    return {
-      everyMin: EVERY_OPTIONS.includes(every) ? every : 0,
-      bonusSec: Math.min(MAX_FOCUS_MIN * 60, Math.max(0, Number(p.bonusSec) || 0)),
-      minutes: MINUTE_OPTIONS.includes(m) ? m : 5,
-      locked: p.locked === true,
-      interests: Array.isArray(p.interests) ? p.interests.slice(0, 3) : [],
-    };
+    return sanitizePrefs(JSON.parse(localStorage.getItem(BREAK_PREFS_KEY) ?? ''));
   } catch {
-    return { everyMin: 0, bonusSec: 0, minutes: 5, locked: false, interests: [] };
+    return sanitizePrefs({});
   }
 }
 
@@ -115,21 +132,32 @@ const BANK_KEY = 'learning_os_focus_bank';
 const BANK_CAP_SEC = 30 * 60; // can't hoard more than 30 min
 const todayKey = () => new Date().toLocaleDateString('en-CA');
 
+function sanitizeBank(b: any): Bank {
+  const bank: Bank = {
+    bankSec: Math.min(BANK_CAP_SEC, Math.max(0, Number(b?.bankSec) || 0)),
+    skipsTotal: Math.max(0, Number(b?.skipsTotal) || 0),
+    date: typeof b?.date === 'string' ? b.date : todayKey(),
+    skipsToday: Math.max(0, Number(b?.skipsToday) || 0),
+    earnedTodaySec: Math.max(0, Number(b?.earnedTodaySec) || 0),
+  };
+  return bank.date === todayKey() ? bank : { ...bank, date: todayKey(), skipsToday: 0, earnedTodaySec: 0 };
+}
+
 function loadBank(): Bank {
-  const empty: Bank = { bankSec: 0, skipsTotal: 0, date: todayKey(), skipsToday: 0, earnedTodaySec: 0 };
   try {
-    const b = JSON.parse(localStorage.getItem(BANK_KEY) ?? '');
-    const bank: Bank = {
-      bankSec: Math.min(BANK_CAP_SEC, Math.max(0, Number(b.bankSec) || 0)),
-      skipsTotal: Math.max(0, Number(b.skipsTotal) || 0),
-      date: typeof b.date === 'string' ? b.date : todayKey(),
-      skipsToday: Math.max(0, Number(b.skipsToday) || 0),
-      earnedTodaySec: Math.max(0, Number(b.earnedTodaySec) || 0),
-    };
-    return bank.date === todayKey() ? bank : { ...bank, date: todayKey(), skipsToday: 0, earnedTodaySec: 0 };
+    return sanitizeBank(JSON.parse(localStorage.getItem(BANK_KEY) ?? ''));
   } catch {
-    return empty;
+    return sanitizeBank({});
   }
+}
+
+function shuffleArr<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
 }
 
 // Focus clock = REAL time (wall clock), never the video's own timeline, so seeking,
@@ -161,6 +189,10 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
   const [notes, setNotes] = useState('');
   const [breakPrefs, setBreakPrefs] = useState<BreakPrefs>(loadBreakPrefs);
   const [bank, setBank] = useState<Bank>(loadBank);
+  const [saved, setSaved] = useState<SavedShort[]>(loadSaved);
+  const [screen, setScreen] = useState<'home' | 'bank'>('home');
+  const [hydrated, setHydrated] = useState(false);
+  const lastSyncedRef = useRef('');
   const [bankToast, setBankToast] = useState('');
   const [breakPrompt, setBreakPrompt] = useState(false);
   const [breakOpen, setBreakOpen] = useState(false);
@@ -181,8 +213,14 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
     localStorage.setItem(LAST_TOPIC_KEY, clean);
     try {
       const key = `search_focus_${l}_${clean.toLowerCase().replace(/\s+/g, ' ').slice(0, 120)}`;
+      const local = cacheGet<FocusVideo[]>(key);
+      if (local && local.length > 0) {
+        setPicks(pickThree(local));
+        return;
+      }
       const shared = await pullSharedSearch<FocusVideo>(key);
       if (shared) {
+        cacheSet(key, shared.items);
         setPicks(pickThree(shared.items));
         return;
       }
@@ -204,6 +242,7 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
         return;
       }
       setPicks(pickThree(items));
+      cacheSet(key, items);
       pushSharedSearch(key, items, data.nextPageToken ?? null);
     } catch (e: any) {
       setPicks([]);
@@ -233,6 +272,55 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
   }, [bankToast]);
 
   const spendBank = (sec: number) => setBank((b) => ({ ...b, bankSec: Math.max(0, b.bankSec - sec) }));
+  const removeSaved = (id: string) => setSaved((list) => list.filter((x) => x.id !== id));
+
+  useEffect(() => {
+    localStorage.setItem(SAVED_KEY, JSON.stringify(saved));
+  }, [saved]);
+
+  // Account sync (Firestore users/{uid}/data/focusState): the locked settings, bank and
+  // saved Shorts follow the user to any device. The newer copy wins.
+  useEffect(() => {
+    let cancelled = false;
+    void pullFocusState().then((remote) => {
+      if (cancelled) return;
+      if (remote && Number(remote.updatedAt) > getLocalTs()) {
+        const p = sanitizePrefs(remote.prefs);
+        const b = sanitizeBank(remote.bank);
+        const sv = sanitizeSaved(remote.saved);
+        lastSyncedRef.current = JSON.stringify({ prefs: p, bank: b, saved: sv });
+        setBreakPrefs(p);
+        setBank(b);
+        setSaved(sv);
+      }
+      setHydrated(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    const snapshot = JSON.stringify({ prefs: breakPrefs, bank, saved });
+    if (snapshot === lastSyncedRef.current) return;
+    const meaningful =
+      breakPrefs.locked || breakPrefs.everyMin > 0 || breakPrefs.interests.length > 0 || bank.skipsTotal > 0 || saved.length > 0;
+    if (!meaningful) return;
+    const id = setTimeout(() => {
+      const ts = Date.now();
+      setLocalTs(ts);
+      pushFocusState({ prefs: breakPrefs, bank, saved, updatedAt: ts });
+      lastSyncedRef.current = snapshot;
+    }, 1500);
+    return () => clearTimeout(id);
+  }, [hydrated, breakPrefs, bank, saved]);
+
+  // Warm the caches for the chosen interests so the break starts instantly.
+  useEffect(() => {
+    if (breakPrefs.everyMin > 0 && breakPrefs.interests.length > 0) prefetchShorts(breakPrefs.interests);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [breakPrefs.everyMin, breakPrefs.interests.join('|')]);
 
   // New video -> fresh focus clock. The first time breaks are really used, the choice locks.
   useEffect(() => {
@@ -297,7 +385,31 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
       skipsToday: base.skipsToday + 1,
       earnedTodaySec: base.earnedTodaySec + earn,
     });
-    setBankToast(earn > 0 ? `Skipped! +${Math.round(earn / 60)} min added to your Shorts bank 💰` : 'Skipped! Your Shorts bank is full 💰');
+    setBankToast(
+      earn > 0
+        ? `Skipped! +${Math.round(earn / 60)} min and a few Shorts saved to your bank 💰`
+        : 'Skipped! Your Shorts bank is full 💰'
+    );
+    // The Shorts the user skipped are saved for later (from the cached pool, so no extra quota).
+    const interests = breakPrefs.interests;
+    if (interests.length > 0) {
+      void (async () => {
+        try {
+          const lists = await Promise.all(interests.map((i) => loadShorts(i).catch(() => [])));
+          const pool = shuffleArr(lists.flat());
+          setSaved((prev) => {
+            const have = new Set(prev.map((x) => x.id));
+            const add = pool
+              .filter((x) => x.id && !have.has(x.id))
+              .slice(0, 3)
+              .map((x) => ({ id: x.id, title: x.title, channel: x.channel, savedAt: Date.now() }));
+            return [...add, ...prev].slice(0, MAX_SAVED);
+          });
+        } catch {
+          // Saving Shorts is a bonus — never block the skip.
+        }
+      })();
+    }
     setBreakPrompt(false);
     playerRef.current?.playVideo?.();
   };
@@ -434,6 +546,21 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
     );
   }
 
+  if (screen === 'bank') {
+    return (
+      <ShortsBank
+        bankSec={bank.bankSec}
+        skipsToday={bank.skipsToday}
+        earnedTodaySec={bank.earnedTodaySec}
+        skipsTotal={bank.skipsTotal}
+        saved={saved}
+        onSpend={spendBank}
+        onRemove={removeSaved}
+        onBack={() => setScreen('home')}
+      />
+    );
+  }
+
   // ---------- Topic + 3 picks screen ----------
   return (
     <div className="min-h-screen bg-white text-black dark:bg-black dark:text-white">
@@ -472,17 +599,22 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
           </button>
         </div>
 
-        {(breaksOn || bank.skipsTotal > 0) && (
-          <div className="mt-6 flex items-center justify-between rounded-2xl border border-black/10 p-4 dark:border-white/15">
+        {(breaksOn || bank.skipsTotal > 0 || saved.length > 0) && (
+          <button
+            onClick={() => setScreen('bank')}
+            className="mt-6 flex w-full items-center justify-between rounded-2xl border border-black/10 p-4 text-left transition hover:border-black dark:border-white/15 dark:hover:border-white"
+          >
             <div>
               <p className="text-xs opacity-60">Your Shorts bank</p>
               <p className="text-2xl font-bold">💰 {Math.floor(bank.bankSec / 60)} min</p>
             </div>
             <div className="text-right text-sm">
-              <p>Skipped today: <span className="font-semibold">{bank.skipsToday}</span></p>
-              <p className="opacity-60">Total skips: {bank.skipsTotal}</p>
+              <p>
+                Skipped today: <span className="font-semibold">{bank.skipsToday}</span>
+              </p>
+              <p className="opacity-60">{saved.length} Shorts saved · Open →</p>
             </div>
-          </div>
+          </button>
         )}
 
         <div className="mt-6 rounded-2xl border border-black/10 p-4 dark:border-white/15">
