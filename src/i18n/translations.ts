@@ -457,6 +457,27 @@ export interface TranslationShape {
     mistakesTitle: string;
     correctAnswerLabel: string;
   };
+  channelDigest: {
+    switchNews: string;
+    switchChannels: string;
+    subtitle: string;
+    addPlaceholder: string;
+    addButton: string;
+    adding: string;
+    limitReached: string; // "You can add up to {0} channels."
+    noChannels: string;
+    removeAria: string; // "Remove {0}"
+    dayHint: string;
+    loading: string;
+    retry: string;
+    noVideos: string;
+    coverage: string; // "Summarised {0} of {1} videos"
+    videosTitle: string;
+    noTranscript: string;
+    watch: string;
+    tabs: { all: string; national: string; international: string; economy: string; sports: string; scitech: string; other: string };
+    aiNote: string;
+  };
 }
 
 export const translations: Record<Locale, TranslationShape> = {
@@ -1327,6 +1348,27 @@ export const translations: Record<Locale, TranslationShape> = {
       mistakesTitle: 'Questions you missed',
       correctAnswerLabel: 'Correct answer',
     },
+    channelDigest: {
+      switchNews: 'Newspapers',
+      switchChannels: 'YouTube channels',
+      subtitle: "What your channels reported on a day, written up topic by topic",
+      addPlaceholder: 'Channel link, @handle or name',
+      addButton: 'Add channel',
+      adding: 'Adding…',
+      limitReached: 'You can add up to {0} channels.',
+      noChannels: 'Add a YouTube channel to get a written summary of its videos for any past day.',
+      removeAria: 'Remove {0}',
+      dayHint: 'Digests are available for completed days — yesterday and earlier.',
+      loading: 'Reading the videos and writing the digest… this can take up to a minute.',
+      retry: 'Try again',
+      noVideos: 'This channel did not post any videos that day.',
+      coverage: 'Summarised {0} of {1} videos',
+      videosTitle: 'Videos',
+      noTranscript: 'Summarised from title and description only — no transcript was available.',
+      watch: 'Watch',
+      tabs: { all: 'All', national: 'National', international: 'International', economy: 'Economy', sports: 'Sports', scitech: 'Sci & Tech', other: 'Other' },
+      aiNote: 'Written by AI from the channel\'s own videos. It shows what the channel said, not verified facts — check the video for anything important.',
+    },
   },
 
   hi: {
@@ -2189,6 +2231,27 @@ export const translations: Record<Locale, TranslationShape> = {
       streakDone: 'आज के करंट अफेयर्स पूरे',
       mistakesTitle: 'जो सवाल छूट गए',
       correctAnswerLabel: 'सही उत्तर',
+    },
+    channelDigest: {
+      switchNews: 'अखबार',
+      switchChannels: 'YouTube चैनल',
+      subtitle: 'आपके चैनलों ने किसी दिन क्या बताया, टॉपिक के हिसाब से लिखित रूप में',
+      addPlaceholder: 'चैनल का लिंक, @handle या नाम',
+      addButton: 'चैनल जोड़ें',
+      adding: 'जोड़ रहे हैं…',
+      limitReached: 'आप अधिकतम {0} चैनल जोड़ सकते हैं।',
+      noChannels: 'कोई YouTube चैनल जोड़ें और किसी भी बीते दिन के उसके वीडियो का लिखित सार पाएँ।',
+      removeAria: '{0} हटाएँ',
+      dayHint: 'डाइजेस्ट पूरे हो चुके दिनों के लिए मिलता है — कल और उससे पहले।',
+      loading: 'वीडियो पढ़कर डाइजेस्ट लिखा जा रहा है… इसमें एक मिनट तक लग सकता है।',
+      retry: 'फिर कोशिश करें',
+      noVideos: 'इस चैनल ने उस दिन कोई वीडियो नहीं डाला।',
+      coverage: '{1} में से {0} वीडियो का सार',
+      videosTitle: 'वीडियो',
+      noTranscript: 'सिर्फ़ टाइटल और डिस्क्रिप्शन से संक्षेप बनाया गया — ट्रांसक्रिप्ट उपलब्ध नहीं था।',
+      watch: 'देखें',
+      tabs: { all: 'सभी', national: 'राष्ट्रीय', international: 'अंतरराष्ट्रीय', economy: 'अर्थव्यवस्था', sports: 'खेल', scitech: 'विज्ञान और तकनीक', other: 'अन्य' },
+      aiNote: 'यह चैनल के अपने वीडियो से AI द्वारा लिखा गया है। इसमें वही है जो चैनल ने कहा, पुष्ट तथ्य नहीं — ज़रूरी बात के लिए वीडियो ज़रूर देखें।',
     },
   },
 
@@ -3055,6 +3118,27 @@ export const translations: Record<Locale, TranslationShape> = {
       streakDone: 'Aaj ka Current Affairs complete',
       mistakesTitle: 'Jo sawaal chhoot gaye',
       correctAnswerLabel: 'Sahi jawab',
+    },
+    channelDigest: {
+      switchNews: 'Newspapers',
+      switchChannels: 'YouTube channels',
+      subtitle: 'Tumhare channels ne kisi din kya bataya, topic-wise likhit roop mein',
+      addPlaceholder: 'Channel link, @handle ya naam',
+      addButton: 'Channel add karo',
+      adding: 'Add ho raha hai…',
+      limitReached: 'Tum maximum {0} channels add kar sakte ho.',
+      noChannels: 'Koi YouTube channel add karo aur kisi bhi beete din ke uske videos ka written summary pao.',
+      removeAria: '{0} hatao',
+      dayHint: 'Digest poore ho chuke dinon ke liye milta hai — kal aur usse pehle.',
+      loading: 'Videos padh ke digest likha ja raha hai… ismein ek minute tak lag sakta hai.',
+      retry: 'Phir se try karo',
+      noVideos: 'Is channel ne us din koi video nahi dala.',
+      coverage: '{1} mein se {0} videos ka summary',
+      videosTitle: 'Videos',
+      noTranscript: 'Sirf title aur description se summary bani — transcript available nahi tha.',
+      watch: 'Dekho',
+      tabs: { all: 'Sab', national: 'National', international: 'International', economy: 'Economy', sports: 'Sports', scitech: 'Sci & Tech', other: 'Other' },
+      aiNote: 'Ye channel ke apne videos se AI ne likha hai. Isme wahi hai jo channel ne kaha, verified facts nahi — zaroori baat ke liye video zaroor dekho.',
     },
   },
 };

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { Newspaper, Flame, RotateCw, Check, X } from 'lucide-react';
 import { useTranslation, useLanguage } from './i18n/LanguageContext';
 import { format } from './i18n/format';
@@ -11,6 +11,8 @@ import {
   hydrateCurrentAffairsFromCloud,
 } from './currentAffairsStore';
 import type { CACategory, CADay, CAProgress, CAQuizQuestion } from './currentAffairsStore';
+
+const ChannelDigest = lazy(() => import('./ChannelDigest'));
 
 type Tab = 'all' | CACategory;
 const TAB_ORDER: Tab[] = ['all', 'national', 'international', 'economy', 'sports', 'scitech'];
@@ -25,7 +27,40 @@ function formatDateLabel(date: string, locale: string): string {
   }
 }
 
+/** Current Affairs page: the newspaper digest (default) or the digest of the student's YouTube channels. */
 export default function CurrentAffairs() {
+  const t = useTranslation();
+  const [view, setView] = useState<'news' | 'channels'>('news');
+  const c = t.channelDigest;
+
+  return (
+    <div className="max-w-3xl mx-auto">
+      <div className="inline-flex p-1 rounded-full border border-gray-200 dark:border-white/10 text-sm">
+        {(['news', 'channels'] as const).map((v) => (
+          <button
+            key={v}
+            onClick={() => setView(v)}
+            className={`px-4 py-1.5 rounded-full transition ${
+              view === v ? 'bg-black text-white dark:bg-white dark:text-black' : 'text-gray-600 dark:text-white/60 hover:bg-gray-100 dark:hover:bg-white/10'
+            }`}
+          >
+            {v === 'news' ? c.switchNews : c.switchChannels}
+          </button>
+        ))}
+      </div>
+
+      {view === 'news' ? (
+        <NewspaperCurrentAffairs />
+      ) : (
+        <Suspense fallback={null}>
+          <ChannelDigest />
+        </Suspense>
+      )}
+    </div>
+  );
+}
+
+function NewspaperCurrentAffairs() {
   const t = useTranslation();
   const { locale } = useLanguage();
   const c = t.currentAffairs;
@@ -72,7 +107,7 @@ export default function CurrentAffairs() {
   const doneToday = !!progress.quizzes[today];
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="mt-6">
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
           <h1 className="text-2xl font-semibold flex items-center gap-2">
