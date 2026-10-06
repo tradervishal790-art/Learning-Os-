@@ -17,6 +17,7 @@ interface Short {
 }
 
 const EXTRA_SECONDS = 120;
+const MAX_EXTENSIONS = 3; // at most 3 x 2 min spent from the bank in one break
 
 // Friendly, funny nudges. They joke WITH the user (never at them), so nobody's ego gets poked.
 const NEAR_END_MSGS = [
@@ -149,10 +150,14 @@ async function loadShorts(interest: string): Promise<Short[]> {
 export default function BreakFeed({
   interests,
   minutes,
+  bankSec,
+  onSpend,
   onDone,
 }: {
   interests: string[];
   minutes: number;
+  bankSec: number;
+  onSpend: (sec: number) => void;
   onDone: () => void;
 }) {
   const [shorts, setShorts] = useState<Short[]>([]);
@@ -162,7 +167,7 @@ export default function BreakFeed({
   const [start, setStart] = useState(() => Date.now());
   const [deadline, setDeadline] = useState(() => Date.now() + minutes * 60_000);
   const [now, setNow] = useState(Date.now());
-  const [extended, setExtended] = useState(false);
+  const [extensions, setExtensions] = useState(0);
   const touchY = useRef<number | null>(null);
   const [nearMsg, setNearMsg] = useState<{ text: string; at: number; key: number } | null>(null);
   const [upMsg] = useState(() => pick(TIME_UP_MSGS));
@@ -283,17 +288,20 @@ export default function BreakFeed({
             <button onClick={onDone} className="rounded-xl bg-white px-6 py-3 font-medium text-black">
               Back to video
             </button>
-            {!extended && (
+            {bankSec >= EXTRA_SECONDS && extensions < MAX_EXTENSIONS ? (
               <button
                 onClick={() => {
-                  setExtended(true);
+                  onSpend(EXTRA_SECONDS);
+                  setExtensions((n) => n + 1);
                   setStart(Date.now()); // timeline restarts for the extra 2 minutes
                   setDeadline(Date.now() + EXTRA_SECONDS * 1000);
                 }}
                 className="rounded-xl border border-white/30 px-6 py-3"
               >
-                +2 more minutes (once)
+                Spend 2 min from your bank 💰
               </button>
+            ) : (
+              <p className="text-xs opacity-60">Skip a break to earn more Shorts time 💰</p>
             )}
           </div>
         )}

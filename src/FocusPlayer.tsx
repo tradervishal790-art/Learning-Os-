@@ -103,6 +103,35 @@ const fmt = (sec: number) => {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 };
 
+// ---- Shorts bank: every skipped break is "earned" Shorts time the user can spend later.
+interface Bank {
+  bankSec: number;
+  skipsTotal: number;
+  date: string; // local day the "today" counters belong to
+  skipsToday: number;
+  earnedTodaySec: number;
+}
+const BANK_KEY = 'learning_os_focus_bank';
+const BANK_CAP_SEC = 30 * 60; // can't hoard more than 30 min
+const todayKey = () => new Date().toLocaleDateString('en-CA');
+
+function loadBank(): Bank {
+  const empty: Bank = { bankSec: 0, skipsTotal: 0, date: todayKey(), skipsToday: 0, earnedTodaySec: 0 };
+  try {
+    const b = JSON.parse(localStorage.getItem(BANK_KEY) ?? '');
+    const bank: Bank = {
+      bankSec: Math.min(BANK_CAP_SEC, Math.max(0, Number(b.bankSec) || 0)),
+      skipsTotal: Math.max(0, Number(b.skipsTotal) || 0),
+      date: typeof b.date === 'string' ? b.date : todayKey(),
+      skipsToday: Math.max(0, Number(b.skipsToday) || 0),
+      earnedTodaySec: Math.max(0, Number(b.earnedTodaySec) || 0),
+    };
+    return bank.date === todayKey() ? bank : { ...bank, date: todayKey(), skipsToday: 0, earnedTodaySec: 0 };
+  } catch {
+    return empty;
+  }
+}
+
 // Focus clock = REAL time (wall clock), never the video's own timeline, so seeking,
 // skipping ahead, pausing or changing speed can't dodge or trigger a break.
 // It survives a quick refresh/reopen (same stretch continues) but resets after a long gap.
@@ -131,6 +160,8 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
   const [error, setError] = useState('');
   const [notes, setNotes] = useState('');
   const [breakPrefs, setBreakPrefs] = useState<BreakPrefs>(loadBreakPrefs);
+  const [bank, setBank] = useState<Bank>(loadBank);
+  const [bankToast, setBankToast] = useState('');
   const [breakPrompt, setBreakPrompt] = useState(false);
   const [breakOpen, setBreakOpen] = useState(false);
   const [breakProgress, setBreakProgress] = useState(0); // 0..1, drives the quiet bottom line
@@ -191,6 +222,18 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
     localStorage.setItem(BREAK_PREFS_KEY, JSON.stringify(breakPrefs));
   }, [breakPrefs]);
 
+  useEffect(() => {
+    localStorage.setItem(BANK_KEY, JSON.stringify(bank));
+  }, [bank]);
+
+  useEffect(() => {
+    if (!bankToast) return;
+    const id = setTimeout(() => setBankToast(''), 4000);
+    return () => clearTimeout(id);
+  }, [bankToast]);
+
+  const spendBank = (sec: number) => setBank((b) => ({ ...b, bankSec: Math.max(0, b.bankSec - sec) }));
+
   // New video -> fresh focus clock. The first time breaks are really used, the choice locks.
   useEffect(() => {
     if (!active) return;
@@ -243,6 +286,18 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
     // Skip = shorts don't come back at once, but the wait is only half the focus time
     // (min 5 min), so it never feels like a punishment.
     restartClock(Math.max(SKIP_WAIT_MIN_SEC, Math.round(focusSecRef.current / 2)));
+    // Every skip is EARNED Shorts time, banked for later.
+    const t = todayKey();
+    const base = bank.date === t ? bank : { ...bank, date: t, skipsToday: 0, earnedTodaySec: 0 };
+    const earn = Math.max(0, Math.min(BANK_CAP_SEC - base.bankSec, breakPrefs.minutes * 60));
+    setBank({
+      ...base,
+      bankSec: base.bankSec + earn,
+      skipsTotal: base.skipsTotal + 1,
+      skipsToday: base.skipsToday + 1,
+      earnedTodaySec: base.earnedTodaySec + earn,
+    });
+    setBankToast(earn > 0 ? `Skipped! +${Math.round(earn / 60)} min added to your Shorts bank 💰` : 'Skipped! Your Shorts bank is full 💰');
     setBreakPrompt(false);
     playerRef.current?.playVideo?.();
   };
@@ -314,7 +369,13 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
             ← Back
           </button>
           <p className="min-w-0 flex-1 truncate text-sm font-medium">{active.title}</p>
+          {bank.skipsTotal > 0 && <span className="shrink-0 text-xs opacity-70">💰 {Math.floor(bank.bankSec / 60)} min</span>}
         </div>
+        {bankToast && (
+          <div role="status" className="fixed inset-x-4 top-16 z-50 mx-auto max-w-sm rounded-xl bg-black px-4 py-3 text-center text-sm font-medium text-white dark:bg-white dark:text-black">
+            {bankToast}
+          </div>
+        )}
         {breakPrompt && (
           <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 p-6">
             <div className="w-full max-w-sm rounded-2xl bg-white p-6 text-center text-black dark:bg-neutral-900 dark:text-white">
@@ -332,7 +393,7 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
             </div>
           </div>
         )}
-        {breakOpen && <BreakFeed interests={breakPrefs.interests} minutes={breakPrefs.minutes} onDone={endBreak} />}
+        {breakOpen && <BreakFeed interests={breakPrefs.interests} minutes={breakPrefs.minutes} bankSec={bank.bankSec} onSpend={spendBank} onDone={endBreak} />}
         {breaksOn && (
           <div
             role="progressbar"
@@ -410,6 +471,19 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
             {loading ? 'Finding…' : 'Show me'}
           </button>
         </div>
+
+        {(breaksOn || bank.skipsTotal > 0) && (
+          <div className="mt-6 flex items-center justify-between rounded-2xl border border-black/10 p-4 dark:border-white/15">
+            <div>
+              <p className="text-xs opacity-60">Your Shorts bank</p>
+              <p className="text-2xl font-bold">💰 {Math.floor(bank.bankSec / 60)} min</p>
+            </div>
+            <div className="text-right text-sm">
+              <p>Skipped today: <span className="font-semibold">{bank.skipsToday}</span></p>
+              <p className="opacity-60">Total skips: {bank.skipsTotal}</p>
+            </div>
+          </div>
+        )}
 
         <div className="mt-6 rounded-2xl border border-black/10 p-4 dark:border-white/15">
           {breakPrefs.locked ? (
