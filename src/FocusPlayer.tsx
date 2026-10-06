@@ -29,15 +29,20 @@ type Lang = 'any' | 'hi' | 'en';
 const NOTES_PREFIX = 'learning_os_focus_notes_';
 const LAST_TOPIC_KEY = 'learning_os_focus_last_topic';
 const BREAK_PREFS_KEY = 'learning_os_focus_break_prefs';
-const BREAK_MINUTES = 5;
+const MINUTE_OPTIONS = [3, 5, 8, 10, 15];
 const INTEREST_OPTIONS = ['Cricket', 'Comedy', 'Music', 'Tech', 'Motivation', 'Science', 'Gaming', 'Food'];
 
-function loadBreakPrefs(): { breaks: number; interests: string[] } {
+function loadBreakPrefs(): { breaks: number; minutes: number; interests: string[] } {
   try {
     const p = JSON.parse(localStorage.getItem(BREAK_PREFS_KEY) ?? '');
-    return { breaks: Math.min(3, Math.max(0, Number(p.breaks) || 0)), interests: Array.isArray(p.interests) ? p.interests.slice(0, 3) : [] };
+    const m = Number(p.minutes);
+    return {
+      breaks: Math.min(3, Math.max(0, Number(p.breaks) || 0)),
+      minutes: MINUTE_OPTIONS.includes(m) ? m : 5,
+      interests: Array.isArray(p.interests) ? p.interests.slice(0, 3) : [],
+    };
   } catch {
-    return { breaks: 0, interests: [] };
+    return { breaks: 0, minutes: 5, interests: [] };
   }
 }
 
@@ -264,7 +269,7 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
         {breakPrompt && (
           <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 p-6">
             <div className="w-full max-w-sm rounded-2xl bg-white p-6 text-center text-black dark:bg-neutral-900 dark:text-white">
-              <p className="text-lg font-semibold">Nice focus! Take a {BREAK_MINUTES}-min break?</p>
+              <p className="text-lg font-semibold">Nice focus! Take a {breakPrefs.minutes}-min break?</p>
               <p className="mt-1 text-sm opacity-60">Your video is paused and will resume right here.</p>
               <button onClick={startBreak} className="mt-5 w-full rounded-xl bg-black px-4 py-3 font-medium text-white dark:bg-white dark:text-black">
                 Take break
@@ -281,7 +286,7 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
             </div>
           </div>
         )}
-        {breakOpen && <BreakFeed interests={breakPrefs.interests} minutes={BREAK_MINUTES} onDone={endBreak} />}
+        {breakOpen && <BreakFeed interests={breakPrefs.interests} minutes={breakPrefs.minutes} onDone={endBreak} />}
         <div className="mx-auto grid w-full max-w-6xl flex-1 gap-4 p-4 lg:grid-cols-[2fr_1fr]">
           <div className="aspect-video w-full overflow-hidden rounded-xl bg-black">
             <div id="focus-yt-player" className="h-full w-full" />
@@ -347,7 +352,7 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
 
         <div className="mt-6 rounded-2xl border border-black/10 p-4 dark:border-white/15">
           <div className="flex items-center justify-between gap-3">
-            <p className="text-sm font-medium">Breaks while watching ({BREAK_MINUTES} min each)</p>
+            <p className="text-sm font-medium">Breaks while watching</p>
             <select
               value={breakPrefs.breaks}
               onChange={(e) => setBreakPrefs((p) => ({ ...p, breaks: Number(e.target.value) }))}
@@ -359,6 +364,22 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
               <option value={3}>3 breaks</option>
             </select>
           </div>
+          {breakPrefs.breaks > 0 && (
+            <div className="mt-3 flex items-center justify-between gap-3">
+              <p className="text-sm">Each break lasts</p>
+              <select
+                value={breakPrefs.minutes}
+                onChange={(e) => setBreakPrefs((p) => ({ ...p, minutes: Number(e.target.value) }))}
+                className={`${inputCls} py-1.5 text-sm`}
+              >
+                {MINUTE_OPTIONS.map((m) => (
+                  <option key={m} value={m}>
+                    {m} min
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           {breakPrefs.breaks > 0 && (
             <>
               <p className="mt-3 text-xs opacity-60">Pick up to 3 interests for your break feed</p>

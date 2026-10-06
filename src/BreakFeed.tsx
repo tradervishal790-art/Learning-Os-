@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { authFetch } from './apiFetch';
 import { pullSharedSearch, pushSharedSearch } from './sharedVideoCache';
 
@@ -57,6 +57,7 @@ export default function BreakFeed({
   const [index, setIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [start, setStart] = useState(() => Date.now());
   const [deadline, setDeadline] = useState(() => Date.now() + minutes * 60_000);
   const [now, setNow] = useState(Date.now());
   const [extended, setExtended] = useState(false);
@@ -89,9 +90,10 @@ export default function BreakFeed({
 
   const remaining = Math.max(0, Math.ceil((deadline - now) / 1000));
   const timeUp = remaining === 0;
+  // Timeline: a quiet bar that fills slowly under the Short (no ticking numbers).
+  const progress = Math.min(1, Math.max(0, (now - start) / Math.max(1, deadline - start)));
   const current = shorts[index];
   const go = (d: number) => setIndex((i) => Math.min(Math.max(i + d, 0), Math.max(shorts.length - 1, 0)));
-  const mmss = useMemo(() => `${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, '0')}`, [remaining]);
 
   return (
     <div
@@ -109,13 +111,12 @@ export default function BreakFeed({
     >
       <div className="flex items-center justify-between px-4 py-3">
         <span className="text-sm opacity-70">Break</span>
-        <span className={`text-lg font-semibold tabular-nums ${remaining <= 30 ? 'text-amber-400' : ''}`}>{mmss}</span>
         <button onClick={onDone} className="rounded-lg px-3 py-1.5 text-sm hover:bg-white/10">
           Back to video
         </button>
       </div>
 
-      <div className="relative mx-auto flex w-full max-w-sm flex-1 items-center justify-center pb-4">
+      <div className="relative mx-auto flex w-full max-w-sm flex-1 items-center justify-center px-1 pb-8">
         {loading && <p className="opacity-60">Loading your break…</p>}
         {!loading && error && <p className="px-6 text-center opacity-70">{error}</p>}
         {!loading && current && !timeUp && (
@@ -134,6 +135,24 @@ export default function BreakFeed({
           </>
         )}
 
+        {!timeUp && !loading && current && (
+          <div className="absolute inset-x-0 bottom-0">
+            <div
+              role="progressbar"
+              aria-label="Break timeline"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={Math.round(progress * 100)}
+              className="h-1 w-full overflow-hidden rounded-full bg-white/15"
+            >
+              <div
+                className={`h-full rounded-full transition-[width] duration-500 ease-linear ${progress > 0.8 ? 'bg-amber-300' : 'bg-white/70'}`}
+                style={{ width: `${progress * 100}%` }}
+              />
+            </div>
+          </div>
+        )}
+
         {timeUp && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black px-6 text-center">
             <p className="text-xl font-semibold">Break time is up</p>
@@ -145,6 +164,7 @@ export default function BreakFeed({
               <button
                 onClick={() => {
                   setExtended(true);
+                  setStart(Date.now()); // timeline restarts for the extra 2 minutes
                   setDeadline(Date.now() + EXTRA_SECONDS * 1000);
                 }}
                 className="rounded-xl border border-white/30 px-6 py-3"
