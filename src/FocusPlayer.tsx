@@ -32,11 +32,13 @@ const BREAK_PREFS_KEY = 'learning_os_focus_break_prefs';
 const MINUTE_OPTIONS = [3, 5, 7, 10]; // break length — kept short on purpose
 const EVERY_OPTIONS = [10, 15, 20, 25, 30, 45]; // focus time between breaks
 const MAX_FOCUS_MIN = 60;
+const GROW_STEP_SEC = 15; // focus time quietly grows by 15 seconds after each completed break
+const SKIP_WAIT_MIN_SEC = 5 * 60; // after Skip, the next prompt comes after half the focus time (at least 5 min)
 const INTEREST_OPTIONS = ['Cricket', 'Comedy', 'Music', 'Tech', 'Motivation', 'Science', 'Gaming', 'Food'];
 
 interface BreakPrefs {
   everyMin: number; // user's own starting focus time between breaks (0 = no breaks)
-  bonus: number; // minutes earned by the "gently grow" option
+  bonusSec: number; // seconds of quiet growth earned so far (never shown to the user)
   minutes: number; // break length
   locked: boolean; // focus time + break length can be chosen only ONCE
   interests: string[];
@@ -49,13 +51,13 @@ function loadBreakPrefs(): BreakPrefs {
     const m = Number(p.minutes);
     return {
       everyMin: EVERY_OPTIONS.includes(every) ? every : 0,
-      bonus: Math.min(MAX_FOCUS_MIN, Math.max(0, Number(p.bonus) || 0)),
+      bonusSec: Math.min(MAX_FOCUS_MIN * 60, Math.max(0, Number(p.bonusSec) || 0)),
       minutes: MINUTE_OPTIONS.includes(m) ? m : 5,
       locked: p.locked === true,
       interests: Array.isArray(p.interests) ? p.interests.slice(0, 3) : [],
     };
   } catch {
-    return { everyMin: 0, bonus: 0, minutes: 5, locked: false, interests: [] };
+    return { everyMin: 0, bonusSec: 0, minutes: 5, locked: false, interests: [] };
   }
 }
 
@@ -134,8 +136,8 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
   const [breakProgress, setBreakProgress] = useState(0); // 0..1, drives the quiet bottom line
   const clockStartRef = useRef(Date.now()); // real wall-clock moment the current focus stretch began
   const breaksOn = breakPrefs.everyMin > 0 && breakPrefs.interests.length > 0;
-  const focusMin = Math.min(MAX_FOCUS_MIN, breakPrefs.everyMin + breakPrefs.bonus);
-  const focusMinRef = useRef(focusMin);
+  const focusSec = Math.min(MAX_FOCUS_MIN * 60, breakPrefs.everyMin * 60 + breakPrefs.bonusSec);
+  const focusSecRef = useRef(focusSec);
   const playerRef = useRef<any>(null);
   const notesRef = useRef<HTMLTextAreaElement>(null);
 
@@ -194,7 +196,7 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
     if (!active) return;
     clockStartRef.current = restoreClockStart();
     saveClock(clockStartRef.current);
-    setBreakProgress(Math.min(1, (Date.now() - clockStartRef.current) / 1000 / (focusMinRef.current * 60)));
+    setBreakProgress(Math.min(1, (Date.now() - clockStartRef.current) / 1000 / focusSecRef.current));
     if (breaksOn) setBreakPrefs((p) => (p.locked ? p : { ...p, locked: true }));
     setBreakPrompt(false);
     setBreakOpen(false);
@@ -202,9 +204,9 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
 
   // Keep the bottom line right whenever the focus time changes.
   useEffect(() => {
-    focusMinRef.current = focusMin;
-    setBreakProgress(Math.min(1, (Date.now() - clockStartRef.current) / 1000 / (focusMin * 60)));
-  }, [focusMin, active]);
+    focusSecRef.current = focusSec;
+    setBreakProgress(Math.min(1, (Date.now() - clockStartRef.current) / 1000 / focusSec));
+  }, [focusSec, active]);
 
   // Focus clock: real elapsed time since the last break. When the user's focus time
   // is reached, pause and offer the break.
@@ -212,7 +214,7 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
     if (!active || !breaksOn || breakOpen || breakPrompt) return;
     const id = setInterval(() => {
       const elapsed = (Date.now() - clockStartRef.current) / 1000;
-      const limit = focusMinRef.current * 60;
+      const limit = focusSecRef.current;
       setBreakProgress(Math.min(1, elapsed / limit));
       localStorage.setItem(CLOCK_SEEN_KEY, String(Date.now()));
       if (elapsed >= limit) {
@@ -223,10 +225,13 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
     return () => clearInterval(id);
   }, [active, breaksOn, breakOpen, breakPrompt]);
 
-  const restartClock = () => {
-    clockStartRef.current = Date.now();
+  // waitSec = how long until the next prompt (default: the full focus time).
+  const restartClock = (waitSec?: number) => {
+    const limit = focusSecRef.current;
+    const wait = Math.min(limit, waitSec ?? limit);
+    clockStartRef.current = Date.now() - (limit - wait) * 1000;
     saveClock(clockStartRef.current);
-    setBreakProgress(0);
+    setBreakProgress((limit - wait) / limit);
   };
 
   const startBreak = () => {
@@ -235,8 +240,9 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
     setBreakOpen(true);
   };
   const skipBreak = () => {
-    // Skip = the user waits for the NEXT full focus time before shorts come again.
-    restartClock();
+    // Skip = shorts don't come back at once, but the wait is only half the focus time
+    // (min 5 min), so it never feels like a punishment.
+    restartClock(Math.max(SKIP_WAIT_MIN_SEC, Math.round(focusSecRef.current / 2)));
     setBreakPrompt(false);
     playerRef.current?.playVideo?.();
   };
@@ -244,8 +250,10 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
     setBreakOpen(false);
     playerRef.current?.playVideo?.();
     restartClock();
-    // Quietly stretch the focus time by 1 min after every completed break (never shown to the user).
-    setBreakPrefs((p) => (p.everyMin + p.bonus < MAX_FOCUS_MIN ? { ...p, bonus: p.bonus + 1 } : p));
+    // Quietly stretch the focus time by 15 s after every completed break (never shown to the user).
+    setBreakPrefs((p) =>
+      p.everyMin * 60 + p.bonusSec < MAX_FOCUS_MIN * 60 ? { ...p, bonusSec: p.bonusSec + GROW_STEP_SEC } : p
+    );
   };
 
   // Load saved notes when a video is opened.
@@ -415,7 +423,7 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
                 <p className="text-sm font-medium">Shorts break after every</p>
                 <select
                   value={breakPrefs.everyMin}
-                  onChange={(e) => setBreakPrefs((p) => ({ ...p, everyMin: Number(e.target.value), bonus: 0 }))}
+                  onChange={(e) => setBreakPrefs((p) => ({ ...p, everyMin: Number(e.target.value), bonusSec: 0 }))}
                   className={`${inputCls} py-1.5 text-sm`}
                 >
                   <option value={0}>No breaks</option>
