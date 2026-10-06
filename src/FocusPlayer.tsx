@@ -101,6 +101,25 @@ const fmt = (sec: number) => {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 };
 
+// Focus clock = REAL time (wall clock), never the video's own timeline, so seeking,
+// skipping ahead, pausing or changing speed can't dodge or trigger a break.
+// It survives a quick refresh/reopen (same stretch continues) but resets after a long gap.
+const CLOCK_START_KEY = 'learning_os_focus_clock_start';
+const CLOCK_SEEN_KEY = 'learning_os_focus_clock_seen';
+const CLOCK_GAP_MS = 5 * 60 * 1000;
+
+function restoreClockStart(): number {
+  const now = Date.now();
+  const start = Number(localStorage.getItem(CLOCK_START_KEY));
+  const seen = Number(localStorage.getItem(CLOCK_SEEN_KEY));
+  if (start > 0 && seen > 0 && now - seen < CLOCK_GAP_MS && start <= now) return start;
+  return now;
+}
+function saveClock(start: number) {
+  localStorage.setItem(CLOCK_START_KEY, String(start));
+  localStorage.setItem(CLOCK_SEEN_KEY, String(Date.now()));
+}
+
 export default function FocusPlayer({ initialTopic = '', onClose }: { initialTopic?: string; onClose?: () => void }) {
   const [topic, setTopic] = useState(initialTopic || localStorage.getItem(LAST_TOPIC_KEY) || '');
   const [lang, setLang] = useState<Lang>('any');
@@ -113,7 +132,7 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
   const [breakPrompt, setBreakPrompt] = useState(false);
   const [breakOpen, setBreakOpen] = useState(false);
   const [breakProgress, setBreakProgress] = useState(0); // 0..1, drives the quiet bottom line
-  const watchedRef = useRef(0); // seconds actually watched since the last break
+  const clockStartRef = useRef(Date.now()); // real wall-clock moment the current focus stretch began
   const breaksOn = breakPrefs.everyMin > 0 && breakPrefs.interests.length > 0;
   const focusMin = Math.min(MAX_FOCUS_MIN, breakPrefs.everyMin + breakPrefs.bonus);
   const focusMinRef = useRef(focusMin);
@@ -173,8 +192,9 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
   // New video -> fresh focus clock. The first time breaks are really used, the choice locks.
   useEffect(() => {
     if (!active) return;
-    watchedRef.current = 0;
-    setBreakProgress(0);
+    clockStartRef.current = restoreClockStart();
+    saveClock(clockStartRef.current);
+    setBreakProgress(Math.min(1, (Date.now() - clockStartRef.current) / 1000 / (focusMinRef.current * 60)));
     if (breaksOn) setBreakPrefs((p) => (p.locked ? p : { ...p, locked: true }));
     setBreakPrompt(false);
     setBreakOpen(false);
@@ -183,44 +203,47 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
   // Keep the bottom line right whenever the focus time changes.
   useEffect(() => {
     focusMinRef.current = focusMin;
-    setBreakProgress(Math.min(1, watchedRef.current / (focusMin * 60)));
+    setBreakProgress(Math.min(1, (Date.now() - clockStartRef.current) / 1000 / (focusMin * 60)));
   }, [focusMin, active]);
 
-  // Focus clock: counts only seconds the video is really playing. When the user's
-  // focus time is reached, pause and offer the break.
+  // Focus clock: real elapsed time since the last break. When the user's focus time
+  // is reached, pause and offer the break.
   useEffect(() => {
     if (!active || !breaksOn || breakOpen || breakPrompt) return;
     const id = setInterval(() => {
-      const p = playerRef.current;
-      if (!p?.getPlayerState || p.getPlayerState() !== 1) return;
-      watchedRef.current += 1;
+      const elapsed = (Date.now() - clockStartRef.current) / 1000;
       const limit = focusMinRef.current * 60;
-      setBreakProgress(Math.min(1, watchedRef.current / limit));
-      if (watchedRef.current >= limit) {
-        p.pauseVideo();
+      setBreakProgress(Math.min(1, elapsed / limit));
+      localStorage.setItem(CLOCK_SEEN_KEY, String(Date.now()));
+      if (elapsed >= limit) {
+        playerRef.current?.pauseVideo?.();
         setBreakPrompt(true);
       }
     }, 1000);
     return () => clearInterval(id);
   }, [active, breaksOn, breakOpen, breakPrompt]);
 
+  const restartClock = () => {
+    clockStartRef.current = Date.now();
+    saveClock(clockStartRef.current);
+    setBreakProgress(0);
+  };
+
   const startBreak = () => {
     playerRef.current?.pauseVideo?.();
-    watchedRef.current = 0;
     setBreakPrompt(false);
     setBreakOpen(true);
   };
   const skipBreak = () => {
     // Skip = the user waits for the NEXT full focus time before shorts come again.
-    watchedRef.current = 0;
-    setBreakProgress(0);
+    restartClock();
     setBreakPrompt(false);
     playerRef.current?.playVideo?.();
   };
   const endBreak = () => {
     setBreakOpen(false);
     playerRef.current?.playVideo?.();
-    setBreakProgress(0);
+    restartClock();
     // Quietly stretch the focus time by 1 min after every completed break (never shown to the user).
     setBreakPrefs((p) => (p.everyMin + p.bonus < MAX_FOCUS_MIN ? { ...p, bonus: p.bonus + 1 } : p));
   };
