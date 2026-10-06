@@ -20,20 +20,20 @@ const EXTRA_SECONDS = 120;
 
 // Friendly, funny nudges. They joke WITH the user (never at them), so nobody's ego gets poked.
 const NEAR_END_MSGS = [
-  'Aapke thumb ko bhi chhutti chahiye, bechara kab se scroll kar raha hai 😄👍',
-  'Aapka lecture bol raha hai: "Main yahin hoon, kahin nahi ja raha" 🎓😂',
-  'Chai ka time almost khatam, ab asli kahani wapas chalu hone wali hai ☕😄',
-  'Dimaag ne kaha: "Mazaa aa gaya, ab thoda champion mode on karte hain" 💪😎',
-  'Shorts khatam hone wale hain, par aapke marks ki story abhi shuru hogi 🚀😁',
-  'Thumb ko 5 second ki chhutti do, wo bhi aapko thank you bolega 🙏😆',
-  'Video wahan akela baitha hai aur bol raha hai: "Koi mujhe bhi dekh lo" 🥺😂',
-  'Scroll scroll scroll... ab thoda "scroll up" aapke marks ke liye 📈😜',
+  'Thumb ko chhutti chahiye 😄👍',
+  'Lecture wait kar raha 🎓😂',
+  'Chai ka time khatam ☕😄',
+  'Champion mode on karo 💪😎',
+  'Marks bula rahe hain 📈😁',
+  'Video akela baitha hai 🥺😂',
+  'Thumb ko thank you 🙏😆',
+  'Dimaag ko stretch do 🧠😄',
 ];
 const TIME_UP_MSGS = [
-  'Shorts ne kaha "ruko na!", aapne kaha "padhai bula rahi hai" 📚😎',
-  'Break ho gaya, ab dobara focus wala hero entry maarta hai 🎬🔥',
-  'Aaj ka motto: Shorts thode, topper wali feeling zyada 😄🏆',
-  'Aapki padhai ne wapas aate hi bola: "Welcome back, boss" 😂🤝',
+  'Padhai bula rahi hai 📚😎',
+  'Hero ki wapas entry 🎬🔥',
+  'Topper wali feeling on 🏆😄',
+  'Welcome back, boss 😂🤝',
 ];
 const pick = (arr: string[]) => arr[Math.floor(Math.random() * arr.length)];
 
