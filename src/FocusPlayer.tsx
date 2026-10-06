@@ -38,7 +38,7 @@ interface BreakPrefs {
   everyMin: number; // user's own starting focus time between breaks (0 = no breaks)
   bonus: number; // minutes earned by the "gently grow" option
   minutes: number; // break length
-  grow: boolean;
+  locked: boolean; // focus time + break length can be chosen only ONCE
   interests: string[];
 }
 
@@ -51,11 +51,11 @@ function loadBreakPrefs(): BreakPrefs {
       everyMin: EVERY_OPTIONS.includes(every) ? every : 0,
       bonus: Math.min(MAX_FOCUS_MIN, Math.max(0, Number(p.bonus) || 0)),
       minutes: MINUTE_OPTIONS.includes(m) ? m : 5,
-      grow: p.grow !== false,
+      locked: p.locked === true,
       interests: Array.isArray(p.interests) ? p.interests.slice(0, 3) : [],
     };
   } catch {
-    return { everyMin: 0, bonus: 0, minutes: 5, grow: true, interests: [] };
+    return { everyMin: 0, bonus: 0, minutes: 5, locked: false, interests: [] };
   }
 }
 
@@ -112,7 +112,7 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
   const [breakPrefs, setBreakPrefs] = useState<BreakPrefs>(loadBreakPrefs);
   const [breakPrompt, setBreakPrompt] = useState(false);
   const [breakOpen, setBreakOpen] = useState(false);
-  const [minsToBreak, setMinsToBreak] = useState(0);
+  const [breakProgress, setBreakProgress] = useState(0); // 0..1, drives the quiet bottom line
   const watchedRef = useRef(0); // seconds actually watched since the last break
   const breaksOn = breakPrefs.everyMin > 0 && breakPrefs.interests.length > 0;
   const focusMin = Math.min(MAX_FOCUS_MIN, breakPrefs.everyMin + breakPrefs.bonus);
@@ -170,18 +170,20 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
     localStorage.setItem(BREAK_PREFS_KEY, JSON.stringify(breakPrefs));
   }, [breakPrefs]);
 
-  // New video -> fresh focus clock.
+  // New video -> fresh focus clock. The first time breaks are really used, the choice locks.
   useEffect(() => {
     if (!active) return;
     watchedRef.current = 0;
+    setBreakProgress(0);
+    if (breaksOn) setBreakPrefs((p) => (p.locked ? p : { ...p, locked: true }));
     setBreakPrompt(false);
     setBreakOpen(false);
   }, [active]);
 
-  // Keep the "break in X min" label right whenever the focus time changes.
+  // Keep the bottom line right whenever the focus time changes.
   useEffect(() => {
     focusMinRef.current = focusMin;
-    setMinsToBreak(Math.max(0, Math.ceil((focusMin * 60 - watchedRef.current) / 60)));
+    setBreakProgress(Math.min(1, watchedRef.current / (focusMin * 60)));
   }, [focusMin, active]);
 
   // Focus clock: counts only seconds the video is really playing. When the user's
@@ -193,7 +195,7 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
       if (!p?.getPlayerState || p.getPlayerState() !== 1) return;
       watchedRef.current += 1;
       const limit = focusMinRef.current * 60;
-      setMinsToBreak(Math.max(0, Math.ceil((limit - watchedRef.current) / 60)));
+      setBreakProgress(Math.min(1, watchedRef.current / limit));
       if (watchedRef.current >= limit) {
         p.pauseVideo();
         setBreakPrompt(true);
@@ -208,21 +210,19 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
     setBreakPrompt(false);
     setBreakOpen(true);
   };
-  const snoozeBreak = () => {
-    // "Not now": ask again after 5 more minutes of watching.
-    watchedRef.current = Math.max(0, focusMinRef.current * 60 - 300);
+  const skipBreak = () => {
+    // Skip = the user waits for the NEXT full focus time before shorts come again.
+    watchedRef.current = 0;
+    setBreakProgress(0);
     setBreakPrompt(false);
     playerRef.current?.playVideo?.();
   };
   const endBreak = () => {
     setBreakOpen(false);
     playerRef.current?.playVideo?.();
-    // Gently grow the focus time (+1 min) after every completed break.
-    if (breakPrefs.grow) {
-      setBreakPrefs((p) =>
-        p.everyMin + p.bonus < MAX_FOCUS_MIN ? { ...p, bonus: p.bonus + 1 } : p
-      );
-    }
+    setBreakProgress(0);
+    // Quietly stretch the focus time by 1 min after every completed break (never shown to the user).
+    setBreakPrefs((p) => (p.everyMin + p.bonus < MAX_FOCUS_MIN ? { ...p, bonus: p.bonus + 1 } : p));
   };
 
   // Load saved notes when a video is opened.
@@ -283,30 +283,40 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
             ← Back
           </button>
           <p className="min-w-0 flex-1 truncate text-sm font-medium">{active.title}</p>
-          {breaksOn && (
-            <span className="shrink-0 text-xs opacity-60">
-              {minsToBreak > 0 ? `Break in ${minsToBreak} min` : 'Break soon'}
-            </span>
-          )}
         </div>
         {breakPrompt && (
           <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 p-6">
             <div className="w-full max-w-sm rounded-2xl bg-white p-6 text-center text-black dark:bg-neutral-900 dark:text-white">
-              <p className="text-lg font-semibold">{focusMin} min of focus done! Take a {breakPrefs.minutes}-min break?</p>
-              <p className="mt-1 text-sm opacity-60">Your video is paused and will resume right here.</p>
+              <p className="text-lg font-semibold">Nice focus! Time for your shorts?</p>
+              <p className="mt-1 text-sm opacity-60">{breakPrefs.minutes} min. Your video is paused and will resume right here.</p>
               <button onClick={startBreak} className="mt-5 w-full rounded-xl bg-black px-4 py-3 font-medium text-white dark:bg-white dark:text-black">
-                Take break
+                Start shorts
               </button>
               <button
-                onClick={snoozeBreak}
+                onClick={skipBreak}
                 className="mt-2 w-full rounded-xl px-4 py-3 text-sm opacity-70"
               >
-                Not now (ask again in 5 min)
+                Skip
               </button>
             </div>
           </div>
         )}
         {breakOpen && <BreakFeed interests={breakPrefs.interests} minutes={breakPrefs.minutes} onDone={endBreak} />}
+        {breaksOn && (
+          <div
+            role="progressbar"
+            aria-label="Approaching your break"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={Math.round(breakProgress * 100)}
+            className="fixed inset-x-0 bottom-0 z-30 h-1 bg-black/10 dark:bg-white/10"
+          >
+            <div
+              className="h-full bg-black/60 transition-[width] duration-1000 ease-linear dark:bg-white/60"
+              style={{ width: `${breakProgress * 100}%` }}
+            />
+          </div>
+        )}
         <div className="mx-auto grid w-full max-w-6xl flex-1 gap-4 p-4 lg:grid-cols-[2fr_1fr]">
           <div className="aspect-video w-full overflow-hidden rounded-xl bg-black">
             <div id="focus-yt-player" className="h-full w-full" />
@@ -371,49 +381,47 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
         </div>
 
         <div className="mt-6 rounded-2xl border border-black/10 p-4 dark:border-white/15">
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-sm font-medium">Take a break after every</p>
-            <select
-              value={breakPrefs.everyMin}
-              onChange={(e) => setBreakPrefs((p) => ({ ...p, everyMin: Number(e.target.value), bonus: 0 }))}
-              className={`${inputCls} py-1.5 text-sm`}
-            >
-              <option value={0}>No breaks</option>
-              {EVERY_OPTIONS.map((m) => (
-                <option key={m} value={m}>
-                  {m} min of focus
-                </option>
-              ))}
-            </select>
-          </div>
-          {breakPrefs.everyMin > 0 && (
+          {breakPrefs.locked ? (
+            <p className="text-sm">
+              Shorts break after every <span className="font-semibold">{breakPrefs.everyMin} min</span> of focus, {breakPrefs.minutes} min each.
+              <span className="mt-1 block text-xs opacity-60">You set this once, so it stays steady.</span>
+            </p>
+          ) : (
             <>
-              <div className="mt-3 flex items-center justify-between gap-3">
-                <p className="text-sm">Each break lasts</p>
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-medium">Shorts break after every</p>
                 <select
-                  value={breakPrefs.minutes}
-                  onChange={(e) => setBreakPrefs((p) => ({ ...p, minutes: Number(e.target.value) }))}
+                  value={breakPrefs.everyMin}
+                  onChange={(e) => setBreakPrefs((p) => ({ ...p, everyMin: Number(e.target.value), bonus: 0 }))}
                   className={`${inputCls} py-1.5 text-sm`}
                 >
-                  {MINUTE_OPTIONS.map((m) => (
+                  <option value={0}>No breaks</option>
+                  {EVERY_OPTIONS.map((m) => (
                     <option key={m} value={m}>
-                      {m} min
+                      {m} min of focus
                     </option>
                   ))}
                 </select>
               </div>
-              <label className="mt-3 flex items-start gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={breakPrefs.grow}
-                  onChange={(e) => setBreakPrefs((p) => ({ ...p, grow: e.target.checked }))}
-                  className="mt-1"
-                />
-                <span>
-                  Grow my focus time slowly (+1 min after each break)
-                  {breakPrefs.bonus > 0 && <span className="block text-xs opacity-60">Right now: a break every {focusMin} min</span>}
-                </span>
-              </label>
+              {breakPrefs.everyMin > 0 && (
+                <>
+                  <div className="mt-3 flex items-center justify-between gap-3">
+                    <p className="text-sm">Each break lasts</p>
+                    <select
+                      value={breakPrefs.minutes}
+                      onChange={(e) => setBreakPrefs((p) => ({ ...p, minutes: Number(e.target.value) }))}
+                      className={`${inputCls} py-1.5 text-sm`}
+                    >
+                      {MINUTE_OPTIONS.map((m) => (
+                        <option key={m} value={m}>
+                          {m} min
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <p className="mt-2 text-xs opacity-60">You can choose this only once.</p>
+                </>
+              )}
             </>
           )}
           {breakPrefs.everyMin > 0 && (
