@@ -615,7 +615,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
     },
     {
       title: t.dashboard.home.statsCards.revision,
-      value: format(t.dashboard.home.statsCards.dueSuffix, revisionStats.dueToday),
+      value: format(t.dashboard.home.statsCards.dueSuffix, revisionStats.dueToday + revisionStats.overdue),
       subtitle: revisionStats.overdue > 0 ? format(t.dashboard.home.statsCards.overdueSuffix, revisionStats.overdue) : t.dashboard.home.statsCards.caughtUp,
       icon: 'refresh',
       onClick: () => setActivePage('revision'),
