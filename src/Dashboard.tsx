@@ -558,7 +558,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
     );
   }
 
-  const displayName = userData?.name?.trim() || 'Learner';
+  const displayName = userData?.name?.trim() || t.dashboard.home.learnerFallback;
   const currentTopic = getCurrentTopic(getRoadmapData(activeGoalId));
   const revisionStats = getRevisionStats(getRevisionDataForGoals(t.revisionTasks, goals));
 
@@ -685,7 +685,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
           </div>
           <div className="flex-1 min-w-0">
             <div className="text-sm font-medium bg-gradient-to-r from-purple-500 via-pink-500 to-orange-400 bg-clip-text text-transparent truncate">{displayName}</div>
-            <div className="text-xs text-gray-400 dark:text-white/40 truncate">{userData?.role ? userData.role : 'Learner'}</div>
+            <div className="text-xs text-gray-400 dark:text-white/40 truncate">{userData?.role ? (t.onboarding.roles[userData.role] ?? userData.role) : t.dashboard.home.learnerFallback}</div>
           </div>
         </div>
       </div>
@@ -807,10 +807,10 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                   <div className="flex-1 min-w-[200px]">
                     <div className="font-semibold text-sm">
                       {revisionAlert.overdue > 0
-                        ? `${revisionAlert.dueToday + revisionAlert.overdue} topics need revision — ${revisionAlert.overdue} overdue!`
-                        : `${revisionAlert.dueToday} topics to revise today`}
+                        ? format(t.dashboard.home.revisionBanner.overdueTitle, revisionAlert.dueToday + revisionAlert.overdue, revisionAlert.overdue)
+                        : format(t.dashboard.home.revisionBanner.dueTitle, revisionAlert.dueToday)}
                     </div>
-                    <div className="text-xs opacity-70">Don't forget — do it now</div>
+                    <div className="text-xs opacity-70">{t.dashboard.home.revisionBanner.subtitle}</div>
                   </div>
                   <button
                     onClick={() => {

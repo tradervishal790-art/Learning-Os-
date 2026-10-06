@@ -84,6 +84,8 @@ export interface TranslationShape {
       ];
     };
     home: {
+      revisionBanner: { overdueTitle: string; dueTitle: string; subtitle: string }; // overdueTitle: "{0} ... {1}", dueTitle: "{0}"
+      learnerFallback: string;
       statsCards: {
         goal: string;
         pickTopic: string;
@@ -643,6 +645,12 @@ export const translations: Record<Locale, TranslationShape> = {
         ],
       },
       home: {
+        revisionBanner: {
+          overdueTitle: '{0} topics need revision — {1} overdue!',
+          dueTitle: '{0} topics to revise today',
+          subtitle: "Don't forget — do it now",
+        },
+        learnerFallback: 'Learner',
         statsCards: {
           goal: 'Goal',
           pickTopic: 'Pick a topic',
@@ -1506,6 +1514,12 @@ export const translations: Record<Locale, TranslationShape> = {
         ],
       },
       home: {
+        revisionBanner: {
+          overdueTitle: '{0} टॉपिक का रिवीजन बाकी है — {1} ओवरड्यू!',
+          dueTitle: 'आज {0} टॉपिक रिवाइज करने हैं',
+          subtitle: 'भूलिए मत — अभी कर लीजिए',
+        },
+        learnerFallback: 'लर्नर',
         statsCards: {
           goal: 'लक्ष्य',
           pickTopic: 'टॉपिक चुनें',
@@ -2363,6 +2377,12 @@ export const translations: Record<Locale, TranslationShape> = {
         ],
       },
       home: {
+        revisionBanner: {
+          overdueTitle: '{0} topics ka revision baaki hai — {1} overdue!',
+          dueTitle: 'Aaj {0} topics revise karne hain',
+          subtitle: 'Bhooliye mat — abhi kar lijiye',
+        },
+        learnerFallback: 'Learner',
         statsCards: {
           goal: 'Goal',
           pickTopic: 'Pick a topic',
