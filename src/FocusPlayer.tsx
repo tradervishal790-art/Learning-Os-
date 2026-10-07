@@ -198,6 +198,7 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
   const [bankToast, setBankToast] = useState('');
   const [timeline, setTimeline] = useState<ConceptSegment[] | null>(null);
   const [timelineState, setTimelineState] = useState<'idle' | 'loading' | 'none' | 'ready'>('idle');
+  const [timelineReason, setTimelineReason] = useState('');
   const [nowIdx, setNowIdx] = useState(0);
   const [showOutline, setShowOutline] = useState(false);
   const [breakPrompt, setBreakPrompt] = useState(false);
@@ -288,10 +289,11 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
     }
     let cancelled = false;
     setTimelineState('loading');
-    void loadTimeline(active.id, active.title).then((t) => {
+    void loadTimeline(active.id, active.title).then((r) => {
       if (cancelled) return;
-      setTimeline(t);
-      setTimelineState(t ? 'ready' : 'none');
+      setTimeline(r.segments);
+      setTimelineReason(r.reason ?? '');
+      setTimelineState(r.segments ? 'ready' : 'none');
     });
     return () => {
       cancelled = true;
@@ -579,7 +581,10 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
             <div className="rounded-xl border border-black/10 p-3 dark:border-white/15">
               {timelineState === 'loading' && <p className="text-sm opacity-60">Finding the concepts in this video…</p>}
               {timelineState === 'none' && (
-                <p className="text-sm opacity-60">Concept timeline isn't available for this video (no chapters or captions).</p>
+                <div className="text-sm opacity-60">
+                  <p>Concept timeline isn't available for this video.</p>
+                  {timelineReason && <p className="mt-0.5 text-xs">Reason: {timelineReason}</p>}
+                </div>
               )}
               {timelineState === 'ready' && timeline && (
                 <>

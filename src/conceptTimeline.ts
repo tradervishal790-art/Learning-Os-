@@ -28,15 +28,21 @@ function clean(raw: unknown): ConceptSegment[] {
     .sort((a, b) => a.start - b.start);
 }
 
-/** Returns the timeline, or null when this video has no chapters/captions to build one from. */
-export async function loadTimeline(videoId: string, title: string): Promise<ConceptSegment[] | null> {
+export interface TimelineResult {
+  segments: ConceptSegment[] | null;
+  /** Why it is unavailable (shown in small text so problems are diagnosable). */
+  reason?: string;
+}
+
+/** Returns the timeline, or segments:null when none could be built for this video. */
+export async function loadTimeline(videoId: string, title: string): Promise<TimelineResult> {
   const local = clean(cacheGet<ConceptSegment[]>(`timeline_${videoId}`, TTL));
-  if (local.length > 0) return local;
+  if (local.length > 0) return { segments: local };
 
   const shared = clean(await pullSharedTimeline<ConceptSegment>(videoId));
   if (shared.length > 0) {
     cacheSet(`timeline_${videoId}`, shared);
-    return shared;
+    return { segments: shared };
   }
 
   try {
@@ -45,15 +51,18 @@ export async function loadTimeline(videoId: string, title: string): Promise<Conc
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ mode: 'timeline', videoId, title }),
     });
-    if (!res.ok) return null;
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const why = Array.isArray(data?.reasons) ? data.reasons.join('; ') : data?.error || `server error ${res.status}`;
+      return { segments: null, reason: why };
+    }
     const segments = clean(data?.segments);
-    if (segments.length === 0) return null;
+    if (segments.length === 0) return { segments: null, reason: 'no concepts found' };
     cacheSet(`timeline_${videoId}`, segments);
     pushSharedTimeline(videoId, segments, String(data?.source ?? ''));
-    return segments;
+    return { segments };
   } catch {
-    return null;
+    return { segments: null, reason: 'network problem' };
   }
 }
 

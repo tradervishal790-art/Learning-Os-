@@ -107,6 +107,77 @@ function bucketTranscript(lines: { start: number; text: string }[]): string {
   return rows.join('\n').slice(0, TRANSCRIPT_CHAR_LIMIT);
 }
 
+function cleanSegments(parsed: any, limitSec: number): Segment[] {
+  let prev = -1;
+  const segments: Segment[] = (Array.isArray(parsed?.segments) ? parsed.segments : [])
+    .map((s: any) => ({
+      start: Math.max(0, Math.round(Number(s?.start) || 0)),
+      title: String(s?.title ?? '').trim().slice(0, 80),
+      summary: String(s?.summary ?? '').trim().slice(0, 200),
+    }))
+    .filter((s: Segment) => s.title && s.start <= limitSec)
+    .sort((a: Segment, b: Segment) => a.start - b.start)
+    .filter((s: Segment) => {
+      if (s.start <= prev) return false;
+      prev = s.start;
+      return true;
+    });
+  if (segments.length >= 2) segments[0].start = 0;
+  return segments.length >= 2 ? segments : [];
+}
+
+const VIDEO_PATH_MAX_SEC = 75 * 60; // longer lectures would exceed the function time / token budget
+
+const timelineInstructions = (title: string | undefined, maxSegs: number) =>
+  `Split this lecture${title ? ` titled "${title}"` : ''} into its TEACHING SEGMENTS: each time the teacher moves to a new concept, rule, example or topic, that is a new segment. Return between 4 and ${maxSegs} segments in order.
+
+For each segment give:
+- "start": the start time in seconds (the first segment must start at 0)
+- "title": the CONCEPT being taught, in simple Hinglish (Hindi+English mix), max 6 words. Name the concept itself (e.g. "Is/Am/Are ka use"), not vague words like "Introduction" or "Discussion".
+- "summary": ONE short Hinglish sentence on what the teacher explains in that segment.
+
+Paraphrase, never copy wording. Return ONLY JSON: {"segments":[{"start":0,"title":"...","summary":"..."}]}`;
+
+/** Last-resort path: Gemini watches/listens to the YouTube video itself (same technique as
+ *  analyze-taste-video.ts). Works even when YouTube blocks caption scraping from our server. */
+async function timelineFromVideo(
+  videoId: string,
+  durationSec: number,
+  title: string | undefined,
+  apiKey: string
+): Promise<Segment[]> {
+  const maxSegs = Math.min(30, Math.max(5, Math.round(durationSec / 240)));
+  const parts = [
+    {
+      fileData: { fileUri: `https://www.youtube.com/watch?v=${videoId}`, mimeType: 'video/*' },
+      // Lectures are carried by the audio, so sample few frames (cheap) instead of 1 per second.
+      videoMetadata: { startOffset: '0s', endOffset: `${Math.floor(durationSec)}s`, fps: 0.25 },
+    },
+    { text: timelineInstructions(title, maxSegs) },
+  ];
+  let lastErr: unknown = null;
+  for (const lowRes of [true, false]) {
+    try {
+      // No minimaxApiKey on purpose: MiniMax is text-only and cannot take a video.
+      const { text } = await generateAIText({
+        geminiApiKey: apiKey,
+        contents: [{ role: 'user', parts }],
+        generationConfig: {
+          responseMimeType: 'application/json',
+          responseSchema: segmentSchema,
+          maxOutputTokens: 4000,
+          temperature: 0.3,
+          ...(lowRes ? { mediaResolution: 'MEDIA_RESOLUTION_LOW' } : {}),
+        },
+      });
+      return cleanSegments(JSON.parse(text.trim()), durationSec + 60);
+    } catch (e) {
+      lastErr = e; // first attempt may fail on the optional low-res flag; retry once without it
+    }
+  }
+  throw lastErr;
+}
+
 async function handleTimeline(
   res: VercelResponse,
   videoId: string,
@@ -115,15 +186,19 @@ async function handleTimeline(
   apiKey: string | undefined,
   minimaxApiKey: string | undefined
 ) {
+  const reasons: string[] = [];
+
   // 1) Creator chapters (free). Fetch the description ourselves if the client didn't send it.
   let desc = description ?? '';
   let duration = 0;
   const ytKey = process.env.YOUTUBE_API_KEY || process.env.VITE_YOUTUBE_API_KEY;
-  if ((!desc || !title) && ytKey) {
+  if (ytKey) {
     const meta = await fetchVideoMeta(videoId, ytKey);
     if (meta) {
       desc = desc || meta.description;
       duration = meta.durationSeconds;
+    } else {
+      reasons.push('video info unavailable');
     }
   }
   const chapters = parseChapters(desc);
@@ -134,61 +209,59 @@ async function handleTimeline(
 
   // 2) Timed transcript -> AI concept segments.
   const lines = await tryFetchTimedTranscript(videoId);
-  if (!lines) {
-    res.status(422).json({ error: 'No chapters or captions available for this video.' });
-    return;
-  }
-  const endSec = Math.ceil(lines[lines.length - 1].start);
-  const maxSegs = Math.min(30, Math.max(5, Math.round(endSec / 240)));
-  const prompt = `Below is a timestamped transcript of a lecture${title ? ` titled "${title}"` : ''}. Each line starts with its start time in seconds, like [95s].
+  if (lines) {
+    const endSec = Math.ceil(lines[lines.length - 1].start);
+    const maxSegs = Math.min(30, Math.max(5, Math.round(endSec / 240)));
+    const prompt = `Below is a timestamped transcript. Each line starts with its start time in seconds, like [95s].
 
-Split the lecture into its TEACHING SEGMENTS: each time the teacher moves to a new concept, rule, example or topic, that is a new segment. Return between 4 and ${maxSegs} segments in order.
-
-For each segment give:
-- "start": the start time in seconds (use a time that appears in the transcript, first segment must start at 0)
-- "title": the CONCEPT being taught, in simple Hinglish (Hindi+English mix), max 6 words. Name the concept itself (e.g. "Is/Am/Are ka use"), not vague words like "Introduction" or "Discussion".
-- "summary": ONE short Hinglish sentence on what the teacher explains in that segment.
-
-Paraphrase, never copy the transcript wording. Return ONLY JSON: {"segments":[{"start":0,"title":"...","summary":"..."}]}
+${timelineInstructions(title, maxSegs)}
 
 TRANSCRIPT:
 ${bucketTranscript(lines)}`;
-
-  try {
-    const { text } = await generateAIText({
-      geminiApiKey: apiKey,
-      minimaxApiKey,
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      generationConfig: { responseMimeType: 'application/json', responseSchema: segmentSchema, maxOutputTokens: 4000, temperature: 0.3 },
-      minimaxJsonMode: true,
-      minimaxMaxTokens: 4000,
-    });
-    const parsed = JSON.parse(text.trim());
-    const limit = duration || endSec + 60;
-    let prev = -1;
-    const segments: Segment[] = (Array.isArray(parsed?.segments) ? parsed.segments : [])
-      .map((s: any) => ({
-        start: Math.max(0, Math.round(Number(s?.start) || 0)),
-        title: String(s?.title ?? '').trim().slice(0, 80),
-        summary: String(s?.summary ?? '').trim().slice(0, 200),
-      }))
-      .filter((s: Segment) => s.title && s.start <= limit)
-      .sort((a: Segment, b: Segment) => a.start - b.start)
-      .filter((s: Segment) => {
-        if (s.start <= prev) return false;
-        prev = s.start;
-        return true;
+    try {
+      const { text } = await generateAIText({
+        geminiApiKey: apiKey,
+        minimaxApiKey,
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: { responseMimeType: 'application/json', responseSchema: segmentSchema, maxOutputTokens: 4000, temperature: 0.3 },
+        minimaxJsonMode: true,
+        minimaxMaxTokens: 4000,
       });
-    if (segments.length < 2) {
-      res.status(422).json({ error: 'Could not build a concept timeline.' });
-      return;
+      const segments = cleanSegments(JSON.parse(text.trim()), (duration || endSec) + 60);
+      if (segments.length > 0) {
+        res.status(200).json({ segments, source: 'transcript' });
+        return;
+      }
+      reasons.push('AI returned too few segments');
+    } catch (err: any) {
+      console.error('timeline (transcript path) failed:', err);
+      reasons.push(`AI on transcript failed: ${String(err?.message ?? err).slice(0, 120)}`);
     }
-    segments[0].start = 0;
-    res.status(200).json({ segments, source: 'transcript' });
-  } catch (err: any) {
-    console.error('timeline failed:', err);
-    res.status(500).json({ error: err?.message || 'Timeline generation failed' });
+  } else {
+    reasons.push('captions could not be read from the server');
   }
+
+  // 3) Last resort: let Gemini watch/listen to the video itself.
+  if (apiKey && duration > 0 && duration <= VIDEO_PATH_MAX_SEC) {
+    try {
+      const segments = await timelineFromVideo(videoId, duration, title, apiKey);
+      if (segments.length > 0) {
+        res.status(200).json({ segments, source: 'video' });
+        return;
+      }
+      reasons.push('AI could not find concepts in the video');
+    } catch (err: any) {
+      console.error('timeline (video path) failed:', err);
+      reasons.push(`AI on video failed: ${String(err?.message ?? err).slice(0, 120)}`);
+    }
+  } else if (duration > VIDEO_PATH_MAX_SEC) {
+    reasons.push('video is longer than 75 minutes');
+  } else if (!duration) {
+    reasons.push('video length unknown');
+  }
+
+  console.error('timeline unavailable for', videoId, reasons);
+  res.status(422).json({ error: 'Concept timeline unavailable.', reasons });
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
