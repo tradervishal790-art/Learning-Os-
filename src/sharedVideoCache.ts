@@ -122,6 +122,35 @@ export function pushSharedSearch<T>(searchKey: string, items: T[], nextPageToken
   }).catch(() => {});
 }
 
+/**
+ * Shared cache for a video's concept timeline ("what is the teacher teaching when").
+ * Same collection the video-analysis cache already uses, doc id `timeline_{videoId}`,
+ * so no new Firestore rule is needed. Refreshed after 30 days.
+ */
+export async function pullSharedTimeline<T>(videoId: string): Promise<T[] | null> {
+  if (!isSignedIn()) return null;
+  try {
+    const snap = await getDoc(doc(db, 'shared_video_analysis', `timeline_${videoId}`));
+    if (!snap.exists()) return null;
+    const data = snap.data();
+    if (!Array.isArray(data?.segments) || data.segments.length === 0) return null;
+    const age = Date.now() - new Date(data.updatedAt ?? 0).getTime();
+    if (!(age < 30 * 24 * 60 * 60 * 1000)) return null;
+    return data.segments as T[];
+  } catch {
+    return null;
+  }
+}
+
+export function pushSharedTimeline<T>(videoId: string, segments: T[], source: string): void {
+  if (!isSignedIn() || segments.length === 0) return;
+  void setDoc(doc(db, 'shared_video_analysis', `timeline_${videoId}`), {
+    segments,
+    source,
+    updatedAt: new Date().toISOString(),
+  }).catch(() => {});
+}
+
 // ------------------------------------------------------------------------
 // FIRESTORE RULES — add this alongside the existing users/{uid}/... rule
 // in the Firebase console (Firestore Database -> Rules). Without it, every

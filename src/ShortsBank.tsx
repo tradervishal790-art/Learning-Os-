@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { SavedShort } from './focusStore';
+import { decodeHtml } from './textUtil';
 
 // ============================================================
 // ShortsBank.tsx — the separate "bank" section.
@@ -73,7 +74,7 @@ export default function ShortsBank({
             <div key={s.id} className="flex items-center gap-3 rounded-2xl border border-black/10 p-3 dark:border-white/15">
               <img src={`https://i.ytimg.com/vi/${s.id}/mqdefault.jpg`} alt="" className="h-20 w-14 shrink-0 rounded-lg object-cover" />
               <div className="min-w-0 flex-1">
-                <p className="line-clamp-2 text-sm font-medium">{s.title || 'Short'}</p>
+                <p className="line-clamp-2 text-sm font-medium">{decodeHtml(s.title) || 'Short'}</p>
                 <p className="mt-0.5 text-xs opacity-60">{s.channel}</p>
               </div>
               <div className="flex shrink-0 flex-col gap-1">

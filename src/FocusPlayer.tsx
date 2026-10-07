@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { authFetch } from './apiFetch';
 import { pullSharedSearch, pushSharedSearch } from './sharedVideoCache';
 import BreakFeed from './BreakFeed';
+import { decodeHtml } from './textUtil';
+import { loadTimeline, segmentIndexAt, type ConceptSegment } from './conceptTimeline';
 import ShortsBank from './ShortsBank';
 import { cacheGet, cacheSet } from './mediaCache';
 import { loadShorts, prefetchShorts } from './shortsData';
@@ -194,6 +196,10 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
   const [hydrated, setHydrated] = useState(false);
   const lastSyncedRef = useRef('');
   const [bankToast, setBankToast] = useState('');
+  const [timeline, setTimeline] = useState<ConceptSegment[] | null>(null);
+  const [timelineState, setTimelineState] = useState<'idle' | 'loading' | 'none' | 'ready'>('idle');
+  const [nowIdx, setNowIdx] = useState(0);
+  const [showOutline, setShowOutline] = useState(false);
   const [breakPrompt, setBreakPrompt] = useState(false);
   const [breakOpen, setBreakOpen] = useState(false);
   const [breakProgress, setBreakProgress] = useState(0); // 0..1, drives the quiet bottom line
@@ -270,6 +276,41 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
     const id = setTimeout(() => setBankToast(''), 4000);
     return () => clearTimeout(id);
   }, [bankToast]);
+
+  // Concept timeline: what the teacher is teaching at each moment of THIS video.
+  useEffect(() => {
+    setTimeline(null);
+    setNowIdx(0);
+    setShowOutline(false);
+    if (!active) {
+      setTimelineState('idle');
+      return;
+    }
+    let cancelled = false;
+    setTimelineState('loading');
+    void loadTimeline(active.id, active.title).then((t) => {
+      if (cancelled) return;
+      setTimeline(t);
+      setTimelineState(t ? 'ready' : 'none');
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [active]);
+
+  useEffect(() => {
+    if (!timeline) return;
+    const id = setInterval(() => {
+      const t = playerRef.current?.getCurrentTime?.();
+      if (typeof t === 'number') setNowIdx(segmentIndexAt(timeline, t));
+    }, 1000);
+    return () => clearInterval(id);
+  }, [timeline]);
+
+  const seekTo = (sec: number) => {
+    playerRef.current?.seekTo?.(sec, true);
+    playerRef.current?.playVideo?.();
+  };
 
   const spendBank = (sec: number) => setBank((b) => ({ ...b, bankSec: Math.max(0, b.bankSec - sec) }));
   const removeSaved = (id: string) => setSaved((list) => list.filter((x) => x.id !== id));
@@ -462,11 +503,19 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
     };
   }, [active]);
 
+  const appendNote = (line: string) => {
+    setNotes((n) => (n && !n.endsWith('\n') ? `${n}\n${line}` : `${n}${line}`));
+    notesRef.current?.focus();
+  };
+  // "+ Time" stamps the current moment AND the concept being taught right now.
   const addTimestamp = () => {
     const sec = playerRef.current?.getCurrentTime?.() ?? 0;
-    const stamp = `[${fmt(sec)}] `;
-    setNotes((n) => (n && !n.endsWith('\n') ? `${n}\n${stamp}` : `${n}${stamp}`));
-    notesRef.current?.focus();
+    const concept = timeline && timeline.length > 0 ? timeline[segmentIndexAt(timeline, sec)].title : '';
+    appendNote(`[${fmt(sec)}] ${concept ? `${concept}: ` : ''}`);
+  };
+  const addOutline = () => {
+    if (!timeline) return;
+    appendNote(timeline.map((s) => `[${fmt(s.start)}] ${s.title}`).join('\n') + '\n');
   };
 
   const inputCls =
@@ -480,7 +529,7 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
           <button onClick={() => setActive(null)} className="rounded-lg px-3 py-1.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/10">
             ← Back
           </button>
-          <p className="min-w-0 flex-1 truncate text-sm font-medium">{active.title}</p>
+          <p className="min-w-0 flex-1 truncate text-sm font-medium">{decodeHtml(active.title)}</p>
           {bank.skipsTotal > 0 && <span className="shrink-0 text-xs opacity-70">💰 {Math.floor(bank.bankSec / 60)} min</span>}
         </div>
         {bankToast && (
@@ -522,8 +571,55 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
           </div>
         )}
         <div className="mx-auto grid w-full max-w-6xl flex-1 gap-4 p-4 lg:grid-cols-[2fr_1fr]">
-          <div className="aspect-video w-full overflow-hidden rounded-xl bg-black">
-            <div id="focus-yt-player" className="h-full w-full" />
+          <div className="flex flex-col gap-3">
+            <div className="aspect-video w-full overflow-hidden rounded-xl bg-black">
+              <div id="focus-yt-player" className="h-full w-full" />
+            </div>
+
+            <div className="rounded-xl border border-black/10 p-3 dark:border-white/15">
+              {timelineState === 'loading' && <p className="text-sm opacity-60">Finding the concepts in this video…</p>}
+              {timelineState === 'none' && (
+                <p className="text-sm opacity-60">Concept timeline isn't available for this video (no chapters or captions).</p>
+              )}
+              {timelineState === 'ready' && timeline && (
+                <>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-xs opacity-60">Now teaching</p>
+                      <p className="font-semibold">{timeline[nowIdx]?.title}</p>
+                      {timeline[nowIdx]?.summary && <p className="mt-0.5 text-sm opacity-70">{timeline[nowIdx].summary}</p>}
+                    </div>
+                    <div className="flex shrink-0 flex-col gap-1">
+                      <button onClick={addTimestamp} className="rounded-lg bg-black px-3 py-1.5 text-sm font-medium text-white dark:bg-white dark:text-black">
+                        + Note
+                      </button>
+                      <button onClick={() => setShowOutline((v) => !v)} className="text-xs opacity-60 hover:opacity-100">
+                        {showOutline ? 'Hide concepts' : `All concepts (${timeline.length})`}
+                      </button>
+                    </div>
+                  </div>
+                  {showOutline && (
+                    <div className="mt-3 border-t border-black/10 pt-2 dark:border-white/15">
+                      <div className="max-h-48 overflow-y-auto">
+                        {timeline.map((s, i) => (
+                          <button
+                            key={`${s.start}-${i}`}
+                            onClick={() => seekTo(s.start)}
+                            className={`flex w-full gap-3 rounded-lg px-2 py-1.5 text-left text-sm hover:bg-black/5 dark:hover:bg-white/10 ${i === nowIdx ? 'font-semibold' : ''}`}
+                          >
+                            <span className="w-12 shrink-0 tabular-nums opacity-60">{fmt(s.start)}</span>
+                            <span>{s.title}</span>
+                          </button>
+                        ))}
+                      </div>
+                      <button onClick={addOutline} className="mt-2 text-xs underline opacity-70 hover:opacity-100">
+                        Add all concepts to my notes
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
           </div>
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
@@ -701,7 +797,7 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
               <img src={v.thumbnail} alt="" className="h-24 w-40 shrink-0 rounded-lg object-cover" />
               <div className="min-w-0">
                 <p className="text-xs opacity-50">Pick {i + 1}</p>
-                <p className="line-clamp-2 font-semibold">{v.title}</p>
+                <p className="line-clamp-2 font-semibold">{decodeHtml(v.title)}</p>
                 <p className="mt-1 text-sm opacity-60">{v.channel}</p>
               </div>
             </button>

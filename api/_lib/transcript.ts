@@ -39,3 +39,33 @@ export async function tryFetchTranscript(videoId: string): Promise<string | null
     return null;
   }
 }
+
+export interface TimedLine {
+  /** Start time in seconds. */
+  start: number;
+  text: string;
+}
+
+/** Like tryFetchTranscript but KEEPS timestamps (needed for the concept timeline).
+ *  Never throws; null on any failure. The package mixes units (ms or seconds)
+ *  depending on the caption format, so offsets are normalised to seconds. */
+export async function tryFetchTimedTranscript(videoId: string): Promise<TimedLine[] | null> {
+  try {
+    let chunks;
+    try {
+      chunks = await YoutubeTranscript.fetchTranscript(videoId, { lang: 'hi' });
+    } catch {
+      chunks = await YoutubeTranscript.fetchTranscript(videoId);
+    }
+    if (!chunks?.length) return null;
+    const last = Number(chunks[chunks.length - 1].offset) || 0;
+    const divisor = last > 20000 ? 1000 : 1; // > ~5.5 hours as seconds is impossible -> it's milliseconds
+    const lines = chunks
+      .map((c) => ({ start: Math.max(0, (Number(c.offset) || 0) / divisor), text: String(c.text ?? '').trim() }))
+      .filter((l) => l.text);
+    const total = lines.reduce((n, l) => n + l.text.length, 0);
+    return total >= MIN_TRANSCRIPT_LENGTH ? lines : null;
+  } catch {
+    return null;
+  }
+}
