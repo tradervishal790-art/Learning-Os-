@@ -1,0 +1,23 @@
+name: Warm shared cache
+
+on:
+  schedule:
+    - cron: '30 21 * * *' # daily, about 3:00 AM IST
+  workflow_dispatch: {}
+
+jobs:
+  warm:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Pre-warm video and Shorts cache
+        run: node scripts/warm-cache.mjs
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          WARM_EMAIL: ${{ secrets.WARM_EMAIL }}
+          WARM_PASSWORD: ${{ secrets.WARM_PASSWORD }}
+          WARM_BUDGET_UNITS: '6000'
