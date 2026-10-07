@@ -1,0 +1,18 @@
+{
+  "langs": ["any"],
+  "interests": ["Cricket", "Comedy", "Music", "Tech", "Motivation", "Science", "Gaming", "Food"],
+  "topics": [
+    "Newton's laws of motion", "Thermodynamics", "Electrostatics", "Ray optics", "Work energy and power",
+    "Chemical bonding", "Periodic table trends", "Organic chemistry basics", "Mole concept", "Electrochemistry",
+    "Quadratic equations", "Trigonometry basics", "Limits and derivatives", "Probability basics",
+    "Permutations and combinations", "Matrices and determinants",
+    "Photosynthesis", "Cell structure and function", "Human digestive system", "Genetics basics",
+    "Fundamental rights", "Preamble of the Constitution", "Parliament of India",
+    "Indian freedom struggle", "Mughal empire", "French Revolution",
+    "Indian rivers", "Monsoon in India", "Plate tectonics",
+    "GDP and inflation", "Indian budget basics",
+    "Number series reasoning", "Blood relations reasoning", "Syllogism",
+    "English tenses", "Subject verb agreement", "Active and passive voice",
+    "Python for beginners", "Data structures basics", "Hindi vyakaran"
+  ]
+}
