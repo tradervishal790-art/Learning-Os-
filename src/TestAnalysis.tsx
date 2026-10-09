@@ -63,7 +63,7 @@ export default function TestAnalysis({
     setBusy(true);
     setError('');
     try {
-      const text = await fetchTestSuggestion(buildInsightPayload(attempt, a, h), locale);
+      const text = await fetchTestSuggestion(buildInsightPayload(attempt, a, h, edges), locale);
       if (!text) throw new Error('No suggestion came back — please try again.');
       onSaveInsight(text);
     } catch (e: any) {
