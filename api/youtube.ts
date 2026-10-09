@@ -34,7 +34,7 @@ import { fetchVideoMeta } from './_lib/youtubeMeta.js';
 const MIN_DURATION_SECONDS = 180; // 3 minutes — drops YouTube Shorts
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const uid = await requireUser(req, res);
+  const uid = await requireUser(req, res, { allowAnonymous: true });
   if (!uid) return;
 
   if (req.method !== 'GET') {

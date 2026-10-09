@@ -16,7 +16,7 @@ import { verifyBridgeConnection, type ConnectorFacts } from './_lib/bridgeVerify
 // ============================================================
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const uid = await requireUser(req, res);
+  const uid = await requireUser(req, res, { allowAnonymous: true });
   if (!uid) return;
 
   if (req.method !== 'POST') {

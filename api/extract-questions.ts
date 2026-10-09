@@ -21,9 +21,9 @@
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { generateAIText } from './_lib/aiFallback.js';
+import { requireUser } from './_lib/auth.js';
 import { handleInsight } from './_lib/testInsight.js';
 
-const FIREBASE_WEB_API_KEY = process.env.FIREBASE_WEB_API_KEY || 'AIzaSyBgRq-CzcRNch6hN9PU6OooS5dw7gd_e2M'; // public web key (same as src/firebase.ts)
 const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp', 'application/pdf']);
 const MAX_BASE64_CHARS = 3_400_000; // ~2.5 MB file; keeps the request under Vercel's 4.5 MB limit (client splits bigger PDFs)
 const RATE_LIMIT = 40; // requests per window per user (a big PDF is split into several requests)
@@ -40,24 +40,6 @@ function rateLimited(uid: string): boolean {
   recent.push(now);
   hits.set(uid, recent);
   return false;
-}
-
-async function verifyUser(req: VercelRequest): Promise<string | null> {
-  const header = req.headers.authorization ?? '';
-  const idToken = header.startsWith('Bearer ') ? header.slice(7) : '';
-  if (!idToken) return null;
-  try {
-    const r = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${FIREBASE_WEB_API_KEY}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ idToken }),
-    });
-    if (!r.ok) return null;
-    const data = await r.json();
-    return data?.users?.[0]?.localId ?? null;
-  } catch {
-    return null;
-  }
 }
 
 const QUESTIONS_PROMPT = `This file (a photo or a PDF page range) is a question paper / worksheet. Extract EVERY question visible, in the order they appear.
@@ -145,8 +127,8 @@ const answersSchema = {
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
-  const uid = await verifyUser(req);
-  if (!uid) return res.status(401).json({ error: 'Please sign in to import from photos.' });
+  const uid = await requireUser(req, res); // login-only: guests are rejected (403 account-required)
+  if (!uid) return;
   if (rateLimited(uid)) return res.status(429).json({ error: 'Too many photo imports — please wait a few minutes.' });
 
   // Same function also serves the one-line AI study suggestion shown after a test (keeps us at 12 functions).
