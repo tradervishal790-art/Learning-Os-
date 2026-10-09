@@ -4,6 +4,9 @@ import type { TestAttempt } from './types';
 import { analyzeAttempt, analyzeHistory, buildInsightPayload, type Finding } from './testAnalytics';
 import { fetchTestSuggestion } from './testInsightApi';
 import { useLanguage } from './i18n/LanguageContext';
+import { getPersonalityProfile } from './personalityProfileStore';
+import { computeGrowthEdges } from './growthEdges';
+import GrowthEdgesCard from './GrowthEdgesCard';
 
 // ============================================================
 // TestAnalysis.tsx — shown under the score on the results screen.
@@ -53,6 +56,8 @@ export default function TestAnalysis({
 
   const a = useMemo(() => analyzeAttempt(attempt), [attempt]);
   const h = useMemo(() => analyzeHistory(attempt, allAttempts), [attempt, allAttempts]);
+  const personality = useMemo(() => getPersonalityProfile(), []);
+  const edges = useMemo(() => computeGrowthEdges(personality, a, h), [personality, a, h]);
 
   const getSuggestion = async () => {
     setBusy(true);
@@ -137,7 +142,10 @@ export default function TestAnalysis({
         )}
       </div>
 
-      {/* 3 — one AI suggestion */}
+      {/* 3 — growth edges: personality tendency confirmed by these tests (no AI) */}
+      <GrowthEdgesCard edges={edges} hasPersonality={!!personality} className={card} />
+
+      {/* 4 — one AI suggestion */}
       <div className={card}>
         <h3 className="flex items-center gap-2 font-semibold mb-2">
           <Sparkles className="w-4 h-4" /> Suggestion for your next test

@@ -9,6 +9,10 @@ import { getRevisionStats, getRevisionDataForGoals } from './revisionData';
 import { getPersonalityProfile, savePersonalityProfile, clearPersonalityProfile } from './personalityProfileStore';
 import type { PersonalityProfile } from './personalityScoring';
 import { PersonalityResultRows } from './PersonalityResult';
+import GrowthEdgesCard from './GrowthEdgesCard';
+import { computeGrowthEdges } from './growthEdges';
+import { analyzeAttempt, analyzeHistory } from './testAnalytics';
+import { getTestAttempts } from './testStore';
 import { getLearningProfile, saveLearningProfile, clearLearningProfile } from './learningProfileStore';
 import { getEngagementSessions } from './engagementStore';
 import { pushToCloud, pullFromCloud } from './cloudSync';
@@ -1153,6 +1157,19 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                       {showPersonalityResult && (
                         <div className="mt-3 space-y-3">
                           <PersonalityResultRows profile={personalityProfile} />
+                          {(() => {
+                            const attempts = getTestAttempts();
+                            if (attempts.length === 0) {
+                              return (
+                                <p className="text-xs text-gray-400 dark:text-white/40">
+                                  Take a test in the Test section to see your growth edges here.
+                                </p>
+                              );
+                            }
+                            const latest = [...attempts].sort((x, y) => (x.completedAt < y.completedAt ? 1 : -1))[0];
+                            const edges = computeGrowthEdges(personalityProfile, analyzeAttempt(latest), analyzeHistory(latest, attempts));
+                            return <GrowthEdgesCard edges={edges} hasPersonality />;
+                          })()}
                           <button
                             onClick={() => {
                               clearPersonalityProfile();
