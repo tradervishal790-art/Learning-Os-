@@ -1,15 +1,9 @@
-// Turns the learner's chosen files into topics: optional PDF splitting (pdf-lib, on-device)
-// and photo grouping. Stores every resulting file in IndexedDB.
+// On-device PDF splitting (pdf-lib) + helpers for storing a box's files in IndexedDB.
 import { PDFDocument } from 'pdf-lib';
 import { putStudyFile, deleteStudyFile } from './studyFiles';
-import { newId } from './studyPlanStore';
+import { newId, type StudyFile } from './studyPlanStore';
 
-export interface NewTopicItem {
-  title: string;
-  kind: 'pdf' | 'images';
-  fileKeys: string[];
-}
-
+export const isPdf = (f: File) => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf');
 const baseName = (n: string) => n.replace(/\.[^.]+$/, '');
 
 /** Splits `total` pages into `parts` nearly-equal consecutive ranges, e.g. 50/4 -> 13,13,12,12. */
@@ -27,65 +21,40 @@ export function splitRanges(total: number, parts: number): [number, number][] {
   return out;
 }
 
-export async function pdfPageCount(file: File): Promise<number> {
-  const doc = await PDFDocument.load(await file.arrayBuffer(), { ignoreEncryption: true });
-  return doc.getPageCount();
+/** Stores the chosen photos/PDFs and returns them as box files. Cleans up if anything fails. */
+export async function storeFiles(files: File[]): Promise<StudyFile[]> {
+  const out: StudyFile[] = [];
+  try {
+    for (const f of files) {
+      const key = newId();
+      await putStudyFile(key, f);
+      out.push({ key, name: f.name, kind: isPdf(f) ? 'pdf' : 'image' });
+    }
+  } catch (e) {
+    await Promise.all(out.map((o) => deleteStudyFile(o.key)));
+    throw e;
+  }
+  return out;
 }
 
-export async function buildPdfTopics(file: File, parts: number): Promise<NewTopicItem[]> {
-  const name = baseName(file.name);
-  if (parts <= 1) {
-    const key = newId();
-    await putStudyFile(key, file);
-    return [{ title: name, kind: 'pdf', fileKeys: [key] }];
-  }
-  const src = await PDFDocument.load(await file.arrayBuffer(), { ignoreEncryption: true });
+/** Splits one stored PDF into `parts` new stored PDFs (one StudyFile per part). Caller deletes the original. */
+export async function splitPdfBlob(blob: Blob, name: string, parts: number): Promise<StudyFile[]> {
+  const src = await PDFDocument.load(await blob.arrayBuffer(), { ignoreEncryption: true });
   const ranges = splitRanges(src.getPageCount(), parts);
-  const items: NewTopicItem[] = [];
-  const written: string[] = [];
+  const out: StudyFile[] = [];
   try {
-    for (let i = 0; i < ranges.length; i++) {
-      const [a, b] = ranges[i];
-      const out = await PDFDocument.create();
-      const idx = Array.from({ length: b - a + 1 }, (_, j) => a + j);
-      const pages = await out.copyPages(src, idx);
-      pages.forEach((p) => out.addPage(p));
-      const bytes = await out.save();
+    for (const [a, b] of ranges) {
+      const doc = await PDFDocument.create();
+      const pages = await doc.copyPages(src, Array.from({ length: b - a + 1 }, (_, j) => a + j));
+      pages.forEach((p) => doc.addPage(p));
+      const bytes = await doc.save();
       const key = newId();
       await putStudyFile(key, new Blob([bytes as BlobPart], { type: 'application/pdf' }));
-      written.push(key);
-      items.push({ title: `${name} (pages ${a + 1}-${b + 1})`, kind: 'pdf', fileKeys: [key] });
+      out.push({ key, name: `${baseName(name)} (pages ${a + 1}-${b + 1}).pdf`, kind: 'pdf' });
     }
   } catch (e) {
-    await Promise.all(written.map(deleteStudyFile));
+    await Promise.all(out.map((o) => deleteStudyFile(o.key)));
     throw e;
   }
-  return items;
-}
-
-/** mode 'each' = one topic per photo; a number = group all photos evenly into that many topics. */
-export async function buildImageTopics(files: File[], mode: 'each' | number, label: string): Promise<NewTopicItem[]> {
-  const groups: File[][] =
-    mode === 'each'
-      ? files.map((f) => [f])
-      : splitRanges(files.length, mode).map(([a, b]) => files.slice(a, b + 1));
-  const items: NewTopicItem[] = [];
-  const written: string[] = [];
-  try {
-    for (let i = 0; i < groups.length; i++) {
-      const keys: string[] = [];
-      for (const f of groups[i]) {
-        const key = newId();
-        await putStudyFile(key, f);
-        written.push(key);
-        keys.push(key);
-      }
-      const title = mode === 'each' ? baseName(groups[i][0].name) : `${label} ${i + 1}`;
-      items.push({ title, kind: 'images', fileKeys: keys });
-    }
-  } catch (e) {
-    await Promise.all(written.map(deleteStudyFile));
-    throw e;
-  }
-  return items;
+  return out;
 }

@@ -1,41 +1,51 @@
 // ============================================================
-// studyPlanStore.ts — "My Files" daily plan.
+// studyPlanStore.ts — "My files" daily plan, built from boxes (T1, T2, ...).
 //
-// The learner adds their own photos/PDFs; each becomes a topic (T1, T2, ...).
 // Rules (decided with Vishal):
+//  - The learner adds a box (T1, T2, ...) and puts any photos/PDFs inside it.
 //  - 1 new topic per day per subject (max 2 subjects in parallel).
-//  - Each learned topic is revised on Day +1, +3, +7, +15 after the day it was learned.
+//  - A learned box is revised on Day +1, +3, +7, +15 after the day it was learned.
 //  - Missed revisions become Overdue and are shown first. Nothing is skipped.
-//  - A missed new topic simply stays as the next new topic (no skipping).
-//  - Long PDFs can optionally be split into 2-5 parts; each part is its own topic.
-//  - Metadata lives in localStorage; the files themselves live in IndexedDB
-//    (studyFiles.ts). No AI, no cloud — this device only.
+//  - When the last revision (Day +15) is done, the box and its files are cleared
+//    automatically and its number (e.g. T1) becomes free for the next new box.
+//  - A long PDF can optionally be split into 2-5 parts (each part gets its own box).
+//  - Metadata lives in localStorage; the files live in IndexedDB (studyFiles.ts).
+//    No AI, no cloud — this device only.
 // ============================================================
 
 export const CHECKPOINTS = [1, 3, 7, 15] as const;
 export const MAX_SUBJECTS = 2;
+export const MAX_BOXES = 30;
 
 const KEY = 'learning_os_study_plan';
+
+export interface StudyFile {
+  key: string; // IndexedDB key
+  name: string;
+  kind: 'pdf' | 'image';
+}
 
 export interface StudyTopic {
   id: string;
   subject: string;
-  /** Position inside its subject, 1-based -> shown as T1, T2, ... */
+  /** Box number shown to the learner (T1, T2, ...). Reused after a box is cleared. */
   number: number;
-  title: string;
-  kind: 'pdf' | 'images';
-  /** IndexedDB keys of the stored file(s) (1 for a PDF, 1+ for photos). */
-  fileKeys: string[];
-  /** Local date (YYYY-MM-DD) the learner marked it learned, or null if not learned yet. */
+  /** Creation order — decides which box is the next "new topic" (numbers get reused, this doesn't). */
+  seq: number;
+  files: StudyFile[];
+  /** Local date (YYYY-MM-DD) the learner marked it learned, or null. */
   learnedOn: string | null;
-  /** Checkpoint days (subset of CHECKPOINTS) already revised. */
+  /** Checkpoint days already revised. */
   reviewed: number[];
 }
 
 export interface StudyPlanState {
-  version: 1;
+  version: 2;
   subjects: string[];
   topics: StudyTopic[];
+  nextSeq: number;
+  /** Boxes that finished the full cycle and were cleared. */
+  completed: number;
 }
 
 export type RevisionState = 'overdue' | 'due-today';
@@ -48,7 +58,7 @@ export interface RevisionTask {
   daysLate: number;
 }
 
-const empty = (): StudyPlanState => ({ version: 1, subjects: [], topics: [] });
+const empty = (): StudyPlanState => ({ version: 2, subjects: [], topics: [], nextSeq: 1, completed: 0 });
 
 export function todayKey(d = new Date()): string {
   const m = String(d.getMonth() + 1).padStart(2, '0');
@@ -71,16 +81,35 @@ export function daysBetween(from: string, to: string): number {
   return Math.round((parseKey(to).getTime() - parseKey(from).getTime()) / 86400000);
 }
 
+export function newId(): string {
+  return `st_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
+}
+
 export function loadPlan(): StudyPlanState {
   try {
     const raw = localStorage.getItem(KEY);
     if (!raw) return empty();
     const p = JSON.parse(raw);
-    if (p && Array.isArray(p.topics) && Array.isArray(p.subjects)) return { ...empty(), ...p };
+    if (!p || !Array.isArray(p.topics) || !Array.isArray(p.subjects)) return empty();
+    if (p.version === 2) return { ...empty(), ...p };
+    // v1 (one topic per file) -> v2 (boxes with files)
+    const topics: StudyTopic[] = p.topics.map((t: any, i: number) => ({
+      id: t.id,
+      subject: t.subject,
+      number: t.number,
+      seq: i + 1,
+      files: (t.fileKeys ?? []).map((key: string, j: number) => ({
+        key,
+        name: t.title ? (j === 0 ? t.title : `${t.title} ${j + 1}`) : `File ${j + 1}`,
+        kind: t.kind === 'pdf' ? 'pdf' : 'image',
+      })),
+      learnedOn: t.learnedOn ?? null,
+      reviewed: t.reviewed ?? [],
+    }));
+    return { ...empty(), subjects: p.subjects, topics, nextSeq: topics.length + 1 };
   } catch {
-    // fall through
+    return empty();
   }
-  return empty();
 }
 
 /** Returns false if the browser refused to store it (storage full). */
@@ -93,75 +122,94 @@ export function savePlan(s: StudyPlanState): boolean {
   }
 }
 
-export function newId(): string {
-  return `st_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
+export function addSubject(state: StudyPlanState, name: string): StudyPlanState {
+  if (state.subjects.includes(name) || state.subjects.length >= MAX_SUBJECTS) return state;
+  return { ...state, subjects: [...state.subjects, name] };
 }
 
-/** Adds topics (already stored in IndexedDB) to a subject; creates the subject if it's new. */
-export function addTopics(
-  state: StudyPlanState,
-  subject: string,
-  items: { title: string; kind: 'pdf' | 'images'; fileKeys: string[] }[]
-): StudyPlanState {
-  const subjects = state.subjects.includes(subject) ? state.subjects : [...state.subjects, subject];
-  let n = state.topics.filter((t) => t.subject === subject).reduce((m, t) => Math.max(m, t.number), 0);
-  const added: StudyTopic[] = items.map((it) => ({
+/** Smallest box number not currently used in this subject — so a cleared T1 is reused. */
+export function nextFreeNumber(state: StudyPlanState, subject: string): number {
+  const used = new Set(state.topics.filter((t) => t.subject === subject).map((t) => t.number));
+  let n = 1;
+  while (used.has(n)) n++;
+  return n;
+}
+
+export function addBox(state: StudyPlanState, subject: string, files: StudyFile[] = []): StudyPlanState {
+  if (state.topics.length >= MAX_BOXES) return state;
+  const box: StudyTopic = {
     id: newId(),
     subject,
-    number: ++n,
-    title: it.title,
-    kind: it.kind,
-    fileKeys: it.fileKeys,
+    number: nextFreeNumber(state, subject),
+    seq: state.nextSeq,
+    files,
     learnedOn: null,
     reviewed: [],
-  }));
-  return { ...state, subjects, topics: [...state.topics, ...added] };
+  };
+  return { ...state, topics: [...state.topics, box], nextSeq: state.nextSeq + 1 };
 }
 
-export function removeTopic(state: StudyPlanState, id: string): StudyPlanState {
-  const topics = state.topics.filter((t) => t.id !== id);
-  const subjects = state.subjects.filter((s) => topics.some((t) => t.subject === s));
-  return { ...state, topics, subjects };
+export function addFilesToBox(state: StudyPlanState, id: string, files: StudyFile[]): StudyPlanState {
+  return { ...state, topics: state.topics.map((t) => (t.id === id ? { ...t, files: [...t.files, ...files] } : t)) };
+}
+
+export function removeFileFromBox(state: StudyPlanState, id: string, key: string): StudyPlanState {
+  return { ...state, topics: state.topics.map((t) => (t.id === id ? { ...t, files: t.files.filter((f) => f.key !== key) } : t)) };
+}
+
+/** Replaces one file in a box with several (used when splitting a PDF); returns the new state. */
+export function replaceFiles(state: StudyPlanState, id: string, files: StudyFile[]): StudyPlanState {
+  return { ...state, topics: state.topics.map((t) => (t.id === id ? { ...t, files } : t)) };
+}
+
+export function removeBox(state: StudyPlanState, id: string): StudyPlanState {
+  return { ...state, topics: state.topics.filter((t) => t.id !== id) };
 }
 
 export function markLearned(state: StudyPlanState, id: string, today = todayKey()): StudyPlanState {
-  return { ...state, topics: state.topics.map((t) => (t.id === id && !t.learnedOn ? { ...t, learnedOn: today } : t)) };
-}
-
-export function markReviewed(state: StudyPlanState, id: string, day: number): StudyPlanState {
   return {
     ...state,
-    topics: state.topics.map((t) =>
-      t.id === id && !t.reviewed.includes(day) ? { ...t, reviewed: [...t.reviewed, day].sort((a, b) => a - b) } : t
-    ),
+    topics: state.topics.map((t) => (t.id === id && !t.learnedOn && t.files.length > 0 ? { ...t, learnedOn: today } : t)),
   };
 }
 
-export function isMastered(t: StudyTopic): boolean {
-  return !!t.learnedOn && CHECKPOINTS.every((d) => t.reviewed.includes(d));
+/** Marks a checkpoint done. If it was the last one, the box is cleared and returned as `expired`. */
+export function markReviewed(
+  state: StudyPlanState,
+  id: string,
+  day: number
+): { state: StudyPlanState; expired: StudyTopic | null } {
+  const topic = state.topics.find((t) => t.id === id);
+  if (!topic || topic.reviewed.includes(day)) return { state, expired: null };
+  const updated: StudyTopic = { ...topic, reviewed: [...topic.reviewed, day].sort((a, b) => a - b) };
+  const finished = CHECKPOINTS.every((d) => updated.reviewed.includes(d));
+  if (finished) {
+    return {
+      state: { ...state, topics: state.topics.filter((t) => t.id !== id), completed: state.completed + 1 },
+      expired: updated,
+    };
+  }
+  return { state: { ...state, topics: state.topics.map((t) => (t.id === id ? updated : t)) }, expired: null };
 }
 
 export interface TodayView {
-  /** One per subject: the next topic not learned yet (none if that subject's new topic was already done today). */
+  /** Per subject: the next box (by creation order) that has files and isn't learned yet — none if one was already learned today. */
   newTopics: StudyTopic[];
-  /** New topics already finished today. */
   doneToday: StudyTopic[];
-  /** Overdue first (oldest first), then due today. */
+  /** Overdue first (most late first), then due today. */
   revisions: RevisionTask[];
-  /** Next few revisions coming up (not due yet). */
   upcoming: { topic: StudyTopic; day: number; dueDate: string }[];
-  masteredCount: number;
 }
 
 export function buildToday(state: StudyPlanState, today = todayKey()): TodayView {
   const newTopics: StudyTopic[] = [];
   const doneToday: StudyTopic[] = [];
   for (const subject of state.subjects) {
-    const mine = state.topics.filter((t) => t.subject === subject).sort((a, b) => a.number - b.number);
+    const mine = state.topics.filter((t) => t.subject === subject).sort((a, b) => a.seq - b.seq);
     const learnedToday = mine.filter((t) => t.learnedOn === today);
     doneToday.push(...learnedToday);
     if (learnedToday.length === 0) {
-      const next = mine.find((t) => !t.learnedOn);
+      const next = mine.find((t) => !t.learnedOn && t.files.length > 0);
       if (next) newTopics.push(next);
     }
   }
@@ -175,12 +223,11 @@ export function buildToday(state: StudyPlanState, today = todayKey()): TodayView
       const dueDate = addDays(t.learnedOn, day);
       const late = daysBetween(dueDate, today);
       if (late > 0) revisions.push({ topic: t, day, dueDate, state: 'overdue', daysLate: late });
-      else if (late === 0) revisions.push({ topic: t, day, dueDate, state: 'due-today', daysLate: 0 });
+      else if (late === 0) revisions.push({ topic: t, day, dueDate, state: 'due-today' as const, daysLate: 0 });
       else upcoming.push({ topic: t, day, dueDate });
     }
   }
-  revisions.sort((a, b) => b.daysLate - a.daysLate || a.topic.number - b.topic.number);
+  revisions.sort((a, b) => b.daysLate - a.daysLate || a.topic.seq - b.topic.seq);
   upcoming.sort((a, b) => a.dueDate.localeCompare(b.dueDate));
-
-  return { newTopics, doneToday, revisions, upcoming, masteredCount: state.topics.filter(isMastered).length };
+  return { newTopics, doneToday, revisions, upcoming };
 }

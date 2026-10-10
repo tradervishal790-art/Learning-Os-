@@ -1,9 +1,10 @@
 import type { Locale } from './i18n/translations';
 
-// Static copy for the "My Files" study plan (no AI). en / hi / hinglish.
+// Static copy for the "My files" boxes plan (no AI). en / hi / hinglish.
 export interface StudyPlanText {
   tabRoadmap: string;
   tabFiles: string;
+  subtitle: string;
   todayTitle: string;
   newTopic: string;
   revisions: string;
@@ -17,37 +18,40 @@ export interface StudyPlanText {
   nothingNew: string;
   allClear: string;
   upcoming: string;
-  mastered: string; // {0}
-  addTitle: string;
-  addHint: string;
-  subject: string;
-  subjectPlaceholder: string;
-  pickFiles: string;
-  splitPdf: string;
-  wholePdf: string;
+  finished: string; // {0}
+  boxesTitle: string;
+  boxEmpty: string;
+  boxReady: string;
+  boxLearned: string; // {0} date
+  boxProgress: string; // {0}/4
+  addFiles: string;
+  uploadHere: string;
+  removeFile: string;
+  removeBox: string;
+  confirmRemoveBox: string;
+  addBox: string; // {0} = T number
+  splitLabel: string;
+  splitBtn: string;
   parts: string; // {0}
-  photosEach: string;
-  photosGroup: string; // {0}
-  add: string;
-  adding: string;
+  addSubject: string;
+  subjectPlaceholder: string;
+  save: string;
   maxSubjects: string;
-  needSubject: string;
-  needFiles: string;
+  boxLimit: string;
   addFailed: string;
-  allTopics: string;
-  remove: string;
-  confirmRemove: string;
+  splitFailed: string;
+  cleared: string; // {0} = T number
   close: string;
   fileMissing: string;
   onDevice: string;
-  emptyTitle: string;
-  emptyBody: string;
+  defaultSubject: string;
 }
 
 export const studyPlanText: Record<Locale, StudyPlanText> = {
   en: {
     tabRoadmap: 'Roadmap topics',
     tabFiles: 'My files',
+    subtitle: 'Put your files in a box. Each topic comes back on Day +1, +3, +7 and +15, then the box clears itself.',
     todayTitle: "Today's plan",
     newTopic: 'New topic',
     revisions: 'Revise',
@@ -58,38 +62,41 @@ export const studyPlanText: Record<Locale, StudyPlanText> = {
     open: 'Open',
     done: 'Done',
     doneToday: 'Learned today',
-    nothingNew: 'No new topic left. Add more files.',
+    nothingNew: 'No new topic yet. Add files to a box below.',
     allClear: 'Nothing to revise today.',
     upcoming: 'Coming up',
-    mastered: '{0} mastered',
-    addTitle: 'Add your files',
-    addHint: 'Each photo or PDF becomes a topic (T1, T2, T3…). Files stay on this device.',
-    subject: 'Subject',
-    subjectPlaceholder: 'e.g. Maths',
-    pickFiles: 'Choose photos / PDFs',
-    splitPdf: 'Split each PDF',
-    wholePdf: 'Keep as one topic',
+    finished: '{0} finished',
+    boxesTitle: 'Your boxes',
+    boxEmpty: 'Empty',
+    boxReady: 'Ready to learn',
+    boxLearned: 'Learned {0}',
+    boxProgress: 'Revised {0}/4',
+    addFiles: 'Add photos / PDFs',
+    uploadHere: 'Add anything here: photos, PDFs',
+    removeFile: 'Remove',
+    removeBox: 'Delete box',
+    confirmRemoveBox: 'Delete this box and its files?',
+    addBox: 'Add T{0}',
+    splitLabel: 'Split this PDF into',
+    splitBtn: 'Split',
     parts: '{0} parts',
-    photosEach: 'Each photo = 1 topic',
-    photosGroup: 'Group photos into {0} topics',
-    add: 'Add',
-    adding: 'Adding…',
+    addSubject: '+ Subject',
+    subjectPlaceholder: 'Subject name',
+    save: 'Save',
     maxSubjects: 'You can study 2 subjects at a time.',
-    needSubject: 'Enter a subject name.',
-    needFiles: 'Choose at least one file.',
+    boxLimit: 'Box limit reached.',
     addFailed: 'Could not add the files. Storage may be full.',
-    allTopics: 'All topics',
-    remove: 'Remove',
-    confirmRemove: 'Remove this topic and its file?',
+    splitFailed: 'Could not split this PDF.',
+    cleared: 'T{0} is finished and cleared. T{0} is free for a new topic.',
     close: 'Close',
     fileMissing: 'This file is not on this device.',
-    onDevice: 'Saved on this device only',
-    emptyTitle: 'Add your first file',
-    emptyBody: 'Upload photos or PDFs and the app will tell you every day what to read and what to revise.',
+    onDevice: 'Files are saved on this device only.',
+    defaultSubject: 'My topics',
   },
   hi: {
     tabRoadmap: 'रोडमैप टॉपिक',
     tabFiles: 'मेरी फ़ाइलें',
+    subtitle: 'अपनी फ़ाइलें एक बॉक्स में रखें। हर टॉपिक दिन +1, +3, +7 और +15 पर लौटता है, फिर बॉक्स अपने आप खाली हो जाता है।',
     todayTitle: 'आज की योजना',
     newTopic: 'नया टॉपिक',
     revisions: 'दोहराएँ',
@@ -100,38 +107,41 @@ export const studyPlanText: Record<Locale, StudyPlanText> = {
     open: 'खोलें',
     done: 'हो गया',
     doneToday: 'आज पढ़ा',
-    nothingNew: 'कोई नया टॉपिक नहीं बचा। और फ़ाइलें जोड़ें।',
+    nothingNew: 'अभी कोई नया टॉपिक नहीं। नीचे किसी बॉक्स में फ़ाइलें जोड़ें।',
     allClear: 'आज दोहराने के लिए कुछ नहीं।',
     upcoming: 'आगे आने वाले',
-    mastered: '{0} पक्के हुए',
-    addTitle: 'अपनी फ़ाइलें जोड़ें',
-    addHint: 'हर फ़ोटो या PDF एक टॉपिक बनेगा (T1, T2, T3…)। फ़ाइलें इसी डिवाइस पर रहती हैं।',
-    subject: 'विषय',
-    subjectPlaceholder: 'जैसे गणित',
-    pickFiles: 'फ़ोटो / PDF चुनें',
-    splitPdf: 'हर PDF को बाँटें',
-    wholePdf: 'एक ही टॉपिक रखें',
+    finished: '{0} पूरे हुए',
+    boxesTitle: 'आपके बॉक्स',
+    boxEmpty: 'खाली',
+    boxReady: 'पढ़ने के लिए तैयार',
+    boxLearned: '{0} को पढ़ा',
+    boxProgress: 'दोहराया {0}/4',
+    addFiles: 'फ़ोटो / PDF जोड़ें',
+    uploadHere: 'यहाँ कुछ भी डालें: फ़ोटो, PDF',
+    removeFile: 'हटाएँ',
+    removeBox: 'बॉक्स हटाएँ',
+    confirmRemoveBox: 'यह बॉक्स और उसकी फ़ाइलें हटाएँ?',
+    addBox: 'T{0} जोड़ें',
+    splitLabel: 'इस PDF को बाँटें',
+    splitBtn: 'बाँटें',
     parts: '{0} भाग',
-    photosEach: 'हर फ़ोटो = 1 टॉपिक',
-    photosGroup: 'फ़ोटो को {0} टॉपिक में बाँटें',
-    add: 'जोड़ें',
-    adding: 'जोड़ रहे हैं…',
+    addSubject: '+ विषय',
+    subjectPlaceholder: 'विषय का नाम',
+    save: 'सेव',
     maxSubjects: 'आप एक समय में 2 विषय पढ़ सकते हैं।',
-    needSubject: 'विषय का नाम लिखें।',
-    needFiles: 'कम से कम एक फ़ाइल चुनें।',
+    boxLimit: 'बॉक्स की सीमा पूरी हो गई।',
     addFailed: 'फ़ाइलें नहीं जुड़ सकीं। स्टोरेज भरा हो सकता है।',
-    allTopics: 'सभी टॉपिक',
-    remove: 'हटाएँ',
-    confirmRemove: 'यह टॉपिक और उसकी फ़ाइल हटाएँ?',
+    splitFailed: 'यह PDF बाँटी नहीं जा सकी।',
+    cleared: 'T{0} पूरा हुआ और हट गया। T{0} अब नए टॉपिक के लिए खाली है।',
     close: 'बंद करें',
     fileMissing: 'यह फ़ाइल इस डिवाइस पर नहीं है।',
-    onDevice: 'सिर्फ़ इसी डिवाइस पर सेव',
-    emptyTitle: 'पहली फ़ाइल जोड़ें',
-    emptyBody: 'फ़ोटो या PDF डालें, ऐप रोज़ बताएगा क्या पढ़ना है और क्या दोहराना है।',
+    onDevice: 'फ़ाइलें सिर्फ़ इसी डिवाइस पर सेव रहती हैं।',
+    defaultSubject: 'मेरे टॉपिक',
   },
   hinglish: {
     tabRoadmap: 'Roadmap topics',
     tabFiles: 'Meri files',
+    subtitle: 'Apni files ek box me rakho. Har topic Day +1, +3, +7 aur +15 par wapas aata hai, phir box apne aap clear ho jata hai.',
     todayTitle: 'Aaj ka plan',
     newTopic: 'Naya topic',
     revisions: 'Revise karo',
@@ -142,33 +152,35 @@ export const studyPlanText: Record<Locale, StudyPlanText> = {
     open: 'Kholo',
     done: 'Ho gaya',
     doneToday: 'Aaj padha',
-    nothingNew: 'Koi naya topic nahi bacha. Aur files add karo.',
+    nothingNew: 'Abhi koi naya topic nahi. Neeche kisi box me files add karo.',
     allClear: 'Aaj revise karne ko kuch nahi.',
     upcoming: 'Aage aane wale',
-    mastered: '{0} pakke hue',
-    addTitle: 'Apni files add karo',
-    addHint: 'Har photo ya PDF ek topic banega (T1, T2, T3…). Files isi device par rehti hain.',
-    subject: 'Subject',
-    subjectPlaceholder: 'jaise Maths',
-    pickFiles: 'Photos / PDFs chuno',
-    splitPdf: 'Har PDF ko baanto',
-    wholePdf: 'Ek hi topic rakho',
+    finished: '{0} complete hue',
+    boxesTitle: 'Tumhare boxes',
+    boxEmpty: 'Khali',
+    boxReady: 'Padhne ke liye ready',
+    boxLearned: '{0} ko padha',
+    boxProgress: 'Revise kiya {0}/4',
+    addFiles: 'Photos / PDFs add karo',
+    uploadHere: 'Yahan kuch bhi daalo: photos, PDFs',
+    removeFile: 'Hatao',
+    removeBox: 'Box hatao',
+    confirmRemoveBox: 'Ye box aur uski files hatani hain?',
+    addBox: 'T{0} add karo',
+    splitLabel: 'Is PDF ko baanto',
+    splitBtn: 'Baanto',
     parts: '{0} parts',
-    photosEach: 'Har photo = 1 topic',
-    photosGroup: 'Photos ko {0} topics me baanto',
-    add: 'Add karo',
-    adding: 'Add ho raha hai…',
+    addSubject: '+ Subject',
+    subjectPlaceholder: 'Subject ka naam',
+    save: 'Save',
     maxSubjects: 'Aap ek time par 2 subjects padh sakte ho.',
-    needSubject: 'Subject ka naam likho.',
-    needFiles: 'Kam se kam ek file chuno.',
+    boxLimit: 'Box limit poori ho gayi.',
     addFailed: 'Files add nahi hui. Storage full ho sakta hai.',
-    allTopics: 'Saare topics',
-    remove: 'Hatao',
-    confirmRemove: 'Ye topic aur uski file hatani hai?',
+    splitFailed: 'Ye PDF baanti nahi ja saki.',
+    cleared: 'T{0} complete hua aur clear ho gaya. T{0} ab naye topic ke liye khali hai.',
     close: 'Band karo',
     fileMissing: 'Ye file is device par nahi hai.',
-    onDevice: 'Sirf isi device par saved',
-    emptyTitle: 'Pehli file add karo',
-    emptyBody: 'Photos ya PDFs daalo, app roz batayega kya padhna hai aur kya revise karna hai.',
+    onDevice: 'Files sirf isi device par saved rehti hain.',
+    defaultSubject: 'Mere topics',
   },
 };

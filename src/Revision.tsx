@@ -99,7 +99,7 @@ export default function Revision({ goals = [] }: RevisionProps) {
           <span className="text-2xl">🔄</span>
           <h1 className="text-3xl md:text-4xl font-bold">{t.revision.header.title}</h1>
         </div>
-        <p className="text-sm text-gray-500 dark:text-white/60 mt-1">{t.revision.header.subtitle}</p>
+        <p className="text-sm text-gray-500 dark:text-white/60 mt-1">{mode === 'files' ? sp.subtitle : t.revision.header.subtitle}</p>
       </motion.div>
 
       {/* Source switch: roadmap topics vs the learner's own files */}
