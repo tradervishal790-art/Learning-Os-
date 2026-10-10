@@ -176,7 +176,7 @@ async function pullShared<T>(collection: string, id: string): Promise<T | null> 
 }
 
 function pushShared(collection: string, id: string, data: Record<string, unknown>): void {
-  if (!auth.currentUser) return;
+  if (!auth.currentUser || auth.currentUser.isAnonymous) return; // guests may not write shared caches
   void setDoc(doc(db, collection, id), { ...data, updatedAt: new Date().toISOString() }).catch(() => {
     // Best-effort — this student still has it locally.
   });
@@ -255,9 +255,16 @@ export async function loadVideoSummary(videoId: string, date: string, locale: st
 // just loses the "each video is summarised once for everyone" saving.
 //
 //   match /shared_channel_days/{docId} {
-//     allow read, write: if request.auth != null;
+//     allow read: if request.auth != null;
+//     allow write: if request.auth != null && request.auth.token.firebase.sign_in_provider != 'anonymous';
 //   }
 //   match /shared_video_summaries/{docId} {
-//     allow read, write: if request.auth != null;
+//     allow read: if request.auth != null;
+//     allow write: if request.auth != null && request.auth.token.firebase.sign_in_provider != 'anonymous';
 //   }
+//
+//   A guest (anonymous sign-in) may READ the shared caches but must not WRITE
+//   them: anonymous accounts are free to create, so letting them write would
+//   let anyone poison what every student sees. Write needs a real account:
+//     request.auth != null && request.auth.token.firebase.sign_in_provider != 'anonymous'
 // ------------------------------------------------------------------------

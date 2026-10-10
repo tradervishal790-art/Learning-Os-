@@ -41,6 +41,11 @@ function isSignedIn(): boolean {
   return !!auth.currentUser;
 }
 
+/** Writing to a shared cache needs a REAL account — guests (anonymous) may only read (see rules note below). */
+function canWriteShared(): boolean {
+  return !!auth.currentUser && !auth.currentUser.isAnonymous;
+}
+
 /** One video's cached teaching-style analysis, shared across every user and every topic it appears under. */
 export async function pullSharedVideoAnalysis<T>(videoId: string): Promise<{ profile: T; analysisSource?: string } | null> {
   if (!isSignedIn()) return null;
@@ -57,7 +62,7 @@ export async function pullSharedVideoAnalysis<T>(videoId: string): Promise<{ pro
 
 /** Fire-and-forget: saves a freshly-analyzed video's profile for every future user asking about the same video. */
 export function pushSharedVideoAnalysis<T>(videoId: string, profile: T, analysisSource?: string): void {
-  if (!isSignedIn()) return;
+  if (!canWriteShared()) return;
   void setDoc(doc(db, 'shared_video_analysis', videoId), {
     profile,
     analysisSource: analysisSource ?? null,
@@ -82,7 +87,7 @@ export async function pullSharedTopicPool<T>(poolCacheKey: string): Promise<T[] 
 
 /** Fire-and-forget: saves a freshly-built candidate pool for every future user who hits the same topic+language. */
 export function pushSharedTopicPool<T>(poolCacheKey: string, candidates: T[]): void {
-  if (!isSignedIn()) return;
+  if (!canWriteShared()) return;
   void setDoc(doc(db, 'shared_topic_pools', poolCacheKey), {
     candidates,
     updatedAt: new Date().toISOString(),
@@ -114,7 +119,7 @@ export async function pullSharedSearch<T>(searchKey: string): Promise<{ items: T
 
 /** Fire-and-forget: saves a search's first page so the next user who searches the same thing costs 0 quota. */
 export function pushSharedSearch<T>(searchKey: string, items: T[], nextPageToken: string | null): void {
-  if (!isSignedIn() || items.length === 0) return;
+  if (!canWriteShared() || items.length === 0) return;
   void setDoc(doc(db, 'shared_topic_pools', searchKey), {
     candidates: items,
     nextPageToken,
@@ -143,7 +148,7 @@ export async function pullSharedTimeline<T>(videoId: string): Promise<T[] | null
 }
 
 export function pushSharedTimeline<T>(videoId: string, segments: T[], source: string): void {
-  if (!isSignedIn() || segments.length === 0) return;
+  if (!canWriteShared() || segments.length === 0) return;
   void setDoc(doc(db, 'shared_video_analysis', `timeline_${videoId}`), {
     segments,
     source,
@@ -159,9 +164,16 @@ export function pushSharedTimeline<T>(videoId: string, segments: T[], source: st
 // without the cross-user sharing.
 //
 //   match /shared_video_analysis/{videoId} {
-//     allow read, write: if request.auth != null;
+//     allow read: if request.auth != null;
+//     allow write: if request.auth != null && request.auth.token.firebase.sign_in_provider != 'anonymous';
 //   }
 //   match /shared_topic_pools/{poolId} {
-//     allow read, write: if request.auth != null;
+//     allow read: if request.auth != null;
+//     allow write: if request.auth != null && request.auth.token.firebase.sign_in_provider != 'anonymous';
 //   }
+//
+//   A guest (anonymous sign-in) may READ the shared caches but must not WRITE
+//   them: anonymous accounts are free to create, so letting them write would
+//   let anyone poison what every student sees. Write needs a real account:
+//     request.auth != null && request.auth.token.firebase.sign_in_provider != 'anonymous'
 // ------------------------------------------------------------------------

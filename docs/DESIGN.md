@@ -7,6 +7,7 @@
 
 ## Navigation & onboarding aids
 - Sidebar sections (Revision/Notes/Videos/Progress) are **progressively locked** with a lock icon until a roadmap exists; clicking a locked section redirects to Roadmap instead of showing an empty page.
+- Guests (no account yet) see a 🔒 on every account-only section (Roadmap, Revision, Notes, Test, Mentor, Progress, Research, Current Affairs); tapping one opens the sign-in modal instead of navigating. A "Sign in" button sits top-right on the landing page and in the dashboard header while the visitor is a guest.
 - Dashboard shows a "Get Started" checklist (3 steps: set learning style / build roadmap / watch first video), each checked against real state, auto-hides once complete.
 - `HintBubble.tsx` gives one-line, per-section tips with individual dismiss + a global "Skip tour" — static copy, no AI cost.
 

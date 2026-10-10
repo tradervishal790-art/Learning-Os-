@@ -98,7 +98,7 @@ async function pullShared(date: string, locale: string): Promise<CADay | null> {
 }
 
 function pushShared(day: CADay): void {
-  if (!auth.currentUser) return;
+  if (!auth.currentUser || auth.currentUser.isAnonymous) return; // guests may not write shared caches
   void setDoc(doc(db, 'shared_current_affairs', `${day.date}_${day.locale}_${CONTENT_VERSION}`), {
     points: day.points,
     quiz: day.quiz,
@@ -218,6 +218,12 @@ export function computeStreak(p: CAProgress): number {
 // just loses the "one AI call per day for everyone" saving.
 //
 //   match /shared_current_affairs/{docId} {
-//     allow read, write: if request.auth != null;
+//     allow read: if request.auth != null;
+//     allow write: if request.auth != null && request.auth.token.firebase.sign_in_provider != 'anonymous';
 //   }
+//
+//   A guest (anonymous sign-in) may READ the shared caches but must not WRITE
+//   them: anonymous accounts are free to create, so letting them write would
+//   let anyone poison what every student sees. Write needs a real account:
+//     request.auth != null && request.auth.token.firebase.sign_in_provider != 'anonymous'
 // ------------------------------------------------------------------------

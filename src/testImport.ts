@@ -3,7 +3,7 @@
 // Client-side helpers for "import questions / answers from photos"
 // (PhotoImport.tsx → api/extract-questions.ts). Everything the AI returns
 // is only a DRAFT dropped into the test builder for review.
-import { auth } from './firebase';
+import { authFetch } from './apiFetch';
 import type { TestQuestion, MCQQuestion, SubjectiveQuestion } from './types';
 import { normalizeAnswer } from './testGrading';
 import { MAX_OPTIONS } from './testConfig';
@@ -124,11 +124,9 @@ export async function compressPhoto(file: File): Promise<PhotoPayload> {
 }
 
 async function callExtract<T>(mode: 'questions' | 'answers', image: PhotoPayload): Promise<T> {
-  const token = await auth.currentUser?.getIdToken();
-  if (!token) throw new Error('Please sign in to import from photos.');
-  const response = await fetch('/api/extract-questions', {
+  const response = await authFetch('/api/extract-questions', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ mode, image }),
   });
   const data = await response.json().catch(() => ({}));

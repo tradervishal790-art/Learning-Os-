@@ -15,6 +15,13 @@ Use this file as persistent context. Read before starting new work; append new d
 
 - Current Affairs: general mix for govt exams (SSC/Banking/UPSC), not one exam. Content is AI-summarised from public RSS headlines only (no invented facts, own words, source shown on each point), generated once per day per language and shared across users. No cron: first opener triggers it.
 
+- Guest mode / distribution (decided 2026-10-09): nobody is forced to sign up first. Opening the dashboard starts a Firebase *anonymous* session (a guest); the site has an optional "Sign in" button top-right (landing + dashboard), Adobe-style.
+  - Open to guests: Mind Blueprint (+ taste onboarding), video analysis, video section/search, dictionary, Live Test *join* (`/live/<code>`, already public).
+  - Login/sign-up required: Roadmap, Notes, Research, Current Affairs (+ channel digest), Tests (take, build, photo import, host live), Mentor, Revision, Progress.
+  - Signing up while a guest LINKS the credential to the same uid (`linkWithCredential` / `linkWithPopup`) — guest data carries over. A guest who finishes onboarding gets their roadmap built automatically right after sign-up (`learning_os_pending_roadmap`).
+  - Enforcement is server-side: `requireUser()` in `api/_lib/auth.ts` rejects guests (403 `account-required`) unless the endpoint passes `{ allowAnonymous: true }` (blueprint-interview, analyze-video, expand-query, analyze-taste-video, verify-bridge, youtube). Default for any new endpoint = login-only. Guests get tight rate limits (env: GUEST_RATE_LIMIT / GUEST_DAILY_LIMIT / GUEST_IP_LIMIT).
+  - Guests may read but not write the `shared_*` Firestore caches (anonymous accounts are free to mint → cache-poisoning risk).
+
 ## Rejected paths (don't re-propose without new reasoning)
 - LangChain — unnecessary abstraction here.
 - Flowise / Bubble — incompatible with custom logic.

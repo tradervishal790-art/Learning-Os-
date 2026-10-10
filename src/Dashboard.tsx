@@ -14,6 +14,7 @@ import { selectPlaylistForConcept, analyzedVideoToVideo } from './PlaylistBuilde
 import { expandSearchQuery } from './queryExpander';
 import { useTheme } from './ThemeContext';
 import { signOutOfApp, getCurrentUser } from './authStore';
+import { useAuthPrompt, SignInButton, LoginRequired } from './AuthPrompt';
 import type { DashboardPageId, PageConfig, UserOnboardingData, LearningProfile, Video, Topic, Goal, TopicBridge } from './types';
 import HintBubble from './HintBubble';
 import Onborda from './Onborda';
@@ -182,6 +183,11 @@ function playReminderBell() {
   }
 }
 
+// Pages that need a real account. Guests (no sign-up yet) can use the home page,
+// the Mind Blueprint, Videos and Dictionary; everything below asks them to sign in.
+// (The server enforces the same split for AI endpoints — see api/_lib/auth.ts.)
+const LOGIN_ONLY_PAGES: DashboardPageId[] = ['roadmap', 'revision', 'notes', 'test', 'mentor', 'progress', 'research', 'current-affairs'];
+
 function getSidebarItems(t: ReturnType<typeof useTranslation>): { id: DashboardPageId; label: string; icon?: ComponentType<{ className?: string }> }[] {
   return [
     { id: 'dashboard', label: t.dashboard.sidebar.home },
@@ -267,6 +273,7 @@ function trackAndComputeStreak(): number {
 
 function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGenerateForSubject, roadmapVersion, lastRoadmapError, goals, activeGoalId, onAddGoal, onEndGoal, onSwitchGoal }: DashboardProps) {
   const t = useTranslation();
+  const { isGuest, requireAccount, openSignIn } = useAuthPrompt();
   const { startOnborda } = useOnborda();
 
   // Auto-start the guided tour once, for a first-time learner only.
@@ -630,6 +637,8 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   ];
 
   const config = pageConfigs[activePage];
+  const showLoginRequired = isGuest && LOGIN_ONLY_PAGES.includes(activePage);
+  const loginRequiredLabel = getSidebarItems(t).find((i) => i.id === activePage)?.label ?? '';
 
   const SidebarContent = (
     <>
@@ -648,7 +657,12 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
           // empty "Progress" or "Revision" page with zero context on their
           // very first visit — Dashboard/Roadmap/Mentor/Research stay open
           // always since they're useful even with no roadmap yet.
-          const isLocked = ['revision', 'notes', 'videos', 'progress'].includes(item.id) && !hasRoadmap;
+          // Two different locks: authLocked = needs a real account (guest);
+          // roadmapLocked = needs a roadmap first. A guest can never build a
+          // roadmap (it needs an account), so Videos stays open for them.
+          const authLocked = isGuest && LOGIN_ONLY_PAGES.includes(item.id);
+          const roadmapLocked = ['revision', 'notes', 'videos', 'progress'].includes(item.id) && !hasRoadmap && !(isGuest && item.id === 'videos');
+          const isLocked = authLocked || roadmapLocked;
           return (
             <motion.button
               key={item.id}
@@ -660,7 +674,12 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                 // Locked items redirect to Roadmap instead of opening an
                 // empty page — nudges toward the actual next step rather
                 // than silently doing nothing.
-                setActivePage(isLocked ? 'roadmap' : item.id);
+                if (authLocked) {
+                  requireAccount(item.label); // opens the sign-in modal for guests
+                  setShowSidebar(false);
+                  return;
+                }
+                setActivePage(roadmapLocked ? 'roadmap' : item.id);
                 setShowSidebar(false);
               }}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
@@ -740,12 +759,16 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
               </span>
             </h2>
           </div>
-          <button id="onborda-settings-button" onClick={() => { setShowSettings(true); setShowFullProfileReport(false); }} className="px-3 md:px-4 py-2 rounded-full border border-gray-300 dark:border-white/10 text-sm hover:bg-gray-100 dark:hover:bg-white/10 transition flex-shrink-0">
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <SignInButton className="px-3 md:px-4 py-2 rounded-full bg-black text-white dark:bg-white dark:text-black text-sm font-semibold hover:opacity-90 transition" />
+            <button id="onborda-settings-button" onClick={() => { setShowSettings(true); setShowFullProfileReport(false); }} className="px-3 md:px-4 py-2 rounded-full border border-gray-300 dark:border-white/10 text-sm hover:bg-gray-100 dark:hover:bg-white/10 transition ">
             {t.settingsModal.title}
           </button>
+          </div>
         </motion.div>
 
         <Suspense fallback={<PageLoading />}>
+        {showLoginRequired && <LoginRequired feature={loginRequiredLabel} />}
         {activePage === 'dashboard' && (
           <div className="p-4 md:p-8 space-y-6">
             {showOnboardingChecklist && (
@@ -902,7 +925,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
           </div>
         )}
 
-        {activePage === 'roadmap' && (
+        {activePage === 'roadmap' && !showLoginRequired && (
           <Roadmap
             key={`${roadmapVersion}-${activeGoalId}`}
             userData={userData}
@@ -917,7 +940,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
             onSwitchGoal={onSwitchGoal}
           />
         )}
-        {activePage === 'revision' && <Revision goals={goals} />}
+        {activePage === 'revision' && !showLoginRequired && <Revision goals={goals} />}
         {activePage === 'videos' && (
           <div className="relative">
             <button
@@ -934,13 +957,13 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
             />
           </div>
         )}
-        {activePage === 'mentor' && <Mentor />}
-        {activePage === 'notes' && <Notes />}
-        {activePage === 'test' && <Test />}
-        {activePage === 'progress' && <Progress goals={goals} />}
-        {activePage === 'research' && <Research />}
+        {activePage === 'mentor' && !showLoginRequired && <Mentor />}
+        {activePage === 'notes' && !showLoginRequired && <Notes />}
+        {activePage === 'test' && !showLoginRequired && <Test />}
+        {activePage === 'progress' && !showLoginRequired && <Progress goals={goals} />}
+        {activePage === 'research' && !showLoginRequired && <Research />}
         {activePage === 'dictionary' && <Dictionary />}
-        {activePage === 'current-affairs' && <CurrentAffairs />}
+        {activePage === 'current-affairs' && !showLoginRequired && <CurrentAffairs />}
 
         {config && (
           <PagePlaceholder
@@ -1110,15 +1133,29 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                   <label className="block text-xs uppercase tracking-wider text-gray-400 dark:text-white/40 mb-2 mt-4">
                     {t.settingsModal.accountSection.label}
                   </label>
-                  <p className="text-xs text-gray-400 dark:text-white/40 mb-3">
-                    {format(t.settingsModal.accountSection.signedInAs, getCurrentUser()?.displayName || getCurrentUser()?.email || '')}
-                  </p>
-                  <button
-                    onClick={() => signOutOfApp()}
-                    className="w-full py-2.5 rounded-xl border border-gray-300 dark:border-white/10 text-sm font-medium hover:bg-gray-100 dark:hover:bg-white/10 transition"
-                  >
-                    {t.settingsModal.accountSection.signOutCta}
-                  </button>
+                  {isGuest ? (
+                    <>
+                      <p className="text-xs text-gray-400 dark:text-white/40 mb-3">{t.authPrompt.guestAccountNote}</p>
+                      <button
+                        onClick={() => { setShowSettings(false); openSignIn(); }}
+                        className="w-full py-2.5 rounded-xl bg-black text-white dark:bg-white dark:text-black text-sm font-semibold hover:opacity-90 transition"
+                      >
+                        {t.authPrompt.lockedCta}
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-xs text-gray-400 dark:text-white/40 mb-3">
+                        {format(t.settingsModal.accountSection.signedInAs, getCurrentUser()?.displayName || getCurrentUser()?.email || '')}
+                      </p>
+                      <button
+                        onClick={() => signOutOfApp()}
+                        className="w-full py-2.5 rounded-xl border border-gray-300 dark:border-white/10 text-sm font-medium hover:bg-gray-100 dark:hover:bg-white/10 transition"
+                      >
+                        {t.settingsModal.accountSection.signOutCta}
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
 

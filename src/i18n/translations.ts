@@ -239,6 +239,20 @@ export interface TranslationShape {
     validationEmailPassword: string;
     validationName: string;
   };
+  /** Guest -> account prompt (sign-in modal, locked-page card, header button). */
+  authPrompt: {
+    signInButton: string;
+    guestTitle: string;
+    featureTitle: string; // "Sign in to use {0}"
+    subtitle: string;
+    notNow: string;
+    lockedTitle: string;
+    lockedBody: string; // "{0} needs a free account..."
+    lockedCta: string;
+    roadmapPending: string;
+    guestBadge: string;
+    guestAccountNote: string;
+  };
   errorBoundary: { title: string; body: string; reloadCta: string; clearDataCta: string };
   deepDiveChat: {
     badge: string;
@@ -1093,6 +1107,19 @@ export const translations: Record<Locale, TranslationShape> = {
       switchToCreate: 'New user? Create an account',
       validationEmailPassword: 'Enter a valid email and a password of at least 6 characters.',
       validationName: 'Enter your name.',
+    },
+    authPrompt: {
+      signInButton: 'Sign in',
+      guestTitle: 'Create your free account',
+      featureTitle: 'Sign in to use {0}',
+      subtitle: 'It takes a few seconds. Everything you did as a guest is kept.',
+      notNow: 'Not now',
+      lockedTitle: 'Sign in to continue',
+      lockedBody: '{0} needs a free account. Your Mind Blueprint, video searches and everything else you did as a guest will be kept.',
+      lockedCta: 'Sign in or create account',
+      roadmapPending: 'Your roadmap will be created as soon as you sign in.',
+      guestBadge: 'Guest',
+      guestAccountNote: "You're using Learning OS as a guest. Sign in to unlock roadmap, notes, tests, mentor and more.",
     },
     errorBoundary: {
       title: 'Something went wrong',
@@ -1984,6 +2011,19 @@ export const translations: Record<Locale, TranslationShape> = {
       validationEmailPassword: 'सही ईमेल और कम से कम 6 अक्षरों का पासवर्ड डालें।',
       validationName: 'अपना नाम डालें।',
     },
+    authPrompt: {
+      signInButton: 'साइन इन',
+      guestTitle: 'अपना फ्री अकाउंट बनाएं',
+      featureTitle: '{0} इस्तेमाल करने के लिए साइन इन करें',
+      subtitle: 'बस कुछ सेकंड लगते हैं। गेस्ट के रूप में आपने जो भी किया, वो सब सुरक्षित रहेगा।',
+      notNow: 'अभी नहीं',
+      lockedTitle: 'आगे बढ़ने के लिए साइन इन करें',
+      lockedBody: '{0} के लिए फ्री अकाउंट चाहिए। आपका Mind Blueprint, वीडियो सर्च और गेस्ट के रूप में किया गया सब कुछ सुरक्षित रहेगा।',
+      lockedCta: 'साइन इन करें या अकाउंट बनाएं',
+      roadmapPending: 'साइन इन करते ही आपका रोडमैप बन जाएगा।',
+      guestBadge: 'गेस्ट',
+      guestAccountNote: 'आप Learning OS को गेस्ट के रूप में इस्तेमाल कर रहे हैं। रोडमैप, नोट्स, टेस्ट, मेंटर और बाकी सब खोलने के लिए साइन इन करें।',
+    },
     errorBoundary: {
       title: 'कुछ गलत हो गया',
       body: 'ऐप में एक एरर आ गई। रीलोड try करें — अगर प्रॉब्लम बनी रहे तो लोकल डेटा क्लियर करके रीलोड करें (प्रोग्रेस/रोडमैप वापस नहीं मिलेगा, इसलिए पहले सिर्फ रीलोड try करें)।',
@@ -2870,6 +2910,19 @@ export const translations: Record<Locale, TranslationShape> = {
       switchToCreate: 'Naya user ho? Account banao',
       validationEmailPassword: 'Sahi email aur kam se kam 6-character password daalo.',
       validationName: 'Apna naam daalo.',
+    },
+    authPrompt: {
+      signInButton: 'Sign in',
+      guestTitle: 'Apna free account banao',
+      featureTitle: '{0} use karne ke liye sign in karo',
+      subtitle: 'Bas kuch second lagte hain. Guest ke roop mein jo bhi kiya, sab safe rahega.',
+      notNow: 'Abhi nahi',
+      lockedTitle: 'Aage badhne ke liye sign in karo',
+      lockedBody: '{0} ke liye free account chahiye. Tumhara Mind Blueprint, video search aur guest ke roop mein kiya hua sab kuch safe rahega.',
+      lockedCta: 'Sign in karo ya account banao',
+      roadmapPending: 'Sign in karte hi tumhara roadmap ban jayega.',
+      guestBadge: 'Guest',
+      guestAccountNote: 'Tum Learning OS guest ke roop mein use kar rahe ho. Roadmap, notes, tests, mentor aur baaki sab kholne ke liye sign in karo.',
     },
     errorBoundary: {
       title: 'Kuch galat ho gaya',

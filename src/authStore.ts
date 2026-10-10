@@ -4,6 +4,10 @@ import {
   reauthenticateWithCredential,
   reauthenticateWithPopup,
   signInWithPopup,
+  signInWithCredential,
+  signInAnonymously,
+  linkWithCredential,
+  linkWithPopup,
   updateProfile,
   GoogleAuthProvider,
   EmailAuthProvider,
@@ -27,11 +31,40 @@ import type { TranslationShape } from './i18n/translations';
 // plan up to 50,000 monthly active users — this will not incur charges
 // at this app's scale. Only phone/SMS auth is billed; we don't use it.
 //
+// GUEST MODE: nobody is forced to sign up first. Opening the dashboard
+// signs the visitor in ANONYMOUSLY (a "guest"); the features that need a
+// real account (roadmap, notes, tests, mentor, research, current affairs)
+// ask them to sign in at that moment. Signing up while a guest LINKS the new
+// credential to the same Firebase user — the uid never changes, so everything
+// the guest did (Mind Blueprint result, searches, goals) stays theirs.
+//
 // SETUP REQUIRED (one-time, Firebase Console — cannot be done from code):
 //   Firebase Console -> Authentication -> Sign-in method -> enable
-//   "Email/Password" AND "Google" providers. If either isn't enabled,
-//   the matching function below fails with auth/operation-not-allowed.
+//   "Email/Password", "Google" AND "Anonymous" providers. If one isn't
+//   enabled, the matching function below fails with auth/operation-not-allowed
+//   (guest sign-in failing just falls back to the old full-page sign-in).
 // ============================================================
+
+/** A guest = anonymous Firebase session (no email/Google attached yet). */
+export function isGuestUser(user: User | null | undefined): boolean {
+  return !!user?.isAnonymous;
+}
+
+/** Starts a guest session. Safe to call when already signed in (returns the existing user). */
+export async function signInAsGuest(): Promise<User> {
+  if (auth.currentUser) return auth.currentUser;
+  const cred = await signInAnonymously(auth);
+  return cred.user;
+}
+
+/** After linking, the cached ID token still says "anonymous" — refresh so server + Firestore rules see the account. */
+async function refreshAfterUpgrade(user: User): Promise<void> {
+  try {
+    await user.getIdToken(true);
+  } catch {
+    // Non-fatal: authFetch also self-heals a stale anonymous token.
+  }
+}
 
 export function getCurrentUser(): User | null {
   return auth.currentUser;
@@ -40,6 +73,8 @@ export function getCurrentUser(): User | null {
 export async function signOutOfApp(): Promise<void> {
   clearAllMentorChats(); // shared-phone safety: don't leave this student's chat on the device
   await signOut(auth);
+  // Back to the public landing page — staying on /dashboard would just open a new guest session.
+  window.location.assign('/');
 }
 
 export function onAuthChange(callback: (user: User | null) => void): () => void {
@@ -54,8 +89,17 @@ export async function createProfileLockAccount(
   authErrors: TranslationShape['authErrors']
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   try {
-    const credential = await createUserWithEmailAndPassword(auth, email, password);
-    if (displayName?.trim()) await updateProfile(credential.user, { displayName: displayName.trim() });
+    const guest = auth.currentUser;
+    let user: User;
+    if (guest?.isAnonymous) {
+      // Upgrade the guest in place — same uid, so their guest data carries over.
+      const linked = await linkWithCredential(guest, EmailAuthProvider.credential(email, password));
+      user = linked.user;
+    } else {
+      user = (await createUserWithEmailAndPassword(auth, email, password)).user;
+    }
+    if (displayName?.trim()) await updateProfile(user, { displayName: displayName.trim() });
+    await refreshAfterUpgrade(user);
     return { ok: true };
   } catch (err: any) {
     return { ok: false, error: mapAuthError(err?.code, authErrors) };
@@ -105,7 +149,24 @@ export async function signInWithGoogleProfileLock(
   authErrors: TranslationShape['authErrors']
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   try {
-    await signInWithPopup(auth, new GoogleAuthProvider());
+    const provider = new GoogleAuthProvider();
+    const guest = auth.currentUser;
+    if (guest?.isAnonymous) {
+      try {
+        // Upgrade the guest in place (same uid) — guest data carries over.
+        const linked = await linkWithPopup(guest, provider);
+        await refreshAfterUpgrade(linked.user);
+        return { ok: true };
+      } catch (err: any) {
+        if (err?.code !== 'auth/credential-already-in-use') throw err;
+        // This Google account already has a Learning OS account — just sign into it.
+        const existing = GoogleAuthProvider.credentialFromError(err);
+        if (!existing) throw err;
+        await signInWithCredential(auth, existing);
+        return { ok: true };
+      }
+    }
+    await signInWithPopup(auth, provider);
     return { ok: true };
   } catch (err: any) {
     return { ok: false, error: mapAuthError(err?.code, authErrors) };

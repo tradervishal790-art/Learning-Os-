@@ -6,12 +6,13 @@ import App from './App.tsx'
 import ErrorBoundary from './ErrorBoundary.tsx'
 import AuthGate from './AuthGate.tsx'
 import { LanguageProvider } from './i18n/LanguageContext.tsx'
+import { AuthPromptProvider } from './AuthPrompt.tsx'
 import CacheWarmup from './cacheWarmup.tsx'
 
 // Live Test join page is public (participants have no account) — it must
 // render outside the login gate and the dashboard app.
 const LiveJoin = lazy(() => import('./LiveJoin.tsx'))
-// Focus Player: standalone distraction-free player (login required, so it sits inside AuthGate).
+// Focus Player: standalone distraction-free player (sits inside AuthGate, which gives visitors a guest session if they have none).
 const FocusPlayer = lazy(() => import('./FocusPlayer.tsx'))
 
 function Root() {
@@ -45,7 +46,10 @@ createRoot(document.getElementById('root')!).render(
     <ErrorBoundary>
       <BrowserRouter>
         <LanguageProvider>
-          <Root />
+          {/* Guest -> account prompt (sign-in modal). Wraps everything, including the public /live page. */}
+          <AuthPromptProvider>
+            <Root />
+          </AuthPromptProvider>
         </LanguageProvider>
       </BrowserRouter>
     </ErrorBoundary>
