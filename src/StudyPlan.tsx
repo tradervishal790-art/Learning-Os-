@@ -17,6 +17,9 @@ import {
   removeFileFromBox,
   replaceFiles,
   savePlan,
+  sweepExpired,
+  endDate,
+  type ExpiredBox,
   type StudyPlanState,
   type StudyTopic,
 } from './studyPlanStore';
@@ -30,25 +33,46 @@ const btnGhost = `${btn} border-gray-200 dark:border-white/10 text-gray-600 dark
 const inputCls =
   'px-3 py-2 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-black text-sm text-black dark:text-white';
 
+function describeExpired(list: ExpiredBox[], s: (typeof studyPlanText)['en']): string {
+  if (list.length === 0) return '';
+  const names = list.map((e) => `T${e.topic.number}`).join(', ');
+  const unseen = list.reduce((n, e) => n + e.unseen, 0);
+  return unseen > 0 ? format(s.clearedUnseen, names, unseen) : format(s.cleared, names);
+}
+
 type Viewing = { topic: StudyTopic; action: { type: 'learn' } | { type: 'revise'; day: number } };
 
 export default function StudyPlan() {
   const { locale } = useLanguage();
   const s = studyPlanText[locale];
+  // Expired boxes (original end date passed) are cleared as soon as the page opens; their files are
+  // deleted from IndexedDB in the effect below.
+  const expiredOnLoad = useRef<ExpiredBox[]>([]);
   const [plan, setPlan] = useState<StudyPlanState>(() => {
+    const swept = sweepExpired(loadPlan());
+    expiredOnLoad.current = swept.expired;
+    let p = swept.state;
+    if (swept.expired.length > 0) savePlan(p);
     // First visit: start with one subject and an empty T1 box, ready for files.
-    const p = loadPlan();
-    if (p.subjects.length > 0) return p;
-    const first = addBox(addSubject(p, studyPlanText[locale].defaultSubject), studyPlanText[locale].defaultSubject);
-    savePlan(first);
-    return first;
+    if (p.subjects.length === 0) {
+      const name = studyPlanText[locale].defaultSubject;
+      p = addBox(addSubject(p, name), name);
+      savePlan(p);
+    }
+    return p;
   });
   const [activeSubject, setActiveSubject] = useState(() => plan.subjects[0]);
   const [viewing, setViewing] = useState<Viewing | null>(null);
-  const [notice, setNotice] = useState('');
+  const [notice, setNotice] = useState(() => describeExpired(expiredOnLoad.current, studyPlanText[locale]));
   const [error, setError] = useState('');
   const [busyBox, setBusyBox] = useState<string | null>(null);
   const [newSubject, setNewSubject] = useState<string | null>(null);
+
+  useEffect(() => {
+    const files = expiredOnLoad.current.flatMap((e) => e.topic.files);
+    if (files.length) void Promise.all(files.map((f) => deleteStudyFile(f.key)));
+    expiredOnLoad.current = [];
+  }, []);
 
   const today = useMemo(() => buildToday(plan), [plan]);
   const boxes = plan.topics.filter((t) => t.subject === activeSubject).sort((a, b) => a.number - b.number);
@@ -127,22 +151,12 @@ export default function StudyPlan() {
     setActiveSubject(name);
   };
 
-  // Marks the open topic done. After the last revision the box is cleared automatically (files deleted)
-  // so its number can be reused.
-  const finish = async () => {
+  // Marks the open topic done. Clearing never happens here — boxes clear on their original end date.
+  const finish = () => {
     if (!viewing) return;
     const { topic, action } = viewing;
     setViewing(null);
-    if (action.type === 'learn') {
-      commit(markLearned(plan, topic.id));
-      return;
-    }
-    const { state, expired } = markReviewed(plan, topic.id, action.day);
-    commit(state);
-    if (expired) {
-      await Promise.all(expired.files.map((f) => deleteStudyFile(f.key)));
-      setNotice(format(s.cleared, expired.number));
-    }
+    commit(action.type === 'learn' ? markLearned(plan, topic.id) : markReviewed(plan, topic.id, action.day));
   };
 
   return (
@@ -319,7 +333,7 @@ function BoxCard({
   const [parts, setParts] = useState(2);
   const learned = !!box.learnedOn;
   const status = learned
-    ? `${format(s.boxLearned, box.learnedOn ?? '')} · ${format(s.boxProgress, box.reviewed.length)}`
+    ? `${format(s.boxLearned, box.learnedOn ?? '')} · ${format(s.boxProgress, box.reviewed.length)} · ${format(s.boxEnds, endDate(box) ?? '')}`
     : box.files.length === 0
       ? s.boxEmpty
       : s.boxReady;

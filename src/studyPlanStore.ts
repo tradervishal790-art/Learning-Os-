@@ -6,8 +6,10 @@
 //  - 1 new topic per day per subject (max 2 subjects in parallel).
 //  - A learned box is revised on Day +1, +3, +7, +15 after the day it was learned.
 //  - Missed revisions become Overdue and are shown first. Nothing is skipped.
-//  - When the last revision (Day +15) is done, the box and its files are cleared
-//    automatically and its number (e.g. T1) becomes free for the next new box.
+//  - Dates are fixed from the day it was learned — they never depend on tapping Done.
+//    The day after its Day +15 date, the box and its files are cleared automatically
+//    and its number (e.g. T1) becomes free for the next new box. Revisions the learner
+//    never opened are counted as "unseen" (missed); until then they stay Overdue.
 //  - A long PDF can optionally be split into 2-5 parts (each part gets its own box).
 //  - Metadata lives in localStorage; the files live in IndexedDB (studyFiles.ts).
 //    No AI, no cloud — this device only.
@@ -44,8 +46,10 @@ export interface StudyPlanState {
   subjects: string[];
   topics: StudyTopic[];
   nextSeq: number;
-  /** Boxes that finished the full cycle and were cleared. */
+  /** Boxes that reached their end date and were cleared. */
   completed: number;
+  /** Revisions that were never opened before their box ended. */
+  missed: number;
 }
 
 export type RevisionState = 'overdue' | 'due-today';
@@ -58,7 +62,7 @@ export interface RevisionTask {
   daysLate: number;
 }
 
-const empty = (): StudyPlanState => ({ version: 2, subjects: [], topics: [], nextSeq: 1, completed: 0 });
+const empty = (): StudyPlanState => ({ version: 2, subjects: [], topics: [], nextSeq: 1, completed: 0, missed: 0 });
 
 export function todayKey(d = new Date()): string {
   const m = String(d.getMonth() + 1).padStart(2, '0');
@@ -173,23 +177,47 @@ export function markLearned(state: StudyPlanState, id: string, today = todayKey(
   };
 }
 
-/** Marks a checkpoint done. If it was the last one, the box is cleared and returned as `expired`. */
-export function markReviewed(
-  state: StudyPlanState,
-  id: string,
-  day: number
-): { state: StudyPlanState; expired: StudyTopic | null } {
-  const topic = state.topics.find((t) => t.id === id);
-  if (!topic || topic.reviewed.includes(day)) return { state, expired: null };
-  const updated: StudyTopic = { ...topic, reviewed: [...topic.reviewed, day].sort((a, b) => a - b) };
-  const finished = CHECKPOINTS.every((d) => updated.reviewed.includes(d));
-  if (finished) {
-    return {
-      state: { ...state, topics: state.topics.filter((t) => t.id !== id), completed: state.completed + 1 },
-      expired: updated,
-    };
+/** Marks a checkpoint done. The box is NOT cleared here — clearing is purely date-based (see sweepExpired). */
+export function markReviewed(state: StudyPlanState, id: string, day: number): StudyPlanState {
+  return {
+    ...state,
+    topics: state.topics.map((t) =>
+      t.id === id && !t.reviewed.includes(day) ? { ...t, reviewed: [...t.reviewed, day].sort((a, b) => a - b) } : t
+    ),
+  };
+}
+
+/** The last day a learned box is still available (its Day +15 date). */
+export function endDate(t: StudyTopic): string | null {
+  return t.learnedOn ? addDays(t.learnedOn, CHECKPOINTS[CHECKPOINTS.length - 1]) : null;
+}
+
+export interface ExpiredBox {
+  topic: StudyTopic;
+  /** Checkpoints that were never marked done. */
+  unseen: number;
+}
+
+/** Clears every box whose end date has passed (original dates — independent of Done). */
+export function sweepExpired(state: StudyPlanState, today = todayKey()): { state: StudyPlanState; expired: ExpiredBox[] } {
+  const expired: ExpiredBox[] = [];
+  const keep: StudyTopic[] = [];
+  for (const t of state.topics) {
+    const end = endDate(t);
+    if (end && daysBetween(end, today) > 0) {
+      expired.push({ topic: t, unseen: CHECKPOINTS.filter((d) => !t.reviewed.includes(d)).length });
+    } else keep.push(t);
   }
-  return { state: { ...state, topics: state.topics.map((t) => (t.id === id ? updated : t)) }, expired: null };
+  if (expired.length === 0) return { state, expired };
+  return {
+    state: {
+      ...state,
+      topics: keep,
+      completed: state.completed + expired.length,
+      missed: state.missed + expired.reduce((n, e) => n + e.unseen, 0),
+    },
+    expired,
+  };
 }
 
 export interface TodayView {

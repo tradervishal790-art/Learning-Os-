@@ -40,7 +40,9 @@ export interface StudyPlanText {
   boxLimit: string;
   addFailed: string;
   splitFailed: string;
-  cleared: string; // {0} = T number
+  cleared: string; // {0} = T numbers
+  clearedUnseen: string; // {0} = T numbers, {1} = unseen count
+  boxEnds: string; // {0} date
   close: string;
   fileMissing: string;
   onDevice: string;
@@ -51,7 +53,7 @@ export const studyPlanText: Record<Locale, StudyPlanText> = {
   en: {
     tabRoadmap: 'Roadmap topics',
     tabFiles: 'My files',
-    subtitle: 'Put your files in a box. Each topic comes back on Day +1, +3, +7 and +15, then the box clears itself.',
+    subtitle: 'Put your files in a box. Each topic comes back on Day +1, +3, +7 and +15, then the box clears itself on its last date.',
     todayTitle: "Today's plan",
     newTopic: 'New topic',
     revisions: 'Revise',
@@ -65,7 +67,7 @@ export const studyPlanText: Record<Locale, StudyPlanText> = {
     nothingNew: 'No new topic yet. Add files to a box below.',
     allClear: 'Nothing to revise today.',
     upcoming: 'Coming up',
-    finished: '{0} finished',
+    finished: '{0} boxes ended',
     boxesTitle: 'Your boxes',
     boxEmpty: 'Empty',
     boxReady: 'Ready to learn',
@@ -87,7 +89,9 @@ export const studyPlanText: Record<Locale, StudyPlanText> = {
     boxLimit: 'Box limit reached.',
     addFailed: 'Could not add the files. Storage may be full.',
     splitFailed: 'Could not split this PDF.',
-    cleared: 'T{0} is finished and cleared. T{0} is free for a new topic.',
+    cleared: '{0} ended and was cleared. The number is free for a new topic.',
+    clearedUnseen: '{0} ended and was cleared. {1} revision(s) were unseen.',
+    boxEnds: 'Ends {0}',
     close: 'Close',
     fileMissing: 'This file is not on this device.',
     onDevice: 'Files are saved on this device only.',
@@ -132,7 +136,9 @@ export const studyPlanText: Record<Locale, StudyPlanText> = {
     boxLimit: 'बॉक्स की सीमा पूरी हो गई।',
     addFailed: 'फ़ाइलें नहीं जुड़ सकीं। स्टोरेज भरा हो सकता है।',
     splitFailed: 'यह PDF बाँटी नहीं जा सकी।',
-    cleared: 'T{0} पूरा हुआ और हट गया। T{0} अब नए टॉपिक के लिए खाली है।',
+    cleared: '{0} की अवधि पूरी हुई और हट गया। नंबर अब नए टॉपिक के लिए खाली है।',
+    clearedUnseen: '{0} की अवधि पूरी हुई और हट गया। {1} रिवीज़न देखे नहीं गए।',
+    boxEnds: 'खत्म: {0}',
     close: 'बंद करें',
     fileMissing: 'यह फ़ाइल इस डिवाइस पर नहीं है।',
     onDevice: 'फ़ाइलें सिर्फ़ इसी डिवाइस पर सेव रहती हैं।',
@@ -177,7 +183,9 @@ export const studyPlanText: Record<Locale, StudyPlanText> = {
     boxLimit: 'Box limit poori ho gayi.',
     addFailed: 'Files add nahi hui. Storage full ho sakta hai.',
     splitFailed: 'Ye PDF baanti nahi ja saki.',
-    cleared: 'T{0} complete hua aur clear ho gaya. T{0} ab naye topic ke liye khali hai.',
+    cleared: '{0} ki date poori hui aur clear ho gaya. Number ab naye topic ke liye khali hai.',
+    clearedUnseen: '{0} ki date poori hui aur clear ho gaya. {1} revision dekhe nahi gaye.',
+    boxEnds: 'Khatam: {0}',
     close: 'Band karo',
     fileMissing: 'Ye file is device par nahi hai.',
     onDevice: 'Files sirf isi device par saved rehti hain.',
