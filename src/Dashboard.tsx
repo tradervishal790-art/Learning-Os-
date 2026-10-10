@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState, lazy, Suspense } from 'react';
 import type { ComponentType } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Film, BookOpen, ClipboardCheck, Newspaper } from 'lucide-react';
+import { Search, Film, BookOpen, ClipboardCheck, Newspaper, Menu as MenuIcon, Settings as SettingsIcon, Bell, X as CloseIcon } from 'lucide-react';
 import PagePlaceholder from './PagePlaceholder';
 import { getRoadmapData, getCurrentTopic } from './roadmapData';
 import { getRevisionStats, getRevisionDataForGoals } from './revisionData';
@@ -776,20 +776,19 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
           className="border-b border-gray-200 dark:border-white/10 px-4 md:px-8 py-4 md:py-6 flex justify-between items-center gap-3"
         >
           <div className="flex items-center gap-3 min-w-0">
-            <button onClick={() => setShowSidebar(true)} className="md:hidden w-9 h-9 rounded-full border border-gray-200 dark:border-white/10 flex items-center justify-center flex-shrink-0">
-              Menu
+            <button onClick={() => setShowSidebar(true)} aria-label="Open menu" className="md:hidden -ml-1.5 w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 hover:bg-gray-100 dark:hover:bg-white/10 active:bg-gray-200 dark:active:bg-white/15 transition-colors">
+              <MenuIcon className="w-[22px] h-[22px]" strokeWidth={1.75} />
             </button>
-            <h2 className="text-lg md:text-2xl font-bold truncate">
+            <h2 className="text-lg md:text-2xl font-semibold tracking-tight truncate">
               {getGreeting()},{' '}
-              <span className="bg-gradient-to-r from-purple-500 via-pink-500 to-orange-400 bg-clip-text text-transparent">
-                {displayName}
-              </span>
+              <span className="capitalize">{displayName}</span>
             </h2>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
             <SignInButton className="px-3 md:px-4 py-2 rounded-full bg-black text-white dark:bg-white dark:text-black text-sm font-semibold hover:opacity-90 transition" />
-            <button id="onborda-settings-button" onClick={() => { setShowSettings(true); setShowFullProfileReport(false); }} className="px-3 md:px-4 py-2 rounded-full border border-gray-300 dark:border-white/10 text-sm hover:bg-gray-100 dark:hover:bg-white/10 transition ">
-            {t.settingsModal.title}
+            <button id="onborda-settings-button" onClick={() => { setShowSettings(true); setShowFullProfileReport(false); }} aria-label={t.settingsModal.title} className="w-10 h-10 md:w-auto md:h-auto md:px-4 md:py-2 rounded-full md:border md:border-gray-300 md:dark:border-white/10 text-sm flex items-center justify-center gap-2 hover:bg-gray-100 dark:hover:bg-white/10 active:bg-gray-200 dark:active:bg-white/15 transition-colors">
+            <SettingsIcon className="w-[21px] h-[21px] md:w-4 md:h-4" strokeWidth={1.75} />
+            <span className="hidden md:inline">{t.settingsModal.title}</span>
           </button>
           </div>
         </motion.div>
@@ -853,7 +852,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                   exit={{ opacity: 0, y: -10 }}
                   className="p-4 rounded-2xl border border-black/10 dark:border-white/20 bg-black text-white dark:bg-white dark:text-black flex items-center gap-3 flex-wrap"
                 >
-                  <span className="text-2xl">🔔</span>
+                  <Bell className="w-5 h-5 flex-shrink-0" strokeWidth={1.75} />
                   <div className="flex-1 min-w-[200px]">
                     <div className="font-semibold text-sm">
                       {revisionAlert.overdue > 0
@@ -876,79 +875,69 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                     aria-label="Dismiss"
                     className="px-3 py-2 rounded-full text-sm opacity-70 hover:opacity-100 transition"
                   >
-                    ✕
+                    <CloseIcon className="w-4 h-4" />
                   </button>
                 </motion.div>
               )}
             </AnimatePresence>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {statsCards.map((card, i) => (
-                <motion.button
+            <div className="rounded-2xl border border-gray-200 dark:border-white/10 overflow-hidden grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-gray-200 dark:divide-white/10">
+              {statsCards.map((card) => (
+                <button
                   key={card.title}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 + i * 0.1, duration: 0.5 }}
                   onClick={card.onClick}
-                  className="text-left p-5 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
+                  className="text-left px-5 py-4 md:py-5 hover:bg-gray-50 dark:hover:bg-white/5 active:bg-gray-100 dark:active:bg-white/10 transition-colors"
                 >
-                  <div className="flex justify-between items-start mb-3">
-                    <span className="text-[10px] uppercase tracking-wider text-gray-400 dark:text-white/40">{card.title}</span>
-                  </div>
-                  <div className="text-xl font-bold mb-1 line-clamp-1">{card.value}</div>
-                  <div className="text-xs text-gray-400 dark:text-white/50">{card.subtitle}</div>
-                </motion.button>
+                  <div className="text-xs text-gray-500 dark:text-white/50 mb-1">{card.title}</div>
+                  <div className="text-xl font-semibold tabular-nums line-clamp-1">{card.value}</div>
+                  <div className="text-sm text-gray-500 dark:text-white/50">{card.subtitle}</div>
+                </button>
               ))}
             </div>
 
-            <div className="flex justify-end">
-              <button
-                onClick={() => setActivePage('videos')}
-                className="px-4 py-2 rounded-full bg-black text-white dark:bg-white dark:text-black text-sm font-medium hover:opacity-80 transition whitespace-nowrap"
-              >
-                {t.dashboard.home.suggestion.watchCta}
-              </button>
-            </div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.7, duration: 0.5 }}
-              className="p-6 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5"
+            <button
+              onClick={() => setActivePage('videos')}
+              className="w-full md:w-auto px-5 py-2.5 rounded-full bg-black text-white dark:bg-white dark:text-black text-sm font-medium hover:opacity-85 active:opacity-70 transition-opacity"
             >
+              {t.dashboard.home.suggestion.watchCta}
+            </button>
+
+            <section className="pt-6 border-t border-gray-200 dark:border-white/10">
               <h3 className="font-semibold mb-1">{learningProfile ? t.dashboard.home.learningStyleCard.titleReady : t.dashboard.home.learningStyleCard.titleNotReady}</h3>
-              <p className="text-xs text-gray-400 dark:text-white/40 mb-4">
+              <p className="text-sm text-gray-500 dark:text-white/50 mb-2">
                 {learningProfile
                   ? t.dashboard.home.learningStyleCard.subtitleReady
                   : t.dashboard.home.learningStyleCard.subtitleNotReady}
               </p>
               {learningProfile && (
-                <p className="text-xs text-gray-500 dark:text-white/60 mb-4">
+                <p className="text-sm text-gray-500 dark:text-white/50 mb-2">
                   {t.dashboard.home.learningStyleCard.detailReady}
                 </p>
               )}
-              <button
-                onClick={() => setShowLearningQuiz(true)}
-                className="w-full py-2.5 rounded-xl border border-gray-300 dark:border-white/10 text-sm font-medium hover:bg-gray-100 dark:hover:bg-white/10 transition"
-              >
-                {learningProfile ? t.dashboard.home.learningStyleCard.retakeCta : t.dashboard.home.learningStyleCard.startCta}
-              </button>
-              <button
-                onClick={() => setShowTasteOnboarding(true)}
-                className="w-full mt-2 py-2.5 rounded-xl border border-gray-300 dark:border-white/10 text-sm font-medium hover:bg-gray-100 dark:hover:bg-white/10 transition flex items-center justify-center gap-2"
-              >
-                <Film className="w-4 h-4" />
-                {t.dashboard.home.learningStyleCard.analyzeVideosCta}
-              </button>
-              {learningProfile && (
+              <div className="flex flex-wrap items-center gap-x-5 gap-y-2 mt-4">
                 <button
-                  onClick={handleClearProfile}
-                  className="w-full mt-2 py-2 rounded-xl text-xs text-gray-400 dark:text-white/40 hover:text-red-500 dark:hover:text-red-400 transition"
+                  onClick={() => setShowLearningQuiz(true)}
+                  className="px-4 py-2 rounded-full border border-gray-300 dark:border-white/20 text-sm font-medium hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
                 >
-                  Clear my profile
+                  {learningProfile ? t.dashboard.home.learningStyleCard.retakeCta : t.dashboard.home.learningStyleCard.startCta}
                 </button>
-              )}
-            </motion.div>
+                <button
+                  onClick={() => setShowTasteOnboarding(true)}
+                  className="flex items-center gap-2 text-sm font-medium underline-offset-4 hover:underline"
+                >
+                  <Film className="w-4 h-4" strokeWidth={1.75} />
+                  {t.dashboard.home.learningStyleCard.analyzeVideosCta}
+                </button>
+                {learningProfile && (
+                  <button
+                    onClick={handleClearProfile}
+                    className="text-sm text-gray-400 dark:text-white/40 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+                  >
+                    Clear my profile
+                  </button>
+                )}
+              </div>
+            </section>
           </div>
         )}
 
