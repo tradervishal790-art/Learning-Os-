@@ -779,9 +779,11 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
             <button onClick={() => setShowSidebar(true)} aria-label="Open menu" className="md:hidden -ml-1.5 w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 hover:bg-gray-100 dark:hover:bg-white/10 active:bg-gray-200 dark:active:bg-white/15 transition-colors">
               <MenuIcon className="w-[22px] h-[22px]" strokeWidth={1.75} />
             </button>
-            <h2 className="text-lg md:text-2xl font-semibold tracking-tight truncate">
+            <h2 className="text-lg md:text-2xl font-bold truncate">
               {getGreeting()},{' '}
-              <span className="capitalize">{displayName}</span>
+              <span className="bg-gradient-to-r from-purple-500 via-pink-500 to-orange-400 bg-clip-text text-transparent">
+                {displayName}
+              </span>
             </h2>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">

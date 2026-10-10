@@ -27,6 +27,6 @@
 
 ## Anti-"vibe-coded" rules (home/dashboard, Oct 2026)
 - Icons, not words, for chrome buttons (hamburger, settings gear); always with aria-label.
-- No rainbow gradient text; no emoji as UI icons (use lucide); no staggered fade-in on every card.
+- (Greeting name keeps its gradient — Vishal wants it unchanged.) No other gradient text; no emoji as UI icons (use lucide); no staggered fade-in on every card.
 - Don't repeat three identical bordered cards: group related stats in one surface with hairline dividers.
 - No card-inside-card, no stack of full-width bordered buttons: one primary action, others as pills/text links.
