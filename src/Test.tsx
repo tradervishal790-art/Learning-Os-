@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Download, RotateCcw, CheckCircle2, XCircle, HelpCircle, History, Plus, Pencil, Trash2, Clock, Flag, Users } from 'lucide-react';
+import { Download, RotateCcw, CheckCircle2, XCircle, HelpCircle, History, Plus, Pencil, Trash2, Clock, Flag, Users, CalendarCheck } from 'lucide-react';
 import type { TestPaper, TestQuestion, TestUserAnswer, TestAttempt, MCQQuestion, SubjectiveQuestion } from './types';
 import { getTestPapers, saveTestPaper, deleteTestPaper, hydrateTestBankFromCloud } from './testBankStore';
 import { OFFICIAL_TESTS } from './officialTests';
@@ -11,6 +11,8 @@ import TestBuilder from './TestBuilder';
 import TestAnalysis from './TestAnalysis';
 import LiveHost from './LiveHost';
 import { loadDraft, saveDraft, clearDraft } from './testDraft';
+import DailyTest from './DailyTest';
+import { completeDailyTest, isDailyPaper, getDailyStatus } from './dailyTestStore';
 
 // ============================================================
 // Test.tsx — "Test" tab (Dashboard renders <Test /> with no props).
@@ -25,7 +27,7 @@ import { loadDraft, saveDraft, clearDraft } from './testDraft';
 //   results      → score, self-grade subjective answers, PDF export
 // ============================================================
 
-type Stage = 'list' | 'builder' | 'instructions' | 'taking' | 'results' | 'live';
+type Stage = 'list' | 'builder' | 'instructions' | 'taking' | 'results' | 'live' | 'daily';
 export type QuestionStatus = 'not-visited' | 'not-answered' | 'answered' | 'marked' | 'answered-marked';
 
 function formatClock(totalSeconds: number): string {
@@ -228,6 +230,7 @@ export default function Test() {
       scorePercent: computeScorePercent(obtainedMarks, totalMarks),
     };
     saveTestAttempt(newAttempt);
+    if (isDailyPaper(paper.id)) completeDailyTest(paper.id, results);
     setAttempt(newAttempt);
     setStage('results');
   }, []);
@@ -289,15 +292,18 @@ export default function Test() {
           onDelete={handleDeletePaper}
           onTake={startInstructions}
           onLive={startLive}
+          onDaily={() => setStage('daily')}
           onOpenAttempt={openPastAttempt}
         />
       )}
+
+      {stage === 'daily' && <DailyTest onStart={startInstructions} onExit={() => setStage('list')} />}
 
       {stage === 'live' && livePaper && <LiveHost paper={livePaper} onExit={() => setStage('list')} />}
 
       {stage === 'builder' && <TestBuilder initialPaper={editingPaper} onSave={handleSavePaper} onCancel={() => setStage('list')} />}
 
-      {stage === 'instructions' && activePaper && <Instructions paper={activePaper} onStart={beginTest} onBack={() => setStage('list')} />}
+      {stage === 'instructions' && activePaper && <Instructions paper={activePaper} onStart={beginTest} onBack={() => setStage(isDailyPaper(activePaper.id) ? 'daily' : 'list')} />}
 
       {stage === 'taking' && activePaper && currentQuestion && (
         <TakingScreen
@@ -337,6 +343,7 @@ function TestList({
   onDelete,
   onTake,
   onLive,
+  onDaily,
   onOpenAttempt,
 }: {
   papers: TestPaper[];
@@ -346,10 +353,27 @@ function TestList({
   onDelete: (id: string) => void;
   onTake: (p: TestPaper) => void;
   onLive: (p: TestPaper) => void;
+  onDaily: () => void;
   onOpenAttempt: (a: TestAttempt) => void;
 }) {
+  const dailyStatus = getDailyStatus();
+  const dailyLabel = { empty: 'Set up once — a new test every day', pending: "Today's test is waiting", ready: "Today's test is ready", done: "Done for today ✅" }[dailyStatus];
   return (
     <div className="max-w-3xl mx-auto">
+      <button
+        onClick={onDaily}
+        className="w-full flex items-center justify-between gap-3 px-5 py-4 mb-8 rounded-2xl border border-gray-300 dark:border-white/20 bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 text-left transition"
+      >
+        <div className="flex items-center gap-3 min-w-0">
+          <CalendarCheck className="w-6 h-6 flex-shrink-0" />
+          <div className="min-w-0">
+            <p className="font-semibold">Daily Test</p>
+            <p className="text-xs text-gray-500 dark:text-white/50">{dailyLabel}</p>
+          </div>
+        </div>
+        <span className="text-sm font-semibold flex-shrink-0">{dailyStatus === 'ready' || dailyStatus === 'pending' ? 'Open →' : 'Open'}</span>
+      </button>
+
       {OFFICIAL_TESTS.length > 0 && (
         <div className="mb-10">
           <h2 className="text-sm font-semibold text-gray-500 dark:text-white/50 mb-3">Official tests</h2>
