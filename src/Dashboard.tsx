@@ -8,7 +8,6 @@ import { getRoadmapData, getCurrentTopic } from './roadmapData';
 import { getRevisionStats, getRevisionDataForGoals } from './revisionData';
 import { getPersonalityProfile, savePersonalityProfile, clearPersonalityProfile } from './personalityProfileStore';
 import type { PersonalityProfile } from './personalityScoring';
-import { PersonalityResultRows } from './PersonalityResult';
 import GrowthEdgesCard from './GrowthEdgesCard';
 import PersonalityReportCard from './PersonalityReportCard';
 import { computeGrowthEdges } from './growthEdges';
@@ -1171,7 +1170,6 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                       </button>
                       {showPersonalityResult && (
                         <div className="mt-3 space-y-3">
-                          <PersonalityResultRows profile={personalityProfile} />
                           <PersonalityReportCard
                             profile={personalityProfile}
                             onReport={(report) => {

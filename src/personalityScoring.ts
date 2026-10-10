@@ -31,10 +31,11 @@ export interface TraitResult {
 }
 
 export interface PersonalityReport {
-  summary: string;
-  strengths: string[];
-  growthEdges: { title: string; why: string; tryThis: string }[];
-  studyTips: string[];
+  archetype: string;
+  dominantArea: string; // area label, e.g. "Curiosity"
+  growthArea: string;
+  traitNotes: Record<string, string>; // area label -> one sentence
+  report: string; // markdown (Core Identity, Learning Style, Pressure & Feelings, Top Strengths, Growth Edges, Study Blueprint)
 }
 
 export interface PersonalityProfile {

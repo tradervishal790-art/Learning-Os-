@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PERSONALITY_QUESTIONS, type AgeVersion, type OptionKey } from './personalityQuestions';
 import { scorePersonality, type PersonalityProfile } from './personalityScoring';
-import { PersonalityResultRows } from './PersonalityResult';
 import PersonalityReportCard from './PersonalityReportCard';
 
 // ============================================================
@@ -127,7 +126,6 @@ export default function PersonalityQuiz({
 
           {result && (
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
-              <PersonalityResultRows profile={result} />
               <PersonalityReportCard
                 profile={result}
                 onReport={(report) => {
