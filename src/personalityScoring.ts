@@ -30,6 +30,13 @@ export interface TraitResult {
   unsure: boolean;
 }
 
+export interface PersonalityReport {
+  summary: string;
+  strengths: string[];
+  growthEdges: { title: string; why: string; tryThis: string }[];
+  studyTips: string[];
+}
+
 export interface PersonalityProfile {
   version: AgeVersion;
   completedAt: string;
@@ -37,6 +44,8 @@ export interface PersonalityProfile {
   answers: Record<string, OptionKey>;
   traits: Record<Trait, TraitResult>;
   retakeSuggested: boolean;
+  /** AI-written report, saved after the learner asks for it (cleared on retake). */
+  report?: PersonalityReport;
 }
 
 const BUCKET_EDGES = [20, 40, 60, 80]; // upper edge of buckets 1..4

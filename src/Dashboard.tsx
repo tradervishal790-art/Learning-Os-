@@ -10,6 +10,7 @@ import { getPersonalityProfile, savePersonalityProfile, clearPersonalityProfile 
 import type { PersonalityProfile } from './personalityScoring';
 import { PersonalityResultRows } from './PersonalityResult';
 import GrowthEdgesCard from './GrowthEdgesCard';
+import PersonalityReportCard from './PersonalityReportCard';
 import { computeGrowthEdges } from './growthEdges';
 import { analyzeAttempt, analyzeHistory } from './testAnalytics';
 import { getTestAttempts } from './testStore';
@@ -1171,6 +1172,14 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                       {showPersonalityResult && (
                         <div className="mt-3 space-y-3">
                           <PersonalityResultRows profile={personalityProfile} />
+                          <PersonalityReportCard
+                            profile={personalityProfile}
+                            onReport={(report) => {
+                              const updated = { ...personalityProfile, report };
+                              savePersonalityProfile(updated);
+                              setPersonalityProfile(updated);
+                            }}
+                          />
                           {(() => {
                             const attempts = getTestAttempts();
                             if (attempts.length === 0) {

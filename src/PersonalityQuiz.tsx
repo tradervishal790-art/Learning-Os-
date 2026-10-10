@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { PERSONALITY_QUESTIONS, type AgeVersion, type OptionKey } from './personalityQuestions';
 import { scorePersonality, type PersonalityProfile } from './personalityScoring';
 import { PersonalityResultRows } from './PersonalityResult';
+import PersonalityReportCard from './PersonalityReportCard';
 
 // ============================================================
 // PersonalityQuiz.tsx
@@ -127,6 +128,14 @@ export default function PersonalityQuiz({
           {result && (
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
               <PersonalityResultRows profile={result} />
+              <PersonalityReportCard
+                profile={result}
+                onReport={(report) => {
+                  const updated = { ...result, report };
+                  setResult(updated);
+                  onComplete(updated);
+                }}
+              />
               {result.retakeSuggested && (
                 <p className="text-xs text-gray-500 dark:text-white/50">
                   Several of your answers pointed in different directions. Try this again on another day for a clearer picture.
