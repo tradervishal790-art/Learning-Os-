@@ -55,11 +55,14 @@ interface TestBuilderProps {
   initialPaper: TestPaper | null;
   onSave: (paper: TestPaper) => void;
   onCancel: () => void;
+  /** 'daily' = editing the Daily Test question bank: no title/topic/duration, different save label. */
+  variant?: 'daily';
 }
 
-export default function TestBuilder({ initialPaper, onSave, onCancel }: TestBuilderProps) {
-  const [title, setTitle] = useState(initialPaper?.title ?? '');
-  const [topic, setTopic] = useState(initialPaper?.topic ?? '');
+export default function TestBuilder({ initialPaper, onSave, onCancel, variant }: TestBuilderProps) {
+  const isDaily = variant === 'daily';
+  const [title, setTitle] = useState(initialPaper?.title ?? (isDaily ? 'Daily Test question bank' : ''));
+  const [topic, setTopic] = useState(initialPaper?.topic ?? (isDaily ? 'Daily Test' : ''));
   const [durationMinutes, setDurationMinutes] = useState(initialPaper?.durationMinutes ?? 30);
   const [questions, setQuestions] = useState<TestQuestion[]>(initialPaper?.questions ?? []);
   const [error, setError] = useState('');
@@ -111,6 +114,7 @@ export default function TestBuilder({ initialPaper, onSave, onCancel }: TestBuil
 
   return (
     <div className="max-w-3xl mx-auto">
+      {!isDaily && (
       <div className="bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl p-6 mb-6">
         <div className="grid md:grid-cols-3 gap-4 mb-1">
           <div className="md:col-span-2">
@@ -143,6 +147,7 @@ export default function TestBuilder({ initialPaper, onSave, onCancel }: TestBuil
           />
         </div>
       </div>
+      )}
 
       <PhotoImport
         questions={questions}
@@ -191,7 +196,7 @@ export default function TestBuilder({ initialPaper, onSave, onCancel }: TestBuil
 
       <div className="flex gap-3">
         <button onClick={handleSave} className="px-6 py-3 rounded-xl bg-black text-white dark:bg-white dark:text-black font-semibold transition">
-          {initialPaper ? 'Save Changes' : 'Save Test'}
+          {isDaily ? 'Save Question Bank' : initialPaper ? 'Save Changes' : 'Save Test'}
         </button>
         <button onClick={onCancel} className="px-6 py-3 rounded-xl border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10 font-medium transition">
           Cancel

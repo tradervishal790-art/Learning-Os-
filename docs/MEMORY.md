@@ -30,3 +30,5 @@ Use this file as persistent context. Read before starting new work; append new d
 ## Style/tone facts worth remembering
 - AI Mentor tone: respectful Hinglish.
 - User (Vishal) communicates in Hinglish, prefers concise answers, is a self-taught dev with a non-IT background, thinks in terms of systems/structural fixes.
+
+- Daily Test (Test section): user uploads photos/PDFs once -> question bank (built in TestBuilder variant="daily", so every question has an answer; no AI beyond photo reading). N questions/day, timer = N x minutes-per-question. A missed day's test stays pending and is the next test (same questions); a new one is made the next calendar day after submit. No repeats until the whole bank is used; new round serves previously-wrong questions first. localStorage ONLY (no cloud sync) with Backup/Restore JSON. Files: src/dailyTestStore.ts, src/DailyTest.tsx; hook in Test.tsx submitTest.
