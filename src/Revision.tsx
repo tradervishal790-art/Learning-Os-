@@ -6,6 +6,9 @@ import { markTopicFinished } from './roadmapData';
 import type { RevisionStatus, RevisionDifficulty, RevisionItem, Goal } from './types';
 import { useTranslation } from './i18n/LanguageContext';
 import { format } from './i18n/format';
+import StudyPlan from './StudyPlan';
+import { studyPlanText } from './studyPlanText';
+import { useLanguage } from './i18n/LanguageContext';
 
 const statusIcons: Record<RevisionStatus, string> = {
   'due-today': '🔥',
@@ -31,6 +34,9 @@ interface RevisionProps {
 
 export default function Revision({ goals = [] }: RevisionProps) {
   const t = useTranslation();
+  const { locale } = useLanguage();
+  const sp = studyPlanText[locale];
+  const [mode, setMode] = useState<'roadmap' | 'files'>('roadmap');
   const statusLabels: Record<RevisionStatus, string> = {
     'due-today': t.revision.filters.dueToday,
     overdue: t.revision.filters.overdue,
@@ -96,6 +102,27 @@ export default function Revision({ goals = [] }: RevisionProps) {
         <p className="text-sm text-gray-500 dark:text-white/60 mt-1">{t.revision.header.subtitle}</p>
       </motion.div>
 
+      {/* Source switch: roadmap topics vs the learner's own files */}
+      <div className="flex gap-2 mb-6">
+        {([['roadmap', sp.tabRoadmap], ['files', sp.tabFiles]] as const).map(([id, text]) => (
+          <button
+            key={id}
+            onClick={() => setMode(id)}
+            className={`px-4 py-2 rounded-full text-sm font-medium border transition-all ${
+              mode === id
+                ? 'bg-black text-white dark:bg-white dark:text-black border-transparent'
+                : 'border-gray-200 dark:border-white/10 text-gray-500 dark:text-white/60 hover:bg-gray-100 dark:hover:bg-white/10'
+            }`}
+          >
+            {text}
+          </button>
+        ))}
+      </div>
+
+      {mode === 'files' ? (
+        <StudyPlan />
+      ) : (
+        <>
       {/* Top stats */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.5 }} className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <div className="p-4 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5">
@@ -248,6 +275,8 @@ export default function Revision({ goals = [] }: RevisionProps) {
           <h3 className="text-xl font-semibold mb-2">{t.revision.emptyState.allCaughtUpTitle}</h3>
           <p className="text-gray-400 dark:text-white/60">{t.revision.emptyState.allCaughtUpBody}</p>
         </motion.div>
+      )}
+        </>
       )}
     </div>
   );
