@@ -6,6 +6,13 @@ import { Search, Film, BookOpen, ClipboardCheck, Newspaper } from 'lucide-react'
 import PagePlaceholder from './PagePlaceholder';
 import { getRoadmapData, getCurrentTopic } from './roadmapData';
 import { getRevisionStats, getRevisionDataForGoals } from './revisionData';
+import { getPersonalityProfile, savePersonalityProfile, clearPersonalityProfile } from './personalityProfileStore';
+import type { PersonalityProfile } from './personalityScoring';
+import { PersonalityResultRows } from './PersonalityResult';
+import GrowthEdgesCard from './GrowthEdgesCard';
+import { computeGrowthEdges } from './growthEdges';
+import { analyzeAttempt, analyzeHistory } from './testAnalytics';
+import { getTestAttempts } from './testStore';
 import { getLearningProfile, saveLearningProfile, clearLearningProfile } from './learningProfileStore';
 import { getEngagementSessions } from './engagementStore';
 import { pushToCloud, pullFromCloud } from './cloudSync';
@@ -35,6 +42,7 @@ const Revision = lazy(() => import('./Revision'));
 const VideoIntel = lazy(() => import('./VideoIntel'));
 const BlueprintInterview = lazy(() => import('./BlueprintInterview'));
 const TasteOnboarding = lazy(() => import('./TasteOnboarding'));
+const PersonalityQuiz = lazy(() => import('./PersonalityQuiz'));
 const Mentor = lazy(() => import('./Mentor'));
 const Notes = lazy(() => import('./Notes'));
 const Progress = lazy(() => import('./progress'));
@@ -318,6 +326,11 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   // both remain independently reachable from the home page.
   const [showTasteOnboarding, setShowTasteOnboarding] = useState(false);
   const [learningProfile, setLearningProfile] = useState<LearningProfile | null>(getLearningProfile);
+  // Separate optional personality check (Settings only) — independent of
+  // the Blueprint Interview / learning-style profile above.
+  const [showPersonalityQuiz, setShowPersonalityQuiz] = useState(false);
+  const [personalityProfile, setPersonalityProfile] = useState<PersonalityProfile | null>(getPersonalityProfile);
+  const [showPersonalityResult, setShowPersonalityResult] = useState(false);
   const [preloadedPlaylist, setPreloadedPlaylist] = useState<{ primary: Video; fallbacks: Video[]; bridge?: TopicBridge; previousVideoId?: string | null } | null>(null);
   // Which topic's saved-video slot the Videos page is currently showing —
   // set whenever a topic's playlist is launched or its "Saved video" is
@@ -542,6 +555,20 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
       setCustomLoading(false);
     }
   };
+
+  if (showPersonalityQuiz) {
+    return (
+      <Suspense fallback={<PageLoading />}>
+        <PersonalityQuiz
+          onComplete={(p) => {
+            savePersonalityProfile(p);
+            setPersonalityProfile(p);
+          }}
+          onClose={() => setShowPersonalityQuiz(false)}
+        />
+      </Suspense>
+    );
+  }
 
   if (showLearningQuiz) {
     return (
@@ -1126,6 +1153,61 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                     )}
                   </div>
                 )}
+
+                {/* Personality Check — separate optional 20-question screen,
+                    opened from here only (not part of the Blueprint Interview). */}
+                <div className="pt-2 border-t border-gray-200 dark:border-white/10">
+                  <label className="block text-xs uppercase tracking-wider text-gray-400 dark:text-white/40 mb-2 mt-4">
+                    Personality Check
+                  </label>
+                  <p className="text-xs text-gray-400 dark:text-white/40 mb-3">
+                    20 quick questions (about 5 minutes) on how you study and handle pressure. Optional, and it never changes your learning-style profile.
+                  </p>
+                  <button
+                    onClick={() => setShowPersonalityQuiz(true)}
+                    className="w-full py-2.5 rounded-xl border border-gray-300 dark:border-white/10 text-sm font-medium hover:bg-gray-100 dark:hover:bg-white/10 transition"
+                  >
+                    {personalityProfile ? 'Retake personality check' : 'Take personality check'}
+                  </button>
+                  {personalityProfile && (
+                    <>
+                      <button
+                        onClick={() => setShowPersonalityResult((v) => !v)}
+                        className="w-full mt-2 py-2.5 rounded-xl border border-gray-300 dark:border-white/10 text-sm font-medium hover:bg-gray-100 dark:hover:bg-white/10 transition"
+                      >
+                        {showPersonalityResult ? 'Hide result' : 'View result'}
+                      </button>
+                      {showPersonalityResult && (
+                        <div className="mt-3 space-y-3">
+                          <PersonalityResultRows profile={personalityProfile} />
+                          {(() => {
+                            const attempts = getTestAttempts();
+                            if (attempts.length === 0) {
+                              return (
+                                <p className="text-xs text-gray-400 dark:text-white/40">
+                                  Take a test in the Test section to see your growth edges here.
+                                </p>
+                              );
+                            }
+                            const latest = [...attempts].sort((x, y) => (x.completedAt < y.completedAt ? 1 : -1))[0];
+                            const edges = computeGrowthEdges(personalityProfile, analyzeAttempt(latest), analyzeHistory(latest, attempts));
+                            return <GrowthEdgesCard edges={edges} hasPersonality />;
+                          })()}
+                          <button
+                            onClick={() => {
+                              clearPersonalityProfile();
+                              setPersonalityProfile(null);
+                              setShowPersonalityResult(false);
+                            }}
+                            className="w-full py-2 rounded-xl text-xs text-gray-400 dark:text-white/40 hover:text-red-500 dark:hover:text-red-400 transition"
+                          >
+                            Clear my personality result
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
 
                 {/* Account — sign out lives here now, inside Settings,
                     instead of a floating button on every screen. */}

@@ -8,6 +8,7 @@ import { ThemeProvider } from './ThemeContext';
 import type { UserOnboardingData, Goal } from './types';
 import { trackOnboardingComplete } from './firebase';
 import { getLearningProfile, hydrateLearningProfileFromCloud } from './learningProfileStore';
+import { hydratePersonalityProfileFromCloud } from './personalityProfileStore';
 import { saveRoadmapData } from './roadmapData';
 import { getGoals, getActiveGoals, addGoal, endGoal as endGoalInStore, updateGoal, saveGoals, MAX_ACTIVE_GOALS, hydrateGoalsFromCloud } from './goalsStore';
 import { useTranslation, useLanguage, mapOnboardingLanguage } from './i18n/LanguageContext';
@@ -99,6 +100,7 @@ function App() {
       // another so this finishes as fast as the slowest single fetch.
       await Promise.all([
         hydrateLearningProfileFromCloud(),
+        hydratePersonalityProfileFromCloud(),
         hydrateGoalsFromCloud(),
         hydrateActiveDaysFromCloud(),
       ]);

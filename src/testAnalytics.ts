@@ -8,6 +8,7 @@
 // into ONE suggestion; every number and finding here is computed locally.
 import type { TestAttempt, TestQuestion } from './types';
 import { normalizeAnswer, isAnswered } from './testGrading';
+import type { GrowthEdge } from './growthEdges';
 
 export type Severity = 'good' | 'info' | 'warn';
 export interface Finding {
@@ -291,7 +292,7 @@ function historyFindings(h: HistoryStats, per: AttemptStats[]): Finding[] {
 }
 
 /** Compact, number-only summary handed to the AI. No answers, no personal data. */
-export function buildInsightPayload(current: TestAttempt, a: AttemptStats, h: HistoryStats) {
+export function buildInsightPayload(current: TestAttempt, a: AttemptStats, h: HistoryStats, edges: GrowthEdge[] = []) {
   return {
     thisTest: {
       title: current.testTitle,
@@ -316,6 +317,9 @@ export function buildInsightPayload(current: TestAttempt, a: AttemptStats, h: Hi
       repeatedMisses: h.repeatedMisses.map((m) => ({ question: m.question, seen: m.seen, missed: m.missed, sameWrongOption: m.sameWrongOption })),
       findings: h.findings.map((x) => x.text),
     },
+    // Personality tendency already CONFIRMED by these tests (see growthEdges.ts).
+    // Only habit names + test evidence — no scores, no raw personality result.
+    growthEdges: edges.map((e) => ({ habit: e.title, why: e.cause, seenInTests: e.evidence })),
   };
 }
 
