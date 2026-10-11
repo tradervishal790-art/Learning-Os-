@@ -12,6 +12,7 @@ import type { Trait } from './personalityQuestions';
 export type SignalKey =
   | 'blank' | 'lateBlank' | 'fatigue' | 'careless' | 'lowAccuracy' | 'overAttempt'
   | 'repeatedMiss' | 'sticky' | 'declining' | 'plateau' | 'weakTopics' | 'scoreDrop'
+  | 'revisionOverdue' | 'streakBroken' | 'watchNotPractise' | 'manyOpenTopics'
   | 'later';
 
 export type GapRow = [title: string, cause: string, action: string, signal: SignalKey];
@@ -35,12 +36,12 @@ export const BUCKET_GAPS: Record<Trait, Record<1 | 2 | 3 | 4 | 5, GapRow[]>> = {
       ['Style depends on the topic', 'Exploratory on interesting topics, rigid on boring ones.', 'Match the study style to the topic using your recent results.', 'weakTopics'],
     ],
     4: [
-      ['Starting a new topic before finishing one', 'The pull of novelty shows on dull stretches.', 'Finish the current topic first.', 'later'],
+      ['Starting a new topic before finishing one', 'The pull of novelty shows on dull stretches.', 'Finish the current topic first.', 'manyOpenTopics'],
       ['Revision feels dull at times', 'Repeated material gives less reward.', 'Revise with a small twist instead of re-reading.', 'repeatedMiss'],
       ['Favourite topics feel "known"', 'Enjoying a topic can stand in for recalling it.', 'Take a short recall quiz after your favourite topics.', 'lowAccuracy'],
     ],
     5: [
-      ['Starting new topics before finishing old ones', 'A half-known topic stops giving the novelty reward.', 'Finish one topic before opening the next.', 'later'],
+      ['Starting new topics before finishing old ones', 'A half-known topic stops giving the novelty reward.', 'Finish one topic before opening the next.', 'manyOpenTopics'],
       ['Enjoying an idea feels like knowing it', 'Understanding feels good, but nothing forces recall.', 'Take a quick recall quiz right after every new idea.', 'lowAccuracy'],
       ['Revision gets skipped', 'Repeated material feels dead, so it is avoided and forgotten.', 'Make revision a new twist or challenge, not a repeat.', 'repeatedMiss'],
       ['Falling into rabbit holes', 'Curiosity has no built-in stop signal.', 'Put a timer on side-topics and save them for later.', 'later'],
@@ -53,29 +54,29 @@ export const BUCKET_GAPS: Record<Trait, Record<1 | 2 | 3 | 4 | 5, GapRow[]>> = {
       ['Strong start, weak middle', 'Novelty fades and there is no routine to carry you.', 'Add small rewards in the middle weeks.', 'declining'],
       ['Underestimating the time', 'Optimistic planning: 1 hour becomes 4.', 'Compare planned vs actual time and adjust the plan.', 'lateBlank'],
       ['Hard to begin', 'Setup feels bigger than the task.', 'Start with a 5-minute starter task.', 'later'],
-      ['Shame spiral after a missed day', 'Guilt makes you avoid the app, causing more misses.', 'Come back with one tiny task, no guilt.', 'later'],
-      ['No review system', 'You learn a topic once and rarely return to it.', 'Put topics on spaced reviews so they come back by themselves.', 'repeatedMiss'],
+      ['Shame spiral after a missed day', 'Guilt makes you avoid the app, causing more misses.', 'Come back with one tiny task, no guilt.', 'streakBroken'],
+      ['No review system', 'You learn a topic once and rarely return to it.', 'Put topics on spaced reviews so they come back by themselves.', 'revisionOverdue'],
     ],
     2: [
       ['Pushing work toward the deadline', 'Pressure motivates, but not enough for big tasks.', 'Set mid-way mini-deadlines.', 'later'],
       ['Plans take longer than expected', 'Time estimates are optimistic.', 'Compare planned vs actual time.', 'lateBlank'],
-      ['A missed day feels heavy', 'Mild guilt after a gap.', 'Come back with one small task.', 'later'],
-      ['Irregular reviews', 'You learn once and revisit when reminded.', 'Do a short daily review card.', 'repeatedMiss'],
+      ['A missed day feels heavy', 'Mild guilt after a gap.', 'Come back with one small task.', 'streakBroken'],
+      ['Irregular reviews', 'You learn once and revisit when reminded.', 'Do a short daily review card.', 'revisionOverdue'],
     ],
     3: [
       ['Plan works some weeks, collapses in others', 'Discipline is strong when interested, weak when bored.', 'Keep a light weekly plan with one fixed anchor session.', 'declining'],
-      ['Inconsistent revision', 'You revise when reminded, skip otherwise.', 'Do a short daily review card.', 'repeatedMiss'],
+      ['Inconsistent revision', 'You revise when reminded, skip otherwise.', 'Do a short daily review card.', 'revisionOverdue'],
       ['Drift goes unnoticed', 'Slipping is quiet when you neither over- nor under-plan.', 'Check a weekly planned-vs-done snapshot.', 'scoreDrop'],
     ],
     4: [
-      ['Plans well, tests too little', 'Planning feels like progress on busy weeks.', 'Look at recall accuracy next to hours studied.', 'plateau'],
+      ['Plans well, tests too little', 'Planning feels like progress on busy weeks.', 'Look at recall accuracy next to hours studied.', 'watchNotPractise'],
       ['Waiting for "perfect" before moving on', 'A mild perfectionism.', 'Move on once accuracy passes 80%.', 'lateBlank'],
       ['Rest gets skipped when behind', 'Guilt about breaks under pressure.', 'Take a rest after a long streak.', 'later'],
     ],
     5: [
-      ['A perfect plan feels like progress', 'A neat timetable gives control without testing learning.', 'Track recall and accuracy, not hours or ticks.', 'plateau'],
+      ['A perfect plan feels like progress', 'A neat timetable gives control without testing learning.', 'Track recall and accuracy, not hours or ticks.', 'watchNotPractise'],
       ['Will not move on until 100%', 'Perfectionism; fear of leaving gaps.', 'Use an "80% = move on" rule; weak topics come back later.', 'lateBlank'],
-      ['One missed day breaks the whole plan', 'All-or-nothing thinking about the schedule.', 'Use a recovery day; no broken-streak shame.', 'later'],
+      ['One missed day breaks the whole plan', 'All-or-nothing thinking about the schedule.', 'Use a recovery day; no broken-streak shame.', 'streakBroken'],
       ['Preferring neat notes over messy mock tests', 'Mistakes feel uncomfortable; neatness feels safe.', 'Treat mocks as "find my errors".', 'later'],
       ['Skipping rest and burning out quietly', 'Rest feels like guilt.', 'Build rest days into the plan.', 'later'],
     ],

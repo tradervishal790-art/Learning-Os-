@@ -11,6 +11,7 @@ import type { PersonalityProfile } from './personalityScoring';
 import GrowthEdgesCard from './GrowthEdgesCard';
 import PersonalityReportCard from './PersonalityReportCard';
 import { computeGrowthEdges } from './growthEdges';
+import { getBehaviourStats } from './behaviourStats';
 import { analyzeAttempt, analyzeHistory } from './testAnalytics';
 import { getTestAttempts } from './testStore';
 import { getLearningProfile, saveLearningProfile, clearLearningProfile } from './learningProfileStore';
@@ -1188,7 +1189,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                               );
                             }
                             const latest = [...attempts].sort((x, y) => (x.completedAt < y.completedAt ? 1 : -1))[0];
-                            const edges = computeGrowthEdges(personalityProfile, analyzeAttempt(latest), analyzeHistory(latest, attempts));
+                            const edges = computeGrowthEdges(personalityProfile, analyzeAttempt(latest), analyzeHistory(latest, attempts), getBehaviourStats(t.revisionTasks, goals));
                             return <GrowthEdgesCard edges={edges} hasPersonality />;
                           })()}
                           <button

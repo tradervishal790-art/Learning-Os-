@@ -3,7 +3,9 @@ import { Sparkles, Loader2, TrendingUp, TrendingDown, Minus, AlertTriangle, Chec
 import type { TestAttempt } from './types';
 import { analyzeAttempt, analyzeHistory, buildInsightPayload, type Finding } from './testAnalytics';
 import { fetchTestSuggestion } from './testInsightApi';
-import { useLanguage } from './i18n/LanguageContext';
+import { useLanguage, useTranslation } from './i18n/LanguageContext';
+import { getBehaviourStats } from './behaviourStats';
+import { getGoals } from './goalsStore';
 import { getPersonalityProfile } from './personalityProfileStore';
 import { computeGrowthEdges } from './growthEdges';
 import GrowthEdgesCard from './GrowthEdgesCard';
@@ -51,13 +53,14 @@ export default function TestAnalysis({
   onSaveInsight: (text: string) => void;
 }) {
   const { locale } = useLanguage();
+  const t = useTranslation();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
   const a = useMemo(() => analyzeAttempt(attempt), [attempt]);
   const h = useMemo(() => analyzeHistory(attempt, allAttempts), [attempt, allAttempts]);
   const personality = useMemo(() => getPersonalityProfile(), []);
-  const edges = useMemo(() => computeGrowthEdges(personality, a, h), [personality, a, h]);
+  const edges = useMemo(() => computeGrowthEdges(personality, a, h, getBehaviourStats(t.revisionTasks, getGoals(null))), [personality, a, h, t]);
 
   const getSuggestion = async () => {
     setBusy(true);

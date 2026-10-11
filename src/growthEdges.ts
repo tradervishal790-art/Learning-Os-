@@ -13,6 +13,7 @@ import type { AttemptStats, HistoryStats } from './testAnalytics';
 import type { PersonalityProfile, Bucket } from './personalityScoring';
 import { BUCKET_GAPS, type SignalKey } from './gapsData';
 import type { Trait } from './personalityQuestions';
+import type { BehaviourStats } from './behaviourStats';
 
 export interface GrowthEdge {
   trait: Trait;
@@ -20,9 +21,13 @@ export interface GrowthEdge {
   cause: string; // why it happens
   action: string; // what to try next
   evidence: string; // the real numbers from their tests
+  source: 'test' | 'activity'; // where the confirming evidence came from
   bucket: Bucket; // the score bucket (1-5) that produced this edge
   push: 'strong' | 'light' | 'minimal'; // 1/5 strong, 2/4 light, 3 minimal (behaviour leads)
 }
+
+type ActivitySignalKey = 'revisionOverdue' | 'streakBroken' | 'watchNotPractise' | 'manyOpenTopics';
+const ACTIVITY_KEYS: SignalKey[] = ['revisionOverdue', 'streakBroken', 'watchNotPractise', 'manyOpenTopics'];
 
 type Signals = {
   blank: string | null;
@@ -38,6 +43,19 @@ type Signals = {
   weakTopics: string | null;
   scoreDrop: string | null;
 };
+
+function deriveActivitySignals(h: HistoryStats, b: BehaviourStats | null): Record<ActivitySignalKey, string | null> {
+  if (!b) return { revisionOverdue: null, streakBroken: null, watchNotPractise: null, manyOpenTopics: null };
+  return {
+    revisionOverdue: b.overdueRevisions >= 2 ? `${b.overdueRevisions} revision checkpoints are overdue.` : null,
+    streakBroken: b.totalActiveDays >= 4 && b.currentStreak === 0 ? `Your streak is at 0 after ${b.totalActiveDays} active days.` : null,
+    watchNotPractise:
+      b.watchMinutes7d >= 120 && h.attempts >= 1 && h.avgAccuracy < 60
+        ? `${Math.round(b.watchMinutes7d / 60 * 10) / 10} hours watched this week, but test accuracy is ${h.avgAccuracy}%.`
+        : null,
+    manyOpenTopics: b.learningTopics >= 3 ? `${b.learningTopics} topics are started but not finished.` : null,
+  };
+}
 
 const pct = (a: number, b: number) => (b > 0 ? Math.round((a / b) * 100) : 0);
 
@@ -72,15 +90,16 @@ function deriveSignals(a: AttemptStats, h: HistoryStats): Signals {
 // Most specific signal first, so a rare, sharp signal beats a generic one.
 const SPECIFICITY: SignalKey[] = [
   'sticky', 'repeatedMiss', 'scoreDrop', 'declining', 'overAttempt', 'careless',
-  'fatigue', 'lateBlank', 'blank', 'weakTopics', 'plateau', 'lowAccuracy', 'later',
+  'fatigue', 'lateBlank', 'blank', 'weakTopics', 'plateau', 'lowAccuracy',
+  'revisionOverdue', 'manyOpenTopics', 'watchNotPractise', 'streakBroken', 'later',
 ];
 const rank = (s: SignalKey) => SPECIFICITY.indexOf(s);
 const pushOf = (b: Bucket): GrowthEdge['push'] => (b === 1 || b === 5 ? 'strong' : b === 3 ? 'minimal' : 'light');
 const PUSH_WEIGHT = { strong: 2, light: 1, minimal: 0 } as const;
 
-export function computeGrowthEdges(profile: PersonalityProfile | null, a: AttemptStats, h: HistoryStats): GrowthEdge[] {
+export function computeGrowthEdges(profile: PersonalityProfile | null, a: AttemptStats, h: HistoryStats, behaviour: BehaviourStats | null = null): GrowthEdge[] {
   if (!profile) return [];
-  const signals = deriveSignals(a, h);
+  const signals: Record<string, string | null> = { ...deriveSignals(a, h), ...deriveActivitySignals(h, behaviour) };
   const found: { edge: GrowthEdge; weight: number; extremity: number }[] = [];
 
   for (const [trait, r] of Object.entries(profile.traits) as [Trait, PersonalityProfile['traits'][Trait]][]) {
@@ -89,13 +108,13 @@ export function computeGrowthEdges(profile: PersonalityProfile | null, a: Attemp
     let best: { edge: GrowthEdge; weight: number } | null = null;
     for (const [bi, bucket] of buckets.entries()) {
       const rows = [...BUCKET_GAPS[trait][bucket]].sort((x, y) => rank(x[3]) - rank(y[3]));
-      const row = rows.find((x) => x[3] !== 'later' && signals[x[3] as keyof Signals]);
+      const row = rows.find((x) => x[3] !== 'later' && signals[x[3]]);
       if (!row) continue;
       const push = pushOf(bucket);
       // own bucket wins ties over the blended neighbour
       const weight = PUSH_WEIGHT[push] * 10 - bi;
       if (!best || weight > best.weight) {
-        best = { weight, edge: { trait, title: row[0], cause: row[1], action: row[2], evidence: signals[row[3] as keyof Signals] as string, bucket, push } };
+        best = { weight, edge: { trait, title: row[0], cause: row[1], action: row[2], evidence: signals[row[3]] as string, source: ACTIVITY_KEYS.includes(row[3]) ? 'activity' : 'test', bucket, push } };
       }
     }
     if (best) found.push({ edge: best.edge, weight: best.weight, extremity: Math.abs(r.score - 50) });
