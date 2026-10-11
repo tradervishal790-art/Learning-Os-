@@ -97,8 +97,16 @@ export default function PersonalityReportCard({
     }
   };
 
+  const checked = profile.second ? Object.values(profile.second.agreement) : [];
+  const mixedCount = checked.filter((a) => a === 'mixed').length;
   const rows = (
     <div className="space-y-1.5">
+      {checked.length > 0 && (
+        <p className="text-[11px] text-gray-500 dark:text-white/50 pb-1">
+          Double-checked by 2 tests: {checked.length - mixedCount} of {checked.length} areas agree
+          {mixedCount > 0 ? `; ${mixedCount} pointed in different directions, so ${mixedCount === 1 ? 'it shows' : 'they show'} as “not clear yet”.` : '.'}
+        </p>
+      )}
       {TRAITS.map((t) => (
         <TraitRow key={t} trait={t} profile={profile} note={report?.traitNotes?.[TRAIT_LABELS[t]]} />
       ))}

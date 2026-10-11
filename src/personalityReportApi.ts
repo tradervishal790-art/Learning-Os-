@@ -9,6 +9,8 @@ import { TRAIT_LABELS } from './PersonalityResult';
 import { computeGrowthEdges } from './growthEdges';
 import { analyzeAttempt, analyzeHistory } from './testAnalytics';
 import { getTestAttempts } from './testStore';
+import { PROBE_BANK } from './personalityProbe';
+import { bucketOf } from './personalityScoring';
 
 function buildInput(profile: PersonalityProfile) {
   const attempts = getTestAttempts();
@@ -21,6 +23,22 @@ function buildInput(profile: PersonalityProfile) {
       seenInTests: e.evidence,
     }));
   }
+  // Cross-check: Part 1 vs Part 2 for the traits that were double-checked, plus the Part 2 answers.
+  const second = profile.second;
+  const crossCheck = second
+    ? {
+        checkedAreas: second.probedTraits.map((t) => ({
+          area: TRAIT_LABELS[t],
+          part1Level: bucketOf(second.part1[t]),
+          part2Level: bucketOf(second.part2[t]),
+          result: second.agreement[t], // 'agree' or 'mixed'
+        })),
+        part2Answers: Object.entries(second.answers).flatMap(([id, score]) => {
+          const q = PROBE_BANK.find((x) => x.id === id);
+          return q ? [{ area: TRAIT_LABELS[q.trait], question: q.stem, chosen: q.options[score - 1] }] : [];
+        }),
+      }
+    : undefined;
   return {
     ageGroup: profile.version,
     traits: TRAITS.map((t) => ({
@@ -34,6 +52,7 @@ function buildInput(profile: PersonalityProfile) {
       return { area: TRAIT_LABELS[q.trait], question: q.stems[profile.version], chosen: q.options.find((o) => o.key === key)?.text[profile.version] ?? '' };
     }),
     growthEdges: edges,
+    ...(crossCheck ? { crossCheck } : {}),
   };
 }
 

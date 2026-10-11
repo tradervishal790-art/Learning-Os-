@@ -38,6 +38,18 @@ export interface PersonalityReport {
   report: string; // markdown (Core Identity, Learning Style, Pressure & Feelings, Top Strengths, Growth Edges, Study Blueprint)
 }
 
+/** Part 2 (situation questions on the traits that stood out) and how it compared with Part 1. */
+export interface SecondTest {
+  completedAt: string;
+  probedTraits: Trait[];
+  /** question id -> chosen score 1-4 */
+  answers: Record<string, number>;
+  /** probed trait -> score from Part 1 / Part 2 alone (0-100) */
+  part1: Record<string, number>;
+  part2: Record<string, number>;
+  agreement: Record<string, 'agree' | 'mixed'>;
+}
+
 export interface PersonalityProfile {
   version: AgeVersion;
   completedAt: string;
@@ -45,6 +57,8 @@ export interface PersonalityProfile {
   answers: Record<string, OptionKey>;
   traits: Record<Trait, TraitResult>;
   retakeSuggested: boolean;
+  /** Part 2 cross-check; when present, `traits` already holds the merged result. */
+  second?: SecondTest;
   /** AI-written report, saved after the learner asks for it (cleared on retake). */
   report?: PersonalityReport;
 }
@@ -65,7 +79,7 @@ export function zoneOf(score: number): Zone {
   return 'higher';
 }
 
-function blendOf(score: number, bucket: Bucket): Bucket | undefined {
+export function blendOf(score: number, bucket: Bucket): Bucket | undefined {
   for (let i = 0; i < BUCKET_EDGES.length; i++) {
     const edge = BUCKET_EDGES[i];
     if (Math.abs(score - edge) <= 3 || Math.abs(score - (edge + 1)) <= 3) {

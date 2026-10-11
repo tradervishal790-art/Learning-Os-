@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { PERSONALITY_QUESTIONS, type AgeVersion, type OptionKey } from './personalityQuestions';
 import { scorePersonality, type PersonalityProfile } from './personalityScoring';
 import PersonalityReportCard from './PersonalityReportCard';
+import { pickProbeQuestions, applySecondTest, type ProbeQuestion } from './personalityProbe';
 
 // ============================================================
 // PersonalityQuiz.tsx
@@ -29,6 +30,11 @@ export default function PersonalityQuiz({
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, OptionKey>>({});
   const [result, setResult] = useState<PersonalityProfile | null>(null);
+  // Part 1 finished -> offer Part 2 (situation questions on the traits that stood out).
+  const [partOne, setPartOne] = useState<PersonalityProfile | null>(null);
+  const [probe, setProbe] = useState<{ q: ProbeQuestion; order: number[] }[] | null>(null);
+  const [probeIndex, setProbeIndex] = useState(0);
+  const [probeAnswers, setProbeAnswers] = useState<Record<string, number>>({});
 
   const total = PERSONALITY_QUESTIONS.length;
   const question = PERSONALITY_QUESTIONS[index];
@@ -41,8 +47,9 @@ export default function PersonalityQuiz({
       setIndex(index + 1);
     } else {
       const profile = scorePersonality(version, next);
-      setResult(profile);
-      onComplete(profile);
+      setPartOne(profile);
+      onComplete(profile); // Part 1 is saved right away, so nothing is lost if they stop here
+
     }
   };
 
@@ -50,7 +57,41 @@ export default function PersonalityQuiz({
     if (index > 0) setIndex(index - 1);
   };
 
-  const subtitle = result ? 'Complete!' : version ? `Question ${index + 1} / ${total}` : 'Choose your age group';
+  const startProbe = () => {
+    if (!partOne) return;
+    const qs = pickProbeQuestions(partOne);
+    // shuffle the options on screen so the best-looking answer is not always in the same place
+    setProbe(qs.map((q) => ({ q, order: [0, 1, 2, 3].sort(() => Math.random() - 0.5) })));
+    setProbeIndex(0);
+    setProbeAnswers({});
+  };
+
+  const handleProbeSelect = (optionIndex: number) => {
+    if (!probe || !partOne) return;
+    const next = { ...probeAnswers, [probe[probeIndex].q.id]: optionIndex + 1 };
+    setProbeAnswers(next);
+    if (probeIndex + 1 < probe.length) {
+      setProbeIndex(probeIndex + 1);
+    } else {
+      const merged = applySecondTest(partOne, probe.map((x) => x.q), next);
+      setResult(merged);
+      onComplete(merged);
+    }
+  };
+
+  const inBridge = !!partOne && !probe && !result;
+  const inProbe = !!probe && !result;
+  const inPart1 = !!version && !partOne && !result;
+  const subtitle = result
+    ? 'Complete!'
+    : inProbe
+      ? `Part 2 · Question ${probeIndex + 1} / ${probe!.length}`
+      : inBridge
+        ? 'Part 1 done'
+        : version
+          ? `Question ${index + 1} / ${total}`
+          : 'Choose your age group';
+  const progress = inProbe ? ((probeIndex + 1) / probe!.length) * 100 : ((index + 1) / total) * 100;
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
@@ -63,9 +104,9 @@ export default function PersonalityQuiz({
           <div className="flex-1">
             <h2 className="text-base font-semibold">Personality Check</h2>
             <p className="text-xs text-gray-400 dark:text-white/40 mt-0.5">{subtitle}</p>
-            {version && !result && (
+            {(inPart1 || inProbe) && (
               <div className="mt-2 h-1 bg-gray-200 dark:bg-white/10 rounded-full overflow-hidden">
-                <div className="h-full bg-purple-500 transition-all duration-300" style={{ width: `${((index + 1) / total) * 100}%` }} />
+                <div className="h-full bg-purple-500 transition-all duration-300" style={{ width: `${progress}%` }} />
               </div>
             )}
           </div>
@@ -99,7 +140,7 @@ export default function PersonalityQuiz({
             </div>
           )}
 
-          {version && !result && (
+          {inPart1 && (
             <AnimatePresence mode="wait">
               <motion.div key={question.id} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.2 }}>
                 <p className="text-sm font-medium leading-relaxed mb-4">{question.stems[version]}</p>
@@ -120,6 +161,48 @@ export default function PersonalityQuiz({
                     ← Previous question
                   </button>
                 )}
+              </motion.div>
+            </AnimatePresence>
+          )}
+
+          {inBridge && (
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+              <p className="text-sm font-semibold">Part 1 is saved.</p>
+              <p className="text-sm text-gray-600 dark:text-white/70 leading-relaxed">
+                Now 9 short real-life questions about the areas that stood out in your answers. They look at the same
+                habits from a different angle, so your final result is double-checked. About 2 minutes.
+              </p>
+              <button
+                onClick={startProbe}
+                className="w-full px-4 py-3 rounded-xl bg-black text-white dark:bg-white dark:text-black text-sm font-semibold transition active:scale-[0.98]"
+              >
+                Start Part 2
+              </button>
+              <button
+                onClick={() => setResult(partOne)}
+                className="w-full text-xs text-gray-400 dark:text-white/40 hover:text-gray-600 dark:hover:text-white/70 transition"
+              >
+                Skip for now (result from Part 1 only)
+              </button>
+            </motion.div>
+          )}
+
+          {inProbe && (
+            <AnimatePresence mode="wait">
+              <motion.div key={probe![probeIndex].q.id} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.2 }}>
+                <p className="text-sm font-medium leading-relaxed mb-4">{probe![probeIndex].q.stem}</p>
+                <div className="space-y-2">
+                  {probe![probeIndex].order.map((optIdx, shown) => (
+                    <button
+                      key={optIdx}
+                      onClick={() => handleProbeSelect(optIdx)}
+                      className="w-full text-left px-4 py-3 rounded-xl border border-gray-200 dark:border-white/10 hover:border-purple-400 hover:bg-purple-50 dark:hover:bg-purple-500/10 text-sm transition"
+                    >
+                      <span className="font-semibold text-purple-500 mr-2">{'ABCD'[shown]}.</span>
+                      {probe![probeIndex].q.options[optIdx]}
+                    </button>
+                  ))}
+                </div>
               </motion.div>
             </AnimatePresence>
           )}
