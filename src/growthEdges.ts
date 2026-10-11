@@ -48,7 +48,7 @@ function deriveActivitySignals(h: HistoryStats, b: BehaviourStats | null): Recor
   if (!b) return { revisionOverdue: null, streakBroken: null, watchNotPractise: null, manyOpenTopics: null };
   return {
     revisionOverdue: b.overdueRevisions >= 2 ? `${b.overdueRevisions} revision checkpoints are overdue.` : null,
-    streakBroken: b.totalActiveDays >= 4 && b.currentStreak === 0 ? `Your streak is at 0 after ${b.totalActiveDays} active days.` : null,
+    streakBroken: b.totalActiveDays >= 4 && b.currentStreak <= 1 && b.daysAway >= 2 ? `You were away for ${b.daysAway} days before coming back.` : null,
     watchNotPractise:
       b.watchMinutes7d >= 120 && h.attempts >= 1 && h.avgAccuracy < 60
         ? `${Math.round(b.watchMinutes7d / 60 * 10) / 10} hours watched this week, but test accuracy is ${h.avgAccuracy}%.`
