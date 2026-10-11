@@ -4,6 +4,7 @@ import { Search, Play, CheckCircle, ThumbsUp, ThumbsDown, SkipForward } from 'lu
 import type { Video, VideoWatchData, WatchHistoryEntry, EngagementSession, FeedbackValue, Topic, TopicBridge } from './types';
 import { withComputedSignal } from './engagementScoring';
 import { upsertEngagementSession } from './engagementStore';
+import RecallCheck from './RecallCheck';
 import { getLearningProfile } from './learningProfileStore';
 import { maybeUpdateProfileFromEngagement } from './implicitProfileUpdate';
 import { getRoadmapData, saveRoadmapData } from './roadmapData';
@@ -268,6 +269,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
   const [watchHistory, setWatchHistory] = useState<WatchHistoryEntry[]>([]);
   const [errorMessage, setErrorMessage] = useState('');
   const [showDeepNotes, setShowDeepNotes] = useState(false);
+  const [recallFor, setRecallFor] = useState<string | null>(null); // videoId waiting for its recall check
   // Research panel opens alongside the still-playing video (unlike Deep
   // Notes, which replaces the page) — this is the "research in parallel
   // while watching" flow, so it never touches the video player at all.
@@ -610,7 +612,8 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
       // button (moves within the current batch, or fetches a fresh batch
       // once it's exhausted). If nothing's left, handleNextVideo just
       // surfaces the "no more videos" error and stays on this one.
-      handleNextVideo();
+      // Recall check first (skippable) — it calls handleNextVideo when done.
+      setRecallFor(selectedVideo?.id ?? null);
     }
   };
 
@@ -975,6 +978,16 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                       onPlaybackRateChange={onPlaybackRateChange}
                     />
                   </div>
+
+                  {recallFor === selectedVideo.id && (
+                    <RecallCheck
+                      videoId={selectedVideo.id}
+                      onDone={() => {
+                        setRecallFor(null);
+                        handleNextVideo();
+                      }}
+                    />
+                  )}
 
                   <div className="bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl p-6">
                     <div className="mb-4">
