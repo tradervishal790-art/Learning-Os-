@@ -23,7 +23,7 @@ export default function GrowthEdgesCard({ edges, hasPersonality, className = '' 
                 <p className="text-[11px] uppercase tracking-wide text-purple-500 mb-0.5">{TRAIT_LABELS[e.trait]}</p>
                 <p className="text-sm font-semibold">{e.title}</p>
                 <p className="text-xs text-gray-500 dark:text-white/50 mt-1">{e.cause}</p>
-                <p className="text-xs text-gray-400 dark:text-white/40 mt-1">In your tests: {e.evidence}</p>
+                <p className="text-xs text-gray-400 dark:text-white/40 mt-1">In your Learning OS tests: {e.evidence}</p>
                 <p className="text-sm text-gray-700 dark:text-white/80 mt-2">
                   <span className="font-medium">Try:</span> {e.action}
                 </p>
