@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { MENTOR_PREFILL_KEY } from './mentorPrefill';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation, useLanguage } from './i18n/LanguageContext';
 import { format } from './i18n/format';
@@ -84,7 +85,15 @@ export default function Mentor() {
     // Restore this user's earlier conversation from the device.
     ...loadMentorChat().map((m) => ({ ...m, timestamp: new Date(m.timestamp) })),
   ]);
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState(() => {
+    try {
+      const pre = sessionStorage.getItem(MENTOR_PREFILL_KEY);
+      if (pre) sessionStorage.removeItem(MENTOR_PREFILL_KEY);
+      return pre ?? '';
+    } catch {
+      return '';
+    }
+  });
   const [loading, setLoading] = useState(false);
   const [contextTopic, setContextTopic] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);

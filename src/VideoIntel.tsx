@@ -1,13 +1,15 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Play, CheckCircle, ThumbsUp, ThumbsDown, SkipForward } from 'lucide-react';
+import { Search, Play, CheckCircle, ThumbsUp, ThumbsDown, SkipForward, MessageCircle } from 'lucide-react';
 import type { Video, VideoWatchData, WatchHistoryEntry, EngagementSession, FeedbackValue, Topic, TopicBridge } from './types';
 import { withComputedSignal } from './engagementScoring';
 import { upsertEngagementSession } from './engagementStore';
 import RecallCheck from './RecallCheck';
 import { getLearningProfile } from './learningProfileStore';
 import { maybeUpdateProfileFromEngagement } from './implicitProfileUpdate';
-import { getRoadmapData, saveRoadmapData } from './roadmapData';
+import { getRoadmapData, saveRoadmapData, findTopicById } from './roadmapData';
+import { useNavigate } from 'react-router-dom';
+import { MENTOR_PREFILL_KEY } from './mentorPrefill';
 import Notes from './Notes';
 import Research from './Research';
 import HintBubble from './HintBubble';
@@ -269,6 +271,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
   const [watchHistory, setWatchHistory] = useState<WatchHistoryEntry[]>([]);
   const [errorMessage, setErrorMessage] = useState('');
   const [showDeepNotes, setShowDeepNotes] = useState(false);
+  const navigate = useNavigate();
   const [recallFor, setRecallFor] = useState<string | null>(null); // videoId waiting for its recall check
   // Research panel opens alongside the still-playing video (unlike Deep
   // Notes, which replaces the page) — this is the "research in parallel
@@ -1016,6 +1019,21 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                         }`}
                       >
                         <ThumbsDown className="w-4 h-4" /> {t.videos.notForMeCta}
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          const topicTitle = (activeTopicId && findTopicById(activeTopicId, getRoadmapData(activeGoalId))?.title) || selectedVideo.title;
+                          try {
+                            sessionStorage.setItem(MENTOR_PREFILL_KEY, `I'm studying "${topicTitle}" and I need help with: `);
+                          } catch {
+                            // best effort
+                          }
+                          navigate('/dashboard/mentor');
+                        }}
+                        className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10"
+                      >
+                        <MessageCircle className="w-4 h-4" /> Ask Mentor
                       </button>
 
                       {hasNextVideo && (
