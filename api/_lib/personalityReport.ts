@@ -7,6 +7,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { generateAIText } from './aiFallback.js';
 import { getPersonalityType } from './personalityTypes/index.js';
+import { mbtiCandidates } from './personalityTypes/mbti/index.js';
 
 const MAX_PAYLOAD_CHARS = 16000;
 
@@ -63,6 +64,15 @@ export function buildTypeKnowledge(input: any) {
   return out;
 }
 
+// Closest MBTI label(s), derived from the final Big Five buckets. A friendly label only.
+export function buildMbtiLabel(input: any) {
+  const b: Record<string, number> = {};
+  for (const a of (input?.traits ?? []) as any[]) if (TRAIT_KEYS.includes(a?.key)) b[a.key] = Number(a.level);
+  if (!TRAIT_KEYS.every((k) => b[k] >= 1 && b[k] <= 5)) return null;
+  const c = mbtiCandidates(b as any);
+  return c.length ? c : null;
+}
+
 export async function handlePersonalityReport(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
@@ -72,7 +82,7 @@ export async function handlePersonalityReport(req: VercelRequest, res: VercelRes
   }
   if (JSON.stringify(input).length > MAX_PAYLOAD_CHARS) return res.status(413).json({ error: 'Summary too large.' });
 
-  const json = JSON.stringify({ ...input, typeKnowledge: buildTypeKnowledge(input) });
+  const json = JSON.stringify({ ...input, typeKnowledge: buildTypeKnowledge(input), mbtiLabel: buildMbtiLabel(input) });
 
   const geminiApiKey = process.env.VITE_GEMINI_API_KEY;
   const minimaxApiKey = process.env.MINIMAX_API_KEY;
@@ -149,7 +159,7 @@ Rules:
 - Say "growth edge", never "weakness". Be kind but honest; do not flatter.
 - If an area is "unsure", say the answers pointed in different directions there and tests will show more; do not guess.
 - These are tendencies, not facts. Never diagnose, never use medical or clinical words, never call the student anxious, lazy or weak as a person.
-- Do not use personality-test names (Big Five, MBTI, neuroticism etc.). Use plain words and the area names above.
+- Do not use the words \"Big Five\" or \"neuroticism\". Use plain words and the area names above. If the input has \"mbtiLabel\" (the closest friendly 4-letter label, derived from the area results), you MAY mention it ONCE as \"closest friendly label: XXXX\" (name both if there are two), saying it is only a label and not a verified type. It has the LOWEST weight: never base a growth edge on it alone, only on it together with the student's own answers and area results. If there is no \"mbtiLabel\", do not mention any such label.
 - ${LANG_RULE[locale ?? ''] ?? LANG_RULE.en}
 - Weighting: Part 1 is only a short, generic first-hint screen (4 questions per area), so give it LOWER weight. Part 2 (situation questions built from the Part 1 result) and the pre-analysed \"typeKnowledge\" carry MORE weight. For areas listed in \"notDoubleChecked\", say plainly it is a first hint, not confirmed yet.
 - \"typeKnowledge\" is pre-analysed expert knowledge about the type each test pointed to (\"test1Type\", and \"test2Type\" when Part 2 pointed to a different one): its core trap, typical gaps, causes and fixes. Use it as your reference to judge this student and to choose growth edges and study habits; pick only the gaps their own answers support, and write them in your own words. Never mention \"type files\" or any list.
