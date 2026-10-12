@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { PERSONALITY_QUESTIONS, type AgeVersion, type OptionKey } from './personalityQuestions';
 import { scorePersonality, type PersonalityProfile } from './personalityScoring';
 import PersonalityReportCard from './PersonalityReportCard';
+import { FELDER_QUESTIONS, scoreFelder, type FelderPole } from './felderTest';
 import { KOLB_QUESTIONS, scoreKolb, type KolbMode } from './kolbTest';
 import { VARK_QUESTIONS, scoreVark, type VarkKey } from './varkTest';
 import { pickProbeQuestions, applySecondTest, type ProbeQuestion } from './personalityProbe';
@@ -47,6 +48,11 @@ export default function PersonalityQuiz({
   const [kolbOrder, setKolbOrder] = useState<KolbMode[][] | null>(null);
   const [kolbIndex, setKolbIndex] = useState(0);
   const [kolbAnswers, setKolbAnswers] = useState<Record<string, KolbMode>>({});
+  // And a third optional step: how they take in and work with material (Felder-Silverman).
+  const [pending3, setPending3] = useState<PersonalityProfile | null>(null);
+  const [felderOrder, setFelderOrder] = useState<number[][] | null>(null);
+  const [felderIndex, setFelderIndex] = useState(0);
+  const [felderAnswers, setFelderAnswers] = useState<Record<string, FelderPole>>({});
 
   const total = PERSONALITY_QUESTIONS.length;
   const question = PERSONALITY_QUESTIONS[index];
@@ -124,6 +130,25 @@ export default function PersonalityQuiz({
       setKolbIndex(kolbIndex + 1);
     } else {
       const done = { ...pending2, kolb: scoreKolb(next) };
+      setPending3(done);
+      onComplete(done);
+    }
+  };
+
+  const startFelder = () => {
+    setFelderOrder(FELDER_QUESTIONS.map(() => [0, 1].sort(() => Math.random() - 0.5)));
+    setFelderIndex(0);
+    setFelderAnswers({});
+  };
+
+  const handleFelderSelect = (pole: FelderPole) => {
+    if (!pending3) return;
+    const next = { ...felderAnswers, [FELDER_QUESTIONS[felderIndex].id]: pole };
+    setFelderAnswers(next);
+    if (felderIndex + 1 < FELDER_QUESTIONS.length) {
+      setFelderIndex(felderIndex + 1);
+    } else {
+      const done = { ...pending3, felder: scoreFelder(next) };
       setResult(done);
       onComplete(done);
     }
@@ -133,12 +158,18 @@ export default function PersonalityQuiz({
   const inProbe = !!probe && !pending && !result;
   const inVarkBridge = !!pending && !varkOrder && !pending2 && !result;
   const inVark = !!pending && !!varkOrder && !pending2 && !result;
-  const inKolbBridge = !!pending2 && !kolbOrder && !result;
-  const inKolb = !!pending2 && !!kolbOrder && !result;
+  const inKolbBridge = !!pending2 && !kolbOrder && !pending3 && !result;
+  const inKolb = !!pending2 && !!kolbOrder && !pending3 && !result;
+  const inFelderBridge = !!pending3 && !felderOrder && !result;
+  const inFelder = !!pending3 && !!felderOrder && !result;
   const inPart1 = !!version && !partOne && !result;
   const subtitle = result
     ? 'Complete!'
-    : inKolb
+    : inFelder
+      ? `How you work with material · ${felderIndex + 1} / ${FELDER_QUESTIONS.length}`
+      : inFelderBridge
+        ? 'One more (optional)'
+        : inKolb
       ? `How you approach problems · ${kolbIndex + 1} / ${KOLB_QUESTIONS.length}`
       : inKolbBridge
         ? 'One more (optional)'
@@ -153,7 +184,7 @@ export default function PersonalityQuiz({
         : version
           ? `Question ${index + 1} / ${total}`
           : 'Choose your age group';
-  const progress = inKolb ? ((kolbIndex + 1) / KOLB_QUESTIONS.length) * 100 : inVark ? ((varkIndex + 1) / VARK_QUESTIONS.length) * 100 : inProbe ? ((probeIndex + 1) / probe!.length) * 100 : ((index + 1) / total) * 100;
+  const progress = inFelder ? ((felderIndex + 1) / FELDER_QUESTIONS.length) * 100 : inKolb ? ((kolbIndex + 1) / KOLB_QUESTIONS.length) * 100 : inVark ? ((varkIndex + 1) / VARK_QUESTIONS.length) * 100 : inProbe ? ((probeIndex + 1) / probe!.length) * 100 : ((index + 1) / total) * 100;
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
@@ -166,7 +197,7 @@ export default function PersonalityQuiz({
           <div className="flex-1">
             <h2 className="text-base font-semibold">Personality Check</h2>
             <p className="text-xs text-gray-400 dark:text-white/40 mt-0.5">{subtitle}</p>
-            {(inPart1 || inProbe || inVark || inKolb) && (
+            {(inPart1 || inProbe || inVark || inKolb || inFelder) && (
               <div className="mt-2 h-1 bg-gray-200 dark:bg-white/10 rounded-full overflow-hidden">
                 <div className="h-full bg-purple-500 transition-all duration-300" style={{ width: `${progress}%` }} />
               </div>
@@ -325,7 +356,7 @@ export default function PersonalityQuiz({
                 Start
               </button>
               <button
-                onClick={() => setResult(pending2)}
+                onClick={() => setPending3(pending2)}
                 className="w-full text-xs text-gray-400 dark:text-white/40 hover:text-gray-600 dark:hover:text-white/70 transition"
               >
                 Skip
@@ -348,6 +379,51 @@ export default function PersonalityQuiz({
                       {KOLB_QUESTIONS[kolbIndex].options[m]}
                     </button>
                   ))}
+                </div>
+              </motion.div>
+            </AnimatePresence>
+          )}
+
+          {inFelderBridge && (
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+              <p className="text-sm font-semibold">How do you work with new material?</p>
+              <p className="text-sm text-gray-600 dark:text-white/70 leading-relaxed">
+                12 quick two-choice questions: examples or ideas, pictures or words, trying or thinking, step by step or
+                big picture. About 1.5 minutes.
+              </p>
+              <button
+                onClick={startFelder}
+                className="w-full px-4 py-3 rounded-xl bg-black text-white dark:bg-white dark:text-black text-sm font-semibold transition active:scale-[0.98]"
+              >
+                Start
+              </button>
+              <button
+                onClick={() => setResult(pending3)}
+                className="w-full text-xs text-gray-400 dark:text-white/40 hover:text-gray-600 dark:hover:text-white/70 transition"
+              >
+                Skip
+              </button>
+            </motion.div>
+          )}
+
+          {inFelder && (
+            <AnimatePresence mode="wait">
+              <motion.div key={FELDER_QUESTIONS[felderIndex].id} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.2 }}>
+                <p className="text-sm font-medium leading-relaxed mb-4">{FELDER_QUESTIONS[felderIndex].stem}</p>
+                <div className="space-y-2">
+                  {felderOrder![felderIndex].map((optIdx, shown) => {
+                    const o = FELDER_QUESTIONS[felderIndex].options[optIdx];
+                    return (
+                      <button
+                        key={o.pole}
+                        onClick={() => handleFelderSelect(o.pole)}
+                        className="w-full text-left px-4 py-3 rounded-xl border border-gray-200 dark:border-white/10 hover:border-purple-400 hover:bg-purple-50 dark:hover:bg-purple-500/10 text-sm transition"
+                      >
+                        <span className="font-semibold text-purple-500 mr-2">{'AB'[shown]}.</span>
+                        {o.text}
+                      </button>
+                    );
+                  })}
                 </div>
               </motion.div>
             </AnimatePresence>

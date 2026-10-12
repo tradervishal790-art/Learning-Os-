@@ -10,6 +10,7 @@
 // - 3+ unsure traits -> suggest retaking another day.
 import type { VarkResult } from './varkTest';
 import type { KolbResult } from './kolbTest';
+import type { FelderResult } from './felderTest';
 import {
   PERSONALITY_QUESTIONS,
   CONSISTENCY_PAIRS,
@@ -65,6 +66,8 @@ export interface PersonalityProfile {
   vark?: VarkResult;
   /** Optional "how do you approach new problems" step (Kolb). */
   kolb?: KolbResult;
+  /** Optional Felder-Silverman step (how they take in and work with material). */
+  felder?: FelderResult;
   /** AI-written report, saved after the learner asks for it (cleared on retake). */
   report?: PersonalityReport;
 }
