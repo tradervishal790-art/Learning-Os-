@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { PERSONALITY_QUESTIONS, type AgeVersion, type OptionKey } from './personalityQuestions';
 import { scorePersonality, type PersonalityProfile } from './personalityScoring';
 import PersonalityReportCard from './PersonalityReportCard';
+import { VARK_QUESTIONS, scoreVark, type VarkKey } from './varkTest';
 import { pickProbeQuestions, applySecondTest, type ProbeQuestion } from './personalityProbe';
 
 // ============================================================
@@ -35,6 +36,11 @@ export default function PersonalityQuiz({
   const [probe, setProbe] = useState<{ q: ProbeQuestion; order: number[] }[] | null>(null);
   const [probeIndex, setProbeIndex] = useState(0);
   const [probeAnswers, setProbeAnswers] = useState<Record<string, number>>({});
+  // After Part 2 (or skipping it): an optional 8-question "how do you like to learn" step.
+  const [pending, setPending] = useState<PersonalityProfile | null>(null);
+  const [varkOrder, setVarkOrder] = useState<VarkKey[][] | null>(null);
+  const [varkIndex, setVarkIndex] = useState(0);
+  const [varkAnswers, setVarkAnswers] = useState<Record<string, VarkKey>>({});
 
   const total = PERSONALITY_QUESTIONS.length;
   const question = PERSONALITY_QUESTIONS[index];
@@ -74,24 +80,49 @@ export default function PersonalityQuiz({
       setProbeIndex(probeIndex + 1);
     } else {
       const merged = applySecondTest(partOne, probe.map((x) => x.q), next);
-      setResult(merged);
+      setPending(merged);
       onComplete(merged);
     }
   };
 
-  const inBridge = !!partOne && !probe && !result;
-  const inProbe = !!probe && !result;
+  const startVark = () => {
+    setVarkOrder(VARK_QUESTIONS.map(() => (['V', 'A', 'R', 'K'] as VarkKey[]).sort(() => Math.random() - 0.5)));
+    setVarkIndex(0);
+    setVarkAnswers({});
+  };
+
+  const handleVarkSelect = (key: VarkKey) => {
+    if (!pending) return;
+    const next = { ...varkAnswers, [VARK_QUESTIONS[varkIndex].id]: key };
+    setVarkAnswers(next);
+    if (varkIndex + 1 < VARK_QUESTIONS.length) {
+      setVarkIndex(varkIndex + 1);
+    } else {
+      const done = { ...pending, vark: scoreVark(next) };
+      setResult(done);
+      onComplete(done);
+    }
+  };
+
+  const inBridge = !!partOne && !probe && !pending && !result;
+  const inProbe = !!probe && !pending && !result;
+  const inVarkBridge = !!pending && !varkOrder && !result;
+  const inVark = !!pending && !!varkOrder && !result;
   const inPart1 = !!version && !partOne && !result;
   const subtitle = result
     ? 'Complete!'
-    : inProbe
+    : inVark
+      ? `How you like to learn · ${varkIndex + 1} / ${VARK_QUESTIONS.length}`
+      : inVarkBridge
+        ? 'One more (optional)'
+        : inProbe
       ? `Part 2 · Question ${probeIndex + 1} / ${probe!.length}`
       : inBridge
         ? 'Part 1 done'
         : version
           ? `Question ${index + 1} / ${total}`
           : 'Choose your age group';
-  const progress = inProbe ? ((probeIndex + 1) / probe!.length) * 100 : ((index + 1) / total) * 100;
+  const progress = inVark ? ((varkIndex + 1) / VARK_QUESTIONS.length) * 100 : inProbe ? ((probeIndex + 1) / probe!.length) * 100 : ((index + 1) / total) * 100;
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
@@ -104,7 +135,7 @@ export default function PersonalityQuiz({
           <div className="flex-1">
             <h2 className="text-base font-semibold">Personality Check</h2>
             <p className="text-xs text-gray-400 dark:text-white/40 mt-0.5">{subtitle}</p>
-            {(inPart1 || inProbe) && (
+            {(inPart1 || inProbe || inVark) && (
               <div className="mt-2 h-1 bg-gray-200 dark:bg-white/10 rounded-full overflow-hidden">
                 <div className="h-full bg-purple-500 transition-all duration-300" style={{ width: `${progress}%` }} />
               </div>
@@ -179,7 +210,7 @@ export default function PersonalityQuiz({
                 Start Part 2
               </button>
               <button
-                onClick={() => setResult(partOne)}
+                onClick={() => setPending(partOne)}
                 className="w-full text-xs text-gray-400 dark:text-white/40 hover:text-gray-600 dark:hover:text-white/70 transition"
               >
                 Skip for now (result from Part 1 only)
@@ -200,6 +231,48 @@ export default function PersonalityQuiz({
                     >
                       <span className="font-semibold text-purple-500 mr-2">{'ABCD'[shown]}.</span>
                       {probe![probeIndex].q.options[optIdx]}
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
+            </AnimatePresence>
+          )}
+
+          {inVarkBridge && (
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+              <p className="text-sm font-semibold">How do you like to learn?</p>
+              <p className="text-sm text-gray-600 dark:text-white/70 leading-relaxed">
+                8 quick questions about the study formats you enjoy (pictures, listening, reading or doing). It shapes how your
+                study tips are written. About 1 minute.
+              </p>
+              <button
+                onClick={startVark}
+                className="w-full px-4 py-3 rounded-xl bg-black text-white dark:bg-white dark:text-black text-sm font-semibold transition active:scale-[0.98]"
+              >
+                Start
+              </button>
+              <button
+                onClick={() => setResult(pending)}
+                className="w-full text-xs text-gray-400 dark:text-white/40 hover:text-gray-600 dark:hover:text-white/70 transition"
+              >
+                Skip
+              </button>
+            </motion.div>
+          )}
+
+          {inVark && (
+            <AnimatePresence mode="wait">
+              <motion.div key={VARK_QUESTIONS[varkIndex].id} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.2 }}>
+                <p className="text-sm font-medium leading-relaxed mb-4">{VARK_QUESTIONS[varkIndex].stem}</p>
+                <div className="space-y-2">
+                  {varkOrder![varkIndex].map((k, shown) => (
+                    <button
+                      key={k}
+                      onClick={() => handleVarkSelect(k)}
+                      className="w-full text-left px-4 py-3 rounded-xl border border-gray-200 dark:border-white/10 hover:border-purple-400 hover:bg-purple-50 dark:hover:bg-purple-500/10 text-sm transition"
+                    >
+                      <span className="font-semibold text-purple-500 mr-2">{'ABCD'[shown]}.</span>
+                      {VARK_QUESTIONS[varkIndex].options[k]}
                     </button>
                   ))}
                 </div>
