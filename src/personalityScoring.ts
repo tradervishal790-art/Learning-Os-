@@ -9,6 +9,7 @@
 //   (a 1 and a 4), that trait is "unsure" -> shown as middle, behaviour decides.
 // - 3+ unsure traits -> suggest retaking another day.
 import type { VarkResult } from './varkTest';
+import type { KolbResult } from './kolbTest';
 import {
   PERSONALITY_QUESTIONS,
   CONSISTENCY_PAIRS,
@@ -62,6 +63,8 @@ export interface PersonalityProfile {
   second?: SecondTest;
   /** Optional "how do you like to learn" step (VARK). */
   vark?: VarkResult;
+  /** Optional "how do you approach new problems" step (Kolb). */
+  kolb?: KolbResult;
   /** AI-written report, saved after the learner asks for it (cleared on retake). */
   report?: PersonalityReport;
 }

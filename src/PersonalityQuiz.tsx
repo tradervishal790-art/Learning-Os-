@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { PERSONALITY_QUESTIONS, type AgeVersion, type OptionKey } from './personalityQuestions';
 import { scorePersonality, type PersonalityProfile } from './personalityScoring';
 import PersonalityReportCard from './PersonalityReportCard';
+import { KOLB_QUESTIONS, scoreKolb, type KolbMode } from './kolbTest';
 import { VARK_QUESTIONS, scoreVark, type VarkKey } from './varkTest';
 import { pickProbeQuestions, applySecondTest, type ProbeQuestion } from './personalityProbe';
 
@@ -41,6 +42,11 @@ export default function PersonalityQuiz({
   const [varkOrder, setVarkOrder] = useState<VarkKey[][] | null>(null);
   const [varkIndex, setVarkIndex] = useState(0);
   const [varkAnswers, setVarkAnswers] = useState<Record<string, VarkKey>>({});
+  // Then a second optional step: how they approach new problems (Kolb).
+  const [pending2, setPending2] = useState<PersonalityProfile | null>(null);
+  const [kolbOrder, setKolbOrder] = useState<KolbMode[][] | null>(null);
+  const [kolbIndex, setKolbIndex] = useState(0);
+  const [kolbAnswers, setKolbAnswers] = useState<Record<string, KolbMode>>({});
 
   const total = PERSONALITY_QUESTIONS.length;
   const question = PERSONALITY_QUESTIONS[index];
@@ -99,6 +105,25 @@ export default function PersonalityQuiz({
       setVarkIndex(varkIndex + 1);
     } else {
       const done = { ...pending, vark: scoreVark(next) };
+      setPending2(done);
+      onComplete(done);
+    }
+  };
+
+  const startKolb = () => {
+    setKolbOrder(KOLB_QUESTIONS.map(() => (['CE', 'RO', 'AC', 'AE'] as KolbMode[]).sort(() => Math.random() - 0.5)));
+    setKolbIndex(0);
+    setKolbAnswers({});
+  };
+
+  const handleKolbSelect = (mode: KolbMode) => {
+    if (!pending2) return;
+    const next = { ...kolbAnswers, [KOLB_QUESTIONS[kolbIndex].id]: mode };
+    setKolbAnswers(next);
+    if (kolbIndex + 1 < KOLB_QUESTIONS.length) {
+      setKolbIndex(kolbIndex + 1);
+    } else {
+      const done = { ...pending2, kolb: scoreKolb(next) };
       setResult(done);
       onComplete(done);
     }
@@ -106,12 +131,18 @@ export default function PersonalityQuiz({
 
   const inBridge = !!partOne && !probe && !pending && !result;
   const inProbe = !!probe && !pending && !result;
-  const inVarkBridge = !!pending && !varkOrder && !result;
-  const inVark = !!pending && !!varkOrder && !result;
+  const inVarkBridge = !!pending && !varkOrder && !pending2 && !result;
+  const inVark = !!pending && !!varkOrder && !pending2 && !result;
+  const inKolbBridge = !!pending2 && !kolbOrder && !result;
+  const inKolb = !!pending2 && !!kolbOrder && !result;
   const inPart1 = !!version && !partOne && !result;
   const subtitle = result
     ? 'Complete!'
-    : inVark
+    : inKolb
+      ? `How you approach problems · ${kolbIndex + 1} / ${KOLB_QUESTIONS.length}`
+      : inKolbBridge
+        ? 'One more (optional)'
+        : inVark
       ? `How you like to learn · ${varkIndex + 1} / ${VARK_QUESTIONS.length}`
       : inVarkBridge
         ? 'One more (optional)'
@@ -122,7 +153,7 @@ export default function PersonalityQuiz({
         : version
           ? `Question ${index + 1} / ${total}`
           : 'Choose your age group';
-  const progress = inVark ? ((varkIndex + 1) / VARK_QUESTIONS.length) * 100 : inProbe ? ((probeIndex + 1) / probe!.length) * 100 : ((index + 1) / total) * 100;
+  const progress = inKolb ? ((kolbIndex + 1) / KOLB_QUESTIONS.length) * 100 : inVark ? ((varkIndex + 1) / VARK_QUESTIONS.length) * 100 : inProbe ? ((probeIndex + 1) / probe!.length) * 100 : ((index + 1) / total) * 100;
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
@@ -135,7 +166,7 @@ export default function PersonalityQuiz({
           <div className="flex-1">
             <h2 className="text-base font-semibold">Personality Check</h2>
             <p className="text-xs text-gray-400 dark:text-white/40 mt-0.5">{subtitle}</p>
-            {(inPart1 || inProbe || inVark) && (
+            {(inPart1 || inProbe || inVark || inKolb) && (
               <div className="mt-2 h-1 bg-gray-200 dark:bg-white/10 rounded-full overflow-hidden">
                 <div className="h-full bg-purple-500 transition-all duration-300" style={{ width: `${progress}%` }} />
               </div>
@@ -252,7 +283,7 @@ export default function PersonalityQuiz({
                 Start
               </button>
               <button
-                onClick={() => setResult(pending)}
+                onClick={() => setPending2(pending)}
                 className="w-full text-xs text-gray-400 dark:text-white/40 hover:text-gray-600 dark:hover:text-white/70 transition"
               >
                 Skip
@@ -273,6 +304,48 @@ export default function PersonalityQuiz({
                     >
                       <span className="font-semibold text-purple-500 mr-2">{'ABCD'[shown]}.</span>
                       {VARK_QUESTIONS[varkIndex].options[k]}
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
+            </AnimatePresence>
+          )}
+
+          {inKolbBridge && (
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+              <p className="text-sm font-semibold">How do you approach new problems?</p>
+              <p className="text-sm text-gray-600 dark:text-white/70 leading-relaxed">
+                8 quick questions about how you tackle something new: feeling it, watching it, thinking it through or just
+                trying it. About 1 minute.
+              </p>
+              <button
+                onClick={startKolb}
+                className="w-full px-4 py-3 rounded-xl bg-black text-white dark:bg-white dark:text-black text-sm font-semibold transition active:scale-[0.98]"
+              >
+                Start
+              </button>
+              <button
+                onClick={() => setResult(pending2)}
+                className="w-full text-xs text-gray-400 dark:text-white/40 hover:text-gray-600 dark:hover:text-white/70 transition"
+              >
+                Skip
+              </button>
+            </motion.div>
+          )}
+
+          {inKolb && (
+            <AnimatePresence mode="wait">
+              <motion.div key={KOLB_QUESTIONS[kolbIndex].id} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.2 }}>
+                <p className="text-sm font-medium leading-relaxed mb-4">{KOLB_QUESTIONS[kolbIndex].stem}</p>
+                <div className="space-y-2">
+                  {kolbOrder![kolbIndex].map((m, shown) => (
+                    <button
+                      key={m}
+                      onClick={() => handleKolbSelect(m)}
+                      className="w-full text-left px-4 py-3 rounded-xl border border-gray-200 dark:border-white/10 hover:border-purple-400 hover:bg-purple-50 dark:hover:bg-purple-500/10 text-sm transition"
+                    >
+                      <span className="font-semibold text-purple-500 mr-2">{'ABCD'[shown]}.</span>
+                      {KOLB_QUESTIONS[kolbIndex].options[m]}
                     </button>
                   ))}
                 </div>

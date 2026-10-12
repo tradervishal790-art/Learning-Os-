@@ -56,6 +56,7 @@ function buildInput(profile: PersonalityProfile) {
     }),
     growthEdges: edges,
     ...(crossCheck ? { crossCheck } : {}),
+    ...(profile.kolb ? { kolb: { counts: profile.kolb.counts, types: profile.kolb.types } } : {}),
     ...(profile.vark ? { vark: { counts: profile.vark.counts, top: profile.vark.top } } : {}),
   };
 }
