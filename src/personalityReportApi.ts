@@ -28,11 +28,13 @@ function buildInput(profile: PersonalityProfile) {
   const crossCheck = second
     ? {
         checkedAreas: second.probedTraits.map((t) => ({
+          key: t,
           area: TRAIT_LABELS[t],
           part1Level: bucketOf(second.part1[t]),
           part2Level: bucketOf(second.part2[t]),
           result: second.agreement[t], // 'agree' or 'mixed'
         })),
+        notDoubleChecked: TRAITS.filter((t) => !second.probedTraits.includes(t)).map((t) => TRAIT_LABELS[t]),
         part2Answers: Object.entries(second.answers).flatMap(([id, score]) => {
           const q = PROBE_BANK.find((x) => x.id === id);
           return q ? [{ area: TRAIT_LABELS[q.trait], question: q.stem, chosen: q.options[score - 1] }] : [];
@@ -42,6 +44,7 @@ function buildInput(profile: PersonalityProfile) {
   return {
     ageGroup: profile.version,
     traits: TRAITS.map((t) => ({
+      key: t, // lets the server pick this area's pre-analysed type files
       area: TRAIT_LABELS[t],
       zone: profile.traits[t].zone,
       level: profile.traits[t].bucket,

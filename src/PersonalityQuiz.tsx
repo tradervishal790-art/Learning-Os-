@@ -169,8 +169,8 @@ export default function PersonalityQuiz({
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
               <p className="text-sm font-semibold">Part 1 is saved.</p>
               <p className="text-sm text-gray-600 dark:text-white/70 leading-relaxed">
-                Now 9 short real-life questions about the areas that stood out in your answers. They look at the same
-                habits from a different angle, so your final result is double-checked. About 2 minutes.
+                Now 15 short real-life questions about the areas that stood out in your answers. They look at the same
+                habits from a different angle, so your final result is double-checked. About 4 minutes.
               </p>
               <button
                 onClick={startProbe}

@@ -61,6 +61,30 @@ export const PROBE_BANK: ProbeQuestion[] = [
   Q('neuroticism', 'low', 3, 'In a test with time left, before submitting you:', ['Submit; I am sure it is right', 'Check only the hard ones', 'Check most answers', 'Check everything twice']),
 ];
 
+// Questions 4 and 5 of each side (Part 2 asks 5 per probed area).
+PROBE_BANK.push(
+  Q('openness', 'high', 4, 'You get a free afternoon. You choose to:', ['Revise something I already know', 'Do the planned homework', 'Read about a topic I like that is related to school', 'Explore something completely new, just out of curiosity']),
+  Q('openness', 'high', 5, 'While reading, you notice a link between two different subjects. You:', ['Ignore it; they are separate', 'Note it and move on', 'Think about it for a few minutes', 'Chase it down; I love connecting ideas']),
+  Q('openness', 'low', 4, 'Your teacher lets you choose any project topic. You:', ['Ask for a fixed topic', 'Pick the safest, most common topic', 'Pick something I like', 'Pick something unusual that nobody has done']),
+  Q('openness', 'low', 5, 'You must learn a theory that has no direct use in the exam. You:', ['Find it pointless', 'Learn it only to pass', 'Try to understand why it matters', 'Find it exciting by itself']),
+  Q('conscientiousness', 'high', 4, 'You have a free hour before a test. You:', ['Relax; I studied enough', 'Skim the notes', 'Do a few practice questions', 'Re-check my whole plan and notes again']),
+  Q('conscientiousness', 'high', 5, 'You see a small mistake in your neatly planned notes. You:', ['Ignore it', 'Fix it later', 'Fix it now', 'Rewrite the whole page so it is perfect']),
+  Q('conscientiousness', 'low', 4, 'How do you keep track of what to study this week?', ['I do not; I go by mood', 'I remember it roughly', 'A rough list', 'A written plan that I follow']),
+  Q('conscientiousness', 'low', 5, 'Your exam is in one month. You:', ['Start in the last week', 'Start in the last two weeks', 'Start about the second week', 'Start now with a daily plan']),
+  Q('extraversion', 'high', 4, 'You have a doubt in the evening. You:', ['Think it through alone and write it down', 'Wait and ask tomorrow', 'Message a friend', 'Call someone right away to talk it out']),
+  Q('extraversion', 'high', 5, 'A study group meets on a free Sunday. You:', ['Skip it; I study better alone', 'Join only if I am stuck', 'Join for a while', 'Join happily and stay till the end']),
+  Q('extraversion', 'low', 4, 'How often do you share half-finished ideas with others?', ['Never', 'Rarely', 'Sometimes', 'Often; I think by talking']),
+  Q('extraversion', 'low', 5, 'You join a new class where you know nobody. You:', ['Stay quiet for weeks', 'Speak only when needed', 'Talk to a few people', 'Quickly make friends']),
+  Q('agreeableness', 'high', 4, 'A friend copies your homework and asks again. You:', ['Say no firmly', 'Say no politely', 'Say yes this time', 'Say yes every time to avoid hurting them']),
+  Q('agreeableness', 'high', 5, 'You disagree with the group\'s plan. You:', ['Say so strongly', 'Say so calmly', 'Hint at my view', 'Keep it to myself']),
+  Q('agreeableness', 'low', 4, 'A classmate points out a mistake in your work. You:', ['Get annoyed', 'Check it grudgingly', 'Check it and fix it', 'Thank them warmly']),
+  Q('agreeableness', 'low', 5, 'When your group is deciding something, you:', ['Push my way', 'Argue for mine but compromise', 'Listen first, then share', 'Go with what the group prefers']),
+  Q('neuroticism', 'high', 4, 'Before a presentation or viva, you:', ['Feel fine', 'Feel a little excited', 'Feel quite nervous', 'Feel very stressed and cannot think clearly']),
+  Q('neuroticism', 'high', 5, 'You make a small mistake in a test. You:', ['Forget it quickly', 'Note it and move on', 'Keep thinking about it for an hour', 'Keep thinking about it and lose focus for the rest of the test']),
+  Q('neuroticism', 'low', 4, 'Before a big exam, how much do you worry?', ['Not at all', 'Very little', 'Some', 'A lot']),
+  Q('neuroticism', 'low', 5, 'A new chapter looks very hard. You:', ['Feel sure I will manage it', 'Stay calm', 'Feel a bit worried', 'Feel worried and want to delay it']),
+);
+
 /** The 3 traits to probe: unclear ones first, then the ones that stood out most. */
 export function pickProbeTraits(p: PersonalityProfile): Trait[] {
   return [...TRAITS]
@@ -73,7 +97,7 @@ export function pickProbeTraits(p: PersonalityProfile): Trait[] {
     .slice(0, 3);
 }
 
-/** 3 questions per probed trait, on the side Part 1 pointed to (50 and above = "high" side). */
+/** 5 questions per probed trait, on the side Part 1 pointed to (50 and above = "high" side). */
 export function pickProbeQuestions(p: PersonalityProfile): ProbeQuestion[] {
   const picked = pickProbeTraits(p).map((t) => {
     const side: Side = p.traits[t].score >= 50 ? 'high' : 'low';
@@ -81,11 +105,15 @@ export function pickProbeQuestions(p: PersonalityProfile): ProbeQuestion[] {
   });
   // interleave so the same trait does not come 3 times in a row
   const out: ProbeQuestion[] = [];
-  for (let i = 0; i < 3; i++) for (const group of picked) if (group[i]) out.push(group[i]);
+  for (let i = 0; i < 5; i++) for (const group of picked) if (group[i]) out.push(group[i]);
   return out;
 }
 
 const MIXED_GAP = 25; // points apart = the two parts disagree
+// Part 1 is a short, generic screen (4 questions per area), so it is only a first hint:
+// Part 2 (situation questions, built from the Part 1 result) counts for more.
+const W_PART1 = 0.4;
+const W_PART2 = 0.6;
 
 /** Part 2 scores + the cross-check. Part 2 answers are {questionId: score 1-4}. */
 export function applySecondTest(profile: PersonalityProfile, questions: ProbeQuestion[], answers: Record<string, number>): PersonalityProfile {
@@ -101,7 +129,7 @@ export function applySecondTest(profile: PersonalityProfile, questions: ProbeQue
     const s2 = Math.round(((sum - qs.length) / (qs.length * 3)) * 100);
     const s1 = profile.traits[t].score;
     const mixed = Math.abs(s1 - s2) > MIXED_GAP;
-    const final = Math.round((s1 + s2) / 2);
+    const final = Math.round(W_PART1 * s1 + W_PART2 * s2);
     const bucket = bucketOf(final);
     part1[t] = s1;
     part2[t] = s2;
