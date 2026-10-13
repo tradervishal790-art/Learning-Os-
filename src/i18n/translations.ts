@@ -358,6 +358,86 @@ export interface TranslationShape {
       allCaughtUpBody: string;
     };
   };
+  notebook: {
+    tabNotebook: string;
+    tabAi: string;
+    searchPlaceholder: string;
+    newNote: string;
+    newFolder: string;
+    untitled: string;
+    folders: string;
+    viewAll: string;
+    viewFavorites: string;
+    viewArchive: string;
+    viewTrash: string;
+    sortRecent: string;
+    sortCreated: string;
+    sortTitle: string;
+    allTags: string;
+    emptyTitle: string;
+    emptySubtitle: string;
+    emptySearch: string;
+    emptyTrash: string;
+    emptyArchive: string;
+    emptyFavorites: string;
+    emptyFolder: string;
+    pages: string;
+    edited: string;
+    rename: string;
+    duplicate: string;
+    move: string;
+    pin: string;
+    unpin: string;
+    favorite: string;
+    unfavorite: string;
+    archive: string;
+    unarchive: string;
+    editTags: string;
+    moveToTrash: string;
+    restore: string;
+    deleteForever: string;
+    emptyTrashBtn: string;
+    select: string;
+    selected: string;
+    cancel: string;
+    moveHere: string;
+    rootFolder: string;
+    moveTitle: string;
+    newSubfolder: string;
+    renameFolder: string;
+    deleteFolder: string;
+    folderNamePrompt: string;
+    renameFolderPrompt: string;
+    renamePrompt: string;
+    tagsPrompt: string;
+    confirmDeleteForever: string;
+    confirmEmptyTrash: string;
+    confirmDeleteFolderWithNotes: string;
+    confirmDeleteFolder: string;
+    trashInfo: string;
+    undo: string;
+    toastTrashed: string;
+    toastMoved: string;
+    toastArchived: string;
+    toastUnarchived: string;
+    toastRestored: string;
+    toastDuplicated: string;
+    toastFolderDeleted: string;
+    saving: string;
+    saved: string;
+    savedLocal: string;
+    offline: string;
+    saveError: string;
+    syncNow: string;
+    editor: {
+      back: string;
+      titlePlaceholder: string;
+      bodyPlaceholder: string;
+      addPage: string;
+      pageLabel: string;
+      loadError: string;
+    };
+  };
   notes: {
     header: { title: string; subtitle: string };
     topicPlaceholder: string;
@@ -1247,6 +1327,86 @@ export const translations: Record<Locale, TranslationShape> = {
         noRevisionBody: 'Start a topic on your roadmap or watch a video — a revision schedule will build itself here.',
         allCaughtUpTitle: 'All caught up!',
         allCaughtUpBody: 'No items in this category right now.',
+      },
+    },
+    notebook: {
+      tabNotebook: "My notebook",
+      tabAi: "AI notes",
+      searchPlaceholder: "Search title, tags or text...",
+      newNote: "New note",
+      newFolder: "New folder",
+      untitled: "Untitled note",
+      folders: "Folders",
+      viewAll: "All notes",
+      viewFavorites: "Favorites",
+      viewArchive: "Archive",
+      viewTrash: "Trash",
+      sortRecent: "Recently edited",
+      sortCreated: "Newest created",
+      sortTitle: "Title A-Z",
+      allTags: "All tags",
+      emptyTitle: "Your notebook is empty",
+      emptySubtitle: "Tap New note to write your first note. It saves by itself.",
+      emptySearch: "No notes match your search.",
+      emptyTrash: "Trash is empty.",
+      emptyArchive: "No archived notes.",
+      emptyFavorites: "No favorite notes yet.",
+      emptyFolder: "This folder has no notes yet.",
+      pages: "pages",
+      edited: "Edited",
+      rename: "Rename",
+      duplicate: "Duplicate",
+      move: "Move to folder",
+      pin: "Pin",
+      unpin: "Unpin",
+      favorite: "Add to favorites",
+      unfavorite: "Remove from favorites",
+      archive: "Archive",
+      unarchive: "Unarchive",
+      editTags: "Edit tags",
+      moveToTrash: "Move to trash",
+      restore: "Restore",
+      deleteForever: "Delete forever",
+      emptyTrashBtn: "Empty trash",
+      select: "Select",
+      selected: "{0} selected",
+      cancel: "Cancel",
+      moveHere: "Move here",
+      rootFolder: "No folder (top level)",
+      moveTitle: "Move to...",
+      newSubfolder: "New subfolder",
+      renameFolder: "Rename folder",
+      deleteFolder: "Delete folder",
+      folderNamePrompt: "Folder name",
+      renameFolderPrompt: "New folder name",
+      renamePrompt: "Note title",
+      tagsPrompt: "Tags, separated by commas",
+      confirmDeleteForever: "Delete permanently? This cannot be undone.",
+      confirmEmptyTrash: "Permanently delete everything in the trash? This cannot be undone.",
+      confirmDeleteFolderWithNotes: "This folder has {0} note(s). They will not be deleted - they move up one level. Delete the folder?",
+      confirmDeleteFolder: "Delete this folder?",
+      trashInfo: "Notes in the trash are removed after 30 days.",
+      undo: "Undo",
+      toastTrashed: "Moved to trash",
+      toastMoved: "Moved",
+      toastArchived: "Archived",
+      toastUnarchived: "Unarchived",
+      toastRestored: "Restored",
+      toastDuplicated: "Duplicated",
+      toastFolderDeleted: "Folder deleted",
+      saving: "Saving...",
+      saved: "Saved",
+      savedLocal: "Saved on this device - not synced yet",
+      offline: "Offline - saved on this device",
+      saveError: "Could not save - storage is full or blocked",
+      syncNow: "Sync now",
+      editor: {
+        back: "Back to notes",
+        titlePlaceholder: "Title",
+        bodyPlaceholder: "Start writing...",
+        addPage: "Add page",
+        pageLabel: "Page",
+        loadError: "Could not open this note.",
       },
     },
     notes: {
@@ -2151,6 +2311,86 @@ export const translations: Record<Locale, TranslationShape> = {
         allCaughtUpBody: 'इस श्रेणी में अभी कोई आइटम नहीं है।',
       },
     },
+    notebook: {
+      tabNotebook: "मेरी नोटबुक",
+      tabAi: "AI नोट्स",
+      searchPlaceholder: "टाइटल, टैग या टेक्स्ट खोजो...",
+      newNote: "नया नोट",
+      newFolder: "नया फोल्डर",
+      untitled: "बिना नाम का नोट",
+      folders: "फोल्डर",
+      viewAll: "सभी नोट्स",
+      viewFavorites: "पसंदीदा",
+      viewArchive: "आर्काइव",
+      viewTrash: "ट्रैश",
+      sortRecent: "हाल में बदले",
+      sortCreated: "नए बनाए हुए",
+      sortTitle: "नाम A-Z",
+      allTags: "सभी टैग",
+      emptyTitle: "तुम्हारी नोटबुक खाली है",
+      emptySubtitle: "पहला नोट लिखने के लिए नया नोट दबाओ। यह अपने आप सेव होता है।",
+      emptySearch: "खोज से कोई नोट नहीं मिला।",
+      emptyTrash: "ट्रैश खाली है।",
+      emptyArchive: "कोई आर्काइव नोट नहीं।",
+      emptyFavorites: "अभी कोई पसंदीदा नोट नहीं।",
+      emptyFolder: "इस फोल्डर में अभी कोई नोट नहीं।",
+      pages: "पेज",
+      edited: "बदला",
+      rename: "नाम बदलो",
+      duplicate: "कॉपी बनाओ",
+      move: "फोल्डर में डालो",
+      pin: "ऊपर पिन करो",
+      unpin: "पिन हटाओ",
+      favorite: "पसंदीदा में जोड़ो",
+      unfavorite: "पसंदीदा से हटाओ",
+      archive: "आर्काइव करो",
+      unarchive: "आर्काइव से निकालो",
+      editTags: "टैग बदलो",
+      moveToTrash: "ट्रैश में डालो",
+      restore: "वापस लाओ",
+      deleteForever: "हमेशा के लिए हटाओ",
+      emptyTrashBtn: "ट्रैश खाली करो",
+      select: "चुनो",
+      selected: "{0} चुने गए",
+      cancel: "रद्द करो",
+      moveHere: "यहाँ डालो",
+      rootFolder: "कोई फोल्डर नहीं (सबसे ऊपर)",
+      moveTitle: "कहाँ डालना है...",
+      newSubfolder: "नया सब-फोल्डर",
+      renameFolder: "फोल्डर का नाम बदलो",
+      deleteFolder: "फोल्डर हटाओ",
+      folderNamePrompt: "फोल्डर का नाम",
+      renameFolderPrompt: "फोल्डर का नया नाम",
+      renamePrompt: "नोट का टाइटल",
+      tagsPrompt: "टैग, कॉमा से अलग करके",
+      confirmDeleteForever: "हमेशा के लिए हटाना है? इसे वापस नहीं ला सकते।",
+      confirmEmptyTrash: "ट्रैश की हर चीज़ हमेशा के लिए हटानी है? इसे वापस नहीं ला सकते।",
+      confirmDeleteFolderWithNotes: "इस फोल्डर में {0} नोट हैं। वे हटेंगे नहीं - एक लेवल ऊपर चले जाएँगे। फोल्डर हटाना है?",
+      confirmDeleteFolder: "यह फोल्डर हटाना है?",
+      trashInfo: "ट्रैश के नोट 30 दिन बाद अपने आप हट जाते हैं।",
+      undo: "वापस करो",
+      toastTrashed: "ट्रैश में गया",
+      toastMoved: "डाल दिया",
+      toastArchived: "आर्काइव हुआ",
+      toastUnarchived: "आर्काइव से निकला",
+      toastRestored: "वापस आ गया",
+      toastDuplicated: "कॉपी बन गई",
+      toastFolderDeleted: "फोल्डर हटा",
+      saving: "सेव हो रहा है...",
+      saved: "सेव हो गया",
+      savedLocal: "इस डिवाइस पर सेव है - अभी सिंक नहीं हुआ",
+      offline: "ऑफलाइन - इस डिवाइस पर सेव है",
+      saveError: "सेव नहीं हो पाया - स्टोरेज भरा है या बंद है",
+      syncNow: "अभी सिंक करो",
+      editor: {
+        back: "नोट्स पर वापस",
+        titlePlaceholder: "टाइटल",
+        bodyPlaceholder: "लिखना शुरू करो...",
+        addPage: "पेज जोड़ो",
+        pageLabel: "पेज",
+        loadError: "यह नोट खुल नहीं पाया।",
+      },
+    },
     notes: {
       header: { title: 'डीप लर्निंग नोट्स', subtitle: 'वीडियो से अपने आप बनते हैं — कुछ भी बदलो, ये तुम्हारे अपने हैं' },
       topicPlaceholder: 'डीप लर्निंग के लिए टॉपिक...',
@@ -3050,6 +3290,86 @@ export const translations: Record<Locale, TranslationShape> = {
         noRevisionBody: 'Roadmap mein koi topic start karo ya video dekho — revision schedule yahin apne aap ban jayega.',
         allCaughtUpTitle: 'All caught up!',
         allCaughtUpBody: 'No items in this category right now.',
+      },
+    },
+    notebook: {
+      tabNotebook: "Meri notebook",
+      tabAi: "AI notes",
+      searchPlaceholder: "Title, tag ya text dhundo...",
+      newNote: "Naya note",
+      newFolder: "Naya folder",
+      untitled: "Bina naam ka note",
+      folders: "Folders",
+      viewAll: "Saare notes",
+      viewFavorites: "Favorites",
+      viewArchive: "Archive",
+      viewTrash: "Trash",
+      sortRecent: "Haal mein badle",
+      sortCreated: "Naye bane hue",
+      sortTitle: "Naam A-Z",
+      allTags: "Saare tags",
+      emptyTitle: "Tumhari notebook khaali hai",
+      emptySubtitle: "Pehla note likhne ke liye Naya note dabao. Yeh apne aap save hota hai.",
+      emptySearch: "Search se koi note nahi mila.",
+      emptyTrash: "Trash khaali hai.",
+      emptyArchive: "Koi archived note nahi.",
+      emptyFavorites: "Abhi koi favorite note nahi.",
+      emptyFolder: "Is folder mein abhi koi note nahi.",
+      pages: "pages",
+      edited: "Badla",
+      rename: "Naam badlo",
+      duplicate: "Copy banao",
+      move: "Folder mein daalo",
+      pin: "Upar pin karo",
+      unpin: "Pin hatao",
+      favorite: "Favorites mein jodo",
+      unfavorite: "Favorites se hatao",
+      archive: "Archive karo",
+      unarchive: "Archive se nikalo",
+      editTags: "Tags badlo",
+      moveToTrash: "Trash mein daalo",
+      restore: "Wapas lao",
+      deleteForever: "Hamesha ke liye hatao",
+      emptyTrashBtn: "Trash khaali karo",
+      select: "Chuno",
+      selected: "{0} chune gaye",
+      cancel: "Cancel",
+      moveHere: "Yahan daalo",
+      rootFolder: "Koi folder nahi (sabse upar)",
+      moveTitle: "Kahan daalna hai...",
+      newSubfolder: "Naya subfolder",
+      renameFolder: "Folder ka naam badlo",
+      deleteFolder: "Folder hatao",
+      folderNamePrompt: "Folder ka naam",
+      renameFolderPrompt: "Folder ka naya naam",
+      renamePrompt: "Note ka title",
+      tagsPrompt: "Tags, comma se alag karke",
+      confirmDeleteForever: "Hamesha ke liye hatana hai? Isse wapas nahi la sakte.",
+      confirmEmptyTrash: "Trash ki har cheez hamesha ke liye hatani hai? Isse wapas nahi la sakte.",
+      confirmDeleteFolderWithNotes: "Is folder mein {0} note hain. Woh hatenge nahi - ek level upar chale jayenge. Folder hatana hai?",
+      confirmDeleteFolder: "Yeh folder hatana hai?",
+      trashInfo: "Trash ke notes 30 din baad apne aap hat jaate hain.",
+      undo: "Wapas karo",
+      toastTrashed: "Trash mein gaya",
+      toastMoved: "Daal diya",
+      toastArchived: "Archive hua",
+      toastUnarchived: "Archive se nikla",
+      toastRestored: "Wapas aa gaya",
+      toastDuplicated: "Copy ban gayi",
+      toastFolderDeleted: "Folder hata",
+      saving: "Save ho raha hai...",
+      saved: "Save ho gaya",
+      savedLocal: "Is device par save hai - abhi sync nahi hua",
+      offline: "Offline - is device par save hai",
+      saveError: "Save nahi ho paya - storage bhara hai ya band hai",
+      syncNow: "Abhi sync karo",
+      editor: {
+        back: "Notes par wapas",
+        titlePlaceholder: "Title",
+        bodyPlaceholder: "Likhna shuru karo...",
+        addPage: "Page jodo",
+        pageLabel: "Page",
+        loadError: "Yeh note khul nahi paya.",
       },
     },
     notes: {

@@ -46,6 +46,23 @@ export async function pushToCloud<T>(key: string, data: T): Promise<void> {
   }
 }
 
+/** Like pushToCloud, but tells the caller whether the write really landed
+ *  (false = signed out / offline / rejected). Used by stores that show a
+ *  truthful "synced / not synced yet" status (the notebook). */
+export async function pushToCloudChecked<T>(key: string, data: T): Promise<boolean> {
+  const uid = currentUid();
+  if (!uid) return false;
+  try {
+    await setDoc(doc(db, 'users', uid, 'data', key), {
+      value: data,
+      updatedAt: new Date().toISOString(),
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /** Returns the cloud value for this key, or null if signed out / not found / offline. */
 export async function pullFromCloud<T>(key: string): Promise<T | null> {
   const uid = currentUid();

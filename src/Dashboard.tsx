@@ -47,7 +47,7 @@ const BlueprintInterview = lazy(() => import('./BlueprintInterview'));
 const TasteOnboarding = lazy(() => import('./TasteOnboarding'));
 const PersonalityQuiz = lazy(() => import('./PersonalityQuiz'));
 const Mentor = lazy(() => import('./Mentor'));
-const Notes = lazy(() => import('./Notes'));
+const Notes = lazy(() => import('./NotesHome'));
 const Progress = lazy(() => import('./progress'));
 const Research = lazy(() => import('./Research'));
 const Dictionary = lazy(() => import('./Dictionary'));
