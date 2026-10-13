@@ -47,3 +47,19 @@ export function buildPersonalityBrief(profile: PersonalityProfile | null): strin
   }
   return out;
 }
+
+export type PlanTip = 'small' | 'calm' | 'talk' | 'checklist';
+
+/** ONE short tip for the Study Plan screen (which has no AI). First clear leaning wins; null when none. */
+export function buildPlanTip(profile: PersonalityProfile | null): PlanTip | null {
+  if (!profile?.traits) return null;
+  const clear = (t: Trait, zone: 'lower' | 'higher') => {
+    const r = profile.traits[t];
+    return !!r && !r.unsure && r.zone === zone;
+  };
+  if (clear('neuroticism', 'higher')) return 'calm';
+  if (clear('conscientiousness', 'lower')) return 'small';
+  if (clear('extraversion', 'higher')) return 'talk';
+  if (clear('conscientiousness', 'higher')) return 'checklist';
+  return null;
+}

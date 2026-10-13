@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLanguage } from './i18n/LanguageContext';
 import { format } from './i18n/format';
 import { studyPlanText } from './studyPlanText';
+import { getPersonalityProfile } from './personalityProfileStore';
+import { buildPlanTip } from './personalityBrief';
 import {
   MAX_BOXES,
   MAX_SUBJECTS,
@@ -75,6 +77,7 @@ export default function StudyPlan() {
   }, []);
 
   const today = useMemo(() => buildToday(plan), [plan]);
+  const tip = useMemo(() => buildPlanTip(getPersonalityProfile()), []);
   const boxes = plan.topics.filter((t) => t.subject === activeSubject).sort((a, b) => a.number - b.number);
   const multi = plan.subjects.length > 1;
 
@@ -176,6 +179,11 @@ export default function StudyPlan() {
           <h2 className="text-xl font-bold">{s.todayTitle}</h2>
           {plan.completed > 0 && <span className="text-xs text-gray-500 dark:text-white/60">{format(s.finished, plan.completed)}</span>}
         </div>
+        {tip && (
+          <p className="text-xs text-gray-500 dark:text-white/60 mb-3">
+            {{ small: s.tipSmall, calm: s.tipCalm, talk: s.tipTalk, checklist: s.tipChecklist }[tip]}
+          </p>
+        )}
         <div className="space-y-4">
           <div>
             <div className="text-[11px] uppercase tracking-wider text-gray-400 dark:text-white/40 mb-2">{s.newTopic}</div>

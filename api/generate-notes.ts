@@ -36,6 +36,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { requireUser } from './_lib/auth.js';
 import { generateAIText } from './_lib/aiFallback.js';
 import { tryFetchTranscript, TRANSCRIPT_CHAR_LIMIT } from './_lib/transcript.js';
+import { formatNotesTemperament } from './_lib/mentorPrompt.js';
 
 type NotesSource = 'transcript' | 'metadata' | 'topic-only';
 
@@ -141,10 +142,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'POST only' });
   }
 
-  const { topic, videoContext, videoId } = (req.body ?? {}) as {
+  const { topic, videoContext, videoId, personality } = (req.body ?? {}) as {
     topic?: string;
     videoContext?: string;
     videoId?: string;
+    personality?: unknown;
   };
   if (!topic?.trim()) {
     return res.status(400).json({ error: 'topic required' });
@@ -177,7 +179,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { text, finishReason } = await generateAIText({
       geminiApiKey: apiKey,
       minimaxApiKey,
-      contents: [{ role: 'user', parts: [{ text: buildPrompt(topic, basis, notesSource) }] }],
+      contents: [{ role: 'user', parts: [{ text: buildPrompt(topic, basis, notesSource) + formatNotesTemperament(personality) }] }],
       generationConfig: {
         responseMimeType: 'application/json',
         responseSchema,

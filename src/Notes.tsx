@@ -4,6 +4,8 @@ import { motion } from 'framer-motion';
 import { useTranslation } from './i18n/LanguageContext';
 import type { TranslationShape } from './i18n/translations';
 import { authFetch } from './apiFetch';
+import { getPersonalityProfile } from './personalityProfileStore';
+import { buildPersonalityBrief } from './personalityBrief';
 import { extractYouTubeId } from './youtubeId';
 
 // Lightweight markdown renderer for myNotes (## headings, - bullets,
@@ -127,7 +129,7 @@ async function generateDeepNotes(topic: string, videoContext?: string, videoId?:
   const response = await authFetch('/api/generate-notes', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ topic, videoContext, videoId }),
+    body: JSON.stringify({ topic, videoContext, videoId, personality: buildPersonalityBrief(getPersonalityProfile()) }),
   });
 
   const data = await response.json().catch(() => ({}));

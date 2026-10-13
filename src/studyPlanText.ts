@@ -6,6 +6,10 @@ export interface StudyPlanText {
   tabFiles: string;
   subtitle: string;
   todayTitle: string;
+  tipSmall: string;
+  tipCalm: string;
+  tipTalk: string;
+  tipChecklist: string;
   newTopic: string;
   revisions: string;
   overdue: string;
@@ -55,6 +59,10 @@ export const studyPlanText: Record<Locale, StudyPlanText> = {
     tabFiles: 'My files',
     subtitle: 'Put your files in a box. Each topic comes back on Day +1, +3, +7 and +15, then the box clears itself on its last date.',
     todayTitle: "Today's plan",
+    tipSmall: 'Start small: even one 10-minute topic today counts.',
+    tipCalm: "Missed a day? That's fine. Just pick up from today's box.",
+    tipTalk: 'After you revise, explain it out loud to someone for 2 minutes.',
+    tipChecklist: "Work through today's list top to bottom and tick each one off.",
     newTopic: 'New topic',
     revisions: 'Revise',
     overdue: 'Overdue',
@@ -102,6 +110,10 @@ export const studyPlanText: Record<Locale, StudyPlanText> = {
     tabFiles: 'मेरी फ़ाइलें',
     subtitle: 'अपनी फ़ाइलें एक बॉक्स में रखें। हर टॉपिक दिन +1, +3, +7 और +15 पर लौटता है, फिर बॉक्स अपने आप खाली हो जाता है।',
     todayTitle: 'आज की योजना',
+    tipSmall: 'छोटे से शुरू करें: आज सिर्फ़ 10 मिनट का एक टॉपिक भी काफ़ी है।',
+    tipCalm: 'एक दिन छूट गया? कोई बात नहीं। आज के बॉक्स से फिर शुरू करें।',
+    tipTalk: 'रिवीज़न के बाद किसी को 2 मिनट ज़ोर से समझाकर देखें।',
+    tipChecklist: 'आज की लिस्ट ऊपर से नीचे पूरी करें और हर एक पर टिक लगाएँ।',
     newTopic: 'नया टॉपिक',
     revisions: 'दोहराएँ',
     overdue: 'बाकी (पुराना)',
@@ -149,6 +161,10 @@ export const studyPlanText: Record<Locale, StudyPlanText> = {
     tabFiles: 'Meri files',
     subtitle: 'Apni files ek box me rakho. Har topic Day +1, +3, +7 aur +15 par wapas aata hai, phir box apne aap clear ho jata hai.',
     todayTitle: 'Aaj ka plan',
+    tipSmall: 'Chhote se shuru karein: aaj sirf 10 minute ka ek topic bhi kaafi hai.',
+    tipCalm: 'Ek din miss ho gaya? Koi baat nahi. Aaj ke box se phir shuru karein.',
+    tipTalk: 'Revision ke baad kisi ko 2 minute zor se samjhakar dekhein.',
+    tipChecklist: 'Aaj ki list upar se neeche poori karein aur har ek par tick lagayein.',
     newTopic: 'Naya topic',
     revisions: 'Revise karo',
     overdue: 'Overdue',
