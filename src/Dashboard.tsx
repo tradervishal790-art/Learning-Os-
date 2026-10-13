@@ -13,6 +13,7 @@ import PersonalityReportCard from './PersonalityReportCard';
 import { computeGrowthEdges } from './growthEdges';
 import { getBehaviourStats } from './behaviourStats';
 import WelcomeBack from './WelcomeBack';
+import DailyHabit from './DailyHabit';
 import { analyzeAttempt, analyzeHistory } from './testAnalytics';
 import { getTestAttempts } from './testStore';
 import { getLearningProfile, saveLearningProfile, clearLearningProfile } from './learningProfileStore';
@@ -822,6 +823,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
         {activePage === 'dashboard' && (
           <div className="p-4 md:p-8 space-y-6">
             <WelcomeBack goals={goals} revisionTasks={t.revisionTasks} onOpen={setActivePage} />
+            <DailyHabit />
             {showOnboardingChecklist && (
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
