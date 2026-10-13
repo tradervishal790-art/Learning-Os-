@@ -21,6 +21,8 @@ import { getTeachingProcess } from './personalityEngine';
 import { getSavedGoals, getActiveGoals } from './goalsStore';
 import { getRoadmapData, getCurrentTopic } from './roadmapData';
 import { getMasteryHeatmap, getWeakAreas } from './progressData';
+import { getPersonalityProfile } from './personalityProfileStore';
+import { buildPersonalityBrief } from './personalityBrief';
 
 export interface MentorStudentContext {
   teaching?: {
@@ -29,6 +31,8 @@ export interface MentorStudentContext {
     avoid: string;
     needs: string[];
   };
+  /** Coarse study directives from the Personality Check (never the report or scores). */
+  personality?: string[];
   goals?: { title: string; exam?: string; deadline?: string }[];
   currentTopic?: string;
   weakTopics?: { title: string; mastery: number }[];
@@ -73,6 +77,13 @@ export function buildMentorStudentContext(): MentorStudentContext {
     ctx.teaching = buildTeaching();
   } catch {
     // Profile unreadable — mentor still works, just unpersonalized.
+  }
+
+  try {
+    const brief = buildPersonalityBrief(getPersonalityProfile());
+    if (brief.length > 0) ctx.personality = brief;
+  } catch {
+    // No personality result — mentor still works.
   }
 
   try {
