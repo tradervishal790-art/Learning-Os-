@@ -1,6 +1,6 @@
 // src/personalityReportApi.ts
-// The AI call for the Personality Check report. Runs only when the learner presses
-// the button. Sends zones + the answers they chose (no name, no account info), plus
+// The AI call for the Personality Check report. Runs right after the quiz finishes (or
+// when the learner asks for a new report). Sends zones + the answers they chose (no name, no account info), plus
 // the growth edges their tests already confirmed (if any).
 import { authFetch } from './apiFetch';
 import { PERSONALITY_QUESTIONS, TRAITS } from './personalityQuestions';

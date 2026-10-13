@@ -1,13 +1,12 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useLanguage } from './i18n/LanguageContext';
 import { fetchPersonalityReport } from './personalityReportApi';
-import { TRAITS, type Trait } from './personalityQuestions';
 import type { PersonalityProfile, PersonalityReport } from './personalityScoring';
-import { TRAIT_LABELS, ZONE_TEXT, ZoneBar } from './PersonalityResult';
 
-// Personality Check result + AI report, in the same structure as the Mind Map report:
-//   archetype header  ->  tap-to-expand trait rows  ->  "Deep analysis" (markdown sections)
-// Without a report it shows the plain rows plus a "Get AI report" button (button press only).
+// Personality Check AI report. The trait scores/zones are backend-only (they pick the
+// personality type data sent to the AI) and are NOT shown to the learner.
+//   archetype header  ->  "Deep analysis" (markdown sections)
+// After the quiz (autoGenerate) the report is written straight away; elsewhere it is a button.
 
 /** Tiny markdown renderer: # / ## headings, ---, **bold**, *italic*, paragraphs. */
 function inline(text: string): ReactNode[] {
@@ -53,37 +52,21 @@ function MiniMarkdown({ text }: { text: string }) {
   return <div className="space-y-3">{blocks}</div>;
 }
 
-function TraitRow({ trait, profile, note }: { trait: Trait; profile: PersonalityProfile; note?: string }) {
-  const [open, setOpen] = useState(false);
-  const r = profile.traits[trait];
-  const meaning = r.unsure ? 'Not clear yet. Your tests and practice will show this one.' : ZONE_TEXT[trait][r.zone];
-  return (
-    <button
-      onClick={() => setOpen((v) => !v)}
-      className="w-full text-left rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 px-3 py-2.5"
-    >
-      <div className="flex items-center gap-2.5">
-        <span className="text-xs font-medium w-32 flex-shrink-0 text-gray-700 dark:text-white/70">{TRAIT_LABELS[trait]}</span>
-        <ZoneBar zone={r.zone} unsure={r.unsure} />
-        <span className="text-gray-400 dark:text-white/30 text-xs">{open ? '▴' : '▾'}</span>
-      </div>
-      <p className="text-xs text-gray-500 dark:text-white/50 mt-1.5">{meaning}</p>
-      {open && note && <p className="text-xs text-gray-700 dark:text-white/70 mt-2 leading-relaxed">{note}</p>}
-    </button>
-  );
-}
-
 export default function PersonalityReportCard({
   profile,
   onReport,
+  autoGenerate = false,
 }: {
   profile: PersonalityProfile;
   onReport: (report: PersonalityReport) => void;
+  /** Write the report as soon as this card appears (used right after the quiz). */
+  autoGenerate?: boolean;
 }) {
   const { locale } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const report = profile.report;
+  const started = useRef(false);
 
   const generate = async () => {
     setLoading(true);
@@ -97,41 +80,37 @@ export default function PersonalityReportCard({
     }
   };
 
-  const checked = profile.second ? Object.values(profile.second.agreement) : [];
-  const mixedCount = checked.filter((a) => a === 'mixed').length;
-  const rows = (
-    <div className="space-y-1.5">
-      {checked.length > 0 && (
-        <p className="text-[11px] text-gray-500 dark:text-white/50 pb-1">
-          Double-checked by 2 tests: {checked.length - mixedCount} of {checked.length} areas agree
-          {mixedCount > 0 ? `; ${mixedCount} pointed in different directions, so ${mixedCount === 1 ? 'it shows' : 'they show'} as “not clear yet”.` : '.'}
-        </p>
-      )}
-      {TRAITS.map((t) => (
-        <TraitRow key={t} trait={t} profile={profile} note={report?.traitNotes?.[TRAIT_LABELS[t]]} />
-      ))}
-      {report && <p className="text-[11px] text-center text-gray-400 dark:text-white/30 pt-1">tap any row to expand</p>}
-    </div>
-  );
+  useEffect(() => {
+    if (autoGenerate && !report && !started.current) {
+      started.current = true;
+      void generate();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (!report) {
     return (
-      <div className="space-y-4">
-        {rows}
-        <div className="rounded-xl border border-purple-200 dark:border-purple-500/20 bg-purple-50 dark:bg-purple-500/5 p-4">
-          <p className="text-sm font-semibold">Get your deep analysis</p>
-          <p className="text-xs text-gray-500 dark:text-white/50 mt-1">
-            AI reads the answers you chose and writes your report: who you are as a learner, how you handle pressure, your strengths, growth edges and a study blueprint. Your answers are sent to AI only when you press the button.
-          </p>
-          <button
-            onClick={generate}
-            disabled={loading}
-            className="mt-3 px-4 py-2.5 rounded-xl bg-black text-white dark:bg-white dark:text-black text-sm font-semibold disabled:opacity-50 transition active:scale-[0.98]"
-          >
-            {loading ? 'Writing your report…' : 'Get AI report'}
-          </button>
-          {error && <p className="text-xs text-red-500 mt-2">{error}</p>}
-        </div>
+      <div className="rounded-xl border border-purple-200 dark:border-purple-500/20 bg-purple-50 dark:bg-purple-500/5 p-4">
+        {loading ? (
+          <>
+            <p className="text-sm font-semibold">Writing your report…</p>
+            <p className="text-xs text-gray-500 dark:text-white/50 mt-1">This takes a few seconds.</p>
+          </>
+        ) : (
+          <>
+            <p className="text-sm font-semibold">Get your deep analysis</p>
+            <p className="text-xs text-gray-500 dark:text-white/50 mt-1">
+              AI reads the answers you chose and writes your report: who you are as a learner, how you handle pressure, your strengths, growth edges and a study blueprint. Your answers are sent to AI only when the report is written.
+            </p>
+            <button
+              onClick={generate}
+              className="mt-3 px-4 py-2.5 rounded-xl bg-black text-white dark:bg-white dark:text-black text-sm font-semibold transition active:scale-[0.98]"
+            >
+              {error ? 'Try again' : 'Get AI report'}
+            </button>
+          </>
+        )}
+        {error && <p className="text-xs text-red-500 mt-2">{error}</p>}
       </div>
     );
   }
@@ -145,7 +124,6 @@ export default function PersonalityReportCard({
           <span className="text-purple-500 font-medium">{report.dominantArea}</span> dominant · <span className="text-purple-500 font-medium">{report.growthArea}</span> growth area
         </p>
       </div>
-      {rows}
       <div className="rounded-2xl border border-gray-200 dark:border-white/10 p-4">
         <p className="text-[11px] uppercase tracking-widest text-gray-400 dark:text-white/40 mb-3">Deep analysis</p>
         <MiniMarkdown text={report.report} />

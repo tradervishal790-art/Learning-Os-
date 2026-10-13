@@ -124,7 +124,7 @@ export default function PersonalityQuiz({
           {!version && (
             <div className="space-y-2">
               <p className="text-xs text-gray-500 dark:text-white/50 mb-3">
-                20 quick questions, about 5 minutes. There is no right or wrong answer. Pick what you really do, not what you think you should do.
+                20 quick questions, about 5 minutes. There is no right or wrong answer. Pick what you really do, not what you think you should do. At the end, your answers are sent to AI to write your personal report.
               </p>
               {VERSIONS.map((v) => (
                 <button
@@ -211,6 +211,7 @@ export default function PersonalityQuiz({
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
               <PersonalityReportCard
                 profile={result}
+                autoGenerate
                 onReport={(report) => {
                   const updated = { ...result, report };
                   setResult(updated);
