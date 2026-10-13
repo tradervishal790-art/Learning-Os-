@@ -8,7 +8,6 @@
 // - Consistency check: if the two paired answers of a trait differ by 3
 //   (a 1 and a 4), that trait is "unsure" -> shown as middle, behaviour decides.
 // - 3+ unsure traits -> suggest retaking another day.
-import type { FelderResult } from './felderTest';
 import {
   PERSONALITY_QUESTIONS,
   CONSISTENCY_PAIRS,
@@ -60,8 +59,6 @@ export interface PersonalityProfile {
   retakeSuggested: boolean;
   /** Part 2 cross-check; when present, `traits` already holds the merged result. */
   second?: SecondTest;
-  /** Optional Felder-Silverman step (how they take in and work with material). */
-  felder?: FelderResult;
   /** AI-written report, saved after the learner asks for it (cleared on retake). */
   report?: PersonalityReport;
 }

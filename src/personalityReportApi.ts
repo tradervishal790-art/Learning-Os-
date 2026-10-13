@@ -56,7 +56,6 @@ function buildInput(profile: PersonalityProfile) {
     }),
     growthEdges: edges,
     ...(crossCheck ? { crossCheck } : {}),
-    ...(profile.felder ? { felder: profile.felder.picks } : {}),
   };
 }
 

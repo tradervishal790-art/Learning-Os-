@@ -8,7 +8,6 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { generateAIText } from './aiFallback.js';
 import { getPersonalityType } from './personalityTypes/index.js';
 import { mbtiCandidates } from './personalityTypes/mbti/index.js';
-import { getFelderType } from './personalityTypes/felder/index.js';
 
 const MAX_PAYLOAD_CHARS = 16000;
 
@@ -69,22 +68,6 @@ export function buildMbtiLabel(input: any) {
   return c.length ? c : null;
 }
 
-// Pre-analysed knowledge for the learner's Felder-Silverman side of each pair. A strong pick
-// (3 of 3) gets the full gap list; a mild pick (2 of 3) only the headline.
-export function buildFelderKnowledge(input: any) {
-  const picks = input?.felder;
-  if (!picks || typeof picks !== 'object') return null;
-  const out = (['SN', 'VW', 'AR', 'QG'] as const).flatMap((pair) => {
-    const pick = picks[pair];
-    const t = typeof pick?.pole === 'string' ? getFelderType(pick.pole) : undefined;
-    if (!t) return [];
-    return [pick.strength === 'strong'
-      ? { pair, strength: 'strong', label: t.label, coreTrap: t.coreTrap, gaps: t.gaps }
-      : { pair, strength: 'mild', label: t.label, coreTrap: t.coreTrap }];
-  });
-  return out.length ? out : null;
-}
-
 export async function handlePersonalityReport(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
@@ -94,7 +77,7 @@ export async function handlePersonalityReport(req: VercelRequest, res: VercelRes
   }
   if (JSON.stringify(input).length > MAX_PAYLOAD_CHARS) return res.status(413).json({ error: 'Summary too large.' });
 
-  const json = JSON.stringify({ ...input, typeKnowledge: buildTypeKnowledge(input), mbtiLabel: buildMbtiLabel(input), felderKnowledge: buildFelderKnowledge(input) });
+  const json = JSON.stringify({ ...input, typeKnowledge: buildTypeKnowledge(input), mbtiLabel: buildMbtiLabel(input) });
 
   const geminiApiKey = process.env.VITE_GEMINI_API_KEY;
   const minimaxApiKey = process.env.MINIMAX_API_KEY;
@@ -161,7 +144,6 @@ Rules:
 - Weak spots are habits, not flaws of the person. Be honest and kind; do not flatter.
 - If an area is "unsure", say the answers pointed in different directions there and tests will show more; do not guess.
 - These are tendencies, not facts. Never diagnose, never use medical or clinical words, never call the student anxious, lazy or weak as a person.
-- If the input has \"felderKnowledge\", it shows how the student tends to take in and work with new material, in four pairs (examples vs ideas, pictures vs words, doing vs thinking, step-by-step vs big picture). \"strong\" = clear lean, \"mild\" = slight lean. Use it ONLY to shape the Study Blueprint and add at most one weak spot about a strong style's trap. It is a medium-weight supporting signal, not a personality fact. Never describe a mild lean as a fixed style.
 - Do not use the words \"Big Five\" or \"neuroticism\". Use plain words and the area names above. If the input has \"mbtiLabel\" (the closest friendly 4-letter label, derived from the area results), you MAY mention it ONCE as \"closest friendly label: XXXX\" (name both if there are two), saying it is only a label and not a verified type. It has the LOWEST weight: never base a weak spot on it alone, only on it together with the student's own answers and area results. If there is no \"mbtiLabel\", do not mention any such label.
 - ${LANG_RULE[locale ?? ''] ?? LANG_RULE.en}
 - Weighting: Part 1 is only a short, generic first-hint screen (4 questions per area), so give it LOWER weight. Part 2 (situation questions built from the Part 1 result) and the pre-analysed \"typeKnowledge\" carry MORE weight. For areas listed in \"notDoubleChecked\", say plainly it is a first hint, not confirmed yet.

@@ -46,7 +46,6 @@ const VideoIntel = lazy(() => import('./VideoIntel'));
 const BlueprintInterview = lazy(() => import('./BlueprintInterview'));
 const TasteOnboarding = lazy(() => import('./TasteOnboarding'));
 const PersonalityQuiz = lazy(() => import('./PersonalityQuiz'));
-const LearningStyleTests = lazy(() => import('./LearningStyleTests'));
 const Mentor = lazy(() => import('./Mentor'));
 const Notes = lazy(() => import('./Notes'));
 const Progress = lazy(() => import('./progress'));
@@ -333,7 +332,6 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   // Separate optional personality check (Settings only) — independent of
   // the Blueprint Interview / learning-style profile above.
   const [showPersonalityQuiz, setShowPersonalityQuiz] = useState(false);
-  const [showStyleTests, setShowStyleTests] = useState(false);
   const [personalityProfile, setPersonalityProfile] = useState<PersonalityProfile | null>(getPersonalityProfile);
   const [showPersonalityResult, setShowPersonalityResult] = useState(false);
   const [preloadedPlaylist, setPreloadedPlaylist] = useState<{ primary: Video; fallbacks: Video[]; bridge?: TopicBridge; previousVideoId?: string | null } | null>(null);
@@ -566,28 +564,10 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
       <Suspense fallback={<PageLoading />}>
         <PersonalityQuiz
           onComplete={(p) => {
-            // a retake keeps the optional learning-style results from Settings
-            const prev = getPersonalityProfile();
-            const kept = { ...p, felder: p.felder ?? prev?.felder };
-            savePersonalityProfile(kept);
-            setPersonalityProfile(kept);
-          }}
-          onClose={() => setShowPersonalityQuiz(false)}
-        />
-      </Suspense>
-    );
-  }
-
-  if (showStyleTests && personalityProfile) {
-    return (
-      <Suspense fallback={<PageLoading />}>
-        <LearningStyleTests
-          profile={personalityProfile}
-          onSave={(p) => {
             savePersonalityProfile(p);
             setPersonalityProfile(p);
           }}
-          onClose={() => setShowStyleTests(false)}
+          onClose={() => setShowPersonalityQuiz(false)}
         />
       </Suspense>
     );
@@ -1187,12 +1167,6 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                   </button>
                   {personalityProfile && (
                     <>
-                      <button
-                        onClick={() => setShowStyleTests(true)}
-                        className="w-full mt-2 py-2.5 rounded-xl border border-gray-300 dark:border-white/10 text-sm font-medium hover:bg-gray-100 dark:hover:bg-white/10 transition"
-                      >
-                        Learning style tests (optional)
-                      </button>
                       <button
                         onClick={() => setShowPersonalityResult((v) => !v)}
                         className="w-full mt-2 py-2.5 rounded-xl border border-gray-300 dark:border-white/10 text-sm font-medium hover:bg-gray-100 dark:hover:bg-white/10 transition"
