@@ -1,16 +1,14 @@
-// "Learning style" tests, opened from Settings. Three short, optional tests that say HOW the
-// learner likes to study (VARK, Kolb, Felder-Silverman). Results are saved on the personality
-// profile and sent to the AI report as supporting knowledge. Local scoring, zero AI calls.
+// "Learning style" test, opened from Settings. A short, optional test that says HOW the
+// learner likes to work with new material (Felder-Silverman). The result is saved on the
+// personality profile and sent to the AI report as supporting knowledge. Local scoring, zero AI calls.
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { PersonalityProfile } from './personalityScoring';
-import { VARK_QUESTIONS, VARK_LABELS, scoreVark, type VarkKey } from './varkTest';
-import { KOLB_QUESTIONS, scoreKolb, type KolbMode } from './kolbTest';
 import { FELDER_QUESTIONS, scoreFelder, type FelderPole } from './felderTest';
 
 interface Item { id: string; stem: string; options: { value: string; text: string }[] }
 interface TestDef {
-  id: 'vark' | 'kolb' | 'felder';
+  id: 'felder';
   title: string;
   blurb: string;
   items: () => Item[];
@@ -21,32 +19,6 @@ interface TestDef {
 const shuffle = <T,>(arr: T[]): T[] => [...arr].sort(() => Math.random() - 0.5);
 
 const TESTS: TestDef[] = [
-  {
-    id: 'vark',
-    title: 'How do you like to learn?',
-    blurb: '8 questions, about 1 minute: pictures, listening, reading or doing.',
-    items: () =>
-      VARK_QUESTIONS.map((q) => ({
-        id: q.id,
-        stem: q.stem,
-        options: shuffle((Object.keys(VARK_LABELS) as VarkKey[]).map((k) => ({ value: k, text: q.options[k] }))),
-      })),
-    finish: (a) => ({ vark: scoreVark(a as Record<string, VarkKey>) }),
-    done: (p) => !!p.vark,
-  },
-  {
-    id: 'kolb',
-    title: 'How do you approach new problems?',
-    blurb: '8 questions, about 1 minute: feeling it, watching it, thinking it through or trying it.',
-    items: () =>
-      KOLB_QUESTIONS.map((q) => ({
-        id: q.id,
-        stem: q.stem,
-        options: shuffle((['CE', 'RO', 'AC', 'AE'] as KolbMode[]).map((m) => ({ value: m, text: q.options[m] }))),
-      })),
-    finish: (a) => ({ kolb: scoreKolb(a as Record<string, KolbMode>) }),
-    done: (p) => !!p.kolb,
-  },
   {
     id: 'felder',
     title: 'How do you work with new material?',

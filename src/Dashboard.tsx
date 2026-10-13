@@ -568,7 +568,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
           onComplete={(p) => {
             // a retake keeps the optional learning-style results from Settings
             const prev = getPersonalityProfile();
-            const kept = { ...p, vark: p.vark ?? prev?.vark, kolb: p.kolb ?? prev?.kolb, felder: p.felder ?? prev?.felder };
+            const kept = { ...p, felder: p.felder ?? prev?.felder };
             savePersonalityProfile(kept);
             setPersonalityProfile(kept);
           }}

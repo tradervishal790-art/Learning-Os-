@@ -8,8 +8,6 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { generateAIText } from './aiFallback.js';
 import { getPersonalityType } from './personalityTypes/index.js';
 import { mbtiCandidates } from './personalityTypes/mbti/index.js';
-import { getVarkType } from './personalityTypes/vark/index.js';
-import { getKolbType } from './personalityTypes/kolb/index.js';
 import { getFelderType } from './personalityTypes/felder/index.js';
 
 const MAX_PAYLOAD_CHARS = 16000;
@@ -71,26 +69,6 @@ export function buildMbtiLabel(input: any) {
   return c.length ? c : null;
 }
 
-// Pre-analysed knowledge for the learner's strongest "how I like to learn" style(s).
-export function buildVarkKnowledge(input: any) {
-  const top: unknown[] = Array.isArray(input?.vark?.top) ? input.vark.top : [];
-  const types = top.filter((l): l is string => typeof l === 'string').slice(0, 4).flatMap((l) => {
-    const t = getVarkType(l);
-    return t ? [{ label: t.label, coreTrap: t.coreTrap, gaps: t.gaps }] : [];
-  });
-  return types.length ? { counts: input.vark.counts, strongest: types } : null;
-}
-
-// Pre-analysed knowledge for the learner's Kolb style(s) (one, or several when an axis was a tie).
-export function buildKolbKnowledge(input: any) {
-  const types: unknown[] = Array.isArray(input?.kolb?.types) ? input.kolb.types : [];
-  const found = types.filter((l): l is string => typeof l === 'string').slice(0, 4).flatMap((l) => {
-    const t = getKolbType(l);
-    return t ? [{ label: t.label, coreTrap: t.coreTrap, gaps: t.gaps }] : [];
-  });
-  return found.length ? { counts: input.kolb.counts, styles: found } : null;
-}
-
 // Pre-analysed knowledge for the learner's Felder-Silverman side of each pair. A strong pick
 // (3 of 3) gets the full gap list; a mild pick (2 of 3) only the headline.
 export function buildFelderKnowledge(input: any) {
@@ -116,7 +94,7 @@ export async function handlePersonalityReport(req: VercelRequest, res: VercelRes
   }
   if (JSON.stringify(input).length > MAX_PAYLOAD_CHARS) return res.status(413).json({ error: 'Summary too large.' });
 
-  const json = JSON.stringify({ ...input, typeKnowledge: buildTypeKnowledge(input), mbtiLabel: buildMbtiLabel(input), varkKnowledge: buildVarkKnowledge(input), kolbKnowledge: buildKolbKnowledge(input), felderKnowledge: buildFelderKnowledge(input) });
+  const json = JSON.stringify({ ...input, typeKnowledge: buildTypeKnowledge(input), mbtiLabel: buildMbtiLabel(input), felderKnowledge: buildFelderKnowledge(input) });
 
   const geminiApiKey = process.env.VITE_GEMINI_API_KEY;
   const minimaxApiKey = process.env.MINIMAX_API_KEY;
@@ -183,8 +161,6 @@ Rules:
 - Weak spots are habits, not flaws of the person. Be honest and kind; do not flatter.
 - If an area is "unsure", say the answers pointed in different directions there and tests will show more; do not guess.
 - These are tendencies, not facts. Never diagnose, never use medical or clinical words, never call the student anxious, lazy or weak as a person.
-- If the input has \"varkKnowledge\", it shows which study formats the student enjoys (pictures, listening, reading, doing), with each style's typical traps and fixes. Use it ONLY to shape the Study Blueprint (which formats to use) and to add one weak spot about that style's trap. It is a medium-weight supporting signal about content format, not a personality fact. Never say learning only works in one style; always add practice beyond the preferred style. If several styles are listed, call it a mix.
-- If the input has \"kolbKnowledge\", it shows how the student tends to approach new problems (feel, watch, think or try), with the style's typical traps and fixes. Use it ONLY to shape the Study Blueprint and to add one weak spot about that style's trap. It is a medium-weight supporting signal, not a personality fact. If several styles are listed, the student sits between them; say so.
 - If the input has \"felderKnowledge\", it shows how the student tends to take in and work with new material, in four pairs (examples vs ideas, pictures vs words, doing vs thinking, step-by-step vs big picture). \"strong\" = clear lean, \"mild\" = slight lean. Use it ONLY to shape the Study Blueprint and add at most one weak spot about a strong style's trap. It is a medium-weight supporting signal, not a personality fact. Never describe a mild lean as a fixed style.
 - Do not use the words \"Big Five\" or \"neuroticism\". Use plain words and the area names above. If the input has \"mbtiLabel\" (the closest friendly 4-letter label, derived from the area results), you MAY mention it ONCE as \"closest friendly label: XXXX\" (name both if there are two), saying it is only a label and not a verified type. It has the LOWEST weight: never base a weak spot on it alone, only on it together with the student's own answers and area results. If there is no \"mbtiLabel\", do not mention any such label.
 - ${LANG_RULE[locale ?? ''] ?? LANG_RULE.en}
