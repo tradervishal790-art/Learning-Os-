@@ -8,7 +8,8 @@ import { ThemeProvider } from './ThemeContext';
 import type { UserOnboardingData, Goal } from './types';
 import { trackOnboardingComplete } from './firebase';
 import { getLearningProfile, hydrateLearningProfileFromCloud } from './learningProfileStore';
-import { hydratePersonalityProfileFromCloud } from './personalityProfileStore';
+import { hydratePersonalityProfileFromCloud, getPersonalityProfile } from './personalityProfileStore';
+import { buildPersonalityBrief } from './personalityBrief';
 import { saveRoadmapData } from './roadmapData';
 import { getGoals, getActiveGoals, addGoal, endGoal as endGoalInStore, updateGoal, saveGoals, MAX_ACTIVE_GOALS, hydrateGoalsFromCloud } from './goalsStore';
 import { useTranslation, useLanguage, mapOnboardingLanguage } from './i18n/LanguageContext';
@@ -140,10 +141,11 @@ function App() {
     }
     try {
       const learningProfile = getLearningProfile();
+      const personalityBrief = buildPersonalityBrief(getPersonalityProfile());
       const res = await authFetch('/api/generate-roadmap', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...data, ...(learningProfile ? { learningProfile } : {}) }),
+        body: JSON.stringify({ ...data, ...(learningProfile ? { learningProfile } : {}), ...(personalityBrief.length ? { personality: personalityBrief } : {}) }),
       });
       const result = await res.json();
       if (res.ok && result.roadmap) {
