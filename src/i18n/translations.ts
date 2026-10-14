@@ -436,6 +436,67 @@ export interface TranslationShape {
       addPage: string;
       pageLabel: string;
       loadError: string;
+      undo: string;
+      redo: string;
+      normalText: string;
+      heading1: string;
+      heading2: string;
+      heading3: string;
+      bold: string;
+      italic: string;
+      underline: string;
+      strike: string;
+      textColor: string;
+      resetColor: string;
+      highlight: string;
+      removeHighlight: string;
+      superscript: string;
+      subscript: string;
+      bulletList: string;
+      numberedList: string;
+      checklist: string;
+      quote: string;
+      codeBlock: string;
+      inlineCode: string;
+      link: string;
+      linkPrompt: string;
+      removeLink: string;
+      table: string;
+      addRow: string;
+      addColumn: string;
+      deleteRow: string;
+      deleteColumn: string;
+      deleteTable: string;
+      divider: string;
+      alignLeft: string;
+      alignCenter: string;
+      alignRight: string;
+      clearFormat: string;
+      fontSize: string;
+      sizeSmall: string;
+      sizeNormal: string;
+      sizeLarge: string;
+      sizeHuge: string;
+      find: string;
+      findPlaceholder: string;
+      replacePlaceholder: string;
+      replace: string;
+      replaceAll: string;
+      noMatches: string;
+      matchCount: string;
+      next: string;
+      prev: string;
+      close: string;
+      words: string;
+      chars: string;
+      readTime: string;
+      focusMode: string;
+      exitFocus: string;
+      readAloud: string;
+      stopReading: string;
+      shortcuts: string;
+      shortcutsTitle: string;
+      pageHint: string;
     };
   };
   notes: {
@@ -1407,6 +1468,67 @@ export const translations: Record<Locale, TranslationShape> = {
         addPage: "Add page",
         pageLabel: "Page",
         loadError: "Could not open this note.",
+        undo: "Undo",
+        redo: "Redo",
+        normalText: "Normal text",
+        heading1: "Heading 1",
+        heading2: "Heading 2",
+        heading3: "Heading 3",
+        bold: "Bold",
+        italic: "Italic",
+        underline: "Underline",
+        strike: "Strikethrough",
+        textColor: "Text colour",
+        resetColor: "Default colour",
+        highlight: "Highlight",
+        removeHighlight: "Remove highlight",
+        superscript: "Superscript",
+        subscript: "Subscript",
+        bulletList: "Bulleted list",
+        numberedList: "Numbered list",
+        checklist: "Checklist",
+        quote: "Quote",
+        codeBlock: "Code block",
+        inlineCode: "Inline code",
+        link: "Link",
+        linkPrompt: "Link address (https://...)",
+        removeLink: "Remove link",
+        table: "Insert table",
+        addRow: "Add row",
+        addColumn: "Add column",
+        deleteRow: "Delete row",
+        deleteColumn: "Delete column",
+        deleteTable: "Delete table",
+        divider: "Divider",
+        alignLeft: "Align left",
+        alignCenter: "Align centre",
+        alignRight: "Align right",
+        clearFormat: "Clear formatting",
+        fontSize: "Text size",
+        sizeSmall: "Small",
+        sizeNormal: "Normal",
+        sizeLarge: "Large",
+        sizeHuge: "Huge",
+        find: "Find and replace",
+        findPlaceholder: "Find...",
+        replacePlaceholder: "Replace with...",
+        replace: "Replace",
+        replaceAll: "Replace all",
+        noMatches: "No matches",
+        matchCount: "{0} of {1}",
+        next: "Next",
+        prev: "Previous",
+        close: "Close",
+        words: "{0} words",
+        chars: "{0} characters",
+        readTime: "{0} min read",
+        focusMode: "Focus mode",
+        exitFocus: "Exit focus mode",
+        readAloud: "Read aloud",
+        stopReading: "Stop reading",
+        shortcuts: "Keyboard shortcuts",
+        shortcutsTitle: "Shortcuts",
+        pageHint: "Page",
       },
     },
     notes: {
@@ -2389,6 +2511,67 @@ export const translations: Record<Locale, TranslationShape> = {
         addPage: "पेज जोड़ो",
         pageLabel: "पेज",
         loadError: "यह नोट खुल नहीं पाया।",
+        undo: "पीछे",
+        redo: "आगे",
+        normalText: "सामान्य टेक्स्ट",
+        heading1: "हेडिंग 1",
+        heading2: "हेडिंग 2",
+        heading3: "हेडिंग 3",
+        bold: "बोल्ड",
+        italic: "इटैलिक",
+        underline: "अंडरलाइन",
+        strike: "कटा हुआ",
+        textColor: "टेक्स्ट का रंग",
+        resetColor: "सामान्य रंग",
+        highlight: "हाईलाइट",
+        removeHighlight: "हाईलाइट हटाओ",
+        superscript: "ऊपर छोटा (सुपरस्क्रिप्ट)",
+        subscript: "नीचे छोटा (सबस्क्रिप्ट)",
+        bulletList: "बुलेट लिस्ट",
+        numberedList: "नंबर वाली लिस्ट",
+        checklist: "चेकलिस्ट",
+        quote: "कोट",
+        codeBlock: "कोड ब्लॉक",
+        inlineCode: "इनलाइन कोड",
+        link: "लिंक",
+        linkPrompt: "लिंक का पता (https://...)",
+        removeLink: "लिंक हटाओ",
+        table: "टेबल जोड़ो",
+        addRow: "पंक्ति जोड़ो",
+        addColumn: "कॉलम जोड़ो",
+        deleteRow: "पंक्ति हटाओ",
+        deleteColumn: "कॉलम हटाओ",
+        deleteTable: "टेबल हटाओ",
+        divider: "लाइन",
+        alignLeft: "बाएँ",
+        alignCenter: "बीच में",
+        alignRight: "दाएँ",
+        clearFormat: "फॉर्मैट हटाओ",
+        fontSize: "टेक्स्ट साइज़",
+        sizeSmall: "छोटा",
+        sizeNormal: "सामान्य",
+        sizeLarge: "बड़ा",
+        sizeHuge: "बहुत बड़ा",
+        find: "खोजो और बदलो",
+        findPlaceholder: "खोजो...",
+        replacePlaceholder: "इससे बदलो...",
+        replace: "बदलो",
+        replaceAll: "सब बदलो",
+        noMatches: "कुछ नहीं मिला",
+        matchCount: "{1} में से {0}",
+        next: "अगला",
+        prev: "पिछला",
+        close: "बंद करो",
+        words: "{0} शब्द",
+        chars: "{0} अक्षर",
+        readTime: "{0} मिनट में पढ़ें",
+        focusMode: "फोकस मोड",
+        exitFocus: "फोकस मोड बंद करो",
+        readAloud: "पढ़कर सुनाओ",
+        stopReading: "पढ़ना रोको",
+        shortcuts: "कीबोर्ड शॉर्टकट",
+        shortcutsTitle: "शॉर्टकट",
+        pageHint: "पेज",
       },
     },
     notes: {
@@ -3370,6 +3553,67 @@ export const translations: Record<Locale, TranslationShape> = {
         addPage: "Page jodo",
         pageLabel: "Page",
         loadError: "Yeh note khul nahi paya.",
+        undo: "Undo",
+        redo: "Redo",
+        normalText: "Normal text",
+        heading1: "Heading 1",
+        heading2: "Heading 2",
+        heading3: "Heading 3",
+        bold: "Bold",
+        italic: "Italic",
+        underline: "Underline",
+        strike: "Kata hua",
+        textColor: "Text ka rang",
+        resetColor: "Normal rang",
+        highlight: "Highlight",
+        removeHighlight: "Highlight hatao",
+        superscript: "Upar chhota (superscript)",
+        subscript: "Neeche chhota (subscript)",
+        bulletList: "Bullet list",
+        numberedList: "Number wali list",
+        checklist: "Checklist",
+        quote: "Quote",
+        codeBlock: "Code block",
+        inlineCode: "Inline code",
+        link: "Link",
+        linkPrompt: "Link ka address (https://...)",
+        removeLink: "Link hatao",
+        table: "Table jodo",
+        addRow: "Row jodo",
+        addColumn: "Column jodo",
+        deleteRow: "Row hatao",
+        deleteColumn: "Column hatao",
+        deleteTable: "Table hatao",
+        divider: "Line",
+        alignLeft: "Left",
+        alignCenter: "Beech mein",
+        alignRight: "Right",
+        clearFormat: "Formatting hatao",
+        fontSize: "Text size",
+        sizeSmall: "Chhota",
+        sizeNormal: "Normal",
+        sizeLarge: "Bada",
+        sizeHuge: "Bahut bada",
+        find: "Dhundo aur badlo",
+        findPlaceholder: "Dhundo...",
+        replacePlaceholder: "Isse badlo...",
+        replace: "Badlo",
+        replaceAll: "Sab badlo",
+        noMatches: "Kuch nahi mila",
+        matchCount: "{1} mein se {0}",
+        next: "Agla",
+        prev: "Pichla",
+        close: "Band karo",
+        words: "{0} words",
+        chars: "{0} characters",
+        readTime: "{0} min mein padho",
+        focusMode: "Focus mode",
+        exitFocus: "Focus mode band karo",
+        readAloud: "Padhkar sunao",
+        stopReading: "Padhna roko",
+        shortcuts: "Keyboard shortcuts",
+        shortcutsTitle: "Shortcuts",
+        pageHint: "Page",
       },
     },
     notes: {

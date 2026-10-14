@@ -47,10 +47,22 @@ export interface NoteMeta {
   preview: string;
 }
 
-/** Parts 2-5 extend this (rich text, ink, template). Part 1 = plain text. */
+/** Parts 3-5 extend this (ink, template). `html` = the rich-text body (Part 2);
+ *  `text` is always the plain-text mirror, used for search, preview and counts. */
 export interface NotePage {
   id: string;
   text: string;
+  html?: string;
+}
+
+/** Notes made before the rich editor only have `text` — show it as paragraphs. */
+export function pageToHtml(p: NotePage): string {
+  if (p.html !== undefined) return p.html;
+  const esc = (x: string) => x.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return p.text
+    .split('\n')
+    .map((line) => `<p>${esc(line)}</p>`)
+    .join('');
 }
 
 export interface NoteContent {

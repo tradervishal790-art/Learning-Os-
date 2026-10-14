@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Archive, ArchiveRestore, Check, ChevronRight, Copy, FileText, Folder as FolderIcon, FolderInput,
   FolderPlus, MoreVertical, Pencil, Pin, PinOff, Plus, RotateCcw, Search, Star, Tag, Trash2, X,
@@ -12,7 +12,8 @@ import {
   useNotebookIndex, type NoteFolder, type NoteMeta, type NotebookIndex,
 } from './notebookStore';
 import { SaveChip } from './SaveChip';
-import NoteEditor from './NoteEditor';
+// The rich-text editor (TipTap) is the heaviest part of the notebook — load it only when a note opens.
+const NoteEditor = lazy(() => import('./NoteEditor'));
 
 // ============================================================
 // NoteLibrary.tsx — Notebook Part 1: the library (folders, tags, search,
@@ -273,7 +274,12 @@ export default function NoteLibrary() {
 
   // ---------- editor open ----------
 
-  if (openId) return <NoteEditor id={openId} onBack={() => setOpenId(null)} />;
+  if (openId)
+    return (
+      <Suspense fallback={null}>
+        <NoteEditor id={openId} onBack={() => setOpenId(null)} />
+      </Suspense>
+    );
 
   // ---------- views ----------
 
