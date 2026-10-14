@@ -429,6 +429,46 @@ export interface TranslationShape {
     offline: string;
     saveError: string;
     syncNow: string;
+    ink: {
+      modeType: string;
+      modePen: string;
+      modeHighlighter: string;
+      modeEraser: string;
+      penBallpoint: string;
+      penFountain: string;
+      penFelt: string;
+      penPencil: string;
+      penBrush: string;
+      penCalligraphy: string;
+      penFineliner: string;
+      penMarker: string;
+      penDotted: string;
+      penType: string;
+      color: string;
+      colorAuto: string;
+      customColor: string;
+      recentColors: string;
+      thickness: string;
+      smoothing: string;
+      favorites: string;
+      saveFavorite: string;
+      removeFavorite: string;
+      fingerDraw: string;
+      fingerDrawOn: string;
+      fingerDrawOff: string;
+      more: string;
+      resetPen: string;
+      eraserStroke: string;
+      eraserArea: string;
+      targetAll: string;
+      targetInk: string;
+      targetHl: string;
+      eraserSize: string;
+      eraseAll: string;
+      eraseAllConfirm: string;
+      undo: string;
+      redo: string;
+    };
     editor: {
       back: string;
       titlePlaceholder: string;
@@ -1461,6 +1501,46 @@ export const translations: Record<Locale, TranslationShape> = {
       offline: "Offline - saved on this device",
       saveError: "Could not save - storage is full or blocked",
       syncNow: "Sync now",
+      ink: {
+        modeType: "Type",
+        modePen: "Pen",
+        modeHighlighter: "Highlighter",
+        modeEraser: "Eraser",
+        penBallpoint: "Ballpoint",
+        penFountain: "Fountain pen",
+        penFelt: "Felt tip",
+        penPencil: "Pencil",
+        penBrush: "Brush",
+        penCalligraphy: "Calligraphy",
+        penFineliner: "Fine liner",
+        penMarker: "Marker",
+        penDotted: "Dotted line",
+        penType: "Pen type",
+        color: "Colour",
+        colorAuto: "Black / white (follows theme)",
+        customColor: "Custom colour",
+        recentColors: "Recent colours",
+        thickness: "Thickness",
+        smoothing: "Smoothing",
+        favorites: "Favourite pens",
+        saveFavorite: "Save this pen as a favourite",
+        removeFavorite: "Remove favourite",
+        fingerDraw: "Draw with finger",
+        fingerDrawOn: "Finger draws",
+        fingerDrawOff: "Finger scrolls",
+        more: "More",
+        resetPen: "Reset pen settings",
+        eraserStroke: "Whole stroke",
+        eraserArea: "Part of stroke",
+        targetAll: "Everything",
+        targetInk: "Pen only",
+        targetHl: "Highlights only",
+        eraserSize: "Eraser size",
+        eraseAll: "Erase whole page",
+        eraseAllConfirm: "Erase all handwriting on this page? You can undo this.",
+        undo: "Undo drawing",
+        redo: "Redo drawing",
+      },
       editor: {
         back: "Back to notes",
         titlePlaceholder: "Title",
@@ -2504,6 +2584,46 @@ export const translations: Record<Locale, TranslationShape> = {
       offline: "ऑफलाइन - इस डिवाइस पर सेव है",
       saveError: "सेव नहीं हो पाया - स्टोरेज भरा है या बंद है",
       syncNow: "अभी सिंक करो",
+      ink: {
+        modeType: "टाइप",
+        modePen: "पेन",
+        modeHighlighter: "हाईलाइटर",
+        modeEraser: "रबर",
+        penBallpoint: "बॉलपेन",
+        penFountain: "फाउंटेन पेन",
+        penFelt: "फेल्ट टिप",
+        penPencil: "पेंसिल",
+        penBrush: "ब्रश",
+        penCalligraphy: "कैलिग्राफी",
+        penFineliner: "फाइन लाइनर",
+        penMarker: "मार्कर",
+        penDotted: "बिंदु वाली लाइन",
+        penType: "पेन का प्रकार",
+        color: "रंग",
+        colorAuto: "काला / सफ़ेद (थीम के हिसाब से)",
+        customColor: "अपना रंग",
+        recentColors: "हाल के रंग",
+        thickness: "मोटाई",
+        smoothing: "स्मूदिंग",
+        favorites: "पसंदीदा पेन",
+        saveFavorite: "इस पेन को पसंदीदा में रखो",
+        removeFavorite: "पसंदीदा से हटाओ",
+        fingerDraw: "उंगली से लिखो",
+        fingerDrawOn: "उंगली से लिखना चालू",
+        fingerDrawOff: "उंगली से स्क्रोल",
+        more: "और",
+        resetPen: "पेन सेटिंग रीसेट करो",
+        eraserStroke: "पूरी लकीर",
+        eraserArea: "लकीर का हिस्सा",
+        targetAll: "सब कुछ",
+        targetInk: "सिर्फ़ पेन",
+        targetHl: "सिर्फ़ हाईलाइट",
+        eraserSize: "रबर का साइज़",
+        eraseAll: "पूरा पेज मिटाओ",
+        eraseAllConfirm: "इस पेज की सारी हैंडराइटिंग मिटानी है? इसे वापस ला सकते हो।",
+        undo: "ड्रॉइंग पीछे",
+        redo: "ड्रॉइंग आगे",
+      },
       editor: {
         back: "नोट्स पर वापस",
         titlePlaceholder: "टाइटल",
@@ -3546,6 +3666,46 @@ export const translations: Record<Locale, TranslationShape> = {
       offline: "Offline - is device par save hai",
       saveError: "Save nahi ho paya - storage bhara hai ya band hai",
       syncNow: "Abhi sync karo",
+      ink: {
+        modeType: "Type",
+        modePen: "Pen",
+        modeHighlighter: "Highlighter",
+        modeEraser: "Rubber",
+        penBallpoint: "Ballpen",
+        penFountain: "Fountain pen",
+        penFelt: "Felt tip",
+        penPencil: "Pencil",
+        penBrush: "Brush",
+        penCalligraphy: "Calligraphy",
+        penFineliner: "Fine liner",
+        penMarker: "Marker",
+        penDotted: "Dotted line",
+        penType: "Pen ka type",
+        color: "Rang",
+        colorAuto: "Kaala / safed (theme ke hisaab se)",
+        customColor: "Apna rang",
+        recentColors: "Haal ke rang",
+        thickness: "Motai",
+        smoothing: "Smoothing",
+        favorites: "Favourite pens",
+        saveFavorite: "Is pen ko favourite mein rakho",
+        removeFavorite: "Favourite se hatao",
+        fingerDraw: "Ungli se likho",
+        fingerDrawOn: "Ungli se likhna chalu",
+        fingerDrawOff: "Ungli se scroll",
+        more: "Aur",
+        resetPen: "Pen settings reset karo",
+        eraserStroke: "Poori line",
+        eraserArea: "Line ka hissa",
+        targetAll: "Sab kuch",
+        targetInk: "Sirf pen",
+        targetHl: "Sirf highlight",
+        eraserSize: "Rubber ka size",
+        eraseAll: "Poora page mitao",
+        eraseAllConfirm: "Is page ki saari handwriting mitani hai? Isse wapas la sakte ho.",
+        undo: "Drawing undo",
+        redo: "Drawing redo",
+      },
       editor: {
         back: "Notes par wapas",
         titlePlaceholder: "Title",

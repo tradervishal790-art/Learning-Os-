@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Editor } from '@tiptap/react';
 import { useEditorState } from '@tiptap/react';
 import {
@@ -9,72 +9,7 @@ import {
 import { useTranslation } from './i18n/LanguageContext';
 import { format } from './i18n/format';
 import { FONT_SIZES, HIGHLIGHT_COLORS, TEXT_COLORS } from './editorExtensions';
-
-const sep = <span className="w-px h-5 mx-1 bg-gray-200 dark:bg-white/15 shrink-0" />;
-const selectCls =
-  'h-9 px-2 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-black text-xs text-gray-700 dark:text-white/80';
-
-function Btn({
-  label, onClick, active, disabled, children,
-}: { label: string; onClick: () => void; active?: boolean; disabled?: boolean; children: ReactNode }) {
-  return (
-    <button
-      type="button"
-      title={label}
-      aria-label={label}
-      aria-pressed={active}
-      disabled={disabled}
-      // keep the text selection inside the editor while a toolbar button is pressed
-      onMouseDown={(e) => e.preventDefault()}
-      onClick={onClick}
-      className={`h-9 min-w-9 px-2 rounded-lg flex items-center justify-center shrink-0 transition-colors disabled:opacity-30 ${
-        active
-          ? 'bg-black text-white dark:bg-white dark:text-black'
-          : 'text-gray-700 dark:text-white/80 hover:bg-gray-100 dark:hover:bg-white/10'
-      }`}
-    >
-      {children}
-    </button>
-  );
-}
-
-function Pop({ trigger, children }: { trigger: (toggle: () => void, open: boolean) => ReactNode; children: ReactNode }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <div className="relative shrink-0">
-      {trigger(() => setOpen((o) => !o), open)}
-      {open && (
-        <>
-          <div className="fixed inset-0 z-20" onClick={() => setOpen(false)} />
-          <div
-            className="absolute left-0 top-full mt-1 z-30 p-2 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-neutral-900 shadow-lg min-w-max"
-            onClick={() => setOpen(false)}
-          >
-            {children}
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
-
-function Swatches({ colors, onPick }: { colors: string[]; onPick: (c: string) => void }) {
-  return (
-    <div className="flex gap-1.5 flex-wrap max-w-[200px]">
-      {colors.map((c) => (
-        <button
-          key={c}
-          type="button"
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={() => onPick(c)}
-          aria-label={c}
-          className="w-7 h-7 rounded-full border border-black/10 dark:border-white/20"
-          style={{ background: c }}
-        />
-      ))}
-    </div>
-  );
-}
+import { Btn, Pop, Swatches, Sep, selectCls } from './toolbarParts';
 
 // ---------- find & replace (inside the active page) ----------
 
@@ -233,11 +168,11 @@ export default function EditorToolbar({ editor, onFocusMode }: { editor: Editor 
   ];
 
   return (
-    <div className="sticky top-0 z-10 -mx-1 px-1 py-2 bg-white/95 dark:bg-black/95 backdrop-blur border-b border-gray-200 dark:border-white/10 mb-4">
+    <div>
       <div className="flex items-center gap-0.5 overflow-x-auto pb-1">
         <Btn label={t.undo} disabled={!s.canUndo} onClick={() => c().undo().run()}><Undo2 size={16} /></Btn>
         <Btn label={t.redo} disabled={!s.canRedo} onClick={() => c().redo().run()}><Redo2 size={16} /></Btn>
-        {sep}
+        <Sep />
         <select aria-label={t.normalText} className={selectCls} value={s.heading} onChange={(e) => setHeading(e.target.value)}>
           <option value="p">{t.normalText}</option>
           <option value="1">{t.heading1}</option>
@@ -256,7 +191,7 @@ export default function EditorToolbar({ editor, onFocusMode }: { editor: Editor 
           <option value={FONT_SIZES[2]}>{t.sizeLarge}</option>
           <option value={FONT_SIZES[3]}>{t.sizeHuge}</option>
         </select>
-        {sep}
+        <Sep />
         <Btn label={t.bold} active={s.bold} onClick={() => c().toggleBold().run()}><Bold size={16} /></Btn>
         <Btn label={t.italic} active={s.italic} onClick={() => c().toggleItalic().run()}><Italic size={16} /></Btn>
         <Btn label={t.underline} active={s.underline} onClick={() => c().toggleUnderline().run()}><UnderlineIcon size={16} /></Btn>
@@ -272,7 +207,7 @@ export default function EditorToolbar({ editor, onFocusMode }: { editor: Editor 
           <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => c().unsetHighlight().run()} className="mt-2 text-xs underline text-gray-600 dark:text-white/70">{t.removeHighlight}</button>
         </Pop>
         <Btn label={t.clearFormat} onClick={() => c().unsetAllMarks().clearNodes().run()}><Eraser size={16} /></Btn>
-        {sep}
+        <Sep />
         <Btn label={t.bulletList} active={s.bullet} onClick={() => c().toggleBulletList().run()}><List size={16} /></Btn>
         <Btn label={t.numberedList} active={s.ordered} onClick={() => c().toggleOrderedList().run()}><ListOrdered size={16} /></Btn>
         <Btn label={t.checklist} active={s.task} onClick={() => c().toggleTaskList().run()}><ListChecks size={16} /></Btn>
@@ -281,13 +216,13 @@ export default function EditorToolbar({ editor, onFocusMode }: { editor: Editor 
         <Btn label={t.codeBlock} active={s.codeBlock} onClick={() => c().toggleCodeBlock().run()}><Code2 size={16} /></Btn>
         <Btn label={t.link} active={s.link} onClick={addLink}><Link2 size={16} /></Btn>
         <Btn label={t.divider} onClick={() => c().setHorizontalRule().run()}><Minus size={16} /></Btn>
-        {sep}
+        <Sep />
         <Btn label={t.alignLeft} active={s.left} onClick={() => c().setTextAlign('left').run()}><AlignLeft size={16} /></Btn>
         <Btn label={t.alignCenter} active={s.center} onClick={() => c().setTextAlign('center').run()}><AlignCenter size={16} /></Btn>
         <Btn label={t.alignRight} active={s.right} onClick={() => c().setTextAlign('right').run()}><AlignRight size={16} /></Btn>
-        {sep}
+        <Sep />
         <Btn label={t.table} active={s.table} onClick={() => c().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}><TableIcon size={16} /></Btn>
-        {sep}
+        <Sep />
         <Btn label={t.find} active={finding} onClick={() => setFinding((f) => !f)}><Search size={16} /></Btn>
         <Btn label={speaking ? t.stopReading : t.readAloud} active={speaking} onClick={readAloud}>{speaking ? <VolumeX size={16} /> : <Volume2 size={16} />}</Btn>
         <Btn label={t.focusMode} onClick={onFocusMode}><Maximize2 size={16} /></Btn>

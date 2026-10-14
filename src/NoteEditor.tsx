@@ -3,15 +3,16 @@ import type { Editor } from '@tiptap/react';
 import { ArrowLeft, Minimize2, Plus } from 'lucide-react';
 import { useTranslation } from './i18n/LanguageContext';
 import { format } from './i18n/format';
-import { loadNoteContent, saveNoteContent, getIndex, type NotePage } from './notebookStore';
+import { loadNoteContent, saveNoteContent, getIndex, type InkStroke, type NotePage } from './notebookStore';
+import { useInkPrefs, type InkMode } from './inkPrefs';
+import InkToolbar, { ModeSwitch } from './InkToolbar';
 import { SaveChip } from './SaveChip';
 import PageEditor from './PageEditor';
 import EditorToolbar from './EditorToolbar';
 
 // ============================================================
-// NoteEditor.tsx — Part 2: title + rich-text pages with autosave.
-// Part 3 adds the handwriting canvas on top of each page; the save
-// plumbing below (debounce, flush on leave/hide) stays as is.
+// NoteEditor.tsx — title + pages (rich text from Part 2, handwriting from
+// Part 3) with autosave. Ink history (undo/redo) lives here, per page.
 // ============================================================
 
 const AUTOSAVE_MS = 700;
@@ -26,6 +27,13 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
   const [active, setActive] = useState<Editor | null>(null);
   const [focusMode, setFocusMode] = useState(false);
   const [focusNew, setFocusNew] = useState<string | null>(null);
+  const [mode, setMode] = useState<InkMode>('type');
+  const [prefs, setPrefs, resetPrefs] = useInkPrefs();
+  const [activePage, setActivePage] = useState<string | null>(null);
+  // Handwriting per page. The ref is the source of truth so two quick strokes never read stale data.
+  const [ink, setInk] = useState<Record<string, InkStroke[]>>({});
+  const inkRef = useRef<Record<string, InkStroke[]>>({});
+  const hist = useRef<Record<string, { undo: InkStroke[][]; redo: InkStroke[][] }>>({});
 
   // Latest values for the unmount / pagehide flush (state would be stale there).
   const latest = useRef({ title: '', pages: [] as NotePage[] });
@@ -43,6 +51,11 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
         return;
       }
       latest.current = { title: meta.title, pages: content.pages };
+      const initial: Record<string, InkStroke[]> = {};
+      content.pages.forEach((p) => (initial[p.id] = p.ink ?? []));
+      inkRef.current = initial;
+      setInk(initial);
+      setActivePage(content.pages[0]?.id ?? null);
       setTitle(meta.title);
       setPages(content.pages);
       setReady(true);
@@ -96,10 +109,74 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
     setStats((s) => ({ ...s, [pageId]: text }));
   };
 
+  // ---------- handwriting ----------
+
+  const applyInk = (pageId: string, next: InkStroke[]) => {
+    inkRef.current = { ...inkRef.current, [pageId]: next };
+    setInk(inkRef.current);
+    commit(
+      latest.current.title,
+      latest.current.pages.map((p) => (p.id === pageId ? { ...p, ink: next } : p))
+    );
+  };
+
+  /** A finished stroke / erase: remember the previous state so it can be undone. */
+  const commitInk = (pageId: string, next: InkStroke[]) => {
+    const h = (hist.current[pageId] ??= { undo: [], redo: [] });
+    h.undo.push(inkRef.current[pageId] ?? []);
+    if (h.undo.length > 60) h.undo.shift();
+    h.redo = [];
+    applyInk(pageId, next);
+  };
+
+  const undoInk = () => {
+    const h = activePage ? hist.current[activePage] : undefined;
+    if (!activePage || !h || h.undo.length === 0) return;
+    h.redo.push(inkRef.current[activePage] ?? []);
+    applyInk(activePage, h.undo.pop() as InkStroke[]);
+  };
+
+  const redoInk = () => {
+    const h = activePage ? hist.current[activePage] : undefined;
+    if (!activePage || !h || h.redo.length === 0) return;
+    h.undo.push(inkRef.current[activePage] ?? []);
+    applyInk(activePage, h.redo.pop() as InkStroke[]);
+  };
+
+  const eraseWholePage = () => {
+    if (!activePage || (inkRef.current[activePage] ?? []).length === 0) return;
+    if (window.confirm(t.ink.eraseAllConfirm)) commitInk(activePage, []);
+  };
+
+  const chooseMode = (m: InkMode) => {
+    if (m !== 'type') active?.commands.blur();
+    setMode(m);
+  };
+
+  // Ctrl/Cmd+Z in a pen mode undoes the drawing (in Type mode the text editor handles it).
+  useEffect(() => {
+    if (mode === 'type') return;
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey)) return;
+      const k = e.key.toLowerCase();
+      if (k === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        undoInk();
+      } else if ((k === 'z' && e.shiftKey) || k === 'y') {
+        e.preventDefault();
+        redoInk();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  });
+
   const addPage = () => {
     const page: NotePage = { id: newPageId(), text: '', html: '<p></p>' };
     const next = [...latest.current.pages, page];
     commit(latest.current.title, next);
+    inkRef.current = { ...inkRef.current, [page.id]: [] };
+    setInk(inkRef.current);
     setPages(next);
     setFocusNew(page.id);
   };
@@ -145,7 +222,26 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
         </div>
       )}
 
-      {!focusMode && <EditorToolbar editor={active} onFocusMode={() => setFocusMode(true)} />}
+      {!focusMode && (
+        <div className="sticky top-0 z-40 -mx-1 px-1 py-2 bg-white/95 dark:bg-black/95 backdrop-blur border-b border-gray-200 dark:border-white/10 mb-4">
+          <ModeSwitch mode={mode} onMode={chooseMode} />
+          {mode === 'type' ? (
+            <EditorToolbar editor={active} onFocusMode={() => setFocusMode(true)} />
+          ) : (
+            <InkToolbar
+              mode={mode}
+              prefs={prefs}
+              setPrefs={setPrefs}
+              resetPrefs={resetPrefs}
+              canUndo={(hist.current[activePage ?? '']?.undo.length ?? 0) > 0}
+              canRedo={(hist.current[activePage ?? '']?.redo.length ?? 0) > 0}
+              onUndo={undoInk}
+              onRedo={redoInk}
+              onEraseAll={eraseWholePage}
+            />
+          )}
+        </div>
+      )}
 
       <input
         value={title}
@@ -163,11 +259,18 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
           )}
           <PageEditor
             page={p}
+            strokes={ink[p.id] ?? []}
             placeholder={i === 0 ? t.editor.bodyPlaceholder : ''}
             autoFocus={focusNew === p.id}
             primary={i === 0}
+            mode={mode}
+            prefs={prefs}
             onChange={changePage}
-            onActive={setActive}
+            onActive={(ed, pageId) => {
+              setActive(ed);
+              setActivePage(pageId);
+            }}
+            onInk={commitInk}
           />
         </div>
       ))}

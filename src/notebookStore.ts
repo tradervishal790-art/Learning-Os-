@@ -47,12 +47,37 @@ export interface NoteMeta {
   preview: string;
 }
 
-/** Parts 3-5 extend this (ink, template). `html` = the rich-text body (Part 2);
- *  `text` is always the plain-text mirror, used for search, preview and counts. */
+export type InkKind =
+  | 'ballpoint' | 'fountain' | 'felt' | 'pencil' | 'brush' | 'calligraphy'
+  | 'fineliner' | 'marker' | 'dotted' | 'highlighter';
+
+/** One handwritten stroke. Coordinates are in PAGE UNITS (page width = 1000),
+ *  so ink keeps its place on every screen size. */
+export interface InkStroke {
+  id: string;
+  kind: InkKind;
+  /** '#rrggbb', or 'auto' = black on light pages / near-white on dark pages. */
+  color: string;
+  /** Nib width in page units. */
+  width: number;
+  /** Flat [x, y, pressure, x, y, pressure, ...]; x/y rounded to 0.1, pressure to 0.01. */
+  pts: number[];
+  /** True when the device gave no real pressure (mouse / finger) so it is simulated. */
+  sim: boolean;
+  /** Smoothing 0..1 used while drawing. */
+  sm: number;
+}
+
+/** Parts 4-5 extend this (template). `html` = the rich-text body (Part 2);
+ *  `text` is always the plain-text mirror, used for search, preview and counts.
+ *  `ink` = handwriting (Part 3). `hasInk` exists only in the cloud copy: there the
+ *  strokes live in their own document so one big page can't blow Firestore's 1 MB limit. */
 export interface NotePage {
   id: string;
   text: string;
   html?: string;
+  ink?: InkStroke[];
+  hasInk?: boolean;
 }
 
 /** Notes made before the rich editor only have `text` — show it as paragraphs. */
@@ -236,7 +261,12 @@ function purgeOldTrash(idx: NotebookIndex): void {
   if (stale.length === 0) return;
   for (const n of stale) {
     idx.deleted[n.id] = nowIso();
-    void idbDelete(n.id);
+    void idbGet(n.id)
+      .catch(() => null)
+      .then((c) => {
+        c?.pages.forEach((p) => void deleteFromCloud(cloudInkKey(n.id, p.id)));
+        void idbDelete(n.id);
+      });
     void deleteFromCloud(cloudNoteKey(n.id));
   }
   idx.notes = idx.notes.filter((n) => !stale.includes(n));
@@ -276,6 +306,73 @@ function settleStatus(cloudOk: boolean): void {
   else setStatus(navigator.onLine ? 'local' : 'offline');
 }
 
+// ---------- cloud content (text doc + one ink doc per page) ----------
+
+const cloudInkKey = (noteId: string, pageId: string) => `ink_${noteId}_${pageId}`;
+/** Last ink payload (hash) pushed OK per ink doc, so unchanged pages aren't re-uploaded every autosave. */
+const inkSigs = new Map<string, string>();
+
+function hashStr(str: string): string {
+  let h = 5381;
+  for (let i = 0; i < str.length; i++) h = ((h << 5) + h + str.charCodeAt(i)) | 0;
+  return `${str.length}:${h}`;
+}
+
+/** Push one note to the cloud. Returns true only if EVERYTHING landed. */
+async function pushContent(content: NoteContent): Promise<boolean> {
+  let ok = true;
+  const main: NoteContent = {
+    ...content,
+    pages: content.pages.map((p) => {
+      const { ink, ...rest } = p;
+      return ink && ink.length > 0 ? { ...rest, hasInk: true } : rest;
+    }),
+  };
+  if (JSON.stringify(main).length > MAX_CLOUD_DOC_CHARS) return false;
+  for (const p of content.pages) {
+    const key = cloudInkKey(content.id, p.id);
+    if (!p.ink || p.ink.length === 0) {
+      if (inkSigs.has(key)) {
+        inkSigs.delete(key); // the student cleared this page's ink — drop the cloud copy too
+        void deleteFromCloud(key);
+      }
+      continue;
+    }
+    const json = JSON.stringify(p.ink);
+    if (json.length > MAX_CLOUD_DOC_CHARS) {
+      ok = false; // a single page this heavy stays on this device (status shows "not synced")
+      continue;
+    }
+    const sig = hashStr(json);
+    if (inkSigs.get(key) === sig) continue;
+    if (await pushToCloudChecked(key, { strokes: p.ink })) inkSigs.set(key, sig);
+    else ok = false;
+  }
+  // Main doc last: anyone who sees `hasInk` can already fetch the ink doc.
+  if (!(await pushToCloudChecked(cloudNoteKey(content.id), main))) ok = false;
+  return ok;
+}
+
+/** Pull one note from the cloud, ink included. null = missing OR incomplete (never a half note). */
+async function pullContent(id: string): Promise<NoteContent | null> {
+  const main = await pullFromCloud<NoteContent>(cloudNoteKey(id));
+  if (!main || !Array.isArray(main.pages)) return null;
+  const pages: NotePage[] = [];
+  for (const p of main.pages) {
+    if (!p.hasInk) {
+      pages.push(p);
+      continue;
+    }
+    const doc = await pullFromCloud<{ strokes: InkStroke[] }>(cloudInkKey(id, p.id));
+    if (!doc || !Array.isArray(doc.strokes)) return null; // ink not reachable right now — don't store a note missing its handwriting
+    const { hasInk, ...rest } = p;
+    void hasInk;
+    pages.push({ ...rest, ink: doc.strokes });
+    inkSigs.set(cloudInkKey(id, p.id), hashStr(JSON.stringify(doc.strokes)));
+  }
+  return { ...main, pages };
+}
+
 // ---------- cloud push ----------
 
 async function pushIndex(): Promise<void> {
@@ -293,10 +390,7 @@ function scheduleContentPush(id: string, content: NoteContent): void {
     id,
     setTimeout(async () => {
       contentTimers.delete(id);
-      let ok = false;
-      if (JSON.stringify(content).length <= MAX_CLOUD_DOC_CHARS) {
-        ok = await pushToCloudChecked(cloudNoteKey(id), content);
-      }
+      const ok = await pushContent(content);
       pendingContent.delete(id);
       settleStatus(ok);
     }, 2500)
@@ -338,7 +432,7 @@ export async function loadNoteContent(id: string): Promise<NoteContent | null> {
   } catch {
     // fall through to cloud
   }
-  const remote = await pullFromCloud<NoteContent>(cloudNoteKey(id));
+  const remote = await pullContent(id);
   if (remote) {
     try {
       await idbPut(id, remote);
@@ -437,8 +531,12 @@ export async function deleteNotesForever(ids: string[]): Promise<void> {
   const deleted = { ...idx.deleted };
   ids.forEach((id) => (deleted[id] = t));
   commitIndex({ ...idx, notes: idx.notes.filter((n) => !set.has(n.id)), deleted });
-  await Promise.all(ids.map((id) => idbDelete(id)));
-  ids.forEach((id) => void deleteFromCloud(cloudNoteKey(id)));
+  for (const id of ids) {
+    const c = await idbGet(id).catch(() => null);
+    c?.pages.forEach((p) => void deleteFromCloud(cloudInkKey(id, p.id)));
+    await idbDelete(id);
+    void deleteFromCloud(cloudNoteKey(id));
+  }
 }
 
 // ---------- folders ----------
@@ -599,7 +697,7 @@ export function hydrateNotebook(): Promise<void> {
         else if (l && (!c || newer(l, c))) toPush.push(n.id); // this device is newer
       }
       await runPool(toPull, 4, async (id) => {
-        const remote = await pullFromCloud<NoteContent>(cloudNoteKey(id));
+        const remote = await pullContent(id);
         if (remote) await idbPut(id, remote).catch(() => undefined);
       });
       if (toPush.length > 0 || merged.notes.length !== cloudById.size) await pushIndex();
@@ -618,8 +716,7 @@ async function pushAllContents(ids: string[]): Promise<void> {
   await runPool(ids, 4, async (id) => {
     const c = await idbGet(id).catch(() => null);
     if (!c) return;
-    const ok = JSON.stringify(c).length <= MAX_CLOUD_DOC_CHARS && (await pushToCloudChecked(cloudNoteKey(id), c));
-    if (!ok) allOk = false;
+    if (!(await pushContent(c))) allOk = false;
   });
   settleStatus(allOk);
 }
