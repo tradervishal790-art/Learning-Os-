@@ -19,6 +19,25 @@ These open PRs touch the same file and should be reviewed together. They are not
 
 **Recommended merge discipline:** do not assume same-file PRs are duplicates or merge them blindly. Review each diff, merge/rebase in a deliberate sequence, then re-run checks against the combined branch. Keep only changes that still add value after earlier PRs land.
 
+## User-friction review and corrections
+
+A second pass over the proposed diffs identified several avoidable inconveniences. Corrections were committed to the existing focused PR branches:
+
+- [PR #2](https://github.com/tradervishal790-art/Learning-Os-/pull/2): the Next Video action was fixed-positioned on desktop as well as mobile. It now returns to normal inline placement at desktop widths, and the extra desktop bottom padding is removed.
+- [PR #18](https://github.com/tradervishal790-art/Learning-Os-/pull/18): the file viewer now shows localized loading text with the spinner in English, Hindi, and Hinglish instead of relying on a spinner alone.
+- [PR #20](https://github.com/tradervishal790-art/Learning-Os-/pull/20): the lazy-loaded Channel Digest fallback now includes visible localized status text and a polite screen-reader announcement.
+- [PR #53](https://github.com/tradervishal790-art/Learning-Os-/pull/53): the channel remove control keeps its 44px target without making the icon permanently faded, improving discoverability.
+- [PR #59](https://github.com/tradervishal790-art/Learning-Os-/pull/59): the custom-playlist modal header stays visible while the modal scrolls, so users can still reach its close action.
+
+These are source-level corrections; they still need to be tested in the combined app before merging.
+
+## Remaining risks to verify
+
+- **Onboarding tour card (PR #3):** the card is pinned near the bottom on mobile. Check short screens and landscape so it does not cover the highlighted target or the action needed to continue/skip.
+- **Sticky dashboard header (PR #55):** verify it does not obscure dialogs, focus targets, or too much of the page on short phone screens.
+- **Touch targets inside compact chips/cards:** confirm the larger Channel Digest remove button does not overlap the channel-selection tap area or make the row feel crowded.
+- **Long content:** wrapping is preferable to truncation for study topics and messages, but confirm it does not push important actions off-screen without a clear scroll path.
+
 ## Manual verification checklist
 
 Run after integrating the selected PRs:
