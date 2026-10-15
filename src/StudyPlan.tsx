@@ -256,6 +256,7 @@ export default function StudyPlan() {
               <button
                 key={sub}
                 onClick={() => setActiveSubject(sub)}
+                aria-pressed={sub === activeSubject}
                 className={`px-3 py-1 rounded-full text-xs font-medium border ${
                   sub === activeSubject
                     ? 'bg-black text-white dark:bg-white dark:text-black border-transparent'
