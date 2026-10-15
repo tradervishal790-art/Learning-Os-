@@ -230,7 +230,7 @@ export default function ChannelDigest() {
                 <button
                   onClick={() => onRemove(ch.channelId)}
                   aria-label={format(c.removeAria, ch.title)}
-                  className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full opacity-60 hover:opacity-100"
+                  className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
