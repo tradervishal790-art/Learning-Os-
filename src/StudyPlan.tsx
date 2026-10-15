@@ -189,16 +189,16 @@ export default function StudyPlan() {
             <div className="text-[11px] uppercase tracking-wider text-gray-400 dark:text-white/40 mb-2">{s.newTopic}</div>
             <div className="space-y-2">
               {today.newTopics.map((t) => (
-                <div key={t.id} className={`${card} flex items-center gap-3`}>
-                  <div className="flex-1 min-w-0 font-semibold truncate">{label(t)}</div>
+                <div key={t.id} className={`${card} flex items-start gap-3`}>
+                  <div className="flex-1 min-w-0 font-semibold whitespace-normal break-words">{label(t)}</div>
                   <button className={btnPrimary} onClick={() => setViewing({ topic: t, action: { type: 'learn' } })}>
                     {s.open}
                   </button>
                 </div>
               ))}
               {today.doneToday.map((t) => (
-                <div key={t.id} className={`${card} flex items-center gap-3 opacity-60`}>
-                  <div className="flex-1 min-w-0 truncate">{label(t)}</div>
+                <div key={t.id} className={`${card} flex items-start gap-3 opacity-60`}>
+                  <div className="flex-1 min-w-0 whitespace-normal break-words">{label(t)}</div>
                   <span className="text-xs">{s.doneToday}</span>
                 </div>
               ))}
@@ -214,7 +214,7 @@ export default function StudyPlan() {
               {today.revisions.map((r) => (
                 <div key={`${r.topic.id}-${r.day}`} className={`${card} flex items-center gap-3`}>
                   <div className="flex-1 min-w-0">
-                    <div className="font-semibold truncate">{label(r.topic)}</div>
+                    <div className="font-semibold whitespace-normal break-words">{label(r.topic)}</div>
                     <div className="text-xs text-gray-500 dark:text-white/60 flex gap-2 flex-wrap mt-0.5">
                       <span className="uppercase tracking-wider">{r.state === 'overdue' ? s.overdue : s.dueToday}</span>
                       <span>{format(s.revisionDay, r.day)}</span>
