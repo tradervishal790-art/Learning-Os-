@@ -284,6 +284,7 @@ export default function ChannelDigest() {
                       <button
                         key={x}
                         onClick={() => setTab(x)}
+                        aria-pressed={tab === x}
                         className={`px-3 py-1 text-xs rounded-full transition ${
                           tab === x ? 'bg-gray-900 text-white dark:bg-white dark:text-black' : 'bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-white/60'
                         }`}
