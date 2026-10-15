@@ -1276,7 +1276,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
               className="bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-white/10 rounded-3xl max-w-xl w-full max-h-[85dvh] overflow-y-auto overscroll-contain text-black dark:text-white"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-white/5 flex items-center justify-between gap-3">
+              <div className="sticky top-0 z-10 bg-white dark:bg-[#0a0a0a] p-4 sm:p-6 border-b border-gray-200 dark:border-white/5 flex items-center justify-between gap-3">
                 <h2 className="text-xl font-bold min-w-0 break-words">{t.customPlaylistModal.title}</h2>
                 <button
                   onClick={() => setShowCustomPlaylist(false)}
