@@ -187,6 +187,7 @@ export default function ChannelDigest() {
       {/* Add a channel */}
       <div className="mt-4 flex gap-2">
         <input
+          aria-label={c.addPlaceholder}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => {
