@@ -353,7 +353,7 @@ function BoxCard({
         <div className="text-2xl font-bold">T{box.number}</div>
         <div className="flex-1 text-xs text-gray-500 dark:text-white/60">{status}</div>
         {!learned && (
-          <button className="text-xs text-gray-400 hover:text-black dark:hover:text-white" onClick={onRemoveBox}>
+          <button className="text-xs text-gray-400 hover:text-black dark:hover:text-white" onClick={onRemoveBox} disabled={busy}>
             {s.removeBox}
           </button>
         )}
@@ -365,7 +365,7 @@ function BoxCard({
             <li key={f.key} className="flex items-center gap-2 text-xs">
               <span className="flex-1 min-w-0 truncate">{f.name}</span>
               {!learned && (
-                <button className="text-gray-400 hover:text-black dark:hover:text-white" onClick={() => onRemoveFile(f.key)}>
+                <button className="text-gray-400 hover:text-black dark:hover:text-white" onClick={() => onRemoveFile(f.key)} disabled={busy}>
                   {s.removeFile}
                 </button>
               )}
