@@ -334,6 +334,7 @@ export default function Notes({ videoTitle, videoDescription, videoId }: { video
         <div className="flex gap-2">
           <input
             type="text"
+            aria-label={t.notes.topicPlaceholder}
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleGenerate()}
