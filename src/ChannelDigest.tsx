@@ -185,7 +185,7 @@ export default function ChannelDigest() {
       <p className="text-sm text-gray-500 dark:text-white/50">{c.subtitle}</p>
 
       {/* Add a channel */}
-      <div className="mt-4 flex gap-2">
+      <div className="mt-4 flex flex-col gap-2 sm:flex-row">
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
