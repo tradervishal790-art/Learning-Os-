@@ -917,7 +917,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                       >
                         <div className="flex gap-3">
                           <div className="relative flex-shrink-0">
-                            <img src={video.thumbnail} alt="" className="w-20 h-12 rounded object-cover" />
+                            <img src={video.thumbnail} alt="" loading="lazy" decoding="async" className="w-20 h-12 rounded object-cover" />
                             {watched && (
                               <CheckCircle className="w-4 h-4 text-black dark:text-white absolute -top-1 -right-1 bg-white dark:bg-black rounded-full" />
                             )}
