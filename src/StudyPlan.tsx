@@ -256,7 +256,7 @@ export default function StudyPlan() {
               <button
                 key={sub}
                 onClick={() => setActiveSubject(sub)}
-                className={`px-3 py-1 rounded-full text-xs font-medium border ${
+                className={`max-w-full whitespace-normal break-words text-left px-3 py-1 rounded-full text-xs font-medium border ${
                   sub === activeSubject
                     ? 'bg-black text-white dark:bg-white dark:text-black border-transparent'
                     : 'border-gray-200 dark:border-white/10 text-gray-500 dark:text-white/60'
