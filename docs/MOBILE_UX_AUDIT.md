@@ -35,7 +35,7 @@ These are source-level corrections; they still need to be tested in the combined
 ## Remaining risks to verify
 
 - **Onboarding tour card (PR #3 + #6):** target alignment and a scrollable card height are improved for mobile. Verify the target remains visible above the card and that Continue/Skip stay reachable on 320px-wide, short-height, and landscape screens; combine with PR #6 for narrow-card width.
-- **Sticky dashboard header (PR #55):** verify it does not obscure dialogs, focus targets, or too much of the page on short phone screens.
+- **Sticky dashboard header (PR #55):** its mobile vertical padding is reduced and stacking level lowered to preserve screen space and keep dialogs above it. Verify keyboard-focused controls are not hidden and the compact header remains usable on short phone screens.
 - **Touch targets inside compact chips/cards:** confirm the larger Channel Digest remove button does not overlap the channel-selection tap area or make the row feel crowded.
 - **Long content:** wrapping is preferable to truncation for study topics and messages, but confirm it does not push important actions off-screen without a clear scroll path.
 
