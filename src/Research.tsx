@@ -128,6 +128,7 @@ export default function Research({ embedded = false, onClose }: ResearchProps) {
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-white/40" />
         <input
           type="text"
+          aria-label={t.research.searchPlaceholder}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
