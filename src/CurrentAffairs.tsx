@@ -52,7 +52,7 @@ export default function CurrentAffairs() {
       {view === 'news' ? (
         <NewspaperCurrentAffairs />
       ) : (
-        <Suspense fallback={null}>
+        <Suspense fallback={<div role="status" aria-label="Loading channel digest" className="mt-8 flex justify-center"><span className="h-7 w-7 animate-spin rounded-full border-2 border-gray-300 border-t-black dark:border-white/20 dark:border-t-white" /></div>}>
           <ChannelDigest />
         </Suspense>
       )}
