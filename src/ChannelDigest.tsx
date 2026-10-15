@@ -52,11 +52,16 @@ export default function ChannelDigest() {
 
   // New phone / browser: pull the saved channel list from the account.
   useEffect(() => {
+    let active = true;
     void hydrateChannelsFromCloud().then(() => {
+      if (!active) return;
       const list = loadChannels();
       setChannels(list);
       setSelectedId((cur) => cur || list[0]?.channelId || '');
     });
+    return () => {
+      active = false;
+    };
   }, []);
 
   const selected = useMemo(() => channels.find((ch) => ch.channelId === selectedId) ?? null, [channels, selectedId]);
