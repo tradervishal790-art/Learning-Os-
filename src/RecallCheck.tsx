@@ -10,7 +10,16 @@ export interface RecallEntry { videoId: string; text: string; at: string }
 
 export function getRecallEntries(): RecallEntry[] {
   try {
-    return JSON.parse(localStorage.getItem(KEY) || '[]') as RecallEntry[];
+    const saved: unknown = JSON.parse(localStorage.getItem(KEY) || '[]');
+    if (!Array.isArray(saved)) return [];
+
+    return saved.filter((entry): entry is RecallEntry =>
+      entry !== null &&
+      typeof entry === 'object' &&
+      typeof entry.videoId === 'string' &&
+      typeof entry.text === 'string' &&
+      typeof entry.at === 'string'
+    ).slice(-200);
   } catch {
     return [];
   }
