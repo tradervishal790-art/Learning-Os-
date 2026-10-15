@@ -110,8 +110,12 @@ export default function Research({ embedded = false, onClose }: ResearchProps) {
       }
 
       const res = await runResearch(q, t.research.genericError, locale);
-      localStorage.setItem(cacheKey(q, locale), JSON.stringify(res));
       setResult(res);
+      try {
+        localStorage.setItem(cacheKey(q, locale), JSON.stringify(res));
+      } catch {
+        // Cache is optional; storage restrictions shouldn't hide successful results.
+      }
       if (!embedded) {
         setHistory((prev) => [q, ...prev.filter((h) => h.toLowerCase() !== q.toLowerCase())].slice(0, 8));
       }
