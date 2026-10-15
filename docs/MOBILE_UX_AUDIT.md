@@ -28,12 +28,13 @@ A second pass over the proposed diffs identified several avoidable inconvenience
 - [PR #20](https://github.com/tradervishal790-art/Learning-Os-/pull/20): the lazy-loaded Channel Digest fallback now includes visible localized status text and a polite screen-reader announcement.
 - [PR #53](https://github.com/tradervishal790-art/Learning-Os-/pull/53): the channel remove control keeps its 44px target without making the icon permanently faded, improving discoverability.
 - [PR #59](https://github.com/tradervishal790-art/Learning-Os-/pull/59): the custom-playlist modal header stays visible while the modal scrolls, so users can still reach its close action.
+- [PR #3](https://github.com/tradervishal790-art/Learning-Os-/pull/3): on mobile, the guided tour now scrolls highlighted targets toward the top (above the bottom-pinned card) and constrains the card to a scrollable 55dvh maximum so the card cannot grow beyond short viewports. The card's narrow-screen width is handled separately in [PR #6](https://github.com/tradervishal790-art/Learning-Os-/pull/6); test both together.
 
 These are source-level corrections; they still need to be tested in the combined app before merging.
 
 ## Remaining risks to verify
 
-- **Onboarding tour card (PR #3):** the card is pinned near the bottom on mobile. Check short screens and landscape so it does not cover the highlighted target or the action needed to continue/skip.
+- **Onboarding tour card (PR #3 + #6):** target alignment and a scrollable card height are improved for mobile. Verify the target remains visible above the card and that Continue/Skip stay reachable on 320px-wide, short-height, and landscape screens; combine with PR #6 for narrow-card width.
 - **Sticky dashboard header (PR #55):** verify it does not obscure dialogs, focus targets, or too much of the page on short phone screens.
 - **Touch targets inside compact chips/cards:** confirm the larger Channel Digest remove button does not overlap the channel-selection tap area or make the row feel crowded.
 - **Long content:** wrapping is preferable to truncation for study topics and messages, but confirm it does not push important actions off-screen without a clear scroll path.
