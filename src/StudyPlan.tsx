@@ -363,7 +363,7 @@ function BoxCard({
         <ul className="space-y-1">
           {box.files.map((f) => (
             <li key={f.key} className="flex items-center gap-2 text-xs">
-              <span className="flex-1 min-w-0 truncate">{f.name}</span>
+              <span className="flex-1 min-w-0 whitespace-normal break-words [overflow-wrap:anywhere]" title={f.name}>{f.name}</span>
               {!learned && (
                 <button className="text-gray-400 hover:text-black dark:hover:text-white" onClick={() => onRemoveFile(f.key)}>
                   {s.removeFile}
