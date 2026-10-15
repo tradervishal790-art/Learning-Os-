@@ -150,14 +150,14 @@ export default function Onboarding3D({ onComplete }: Onboarding3DProps) {
                   setLanguage(mapOnboardingLanguage(option.id));
                 }
               }}
-              className={`relative p-6 rounded-2xl border transition-all duration-300 overflow-hidden ${
+              className={`relative p-4 sm:p-6 rounded-2xl border transition-all duration-300 overflow-hidden ${
                 isSelected
                   ? 'bg-purple-500/20 border-purple-500/50'
                   : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20'
               }`}
               style={isSelected ? { boxShadow: '0 0 40px rgba(139, 92, 246, 0.4)' } : {}}
             >
-              <div className="text-5xl mb-3">{option.icon}</div>
+              <div className="text-3xl sm:text-5xl mb-2 sm:mb-3">{option.icon}</div>
               <div className="text-white font-medium text-sm">{option.label}</div>
               {isSelected && (
                 <motion.div
@@ -178,13 +178,13 @@ export default function Onboarding3D({ onComplete }: Onboarding3DProps) {
   };
 
   return (
-    <div className="min-h-screen bg-[#030303] flex flex-col relative overflow-hidden">
+    <div className="min-h-screen min-h-[100dvh] bg-[#030303] flex flex-col relative overflow-x-hidden overflow-y-auto">
       <div
         className="absolute inset-0 pointer-events-none"
         style={{ background: 'radial-gradient(circle at center, rgba(139, 92, 246, 0.1) 0%, transparent 60%)' }}
       />
 
-      <div className="relative w-full px-6 pt-8 z-10">
+      <div className="relative w-full px-4 sm:px-6 pt-4 sm:pt-8 z-10">
         <div className="max-w-2xl mx-auto">
           <div className="flex justify-between items-center mb-3">
             <span className="text-xs uppercase tracking-[0.2em] text-white/40">
@@ -205,7 +205,7 @@ export default function Onboarding3D({ onComplete }: Onboarding3DProps) {
         </div>
       </div>
 
-      <div className="flex-1 flex items-center justify-center px-6 py-12 relative z-10">
+      <div className="flex-1 flex items-center justify-center px-4 sm:px-6 py-4 sm:py-8 relative z-10">
         <div className="w-full max-w-3xl">
           <AnimatePresence mode="wait">
             <motion.div key={step} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }}>
@@ -213,7 +213,7 @@ export default function Onboarding3D({ onComplete }: Onboarding3DProps) {
                 initial={{ y: -20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ delay: 0.1, duration: 0.6 }}
-                className="text-center mb-12"
+                className="text-center mb-6 sm:mb-12"
               >
                 <h2 className="text-3xl md:text-5xl font-bold text-white mb-3">{stepTitles[step].title}</h2>
                 <p className="text-white/50">{stepTitles[step].subtitle}</p>
@@ -225,7 +225,7 @@ export default function Onboarding3D({ onComplete }: Onboarding3DProps) {
         </div>
       </div>
 
-      <div className="relative w-full px-6 pb-8 z-10">
+      <div className="relative w-full px-4 sm:px-6 pb-4 sm:pb-8 z-10">
         <div className="max-w-3xl mx-auto flex justify-between items-center">
           <motion.button
             onClick={back}
