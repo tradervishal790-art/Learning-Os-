@@ -15,6 +15,7 @@ export default function Dictionary() {
   const [loadError, setLoadError] = useState(false);
   const [recent, setRecent] = useState<string[]>([]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const searchRequestRef = useRef(0);
 
   useEffect(() => {
     ensureDictionaryLoaded()
@@ -49,8 +50,11 @@ export default function Dictionary() {
     if (!w) return;
     setQuery(w);
     setSuggestions([]);
+    const requestId = ++searchRequestRef.current;
 
     const found = await lookupWord(w);
+    // Ignore slower lookups if the learner has already searched another word.
+    if (requestId !== searchRequestRef.current) return;
     if (found) {
       setEntry(found);
       setNotFound(false);
