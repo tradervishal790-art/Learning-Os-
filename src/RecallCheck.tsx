@@ -41,6 +41,7 @@ export default function RecallCheck({ videoId, onDone }: { videoId: string; onDo
         Without scrolling back, write the 2–3 main things you remember. Even half-right is fine — this is what makes it stick.
       </p>
       <textarea
+        aria-label="What I remember"
         value={text}
         onChange={(e) => setText(e.target.value)}
         rows={3}
