@@ -1273,11 +1273,11 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-white/10 rounded-3xl max-w-xl w-full text-black dark:text-white"
+              className="bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-white/10 rounded-3xl max-w-xl w-full max-h-[85dvh] overflow-y-auto overscroll-contain text-black dark:text-white"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="p-6 border-b border-gray-200 dark:border-white/5 flex items-center justify-between">
-                <h2 className="text-xl font-bold">{t.customPlaylistModal.title}</h2>
+              <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-white/5 flex items-center justify-between gap-3">
+                <h2 className="text-xl font-bold min-w-0 break-words">{t.customPlaylistModal.title}</h2>
                 <button
                   onClick={() => setShowCustomPlaylist(false)}
                   disabled={customLoading}
@@ -1287,7 +1287,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                 </button>
               </div>
 
-              <div className="p-6 space-y-5">
+              <div className="p-4 sm:p-6 space-y-5">
                 <div>
                   <label className="block text-xs uppercase tracking-wider text-gray-400 dark:text-white/40 mb-2">{t.customPlaylistModal.topicLabel}</label>
                   <input
