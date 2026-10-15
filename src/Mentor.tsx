@@ -215,9 +215,12 @@ export default function Mentor() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && sendMessage(input)}
+            enterKeyHint="send"
+            autoComplete="off"
+            aria-label={t.mentor.inputPlaceholder}
             placeholder={t.mentor.inputPlaceholder}
             disabled={loading}
-            className="flex-1 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-2.5 placeholder-gray-400 dark:placeholder-white/40 focus:outline-none focus:border-black dark:focus:border-white"
+            className="min-w-0 flex-1 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-2.5 placeholder-gray-400 dark:placeholder-white/40 focus:outline-none focus:border-black dark:focus:border-white"
           />
           <button
             onClick={() => sendMessage(input)}
