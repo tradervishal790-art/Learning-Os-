@@ -166,7 +166,11 @@ const Onborda: React.FC<OnbordaProps> = ({
     const { top } = element.getBoundingClientRect();
     const isInViewport = top >= -offset && top <= window.innerHeight + offset;
     if (!isInViewport) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      element.scrollIntoView({
+        behavior: 'smooth',
+        // Keep the highlighted control above the fixed tour card on phones.
+        block: window.matchMedia('(max-width: 767px)').matches ? 'start' : 'center',
+      });
       setTimeout(() => setPointerPosition(getElementPosition(element)), 500);
     } else {
       setPointerPosition(getElementPosition(element));
