@@ -762,7 +762,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
               animate={{ x: 0 }}
               exit={{ x: -280 }}
               transition={{ duration: 0.25, ease: 'easeOut' }}
-              className="w-64 h-full bg-white dark:bg-black border-r border-gray-200 dark:border-white/10 p-6 flex flex-col"
+              className="w-64 h-full overflow-y-auto bg-white dark:bg-black border-r border-gray-200 dark:border-white/10 p-6 flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
               {SidebarContent}
