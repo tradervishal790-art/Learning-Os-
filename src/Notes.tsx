@@ -338,6 +338,7 @@ export default function Notes({ videoTitle, videoDescription, videoId }: { video
             onChange={(e) => setTopic(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleGenerate()}
             placeholder={t.notes.topicPlaceholder}
+            disabled={loading}
             className="flex-1 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 placeholder-gray-400 dark:placeholder-white/40 focus:outline-none focus:border-black dark:focus:border-white"
           />
           <button
@@ -356,6 +357,7 @@ export default function Notes({ videoTitle, videoDescription, videoId }: { video
             onChange={(e) => setYoutubeUrl(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleGenerateFromVideo()}
             placeholder={t.notes.linkPlaceholder}
+            disabled={loading}
             className="flex-1 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 placeholder-gray-400 dark:placeholder-white/40 focus:outline-none focus:border-black dark:focus:border-white"
           />
           <button
