@@ -331,37 +331,37 @@ export default function Notes({ videoTitle, videoDescription, videoId }: { video
       </motion.div>
 
       <div className="max-w-4xl mx-auto mb-6">
-        <div className="flex gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row">
           <input
             type="text"
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleGenerate()}
             placeholder={t.notes.topicPlaceholder}
-            className="flex-1 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 placeholder-gray-400 dark:placeholder-white/40 focus:outline-none focus:border-black dark:focus:border-white"
+            className="w-full min-w-0 flex-1 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 placeholder-gray-400 dark:placeholder-white/40 focus:outline-none focus:border-black dark:focus:border-white"
           />
           <button
             onClick={handleGenerate}
             disabled={loading || !topic.trim()}
-            className="px-6 py-3 bg-black text-white dark:bg-white dark:text-black disabled:opacity-40 rounded-xl font-semibold transition"
+            className="shrink-0 px-6 py-3 bg-black text-white dark:bg-white dark:text-black disabled:opacity-40 rounded-xl font-semibold transition"
           >
             {loading ? '...' : t.notes.deepDiveCta}
           </button>
         </div>
 
-        <div className="flex gap-2 mt-3">
+        <div className="mt-3 flex flex-col gap-2 sm:flex-row">
           <input
             type="text"
             value={youtubeUrl}
             onChange={(e) => setYoutubeUrl(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleGenerateFromVideo()}
             placeholder={t.notes.linkPlaceholder}
-            className="flex-1 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 placeholder-gray-400 dark:placeholder-white/40 focus:outline-none focus:border-black dark:focus:border-white"
+            className="w-full min-w-0 flex-1 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 placeholder-gray-400 dark:placeholder-white/40 focus:outline-none focus:border-black dark:focus:border-white"
           />
           <button
             onClick={handleGenerateFromVideo}
             disabled={loading || !youtubeUrl.trim()}
-            className="px-6 py-3 border border-gray-300 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/20 disabled:opacity-40 rounded-xl font-semibold transition"
+            className="shrink-0 px-6 py-3 border border-gray-300 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/20 disabled:opacity-40 rounded-xl font-semibold transition"
           >
             {loading ? '...' : t.notes.fromVideoCta}
           </button>
