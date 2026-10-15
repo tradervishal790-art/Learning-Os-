@@ -42,7 +42,7 @@ export default function WelcomeBack({ goals, revisionTasks, onOpen }: Props) {
           ? `No pressure. Just one small thing: a quick revision of “${next.topic}”. Five minutes is enough.`
           : 'No pressure. Pick one topic from your roadmap and do just a little today.'}
       </p>
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <button
           onClick={() => onOpen(next ? 'revision' : 'roadmap')}
           className="px-4 py-2 rounded-xl text-sm font-medium bg-black text-white dark:bg-white dark:text-black"
