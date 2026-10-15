@@ -325,7 +325,7 @@ export default function ChannelDigest() {
                     <li key={v.videoId} className="border border-gray-200 dark:border-white/10 rounded-lg p-4">
                       <a href={v.url} target="_blank" rel="noopener noreferrer" className="font-medium inline-flex items-start gap-1.5 hover:underline">
                         <ExternalLink className="w-4 h-4 mt-1 shrink-0" />
-                        <span>{v.title}</span>
+                        <span className="min-w-0 break-words">{v.title}</span>
                       </a>
                       {s && s.gist && <p className="mt-2 text-sm leading-relaxed text-gray-700 dark:text-white/70">{s.gist}</p>}
                       {s && !s.hasTranscript && <p className="mt-2 text-xs text-gray-400 dark:text-white/30">{c.noTranscript}</p>}
