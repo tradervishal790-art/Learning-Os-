@@ -1307,13 +1307,13 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
 
                 <div>
                   <label className="block text-xs uppercase tracking-wider text-gray-400 dark:text-white/40 mb-2">{t.customPlaylistModal.hoursLabel}</label>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     {hoursOptions.map((h) => (
                       <button
                         key={h}
                         onClick={() => setCustomHours(h)}
                         disabled={customLoading}
-                        className={`flex-1 py-2 rounded-lg text-sm border transition ${customHours === h ? 'bg-black text-white dark:bg-white dark:text-black border-transparent' : 'border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10'}`}
+                        className={`flex-1 min-w-[4rem] py-2 rounded-lg text-sm border transition ${customHours === h ? 'bg-black text-white dark:bg-white dark:text-black border-transparent' : 'border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10'}`}
                       >
                         {h}h
                       </button>
@@ -1323,7 +1323,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
 
                 <div>
                   <label className="block text-xs uppercase tracking-wider text-gray-400 dark:text-white/40 mb-2">{t.customPlaylistModal.deadlineLabel}</label>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     {deadlineOptions.map((d) => (
                       <button
                         key={d.id}
