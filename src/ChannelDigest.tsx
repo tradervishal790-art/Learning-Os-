@@ -223,7 +223,11 @@ export default function ChannelDigest() {
                     : 'border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10'
                 }`}
               >
-                <button onClick={() => setSelectedId(ch.channelId)} className="inline-flex items-center gap-1.5">
+                <button
+                  onClick={() => setSelectedId(ch.channelId)}
+                  aria-pressed={ch.channelId === selectedId}
+                  className="inline-flex items-center gap-1.5"
+                >
                   <Tv className="w-3.5 h-3.5" />
                   {ch.title}
                 </button>
