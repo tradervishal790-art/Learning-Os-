@@ -677,7 +677,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
           <h1 className="text-xl font-bold bg-gradient-to-r from-purple-500 via-pink-500 to-orange-400 bg-clip-text text-transparent">Learning OS</h1>
           <p className="text-xs text-gray-400 dark:text-white/40 mt-1">v1.0 - Beta</p>
         </div>
-        <button onClick={() => setShowSidebar(false)} className="md:hidden w-8 h-8 rounded-full border border-gray-200 dark:border-white/10 flex items-center justify-center">X</button>
+        <button onClick={() => setShowSidebar(false)} aria-label="Close menu" className="md:hidden inline-flex min-h-11 min-w-11 rounded-full border border-gray-200 dark:border-white/10 items-center justify-center">X</button>
       </div>
       <nav className="space-y-1 flex-1">
         {getSidebarItems(t).map((item, i) => {
