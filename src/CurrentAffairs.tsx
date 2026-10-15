@@ -35,7 +35,7 @@ export default function CurrentAffairs() {
 
   return (
     <div className="max-w-3xl mx-auto">
-      <div className="inline-flex p-1 rounded-full border border-gray-200 dark:border-white/10 text-sm">
+      <div className="inline-flex max-w-full flex-wrap p-1 rounded-full border border-gray-200 dark:border-white/10 text-sm">
         {(['news', 'channels'] as const).map((v) => (
           <button
             key={v}
