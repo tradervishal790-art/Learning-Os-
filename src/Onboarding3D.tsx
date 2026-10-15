@@ -150,7 +150,7 @@ export default function Onboarding3D({ onComplete }: Onboarding3DProps) {
                   setLanguage(mapOnboardingLanguage(option.id));
                 }
               }}
-              className={`relative p-6 rounded-2xl border transition-all duration-300 overflow-hidden ${
+              className={`relative min-w-0 p-3 sm:p-6 rounded-2xl border transition-all duration-300 overflow-hidden ${
                 isSelected
                   ? 'bg-purple-500/20 border-purple-500/50'
                   : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20'
