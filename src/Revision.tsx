@@ -271,9 +271,21 @@ export default function Revision({ goals = [] }: RevisionProps) {
       )}
       {filteredItems.length === 0 && items.length > 0 && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-12 text-center">
-          <div className="text-5xl mb-4">🎉</div>
-          <h3 className="text-xl font-semibold mb-2">{t.revision.emptyState.allCaughtUpTitle}</h3>
-          <p className="text-gray-400 dark:text-white/60">{t.revision.emptyState.allCaughtUpBody}</p>
+          {filter === 'all' ? (
+            <>
+              <div className="text-5xl mb-4">🎉</div>
+              <h3 className="text-xl font-semibold mb-2">{t.revision.emptyState.allCaughtUpTitle}</h3>
+              <p className="text-gray-400 dark:text-white/60">{t.revision.emptyState.allCaughtUpBody}</p>
+            </>
+          ) : (
+            <>
+              <div className="text-5xl mb-4">🔎</div>
+              <h3 className="text-xl font-semibold mb-2">No items in this filter</h3>
+              <button onClick={() => setFilter('all')} className="mt-2 px-4 py-2 rounded-lg border border-gray-200 dark:border-white/10 text-sm font-medium hover:bg-gray-100 dark:hover:bg-white/10 transition">
+                {t.revision.filters.all}
+              </button>
+            </>
+          )}
         </motion.div>
       )}
         </>
