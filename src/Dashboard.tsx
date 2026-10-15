@@ -776,7 +776,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.6 }}
-          className="border-b border-gray-200 dark:border-white/10 px-4 md:px-8 py-4 md:py-6 flex justify-between items-center gap-3"
+          className="sticky top-0 z-20 border-b border-gray-200 dark:border-white/10 bg-white/95 dark:bg-black/95 backdrop-blur px-3 sm:px-4 md:px-8 py-2.5 md:py-6 flex justify-between items-center gap-3 md:static md:bg-transparent md:dark:bg-transparent md:backdrop-blur-0"
         >
           <div className="flex items-center gap-3 min-w-0">
             <button onClick={() => setShowSidebar(true)} aria-label="Open menu" className="md:hidden -ml-1.5 w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 hover:bg-gray-100 dark:hover:bg-white/10 active:bg-gray-200 dark:active:bg-white/15 transition-colors">
