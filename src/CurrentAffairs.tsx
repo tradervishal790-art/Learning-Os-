@@ -151,7 +151,12 @@ function NewspaperCurrentAffairs() {
         ))}
       </div>
 
-      {loading && <p className="mt-8 text-gray-500 dark:text-white/50 animate-pulse">{c.loading}</p>}
+      {loading && (
+        <div className="mt-8 flex items-center gap-3 text-gray-500 dark:text-white/50" role="status" aria-live="polite">
+          <span aria-hidden="true" className="h-5 w-5 shrink-0 rounded-full border-2 border-current border-r-transparent animate-spin" />
+          <p className="text-sm">{c.loading}</p>
+        </div>
+      )}
 
       {!loading && error && (
         <div className="mt-8">
