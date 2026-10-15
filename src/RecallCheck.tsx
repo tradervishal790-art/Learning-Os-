@@ -44,6 +44,7 @@ export default function RecallCheck({ videoId, onDone }: { videoId: string; onDo
         value={text}
         onChange={(e) => setText(e.target.value)}
         rows={3}
+        maxLength={2000}
         placeholder="What I remember…"
         className="w-full rounded-xl border border-gray-300 dark:border-white/20 bg-transparent p-3 text-sm outline-none focus:border-black dark:focus:border-white"
       />
