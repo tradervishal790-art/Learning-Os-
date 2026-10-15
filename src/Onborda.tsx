@@ -298,22 +298,21 @@ const Onborda: React.FC<OnbordaProps> = ({
                   height: pointerPosition.height + pointerPadding,
                 }}
                 transition={cardTransition}
+              />
+              <div
+                className="absolute flex flex-col max-w-[100%] min-w-min pointer-events-auto z-[950] max-md:!fixed max-md:!left-4 max-md:!right-4 max-md:!bottom-4 max-md:!top-auto max-md:!transform-none max-md:!m-0"
+                style={getCardStyle(currentTourSteps[currentStep]?.side)}
               >
-                <div
-                  className="absolute flex flex-col max-w-[100%] min-w-min pointer-events-auto z-[950]"
-                  style={getCardStyle(currentTourSteps[currentStep]?.side)}
-                >
-                  <CardComponent
-                    step={currentTourSteps[currentStep]}
-                    currentStep={currentStep}
-                    totalSteps={currentTourSteps.length}
-                    nextStep={nextStep}
-                    prevStep={prevStep}
-                    skipTour={closeOnborda}
-                    arrow={<CardArrow />}
-                  />
-                </div>
-              </motion.div>
+                <CardComponent
+                  step={currentTourSteps[currentStep]}
+                  currentStep={currentStep}
+                  totalSteps={currentTourSteps.length}
+                  nextStep={nextStep}
+                  prevStep={prevStep}
+                  skipTour={closeOnborda}
+                  arrow={<CardArrow />}
+                />
+              </div>
             </motion.div>
           </>,
           document.body
