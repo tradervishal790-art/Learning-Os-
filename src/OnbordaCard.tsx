@@ -14,10 +14,10 @@ import type { CardComponentProps } from './onbordaTypes';
 
 export default function OnbordaCard({ step, currentStep, totalSteps, nextStep, prevStep, skipTour, arrow }: CardComponentProps) {
   return (
-    <div className="relative w-[300px] rounded-2xl border border-black/10 dark:border-white/20 bg-white dark:bg-black text-black dark:text-white shadow-xl p-4">
+    <div className="relative w-[300px] max-w-full min-w-0 max-h-[55dvh] overflow-y-auto overscroll-contain rounded-2xl border border-black/10 dark:border-white/20 bg-white dark:bg-black text-black dark:text-white shadow-xl p-3 sm:p-4">
       <div className="flex items-start justify-between gap-2 mb-2">
-        <div>
-          <div className="text-sm font-semibold flex items-center gap-1.5">
+        <div className="flex-1 min-w-0">
+          <div className="text-sm font-semibold flex items-start gap-1.5 break-words [overflow-wrap:anywhere]">
             {step.icon}
             {step.title}
           </div>
@@ -25,18 +25,18 @@ export default function OnbordaCard({ step, currentStep, totalSteps, nextStep, p
             {currentStep + 1} of {totalSteps}
           </div>
         </div>
-        <button onClick={skipTour} aria-label="Close tour" className="text-gray-400 dark:text-white/40 hover:text-black dark:hover:text-white transition">
+        <button onClick={skipTour} aria-label="Close tour" className="w-8 h-8 flex-shrink-0 rounded-full flex items-center justify-center text-gray-400 dark:text-white/40 hover:text-black dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 transition">
           <X size={16} />
         </button>
       </div>
 
-      <div className="text-sm text-gray-600 dark:text-white/70 leading-relaxed mb-4">{step.content}</div>
+      <div className="text-sm text-gray-600 dark:text-white/70 leading-relaxed mb-4 break-words [overflow-wrap:anywhere]">{step.content}</div>
 
       <div className="flex justify-between items-center">
         {currentStep !== 0 ? (
           <button
             onClick={prevStep}
-            className="px-3 py-1.5 rounded-full text-xs font-medium border border-gray-300 dark:border-white/20 hover:bg-gray-100 dark:hover:bg-white/10 transition"
+            className="min-h-9 px-3 py-2 rounded-full text-xs font-medium border border-gray-300 dark:border-white/20 hover:bg-gray-100 dark:hover:bg-white/10 transition"
           >
             Peeche
           </button>
@@ -46,7 +46,7 @@ export default function OnbordaCard({ step, currentStep, totalSteps, nextStep, p
         {currentStep + 1 !== totalSteps ? (
           <button
             onClick={nextStep}
-            className="px-3 py-1.5 rounded-full text-xs font-medium bg-black text-white dark:bg-white dark:text-black hover:opacity-80 transition"
+            className="min-h-9 px-3 py-2 rounded-full text-xs font-medium bg-black text-white dark:bg-white dark:text-black hover:opacity-80 transition"
           >
             Aage
           </button>
