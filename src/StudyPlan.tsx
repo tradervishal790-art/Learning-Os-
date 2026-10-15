@@ -442,7 +442,13 @@ function FileViewer({ topic, title, onDone, onClose }: { topic: StudyTopic; titl
           out.push({ url, kind: f.kind, name: f.name });
         }
       }
-      if (!cancelled) setItems(out);
+      if (!cancelled) {
+        setItems(out);
+      } else {
+        // The viewer closed while files were loading; release URLs created
+        // after the effect's cleanup already ran.
+        made.forEach((url) => URL.revokeObjectURL(url));
+      }
     })();
     return () => {
       cancelled = true;
