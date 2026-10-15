@@ -100,6 +100,7 @@ export default function Research({ embedded = false, onClose }: ResearchProps) {
 
     setLoading(true);
     setError('');
+    setResult(null);
 
     try {
       const cached = localStorage.getItem(cacheKey(q, locale));
