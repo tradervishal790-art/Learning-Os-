@@ -813,7 +813,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
   const hasNextVideo = !!selectedVideo;
 
   return (
-    <div className={`min-h-screen bg-white dark:bg-black text-black dark:text-white ${selectedVideo ? 'pb-24 md:pb-20' : ''}`}>
+    <div className={`min-h-screen bg-white dark:bg-black text-black dark:text-white ${selectedVideo ? 'pb-24 md:pb-0' : ''}`}>
       {showDeepNotes && selectedVideo ? (
         <div className="p-4 md:p-8">
           <button
@@ -1040,7 +1040,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                         <button
                           onClick={handleNextVideo}
                           disabled={loadingMore}
-                          className="fixed bottom-20 md:bottom-4 right-4 z-50 ml-auto flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold bg-black text-white dark:bg-white dark:text-black shadow-xl border border-white/20 hover:opacity-80 transition disabled:opacity-50"
+                          className="fixed bottom-20 right-4 z-50 flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold bg-black text-white dark:bg-white dark:text-black shadow-xl border border-white/20 hover:opacity-80 transition disabled:opacity-50 md:static md:z-auto md:ml-auto md:rounded-lg md:px-4 md:py-2 md:font-medium md:shadow-none md:border-gray-200 md:dark:border-white/10"
                         >
                           {loadingMore ? t.videos.loadingNextCta : t.videos.nextCta} <SkipForward className="w-4 h-4" />
                         </button>
