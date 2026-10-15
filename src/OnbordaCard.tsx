@@ -14,7 +14,7 @@ import type { CardComponentProps } from './onbordaTypes';
 
 export default function OnbordaCard({ step, currentStep, totalSteps, nextStep, prevStep, skipTour, arrow }: CardComponentProps) {
   return (
-    <div className="relative w-[300px] rounded-2xl border border-black/10 dark:border-white/20 bg-white dark:bg-black text-black dark:text-white shadow-xl p-4">
+    <div className="relative w-[300px] max-w-[calc(100vw-2rem)] rounded-2xl border border-black/10 dark:border-white/20 bg-white dark:bg-black text-black dark:text-white shadow-xl p-4">
       <div className="flex items-start justify-between gap-2 mb-2">
         <div>
           <div className="text-sm font-semibold flex items-center gap-1.5">
