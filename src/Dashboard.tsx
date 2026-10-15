@@ -801,14 +801,14 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
         <Suspense fallback={<PageLoading />}>
         {showLoginRequired && <LoginRequired feature={loginRequiredLabel} />}
         {activePage === 'dashboard' && (
-          <div className="p-4 md:p-8 space-y-6">
+          <div className="p-3 sm:p-4 md:p-8 space-y-5 md:space-y-6">
             <WelcomeBack goals={goals} revisionTasks={t.revisionTasks} onOpen={setActivePage} />
             <DailyHabit />
             {showOnboardingChecklist && (
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="p-5 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5"
+                className="p-4 sm:p-5 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5"
               >
                 <h3 className="font-semibold mb-1">{t.dashboard.checklist.heading}</h3>
                 <p className="text-xs text-gray-400 dark:text-white/40 mb-4">
@@ -893,7 +893,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                 <button
                   key={card.title}
                   onClick={card.onClick}
-                  className="text-left px-5 py-4 md:py-5 hover:bg-gray-50 dark:hover:bg-white/5 active:bg-gray-100 dark:active:bg-white/10 transition-colors"
+                  className="text-left px-4 sm:px-5 py-3.5 sm:py-4 md:py-5 hover:bg-gray-50 dark:hover:bg-white/5 active:bg-gray-100 dark:active:bg-white/10 transition-colors"
                 >
                   <div className="text-xs text-gray-500 dark:text-white/50 mb-1">{card.title}</div>
                   <div className="text-xl font-semibold tabular-nums line-clamp-1">{card.value}</div>
