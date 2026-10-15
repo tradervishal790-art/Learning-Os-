@@ -49,6 +49,7 @@ export interface StudyPlanText {
   boxEnds: string; // {0} date
   close: string;
   fileMissing: string;
+  loadingFiles: string;
   onDevice: string;
   defaultSubject: string;
 }
@@ -102,6 +103,7 @@ export const studyPlanText: Record<Locale, StudyPlanText> = {
     boxEnds: 'Ends {0}',
     close: 'Close',
     fileMissing: 'This file is not on this device.',
+    loadingFiles: 'Loading files…',
     onDevice: 'Files are saved on this device only.',
     defaultSubject: 'My topics',
   },
@@ -153,6 +155,7 @@ export const studyPlanText: Record<Locale, StudyPlanText> = {
     boxEnds: 'खत्म: {0}',
     close: 'बंद करें',
     fileMissing: 'यह फ़ाइल इस डिवाइस पर नहीं है।',
+    loadingFiles: 'फ़ाइलें लोड हो रही हैं…',
     onDevice: 'फ़ाइलें सिर्फ़ इसी डिवाइस पर सेव रहती हैं।',
     defaultSubject: 'मेरे टॉपिक',
   },
@@ -204,6 +207,7 @@ export const studyPlanText: Record<Locale, StudyPlanText> = {
     boxEnds: 'Khatam: {0}',
     close: 'Band karo',
     fileMissing: 'Ye file is device par nahi hai.',
+    loadingFiles: 'Files load ho rahi hain…',
     onDevice: 'Files sirf isi device par saved rehti hain.',
     defaultSubject: 'Mere topics',
   },
