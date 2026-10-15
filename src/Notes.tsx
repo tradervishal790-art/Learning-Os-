@@ -392,7 +392,7 @@ export default function Notes({ videoTitle, videoDescription, videoId }: { video
             key={activeSection}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl p-8"
+            className="bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl p-4 sm:p-8"
           >
             {currentVideoId && (
               <a
