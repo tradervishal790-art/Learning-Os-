@@ -377,6 +377,7 @@ export default function Notes({ videoTitle, videoDescription, videoId }: { video
               <button
                 key={s.id}
                 onClick={() => setActiveSection(s.id)}
+                aria-pressed={activeSection === s.id}
                 className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition ${
                   activeSection === s.id
                     ? 'bg-black text-white dark:bg-white dark:text-black'
