@@ -175,7 +175,7 @@ export default function Mentor() {
                   <div className="text-xs opacity-60 mb-1">
                     {msg.role === 'user' ? t.mentor.youLabel : t.mentor.mentorLabel}
                   </div>
-                  <div className="whitespace-pre-wrap text-sm leading-relaxed">{msg.content}</div>
+                  <div className="whitespace-pre-wrap break-words text-sm leading-relaxed">{msg.content}</div>
                 </div>
               </motion.div>
             ))}
