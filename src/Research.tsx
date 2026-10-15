@@ -94,8 +94,8 @@ export default function Research({ embedded = false, onClose }: ResearchProps) {
     }
   }, [embedded, query, result, history]);
 
-  const handleSearch = async () => {
-    const q = query.trim();
+  const handleSearch = async (searchTerm?: string) => {
+    const q = (searchTerm ?? query).trim();
     if (!q) return;
 
     setLoading(true);
@@ -219,7 +219,7 @@ export default function Research({ embedded = false, onClose }: ResearchProps) {
                 key={h}
                 onClick={() => {
                   setQuery(h);
-                  setTimeout(handleSearch, 0);
+                  void handleSearch(h);
                 }}
                 className="px-3 py-1.5 border border-gray-200 dark:border-white/10 rounded-full text-xs text-gray-500 dark:text-white/60 hover:bg-gray-100 dark:hover:bg-white/10 hover:text-black dark:hover:text-white transition"
               >
