@@ -23,7 +23,7 @@ These open PRs touch the same file and should be reviewed together. They are not
 
 A second pass over the proposed diffs identified several avoidable inconveniences. Corrections were committed to the existing focused PR branches:
 
-- [PR #2](https://github.com/tradervishal790-art/Learning-Os-/pull/2): the Next Video action was fixed-positioned on desktop as well as mobile. It now returns to normal inline placement at desktop widths, and the extra desktop bottom padding is removed.
+- [PR #2](https://github.com/tradervishal790-art/Learning-Os-/pull/2): the Next Video action was fixed-positioned on desktop as well as mobile. It now returns to normal inline placement at desktop widths, and the extra desktop bottom padding is removed. The feedback actions also wrap on narrow screens rather than forcing a single crowded row.
 - [PR #18](https://github.com/tradervishal790-art/Learning-Os-/pull/18): the file viewer now shows localized loading text with the spinner in English, Hindi, and Hinglish instead of relying on a spinner alone.
 - [PR #20](https://github.com/tradervishal790-art/Learning-Os-/pull/20): the lazy-loaded Channel Digest fallback now includes visible localized status text and a polite screen-reader announcement.
 - [PR #53](https://github.com/tradervishal790-art/Learning-Os-/pull/53): the channel remove control keeps its 44px target without making the icon permanently faded, improving discoverability.
