@@ -1,5 +1,6 @@
 // api/extract-questions.ts
 //
+// (Also serves ?op=insight, ?op=personality and ?op=ink-ocr — see below.)
 // Server-side proxy for "add questions / answers from a photo or PDF" in the
 // test builder (TestBuilder.tsx → PhotoImport.tsx). The client sends ONE
 // compressed photo per request (so a 4-photo import stays well under
@@ -24,6 +25,7 @@ import { generateAIText } from './_lib/aiFallback.js';
 import { requireUser } from './_lib/auth.js';
 import { handleInsight } from './_lib/testInsight.js';
 import { handlePersonalityReport } from './_lib/personalityReport.js';
+import { handleInkOcr } from './_lib/inkOcr.js';
 
 const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp', 'application/pdf']);
 const MAX_BASE64_CHARS = 3_400_000; // ~2.5 MB file; keeps the request under Vercel's 4.5 MB limit (client splits bigger PDFs)
@@ -135,6 +137,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Same function also serves the one-line AI study suggestion shown after a test (keeps us at 12 functions).
   if (req.query?.op === 'insight') return handleInsight(req, res);
   if (req.query?.op === 'personality') return handlePersonalityReport(req, res);
+  if (req.query?.op === 'ink-ocr') return handleInkOcr(req, res); // notebook: handwriting -> typed text
 
   const { mode, image } = (req.body ?? {}) as { mode?: string; image?: { mimeType?: string; data?: string } };
   if (mode !== 'questions' && mode !== 'answers') return res.status(400).json({ error: 'mode must be "questions" or "answers"' });

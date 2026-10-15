@@ -1,4 +1,7 @@
-import { Eraser, Highlighter, Hand, Keyboard as TypeIcon, PenLine, Plus, Redo2, RotateCcw, Trash2, Undo2, X } from 'lucide-react';
+import {
+  BringToFront, ClipboardPaste, Copy, CopyPlus, Eraser, Hand, Highlighter, Keyboard as TypeIcon, LassoSelect, PenLine,
+  Plus, Redo2, RotateCcw, Scissors, ScanText, SendToBack, Shapes, SquareDashed, Trash2, Undo2, X,
+} from 'lucide-react';
 import { useTranslation } from './i18n/LanguageContext';
 import { rememberColor, type InkMode, type InkPrefs } from './inkPrefs';
 import { HL_COLORS, INK_COLORS, PEN_KINDS, WIDTH_PRESETS, resolveColor } from './inkEngine';
@@ -14,9 +17,10 @@ export function ModeSwitch({ mode, onMode }: { mode: InkMode; onMode: (m: InkMod
     ['pen', t.modePen, <PenLine size={15} key="p" />],
     ['highlighter', t.modeHighlighter, <Highlighter size={15} key="h" />],
     ['eraser', t.modeEraser, <Eraser size={15} key="e" />],
+    ['select', t.modeSelect, <LassoSelect size={15} key="s" />],
   ];
   return (
-    <div className="flex gap-1 mb-2" role="tablist">
+    <div className="flex gap-1 mb-2 overflow-x-auto" role="tablist">
       {items.map(([m, label, icon]) => (
         <button
           key={m}
@@ -54,8 +58,27 @@ function Dot({ color, size = 18 }: { color: string; size?: number }) {
   );
 }
 
+/** Actions for the Select tab. */
+export interface SelectApi {
+  count: number;
+  canPaste: boolean;
+  notice: string;
+  onAll: () => void;
+  onDelete: () => void;
+  onCopy: () => void;
+  onCut: () => void;
+  onPaste: () => void;
+  onDuplicate: () => void;
+  onColor: (c: string) => void;
+  onWidth: (w: number) => void;
+  onFront: () => void;
+  onBack: () => void;
+  onNeaten: () => void;
+  onToText: () => void;
+}
+
 export default function InkToolbar({
-  mode, prefs, setPrefs, resetPrefs, canUndo, canRedo, onUndo, onRedo, onEraseAll,
+  mode, prefs, setPrefs, resetPrefs, canUndo, canRedo, onUndo, onRedo, onEraseAll, select,
 }: {
   mode: Exclude<InkMode, 'type'>;
   prefs: InkPrefs;
@@ -66,6 +89,7 @@ export default function InkToolbar({
   onUndo: () => void;
   onRedo: () => void;
   onEraseAll: () => void;
+  select: SelectApi;
 }) {
   const t = useTranslation().notebook.ink;
   const kindLabel: Record<InkKind, string> = {
@@ -100,6 +124,51 @@ export default function InkToolbar({
       <Hand size={16} />
     </Btn>
   );
+
+  if (mode === 'select') {
+    const a = select;
+    return (
+      <div>
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+          {undoRedo}
+          <Sep />
+          <Btn label={t.selLasso} active={prefs.selectShape === 'lasso'} onClick={() => setPrefs({ selectShape: 'lasso' })}><LassoSelect size={16} /></Btn>
+          <Btn label={t.selRect} active={prefs.selectShape === 'rect'} onClick={() => setPrefs({ selectShape: 'rect' })}><SquareDashed size={16} /></Btn>
+          <button className={chip(false)} onClick={a.onAll}>{t.selAll}</button>
+          <Btn label={t.selPaste} disabled={!a.canPaste} onClick={a.onPaste}><ClipboardPaste size={16} /></Btn>
+          {a.count > 0 && (
+            <>
+              <Sep />
+              <span className="text-xs text-gray-500 dark:text-white/60 shrink-0 px-1">{t.selCount.replace('{0}', String(a.count))}</span>
+              <Btn label={t.selDelete} onClick={a.onDelete}><Trash2 size={16} /></Btn>
+              <Btn label={t.selCopy} onClick={a.onCopy}><Copy size={16} /></Btn>
+              <Btn label={t.selCut} onClick={a.onCut}><Scissors size={16} /></Btn>
+              <Btn label={t.selDuplicate} onClick={a.onDuplicate}><CopyPlus size={16} /></Btn>
+              <Pop trigger={(toggle) => (
+                <button type="button" onClick={toggle} title={t.selColor} aria-label={t.selColor} className="h-9 px-2 rounded-lg flex items-center border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10">
+                  <Dot color="#a855f7" size={18} />
+                </button>
+              )}>
+                <Swatches colors={[...INK_COLORS, ...HL_COLORS]} onPick={a.onColor} />
+              </Pop>
+              <Pop trigger={(toggle) => <Btn label={t.selWidth} onClick={toggle}><span className="text-xs font-semibold">{t.thickness.slice(0, 1)}</span></Btn>}>
+                <div className="flex gap-1">
+                  {WIDTH_PRESETS.map((w) => (
+                    <button key={w} className={chip(false)} onClick={() => a.onWidth(w)}>{w}</button>
+                  ))}
+                </div>
+              </Pop>
+              <Btn label={t.selFront} onClick={a.onFront}><BringToFront size={16} /></Btn>
+              <Btn label={t.selBack} onClick={a.onBack}><SendToBack size={16} /></Btn>
+              <Btn label={t.selNeaten} onClick={a.onNeaten}><Shapes size={16} /></Btn>
+              <Btn label={t.selToText} onClick={a.onToText}><ScanText size={16} /></Btn>
+            </>
+          )}
+        </div>
+        <p className="text-xs text-gray-400 dark:text-white/40 pt-1">{a.notice || (a.count === 0 ? t.selHint : '')}</p>
+      </div>
+    );
+  }
 
   if (mode === 'eraser') {
     return (
@@ -197,6 +266,7 @@ export default function InkToolbar({
           <input type="range" min={0} max={1} step={0.05} value={prefs.smoothing} onChange={(e) => setPrefs({ smoothing: Number(e.target.value) })} className="w-16" />
         </label>
       )}
+      <Btn label={t.shapeSnap} active={prefs.shapeSnap} onClick={() => setPrefs({ shapeSnap: !prefs.shapeSnap })}><Shapes size={16} /></Btn>
       {fingerBtn}
       <Btn label={t.resetPen} onClick={resetPrefs}><RotateCcw size={16} /></Btn>
     </div>

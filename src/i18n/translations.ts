@@ -468,6 +468,35 @@ export interface TranslationShape {
       eraseAllConfirm: string;
       undo: string;
       redo: string;
+      modeSelect: string;
+      selLasso: string;
+      selRect: string;
+      selAll: string;
+      selHint: string;
+      selCount: string;
+      selDelete: string;
+      selCopy: string;
+      selCut: string;
+      selPaste: string;
+      selDuplicate: string;
+      selColor: string;
+      selWidth: string;
+      selFront: string;
+      selBack: string;
+      selNeaten: string;
+      selNeatNone: string;
+      selToText: string;
+      shapeSnap: string;
+      ocrConsent: string;
+      ocrTitle: string;
+      ocrLoading: string;
+      ocrError: string;
+      ocrEmpty: string;
+      ocrLowConf: string;
+      ocrEdit: string;
+      ocrInsert: string;
+      ocrInsertDelete: string;
+      ocrCancel: string;
     };
     editor: {
       back: string;
@@ -1540,6 +1569,35 @@ export const translations: Record<Locale, TranslationShape> = {
         eraseAllConfirm: "Erase all handwriting on this page? You can undo this.",
         undo: "Undo drawing",
         redo: "Redo drawing",
+        modeSelect: "Select",
+        selLasso: "Lasso",
+        selRect: "Rectangle",
+        selAll: "Select all",
+        selHint: "Draw around your handwriting to select it, or tap one stroke.",
+        selCount: "{0} selected",
+        selDelete: "Delete",
+        selCopy: "Copy",
+        selCut: "Cut",
+        selPaste: "Paste",
+        selDuplicate: "Duplicate",
+        selColor: "Change colour",
+        selWidth: "Change thickness",
+        selFront: "Bring to front",
+        selBack: "Send to back",
+        selNeaten: "Make shapes neat",
+        selNeatNone: "No lines or shapes found to neaten.",
+        selToText: "Handwriting to text",
+        shapeSnap: "Hold still to snap shapes",
+        ocrConsent: "To read your handwriting, a picture of the selected strokes is sent to an AI service. Your handwriting is not changed. Continue?",
+        ocrTitle: "Handwriting as text",
+        ocrLoading: "Reading your handwriting...",
+        ocrError: "Could not read the handwriting. Try again or select less.",
+        ocrEmpty: "No writing was found in the selection.",
+        ocrLowConf: "Some words may be wrong (shown as [?] when unreadable). Check the text before inserting.",
+        ocrEdit: "You can edit the text before inserting.",
+        ocrInsert: "Insert as text",
+        ocrInsertDelete: "Insert and remove handwriting",
+        ocrCancel: "Cancel",
       },
       editor: {
         back: "Back to notes",
@@ -2623,6 +2681,35 @@ export const translations: Record<Locale, TranslationShape> = {
         eraseAllConfirm: "इस पेज की सारी हैंडराइटिंग मिटानी है? इसे वापस ला सकते हो।",
         undo: "ड्रॉइंग पीछे",
         redo: "ड्रॉइंग आगे",
+        modeSelect: "चुनो",
+        selLasso: "लासो",
+        selRect: "चौकोर",
+        selAll: "सब चुनो",
+        selHint: "हैंडराइटिंग के चारों तरफ घेरा बनाओ, या एक लकीर पर टैप करो।",
+        selCount: "{0} चुने गए",
+        selDelete: "हटाओ",
+        selCopy: "कॉपी",
+        selCut: "कट",
+        selPaste: "पेस्ट",
+        selDuplicate: "डुप्लिकेट",
+        selColor: "रंग बदलो",
+        selWidth: "मोटाई बदलो",
+        selFront: "आगे लाओ",
+        selBack: "पीछे भेजो",
+        selNeaten: "शेप सीधे करो",
+        selNeatNone: "सीधा करने लायक कोई लाइन या शेप नहीं मिली।",
+        selToText: "हैंडराइटिंग से टेक्स्ट",
+        shapeSnap: "रुकने पर शेप सीधी करो",
+        ocrConsent: "आपकी हैंडराइटिंग पढ़ने के लिए चुनी हुई लकीरों की एक तस्वीर AI सर्विस को भेजी जाएगी। आपकी हैंडराइटिंग बदलेगी नहीं। आगे बढ़ें?",
+        ocrTitle: "हैंडराइटिंग टेक्स्ट में",
+        ocrLoading: "आपकी हैंडराइटिंग पढ़ी जा रही है...",
+        ocrError: "हैंडराइटिंग पढ़ नहीं पाया। दोबारा कोशिश करो या कम हिस्सा चुनो।",
+        ocrEmpty: "चुने हुए हिस्से में कुछ लिखा नहीं मिला।",
+        ocrLowConf: "कुछ शब्द गलत हो सकते हैं (न पढ़े जाने पर [?] दिखता है)। डालने से पहले टेक्स्ट जाँच लो।",
+        ocrEdit: "डालने से पहले टेक्स्ट बदल सकते हो।",
+        ocrInsert: "टेक्स्ट की तरह डालो",
+        ocrInsertDelete: "डालो और हैंडराइटिंग हटाओ",
+        ocrCancel: "रद्द करो",
       },
       editor: {
         back: "नोट्स पर वापस",
@@ -3705,6 +3792,35 @@ export const translations: Record<Locale, TranslationShape> = {
         eraseAllConfirm: "Is page ki saari handwriting mitani hai? Isse wapas la sakte ho.",
         undo: "Drawing undo",
         redo: "Drawing redo",
+        modeSelect: "Chuno",
+        selLasso: "Lasso",
+        selRect: "Rectangle",
+        selAll: "Sab chuno",
+        selHint: "Handwriting ke charon taraf ghera banao, ya ek line par tap karo.",
+        selCount: "{0} chune gaye",
+        selDelete: "Hatao",
+        selCopy: "Copy",
+        selCut: "Cut",
+        selPaste: "Paste",
+        selDuplicate: "Duplicate",
+        selColor: "Rang badlo",
+        selWidth: "Motai badlo",
+        selFront: "Aage lao",
+        selBack: "Peeche bhejo",
+        selNeaten: "Shapes seedhi karo",
+        selNeatNone: "Seedhi karne layak koi line ya shape nahi mili.",
+        selToText: "Handwriting se text",
+        shapeSnap: "Ruknay par shape seedhi karo",
+        ocrConsent: "Aapki handwriting padhne ke liye chuni hui lines ki ek tasveer AI service ko bheji jayegi. Aapki handwriting badlegi nahi. Aage badhein?",
+        ocrTitle: "Handwriting text mein",
+        ocrLoading: "Aapki handwriting padhi ja rahi hai...",
+        ocrError: "Handwriting padh nahi paya. Dobara try karo ya kam hissa chuno.",
+        ocrEmpty: "Chune hue hisse mein kuch likha nahi mila.",
+        ocrLowConf: "Kuch words galat ho sakte hain (na padhe jaane par [?] dikhta hai). Dalne se pehle text check kar lo.",
+        ocrEdit: "Dalne se pehle text badal sakte ho.",
+        ocrInsert: "Text ki tarah daalo",
+        ocrInsertDelete: "Daalo aur handwriting hatao",
+        ocrCancel: "Cancel",
       },
       editor: {
         back: "Notes par wapas",

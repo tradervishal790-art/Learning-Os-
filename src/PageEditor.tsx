@@ -16,9 +16,12 @@ export default function PageEditor({
   primary,
   mode,
   prefs,
+  selectedIds,
   onChange,
   onActive,
+  onEditor,
   onInk,
+  onSelect,
 }: {
   page: NotePage;
   strokes: InkStroke[];
@@ -28,9 +31,12 @@ export default function PageEditor({
   primary: boolean;
   mode: InkMode;
   prefs: InkPrefs;
+  selectedIds: string[];
   onChange: (pageId: string, html: string, text: string) => void;
   onActive: (editor: Editor, pageId: string) => void;
+  onEditor: (pageId: string, editor: Editor) => void;
   onInk: (pageId: string, next: InkStroke[]) => void;
+  onSelect: (pageId: string, ids: string[]) => void;
 }) {
   const editor = useEditor({
     extensions: buildExtensions(placeholder),
@@ -42,6 +48,7 @@ export default function PageEditor({
 
   useEffect(() => {
     if (!editor) return;
+    onEditor(page.id, editor);
     if (autoFocus) editor.commands.focus('end');
     else if (primary) onActive(editor, page.id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -86,6 +93,8 @@ export default function PageEditor({
           height={size.h}
           mode={mode}
           prefs={prefs}
+          selectedIds={selectedIds}
+          onSelect={(ids) => onSelect(page.id, ids)}
           onCommit={(next) => onInk(page.id, next)}
           onActivate={() => editor && onActive(editor, page.id)}
         />

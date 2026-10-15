@@ -2,8 +2,13 @@ import { useEffect, useRef, useState } from 'react';
 import type { InkStroke } from './notebookStore';
 import type { InkMode, InkPrefs } from './inkPrefs';
 import {
-  PAGE_UNITS, drawLayer, drawStroke, eraseArea, eraseStrokes, newStrokeId, pushPoint, type Layer,
+  PAGE_UNITS, drawLayer, drawStroke, eraseArea, eraseStrokes, newStrokeId, pushPoint, strokeHit, type Layer,
 } from './inkEngine';
+import {
+  IDENTITY, applyXform, boundsOf, pickStrokes, selectInPolygon, selectInRect, strokePoints, transformSelected,
+  type Box, type Xform,
+} from './inkEdit';
+import { recognizeShape } from './inkShapes';
 
 // ============================================================
 // InkLayer.tsx — the handwriting surface of ONE page.
@@ -11,19 +16,25 @@ import {
 // Three canvases stacked on the page:
 //   1. highlights (UNDER the text)  - so a highlight never hides the words
 //   2. pen ink    (over the text)
-//   3. live       (the stroke being drawn right now; also takes the pointer)
-// The live canvas only gets pixels while a stroke is in progress, which
+//   3. live       (the stroke being drawn / dragged right now; also takes the pointer)
+// The live canvas only gets pixels while a gesture is in progress, which
 // keeps memory low when a note has many pages.
 //
 // Input rules: the pen always writes. A finger scrolls the page (unless
 // "finger draw" is on). A finger touching while a pen is near is ignored
 // (palm rejection). The pen's eraser button erases.
+// Select mode: lasso / rectangle to pick strokes, then drag the box to
+// move, a corner to resize, the top knob to rotate.
 // ============================================================
 
+type XOp = 'move' | 'nw' | 'ne' | 'se' | 'sw' | 'rot';
+
 type Gesture =
-  | { type: 'draw'; id: number; stroke: InkStroke }
+  | { type: 'draw'; id: number; stroke: InkStroke; anchor: [number, number]; snapped: boolean; timer?: ReturnType<typeof setTimeout> }
   | { type: 'erase'; id: number; working: InkStroke[]; last: [number, number] }
-  | { type: 'pan'; id: number; lastY: number; scroller: HTMLElement | null };
+  | { type: 'pan'; id: number; lastY: number; scroller: HTMLElement | null }
+  | { type: 'lasso'; id: number; start: [number, number]; pts: [number, number][]; sx: number; sy: number; moved: boolean }
+  | { type: 'xform'; id: number; op: XOp; start: [number, number]; pivot: [number, number]; box: Box; sel: InkStroke[]; xf: Xform };
 
 function findScroller(el: HTMLElement | null): HTMLElement | null {
   let n = el?.parentElement ?? null;
@@ -36,28 +47,38 @@ function findScroller(el: HTMLElement | null): HTMLElement | null {
 }
 
 const isDarkNow = () => document.documentElement.classList.contains('dark');
+const HOLD_MS = 550; // hold still this long to snap a shape
+
+/** Where the selection box is drawn while it is being dragged. */
+interface Preview { box: Box; rotDeg: number }
 
 export default function InkLayer({
-  strokes, width, height, mode, prefs, onCommit, onActivate,
+  strokes, width, height, mode, prefs, selectedIds, onCommit, onActivate, onSelect,
 }: {
   strokes: InkStroke[];
   width: number;
   height: number;
   mode: InkMode;
   prefs: InkPrefs;
+  selectedIds: string[];
   onCommit: (next: InkStroke[]) => void;
   onActivate: () => void;
+  onSelect: (ids: string[]) => void;
 }) {
   const hlRef = useRef<HTMLCanvasElement>(null);
   const inkRef = useRef<HTMLCanvasElement>(null);
   const liveRef = useRef<HTMLCanvasElement>(null);
   const ringRef = useRef<HTMLDivElement>(null);
+  const lassoRef = useRef<SVGPolygonElement>(null);
   const gesture = useRef<Gesture | null>(null);
   const lastPen = useRef(0);
   const strokesRef = useRef(strokes);
   strokesRef.current = strokes;
+  const selRef = useRef(selectedIds);
+  selRef.current = selectedIds;
 
-  const [draft, setDraft] = useState<InkStroke[] | null>(null); // strokes while erasing
+  const [draft, setDraft] = useState<InkStroke[] | null>(null); // strokes while erasing / dragging
+  const [preview, setPreview] = useState<Preview | null>(null);
   const [dark, setDark] = useState(isDarkNow);
   const shown = draft ?? strokes;
   const scale = width > 0 ? width / PAGE_UNITS : 1;
@@ -93,7 +114,13 @@ export default function InkLayer({
     paint(inkRef.current, 'ink');
   }, [shown, width, height, dark, dpr, scale]);
 
-  // ---------- pointer handling ----------
+  // Leaving select mode (or the page) drops the selection box.
+  useEffect(() => {
+    if (mode !== 'select' && selRef.current.length > 0) onSelect([]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode]);
+
+  // ---------- helpers ----------
 
   const toPage = (e: { clientX: number; clientY: number }): [number, number] => {
     const r = liveRef.current!.getBoundingClientRect();
@@ -123,13 +150,13 @@ export default function InkLayer({
     c.width = 1;
     c.height = 1;
   };
-  const paintLive = (s: InkStroke) => {
+  const paintLive = (list: InkStroke[], complete = false) => {
     const c = liveRef.current!;
     const ctx = c.getContext('2d')!;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, c.width, c.height);
     ctx.setTransform(dpr * scale, 0, 0, dpr * scale, 0, 0);
-    drawStroke(ctx, s, dark, false);
+    for (const s of list) drawStroke(ctx, s, dark, complete);
   };
 
   const applyErase = (g: Extract<Gesture, { type: 'erase' }>, x: number, y: number) => {
@@ -152,6 +179,29 @@ export default function InkLayer({
     }
   };
 
+  /** Hold-still shape snapping: replace the stroke by its neat version while the pen is still down. */
+  const armSnap = (g: Extract<Gesture, { type: 'draw' }>) => {
+    clearTimeout(g.timer);
+    if (!prefs.shapeSnap) return;
+    g.timer = setTimeout(() => {
+      if (gesture.current !== g) return;
+      const shape = recognizeShape(strokePoints(g.stroke));
+      if (!shape) return;
+      const flat: number[] = [];
+      shape.pts.forEach(([x, y]) => flat.push(Math.round(x * 10) / 10, Math.round(y * 10) / 10, 0.5));
+      g.stroke.pts = flat;
+      g.stroke.sim = true;
+      g.snapped = true;
+      paintLive([g.stroke]);
+    }, HOLD_MS);
+  };
+
+  const setLasso = (points: [number, number][]) => {
+    lassoRef.current?.setAttribute('points', points.map(([x, y]) => `${x * scale},${y * scale}`).join(' '));
+  };
+
+  // ---------- pointer: drawing / erasing / lasso (on the live canvas) ----------
+
   const onDown = (e: React.PointerEvent) => {
     if (mode === 'type' || gesture.current) return;
     if (e.pointerType === 'mouse' && e.button !== 0 && e.button !== 5) return;
@@ -171,6 +221,12 @@ export default function InkLayer({
     onActivate();
     liveRef.current!.setPointerCapture(e.pointerId);
     const [x, y] = toPage(e);
+
+    if (mode === 'select') {
+      gesture.current = { type: 'lasso', id: e.pointerId, start: [x, y], pts: [[x, y]], sx: e.clientX, sy: e.clientY, moved: false };
+      return;
+    }
+
     const stylusEraser = e.pointerType === 'pen' && ((e.buttons & 32) !== 0 || e.button === 5);
     const tool = stylusEraser ? 'eraser' : mode;
 
@@ -194,9 +250,11 @@ export default function InkLayer({
       sm: prefs.smoothing,
     };
     pushPoint(stroke.pts, x, y, real ? e.pressure : 0.5, 0);
-    gesture.current = { type: 'draw', id: e.pointerId, stroke };
+    const g: Extract<Gesture, { type: 'draw' }> = { type: 'draw', id: e.pointerId, stroke, anchor: [x, y], snapped: false };
+    gesture.current = g;
     liveOn();
-    paintLive(stroke);
+    paintLive([stroke]);
+    armSnap(g);
   };
 
   const onMove = (e: React.PointerEvent) => {
@@ -218,10 +276,24 @@ export default function InkLayer({
       else window.scrollBy(0, dy);
       return;
     }
+    if (g.type === 'xform') return; // handled by the overlay
 
     const native = e.nativeEvent;
     const events = native.getCoalescedEvents?.() ?? [];
     const list = events.length > 0 ? events : [native];
+
+    if (g.type === 'lasso') {
+      if (Math.hypot(e.clientX - g.sx, e.clientY - g.sy) > 6) g.moved = true;
+      const [x, y] = toPage(e);
+      if (prefs.selectShape === 'rect') {
+        const [sx, sy] = g.start;
+        setLasso([[sx, sy], [x, sy], [x, y], [sx, y]]);
+      } else {
+        g.pts.push([x, y]);
+        setLasso(g.pts);
+      }
+      return;
+    }
 
     if (g.type === 'erase') {
       for (const ev of list) {
@@ -232,17 +304,23 @@ export default function InkLayer({
       return;
     }
 
+    if (g.snapped) return; // the neat shape is showing; just wait for the pen to lift
     let added = false;
     for (const ev of list) {
       const [x, y] = toPage(ev);
       if (pushPoint(g.stroke.pts, x, y, g.stroke.sim ? 0.5 : ev.pressure)) added = true;
+      if (Math.hypot(x - g.anchor[0], y - g.anchor[1]) * scale > 5) {
+        g.anchor = [x, y];
+        armSnap(g); // moved: restart the hold timer
+      }
     }
-    if (added) paintLive(g.stroke);
+    if (added) paintLive([g.stroke]);
   };
 
   const finish = (e: React.PointerEvent, cancelled: boolean) => {
     const g = gesture.current;
     if (!g || g.id !== e.pointerId) return;
+    if (g.type === 'xform') return; // overlay finishes it
     gesture.current = null;
     if (g.type === 'pan') return;
     if (g.type === 'erase') {
@@ -251,11 +329,104 @@ export default function InkLayer({
       if (!cancelled && g.working !== strokesRef.current) onCommit(g.working);
       return;
     }
+    if (g.type === 'lasso') {
+      setLasso([]);
+      if (cancelled) return;
+      const [x, y] = toPage(e);
+      if (!g.moved) {
+        // a tap: pick the topmost stroke under the finger / pen, or clear the selection
+        const all = strokesRef.current;
+        for (let i = all.length - 1; i >= 0; i--) {
+          if (strokeHit(all[i], x, y, 8)) return onSelect([all[i].id]);
+        }
+        return onSelect([]);
+      }
+      onSelect(
+        prefs.selectShape === 'rect' ? selectInRect(strokesRef.current, g.start, [x, y]) : selectInPolygon(strokesRef.current, g.pts)
+      );
+      return;
+    }
+    clearTimeout(g.timer);
     liveOff();
     if (!cancelled && g.stroke.pts.length >= 3) onCommit([...strokesRef.current, g.stroke]);
   };
 
+  // ---------- pointer: moving / resizing / rotating the selection (on the overlay) ----------
+
+  const selectedStrokes = mode === 'select' ? pickStrokes(strokes, new Set(selectedIds)) : [];
+  const box = boundsOf(selectedStrokes);
+
+  const xfFor = (g: Extract<Gesture, { type: 'xform' }>, x: number, y: number): Xform => {
+    const [px, py] = g.pivot;
+    if (g.op === 'move') return { ...IDENTITY, px, py, dx: x - g.start[0], dy: y - g.start[1] };
+    if (g.op === 'rot') {
+      const rot = Math.atan2(y - py, x - px) - Math.atan2(g.start[1] - py, g.start[0] - px);
+      return { ...IDENTITY, px, py, rot };
+    }
+    const s = Math.hypot(x - px, y - py) / (Math.hypot(g.start[0] - px, g.start[1] - py) || 1);
+    return { ...IDENTITY, px, py, s: Math.min(12, Math.max(0.1, s)) };
+  };
+
+  const previewFor = (g: Extract<Gesture, { type: 'xform' }>): Preview => {
+    const { box: b, xf } = g;
+    const [px, py] = g.pivot;
+    const grow = (v: number, p: number) => p + (v - p) * xf.s;
+    return {
+      box: { x0: grow(b.x0, px) + xf.dx, x1: grow(b.x1, px) + xf.dx, y0: grow(b.y0, py) + xf.dy, y1: grow(b.y1, py) + xf.dy },
+      rotDeg: (xf.rot * 180) / Math.PI,
+    };
+  };
+
+  const onHandleDown = (e: React.PointerEvent) => {
+    const op = (e.target as HTMLElement).dataset.sel as XOp | undefined;
+    if (!op || gesture.current || !box) return;
+    if (e.pointerType === 'pen') lastPen.current = Date.now();
+    if (e.pointerType === 'touch' && Date.now() - lastPen.current < 800) return; // palm
+    e.stopPropagation();
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    const [x, y] = toPage(e);
+    const cx = (box.x0 + box.x1) / 2;
+    const cy = (box.y0 + box.y1) / 2;
+    const pivot: [number, number] =
+      op === 'rot' || op === 'move' ? [cx, cy]
+      : op === 'nw' ? [box.x1, box.y1]
+      : op === 'ne' ? [box.x0, box.y1]
+      : op === 'se' ? [box.x0, box.y0]
+      : [box.x1, box.y0];
+    const ids = new Set(selectedIds);
+    const g: Extract<Gesture, { type: 'xform' }> = {
+      type: 'xform', id: e.pointerId, op, start: [x, y], pivot, box, sel: selectedStrokes, xf: { ...IDENTITY, px: pivot[0], py: pivot[1] },
+    };
+    gesture.current = g;
+    setDraft(strokes.filter((s) => !ids.has(s.id))); // the static canvases keep the rest; the picked strokes ride on the live canvas
+    liveOn();
+    paintLive(selectedStrokes, true);
+    setPreview(previewFor(g));
+  };
+
+  const onHandleMove = (e: React.PointerEvent) => {
+    const g = gesture.current;
+    if (!g || g.type !== 'xform' || g.id !== e.pointerId) return;
+    const [x, y] = toPage(e);
+    g.xf = xfFor(g, x, y);
+    paintLive(g.sel.map((s) => applyXform(s, g.xf)), true);
+    setPreview(previewFor(g));
+  };
+
+  const onHandleUp = (e: React.PointerEvent, cancelled: boolean) => {
+    const g = gesture.current;
+    if (!g || g.type !== 'xform' || g.id !== e.pointerId) return;
+    gesture.current = null;
+    liveOff();
+    setDraft(null);
+    setPreview(null);
+    const changed = g.xf.dx !== 0 || g.xf.dy !== 0 || g.xf.s !== 1 || g.xf.rot !== 0;
+    if (!cancelled && changed) onCommit(transformSelected(strokesRef.current, new Set(selectedIds), g.xf));
+  };
+
   const active = mode !== 'type';
+  const shownBox = preview?.box ?? box;
+  const knob = 'absolute w-5 h-5 rounded-full bg-white border-2 border-blue-500 pointer-events-auto';
   return (
     <>
       <canvas ref={hlRef} aria-hidden className="absolute inset-0 z-0 pointer-events-none" style={{ width, height }} />
@@ -277,6 +448,35 @@ export default function InkLayer({
         onPointerCancel={(e) => finish(e, true)}
         onPointerLeave={() => !gesture.current && placeRing(0, 0, false)}
       />
+      {mode === 'select' && (
+        <svg aria-hidden className="absolute inset-0 z-40 pointer-events-none" width={width} height={height}>
+          <polygon ref={lassoRef} points="" fill="rgba(37,99,235,0.08)" stroke="#2563eb" strokeWidth={1.5} strokeDasharray="6 4" />
+        </svg>
+      )}
+      {mode === 'select' && shownBox && (
+        <div
+          className="absolute z-40 pointer-events-none"
+          style={{
+            left: shownBox.x0 * scale,
+            top: shownBox.y0 * scale,
+            width: (shownBox.x1 - shownBox.x0) * scale,
+            height: (shownBox.y1 - shownBox.y0) * scale,
+            transform: preview ? `rotate(${preview.rotDeg}deg)` : undefined,
+          }}
+          onPointerDown={onHandleDown}
+          onPointerMove={onHandleMove}
+          onPointerUp={(e) => onHandleUp(e, false)}
+          onPointerCancel={(e) => onHandleUp(e, true)}
+        >
+          <div data-sel="move" className="absolute inset-0 border border-dashed border-blue-500 bg-blue-500/5 pointer-events-auto cursor-move" style={{ touchAction: 'none' }} />
+          <div data-sel="nw" className={`${knob} -left-2.5 -top-2.5 cursor-nwse-resize`} style={{ touchAction: 'none' }} />
+          <div data-sel="ne" className={`${knob} -right-2.5 -top-2.5 cursor-nesw-resize`} style={{ touchAction: 'none' }} />
+          <div data-sel="se" className={`${knob} -right-2.5 -bottom-2.5 cursor-nwse-resize`} style={{ touchAction: 'none' }} />
+          <div data-sel="sw" className={`${knob} -left-2.5 -bottom-2.5 cursor-nesw-resize`} style={{ touchAction: 'none' }} />
+          <div className="absolute left-1/2 -top-7 w-px h-7 bg-blue-500 pointer-events-none" />
+          <div data-sel="rot" className={`${knob} left-1/2 -top-10 -ml-2.5 cursor-grab bg-blue-500`} style={{ touchAction: 'none' }} />
+        </div>
+      )}
       <div
         ref={ringRef}
         aria-hidden

@@ -6,7 +6,7 @@ import type { InkKind } from './notebookStore';
 // (localStorage) so the last-used pen, colour and size come back next time.
 // ============================================================
 
-export type InkMode = 'type' | 'pen' | 'highlighter' | 'eraser';
+export type InkMode = 'type' | 'pen' | 'highlighter' | 'eraser' | 'select';
 
 export interface PenFavorite {
   kind: InkKind;
@@ -27,6 +27,9 @@ export interface InkPrefs {
   fingerDraw: boolean;
   /** Smoothing 0..1. */
   smoothing: number;
+  selectShape: 'lasso' | 'rect';
+  /** Hold the pen still at the end of a stroke and a rough line / circle / triangle / rectangle becomes neat. */
+  shapeSnap: boolean;
   favorites: PenFavorite[];
   recentColors: string[];
 }
@@ -42,6 +45,8 @@ export const DEFAULT_PREFS: InkPrefs = {
   eraserSize: 14,
   fingerDraw: false,
   smoothing: 0.5,
+  selectShape: 'lasso',
+  shapeSnap: false,
   favorites: [],
   recentColors: [],
 };
