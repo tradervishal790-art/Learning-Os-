@@ -102,11 +102,24 @@ export default function Research({ embedded = false, onClose }: ResearchProps) {
     setError('');
 
     try {
-      const cached = localStorage.getItem(cacheKey(q, locale));
+      const key = cacheKey(q, locale);
+      const cached = localStorage.getItem(key);
       if (cached) {
-        setResult(JSON.parse(cached));
-        setLoading(false);
-        return;
+        try {
+          const parsed = JSON.parse(cached) as ResearchResponse;
+          if (parsed && Array.isArray(parsed.results)) {
+            setResult(parsed);
+            setLoading(false);
+            return;
+          }
+        } catch {
+          // Ignore a malformed cache entry and fetch fresh results below.
+        }
+        try {
+          localStorage.removeItem(key);
+        } catch {
+          // Cache cleanup is best-effort; the fresh request can still proceed.
+        }
       }
 
       const res = await runResearch(q, t.research.genericError, locale);
