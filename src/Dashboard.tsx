@@ -679,7 +679,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
         </div>
         <button onClick={() => setShowSidebar(false)} className="md:hidden w-8 h-8 rounded-full border border-gray-200 dark:border-white/10 flex items-center justify-center">X</button>
       </div>
-      <nav className="space-y-1 flex-1">
+      <nav className="space-y-1 flex-1 min-h-0 overflow-y-auto overscroll-contain">
         {getSidebarItems(t).map((item, i) => {
           // Progressive disclosure: Revision/Notes/Videos/Progress only make
           // sense once a roadmap exists (they're all built around topics).
@@ -762,7 +762,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
               animate={{ x: 0 }}
               exit={{ x: -280 }}
               transition={{ duration: 0.25, ease: 'easeOut' }}
-              className="w-64 h-full bg-white dark:bg-black border-r border-gray-200 dark:border-white/10 p-6 flex flex-col"
+              className="w-64 h-[100dvh] max-h-[100dvh] overflow-hidden bg-white dark:bg-black border-r border-gray-200 dark:border-white/10 p-6 flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
               {SidebarContent}
