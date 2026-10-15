@@ -187,7 +187,7 @@ export default function Revision({ goals = [] }: RevisionProps) {
                   isReviewing ? 'border-black dark:border-white' : 'border-gray-200 dark:border-white/10'
                 }`}
               >
-                <div className="flex items-center gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                   <div className="w-16 h-16 rounded-2xl border border-gray-200 dark:border-white/10 flex flex-col items-center justify-center flex-shrink-0">
                     <span className="text-[10px] uppercase tracking-wider text-gray-400 dark:text-white/50">{t.revision.card.day}</span>
                     <span className="text-2xl font-bold">{item.day}</span>
@@ -233,7 +233,7 @@ export default function Revision({ goals = [] }: RevisionProps) {
                     </div>
                   </div>
 
-                  <div className="flex flex-col gap-2 flex-shrink-0">
+                  <div className="flex flex-row sm:flex-col gap-2 flex-shrink-0 w-full sm:w-auto">
                     {item.status === 'mastered' ? (
                       <span className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-white/10 text-xs font-medium text-center">
                         {t.revision.card.doneLabel}
@@ -242,13 +242,13 @@ export default function Revision({ goals = [] }: RevisionProps) {
                       <>
                         <button
                           onClick={() => handleMarkDone(item)}
-                          className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all border bg-black text-white dark:bg-white dark:text-black border-transparent hover:opacity-80"
+                          className="flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-xs font-medium transition-all border bg-black text-white dark:bg-white dark:text-black border-transparent hover:opacity-80"
                         >
                           {t.revision.card.doneCta}
                         </button>
                         <button
                           onClick={() => handleReviewNow(item.id)}
-                          className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-white/10 text-gray-600 dark:text-white/70 text-xs font-medium hover:bg-gray-100 dark:hover:bg-white/10 transition"
+                          className="flex-1 sm:flex-none px-3 py-1.5 rounded-lg border border-gray-200 dark:border-white/10 text-gray-600 dark:text-white/70 text-xs font-medium hover:bg-gray-100 dark:hover:bg-white/10 transition"
                         >
                           {isReviewing ? t.revision.card.reviewingCta : t.revision.card.reviewNowCta}
                         </button>
