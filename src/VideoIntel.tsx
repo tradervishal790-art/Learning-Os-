@@ -902,6 +902,17 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: i * 0.04 }}
+                        role="button"
+                        tabIndex={0}
+                        aria-pressed={selectedVideo?.id === video.id}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            finalizeAndSaveSession();
+                            setSelectedVideo(video);
+                            void verifyBridgeForVideo(video);
+                          }
+                        }}
                         onClick={() => {
                           finalizeAndSaveSession();
                           setSelectedVideo(video);
@@ -909,7 +920,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                           // picked — primary or fallback — not always primary.
                           void verifyBridgeForVideo(video);
                         }}
-                        className={`p-3 rounded-lg cursor-pointer transition border ${
+                        className={`p-3 rounded-lg cursor-pointer transition border focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black dark:focus-visible:outline-white ${
                           selectedVideo?.id === video.id
                             ? 'border-black dark:border-white bg-gray-50 dark:bg-white/10'
                             : 'border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/10'
