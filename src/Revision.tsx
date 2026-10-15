@@ -108,6 +108,7 @@ export default function Revision({ goals = [] }: RevisionProps) {
           <button
             key={id}
             onClick={() => setMode(id)}
+            aria-pressed={mode === id}
             className={`px-4 py-2 rounded-full text-sm font-medium border transition-all ${
               mode === id
                 ? 'bg-black text-white dark:bg-white dark:text-black border-transparent'
