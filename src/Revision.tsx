@@ -59,7 +59,11 @@ export default function Revision({ goals = [] }: RevisionProps) {
   // actually opened, not upfront on sign-in. No-op if this device already
   // has revision data.
   useEffect(() => {
-    void hydrateRevisionFromCloud().then(() => setItems(getRevisionDataForGoals(t.revisionTasks, goals)));
+    void hydrateRevisionFromCloud()
+      .then(() => setItems(getRevisionDataForGoals(t.revisionTasks, goals)))
+      .catch(() => {
+        // Keep the locally available revision items if cloud hydration fails.
+      });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
