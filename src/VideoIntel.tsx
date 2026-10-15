@@ -839,6 +839,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                   <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400 dark:text-white/40" />
                   <input
                     type="text"
+                    aria-label={t.videos.searchPlaceholder}
                     placeholder={t.videos.searchPlaceholder}
                     value={searchQuery}
                     onChange={(e) => {
