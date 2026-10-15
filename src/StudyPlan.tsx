@@ -462,7 +462,11 @@ function FileViewer({ topic, title, onDone, onClose }: { topic: StudyTopic; titl
         </button>
       </div>
       <div className="flex-1 overflow-auto">
-        {items === null ? null : items.length === 0 ? (
+        {items === null ? (
+          <div className="flex min-h-[40vh] items-center justify-center">
+            <div role="status" aria-label="Loading files" className="h-8 w-8 animate-spin rounded-full border-2 border-gray-300 border-t-black dark:border-white/20 dark:border-t-white" />
+          </div>
+        ) : items.length === 0 ? (
           <p className="p-6 text-sm text-gray-500 dark:text-white/60">{s.fileMissing}</p>
         ) : (
           <div className="max-w-4xl mx-auto p-3 space-y-3">
