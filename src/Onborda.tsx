@@ -88,7 +88,11 @@ const Onborda: React.FC<OnbordaProps> = ({
           const rect = element.getBoundingClientRect();
           const isInViewportWithOffset = rect.top >= -offset && rect.bottom <= window.innerHeight + offset;
           if (!isInView || !isInViewportWithOffset) {
-            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            element.scrollIntoView({
+              behavior: 'smooth',
+              // Keep the highlighted control above the fixed tour card on phones.
+              block: window.matchMedia('(max-width: 767px)').matches ? 'start' : 'center',
+            });
             setTimeout(() => setPointerPosition(getElementPosition(element)), 500);
           }
         }
@@ -111,7 +115,12 @@ const Onborda: React.FC<OnbordaProps> = ({
 
   useEffect(() => {
     if (elementToScroll && !isInView && isOnbordaVisible) {
-      elementToScroll.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+      elementToScroll.scrollIntoView({
+        behavior: 'smooth',
+        // Keep the highlighted control above the fixed tour card on phones.
+        block: window.matchMedia('(max-width: 767px)').matches ? 'start' : 'center',
+        inline: 'center',
+      });
     }
   }, [elementToScroll, isInView, isOnbordaVisible]);
 
@@ -300,7 +309,7 @@ const Onborda: React.FC<OnbordaProps> = ({
                 transition={cardTransition}
               />
               <div
-                className="absolute flex flex-col max-w-[100%] min-w-min pointer-events-auto z-[950] max-md:!fixed max-md:!left-4 max-md:!right-4 max-md:!bottom-4 max-md:!top-auto max-md:!transform-none max-md:!m-0"
+                className="absolute flex flex-col max-w-[100%] min-w-min pointer-events-auto z-[950] max-md:!fixed max-md:!left-4 max-md:!right-4 max-md:!bottom-4 max-md:!top-auto max-md:!transform-none max-md:!m-0 max-md:!max-h-[55dvh] max-md:!overflow-y-auto max-md:!overscroll-contain"
                 style={getCardStyle(currentTourSteps[currentStep]?.side)}
               >
                 <CardComponent
