@@ -292,9 +292,9 @@ function Quiz({
                       key={oi}
                       disabled={revealed}
                       onClick={() => setPicked((prev) => ({ ...prev, [qi]: oi }))}
-                      className={`w-full text-left px-3 py-2 text-sm rounded-lg border transition flex items-center gap-2 ${style} ${revealed ? 'cursor-default' : ''}`}
+                      className={`w-full min-w-0 text-left px-3 py-2 text-sm rounded-lg border transition flex items-start gap-2 ${style} ${revealed ? 'cursor-default' : ''}`}
                     >
-                      <span className="flex-1">{opt}</span>
+                      <span className="min-w-0 flex-1 break-words">{opt}</span>
                       {revealed && isCorrect && <Check className="w-4 h-4 text-green-500" />}
                       {revealed && isPicked && !isCorrect && <X className="w-4 h-4 text-red-500" />}
                     </button>
