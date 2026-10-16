@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Archive, ArchiveRestore, Check, ChevronRight, Copy, FileText, Folder as FolderIcon, FolderInput,
+  Archive, ArchiveRestore, Check, ChevronRight, Copy, FileText, GraduationCap, Folder as FolderIcon, FolderInput,
   FolderPlus, MoreVertical, Pencil, Pin, PinOff, Plus, RotateCcw, Search, Star, Tag, Trash2, X,
 } from 'lucide-react';
 import { useTranslation } from './i18n/LanguageContext';
@@ -8,10 +8,12 @@ import { format } from './i18n/format';
 import {
   FOLDER_COLORS, createFolder, createNote, deleteFolder, deleteNotesForever, duplicateNote,
   hydrateNotebook, moveNotes, recolorFolder, renameFolder, renameNote, restoreNotes, restoreSnapshot,
-  searchNoteIds, setArchived, setNoteTags, snapshotIndex, toggleFavorite, togglePin, trashNotes,
-  useNotebookIndex, type NoteFolder, type NoteMeta, type NotebookIndex,
+  searchNoteIds, setArchived, setConfidence, setExamDate, setNoteTags, setStudyStatus, snapshotIndex, toggleFavorite, togglePin, trashNotes,
+  useNotebookIndex, type NoteFolder, type NoteMeta, type NotebookIndex, type StudyStatus,
 } from './notebookStore';
 import { SaveChip } from './SaveChip';
+import StudyDialog from './StudyDialog';
+import { STUDY_STATUSES, examChip, examSoon, examSortKey } from './studyInfo';
 // The rich-text editor (TipTap) is the heaviest part of the notebook — load it only when a note opens.
 const NoteEditor = lazy(() => import('./NoteEditor'));
 
@@ -21,7 +23,8 @@ const NoteEditor = lazy(() => import('./NoteEditor'));
 // ============================================================
 
 type View = 'all' | 'favorites' | 'archive' | 'trash' | `folder:${string}`;
-type Sort = 'recent' | 'created' | 'title';
+type Sort = 'recent' | 'created' | 'title' | 'exam';
+type StatusFilter = 'all' | 'exam-soon' | StudyStatus;
 
 const btn = 'px-3 py-1.5 rounded-lg text-xs font-medium transition-all border';
 const btnPrimary = `${btn} bg-black text-white dark:bg-white dark:text-black border-transparent hover:opacity-80`;
@@ -50,8 +53,18 @@ function Menu({ items }: { items: MenuItem[] }) {
       </button>
       {open && (
         <>
-          <div className="fixed inset-0 z-20" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 z-30 mt-1 w-52 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-neutral-900 shadow-lg py-1">
+          {/* clicks here must NOT reach the note card underneath (that would also open the note) */}
+          <div
+            className="fixed inset-0 z-20"
+            onClick={(e) => {
+              e.stopPropagation();
+              setOpen(false);
+            }}
+          />
+          <div
+            className="absolute right-0 z-30 mt-1 w-52 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-neutral-900 shadow-lg py-1"
+            onClick={(e) => e.stopPropagation()}
+          >
             {items.map((it) => (
               <button
                 key={it.label}
@@ -94,6 +107,8 @@ export default function NoteLibrary() {
   const [view, setView] = useState<View>('all');
   const [sort, setSort] = useState<Sort>('recent');
   const [tag, setTag] = useState('');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [studyNoteId, setStudyNoteId] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [searchIds, setSearchIds] = useState<Set<string> | null>(null);
   const [selectMode, setSelectMode] = useState(false);
@@ -162,15 +177,19 @@ export default function NoteLibrary() {
       return true;
     });
     if (tag) list = list.filter((n) => n.tags.includes(tag));
+    if (statusFilter === 'exam-soon') list = list.filter((n) => examSoon(n.examDate));
+    else if (statusFilter !== 'all') list = list.filter((n) => (n.status ?? 'not-started') === statusFilter);
     if (searchIds) list = list.filter((n) => searchIds.has(n.id));
     const cmp = (a: NoteMeta, b: NoteMeta) =>
       sort === 'title'
         ? (a.title || t.untitled).localeCompare(b.title || t.untitled)
         : sort === 'created'
           ? b.createdAt.localeCompare(a.createdAt)
-          : b.updatedAt.localeCompare(a.updatedAt);
+          : sort === 'exam'
+            ? examSortKey(a.examDate) - examSortKey(b.examDate) || b.updatedAt.localeCompare(a.updatedAt)
+            : b.updatedAt.localeCompare(a.updatedAt);
     return [...list].sort((a, b) => (view !== 'trash' && a.pinned !== b.pinned ? (a.pinned ? -1 : 1) : cmp(a, b)));
-  }, [idx.notes, view, tag, searchIds, sort, t.untitled]);
+  }, [idx.notes, view, tag, statusFilter, searchIds, sort, t.untitled]);
 
   // ---------- helpers ----------
 
@@ -256,6 +275,7 @@ export default function NoteLibrary() {
           { label: t.rename, icon: <Pencil size={14} />, onClick: () => rename(n) },
           { label: n.pinned ? t.unpin : t.pin, icon: n.pinned ? <PinOff size={14} /> : <Pin size={14} />, onClick: () => togglePin(n.id, !n.pinned) },
           { label: n.favorite ? t.unfavorite : t.favorite, icon: <Star size={14} />, onClick: () => toggleFavorite(n.id, !n.favorite) },
+          { label: t.study.details, icon: <GraduationCap size={14} />, onClick: () => setStudyNoteId(n.id) },
           { label: t.editTags, icon: <Tag size={14} />, onClick: () => editTags(n) },
           { label: t.move, icon: <FolderInput size={14} />, onClick: () => setMoveIds([n.id]) },
           { label: t.duplicate, icon: <Copy size={14} />, onClick: () => void duplicateNote(n.id).then(() => flashToast(t.toastDuplicated)) },
@@ -302,6 +322,24 @@ export default function NoteLibrary() {
       <span className="text-xs opacity-60">{count}</span>
     </button>
   );
+
+  const statusLabel: Record<StudyStatus, string> = {
+    'not-started': t.study.statusNotStarted,
+    learning: t.study.statusLearning,
+    'needs-revision': t.study.statusNeedsRevision,
+    mastered: t.study.statusMastered,
+  };
+  const statusTone: Record<StudyStatus, string> = {
+    'not-started': '',
+    learning: 'bg-blue-500/15 text-blue-700 dark:text-blue-300',
+    'needs-revision': 'bg-amber-500/20 text-amber-800 dark:text-amber-300',
+    mastered: 'bg-green-500/20 text-green-800 dark:text-green-300',
+  };
+  const examText = (date: string | undefined): string | null => {
+    const c = examChip(date);
+    if (!c) return null;
+    return c.kind === 'today' ? t.study.examToday : c.kind === 'tomorrow' ? t.study.examTomorrow : c.kind === 'future' ? format(t.study.examInDays, c.days) : format(t.study.examPast, c.days);
+  };
 
   const emptyMessage =
     query.trim() || tag
@@ -430,6 +468,19 @@ export default function NoteLibrary() {
               <option value="recent">{t.sortRecent}</option>
               <option value="created">{t.sortCreated}</option>
               <option value="title">{t.sortTitle}</option>
+              <option value="exam">{t.study.sortExam}</option>
+            </select>
+            <select
+              aria-label={t.study.statusLabel}
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+              className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-black text-xs"
+            >
+              <option value="all">{t.study.filterAll}</option>
+              <option value="exam-soon">{t.study.filterExamSoon}</option>
+              {STUDY_STATUSES.map((st) => (
+                <option key={st} value={st}>{statusLabel[st]}</option>
+              ))}
             </select>
             {allTags.length > 0 && (
               <select
@@ -514,6 +565,17 @@ export default function NoteLibrary() {
                         {n.favorite && <Star size={13} className="shrink-0 text-amber-500" fill="currentColor" />}
                         <span className="font-medium truncate">{n.title || t.untitled}</span>
                       </div>
+                      {(n.status || n.examDate || n.confidence) && (
+                        <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                          {n.status && <span className={`px-2 py-0.5 rounded-full text-[11px] font-medium ${statusTone[n.status]}`}>{statusLabel[n.status]}</span>}
+                          {examText(n.examDate) && (
+                            <span className={`px-2 py-0.5 rounded-full text-[11px] font-medium ${examSoon(n.examDate, 3) ? 'bg-red-500/15 text-red-700 dark:text-red-300' : 'bg-gray-200/70 dark:bg-white/10 text-gray-600 dark:text-white/70'}`}>
+                              {examText(n.examDate)}
+                            </span>
+                          )}
+                          {n.confidence && <span className="text-[11px] text-gray-500 dark:text-white/60">{format(t.study.confidenceShort, n.confidence)}</span>}
+                        </div>
+                      )}
                       {n.preview && <p className="text-xs text-gray-500 dark:text-white/60 mt-1 line-clamp-2">{n.preview}</p>}
                       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-[11px] text-gray-400 dark:text-white/40">
                         <span>{t.edited} {shortDate(n.updatedAt)}</span>
@@ -541,6 +603,22 @@ export default function NoteLibrary() {
           )}
         </main>
       </div>
+
+      {studyNoteId && (() => {
+        const sn = idx.notes.find((x) => x.id === studyNoteId);
+        return sn ? (
+          <StudyDialog
+            note={sn}
+            onClose={() => setStudyNoteId(null)}
+            onSave={(v) => {
+              setStudyStatus([sn.id], v.status);
+              setConfidence(sn.id, v.confidence);
+              setExamDate(sn.id, v.examDate);
+              setStudyNoteId(null);
+            }}
+          />
+        ) : null;
+      })()}
 
       {/* move dialog */}
       {moveIds && (

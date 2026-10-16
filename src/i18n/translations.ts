@@ -429,6 +429,27 @@ export interface TranslationShape {
     offline: string;
     saveError: string;
     syncNow: string;
+    study: {
+      statusNotStarted: string;
+      statusLearning: string;
+      statusNeedsRevision: string;
+      statusMastered: string;
+      statusLabel: string;
+      confidenceLabel: string;
+      confidenceNone: string;
+      examDateLabel: string;
+      clearDate: string;
+      details: string;
+      save: string;
+      filterAll: string;
+      filterExamSoon: string;
+      sortExam: string;
+      examToday: string;
+      examTomorrow: string;
+      examInDays: string;
+      examPast: string;
+      confidenceShort: string;
+    };
     pageOps: {
       deleteConfirm: string;
       deleteBtn: string;
@@ -1559,6 +1580,27 @@ export const translations: Record<Locale, TranslationShape> = {
       offline: "Offline - saved on this device",
       saveError: "Could not save - storage is full or blocked",
       syncNow: "Sync now",
+      study: {
+        statusNotStarted: "Not started",
+        statusLearning: "Learning",
+        statusNeedsRevision: "Needs revision",
+        statusMastered: "Mastered",
+        statusLabel: "Study status",
+        confidenceLabel: "How confident are you?",
+        confidenceNone: "Not rated",
+        examDateLabel: "Exam date",
+        clearDate: "Clear date",
+        details: "Study details",
+        save: "Save",
+        filterAll: "All statuses",
+        filterExamSoon: "Exam within 2 weeks",
+        sortExam: "Exam date (soonest)",
+        examToday: "Exam today",
+        examTomorrow: "Exam tomorrow",
+        examInDays: "Exam in {0} days",
+        examPast: "Exam was {0} day(s) ago",
+        confidenceShort: "Confidence {0}/5",
+      },
       pageOps: {
         deleteConfirm: "Delete page {0}? Its text and handwriting will be removed. You can undo this right after.",
         deleteBtn: "Delete page",
@@ -2700,6 +2742,27 @@ export const translations: Record<Locale, TranslationShape> = {
       offline: "ऑफलाइन - इस डिवाइस पर सेव है",
       saveError: "सेव नहीं हो पाया - स्टोरेज भरा है या बंद है",
       syncNow: "अभी सिंक करो",
+      study: {
+        statusNotStarted: "शुरू नहीं किया",
+        statusLearning: "सीख रहा हूँ",
+        statusNeedsRevision: "दोहराना है",
+        statusMastered: "पक्का हो गया",
+        statusLabel: "पढ़ाई की स्थिति",
+        confidenceLabel: "आपको कितना भरोसा है?",
+        confidenceNone: "बताया नहीं",
+        examDateLabel: "परीक्षा की तारीख",
+        clearDate: "तारीख हटाओ",
+        details: "पढ़ाई की जानकारी",
+        save: "सेव करो",
+        filterAll: "सभी स्थितियाँ",
+        filterExamSoon: "2 हफ़्ते में परीक्षा",
+        sortExam: "परीक्षा की तारीख (सबसे पास)",
+        examToday: "परीक्षा आज है",
+        examTomorrow: "परीक्षा कल है",
+        examInDays: "परीक्षा {0} दिन में",
+        examPast: "परीक्षा {0} दिन पहले थी",
+        confidenceShort: "भरोसा {0}/5",
+      },
       pageOps: {
         deleteConfirm: "पेज {0} हटाना है? इसका टेक्स्ट और हैंडराइटिंग हट जाएगी। हटाने के तुरंत बाद वापस ला सकते हो।",
         deleteBtn: "पेज हटाओ",
@@ -3840,6 +3903,27 @@ export const translations: Record<Locale, TranslationShape> = {
       offline: "Offline - is device par save hai",
       saveError: "Save nahi ho paya - storage bhara hai ya band hai",
       syncNow: "Abhi sync karo",
+      study: {
+        statusNotStarted: "Shuru nahi kiya",
+        statusLearning: "Seekh raha hoon",
+        statusNeedsRevision: "Dohrana hai",
+        statusMastered: "Pakka ho gaya",
+        statusLabel: "Padhai ki sthiti",
+        confidenceLabel: "Aapko kitna bharosa hai?",
+        confidenceNone: "Bataya nahi",
+        examDateLabel: "Exam ki date",
+        clearDate: "Date hatao",
+        details: "Padhai ki jaankari",
+        save: "Save karo",
+        filterAll: "Saari sthitiyan",
+        filterExamSoon: "2 hafte mein exam",
+        sortExam: "Exam date (sabse paas)",
+        examToday: "Exam aaj hai",
+        examTomorrow: "Exam kal hai",
+        examInDays: "Exam {0} din mein",
+        examPast: "Exam {0} din pehle tha",
+        confidenceShort: "Bharosa {0}/5",
+      },
       pageOps: {
         deleteConfirm: "Page {0} hatana hai? Iska text aur handwriting hat jayegi. Hatane ke turant baad wapas la sakte ho.",
         deleteBtn: "Page hatao",

@@ -18,6 +18,7 @@
 
 import { useSyncExternalStore } from 'react';
 import { pullFromCloud, pushToCloudChecked, deleteFromCloud } from './cloudSync';
+import { parseLocalDate } from './studyInfo';
 
 // ---------- types ----------
 
@@ -45,7 +46,15 @@ export interface NoteMeta {
   pageCount: number;
   /** First ~160 chars of page 1, for list cards + instant search. */
   preview: string;
+  /** How well the student knows this note (Part 6). Missing = 'not-started'. */
+  status?: StudyStatus;
+  /** Self-rated confidence 1..5. Missing = not rated. */
+  confidence?: number;
+  /** Exam date as 'YYYY-MM-DD' (local calendar date). Missing = none. */
+  examDate?: string;
 }
+
+export type StudyStatus = 'not-started' | 'learning' | 'needs-revision' | 'mastered';
 
 export type InkKind =
   | 'ballpoint' | 'fountain' | 'felt' | 'pencil' | 'brush' | 'calligraphy'
@@ -515,17 +524,24 @@ export async function saveNoteContent(id: string, title: string, pages: NotePage
 
 // ---------- notes: library operations (all synchronous, all undoable by snapshot) ----------
 
+/** Merge a patch into a note; keys patched to `undefined` are REMOVED (Firestore rejects undefined values). */
+function applyPatch(n: NoteMeta, patch: Partial<NoteMeta>, t: string): NoteMeta {
+  const next: NoteMeta = { ...n, ...patch, updatedAt: t };
+  (Object.keys(patch) as (keyof NoteMeta)[]).forEach((k) => {
+    if (patch[k] === undefined) delete next[k];
+  });
+  return next;
+}
+
 function patchNote(id: string, patch: Partial<NoteMeta>): void {
-  const idx = getIndex();
-  const t = nowIso();
-  commitIndex({ ...idx, notes: idx.notes.map((n) => (n.id === id ? { ...n, ...patch, updatedAt: t } : n)) });
+  patchNotes([id], patch);
 }
 
 function patchNotes(ids: string[], patch: Partial<NoteMeta>): void {
   const set = new Set(ids);
   const idx = getIndex();
   const t = nowIso();
-  commitIndex({ ...idx, notes: idx.notes.map((n) => (set.has(n.id) ? { ...n, ...patch, updatedAt: t } : n)) });
+  commitIndex({ ...idx, notes: idx.notes.map((n) => (set.has(n.id) ? applyPatch(n, patch, t) : n)) });
 }
 
 export const renameNote = (id: string, title: string) => patchNote(id, { title: title.trim() });
@@ -534,6 +550,15 @@ export const setNoteTags = (id: string, tags: string[]) =>
 export const togglePin = (id: string, on: boolean) => patchNote(id, { pinned: on });
 export const toggleFavorite = (id: string, on: boolean) => patchNote(id, { favorite: on });
 export const setArchived = (ids: string[], on: boolean) => patchNotes(ids, { archived: on });
+
+// ---- study details (Part 6). 'not-started' / no confidence / no date are stored as "absent". ----
+export const setStudyStatus = (ids: string[], status: StudyStatus) =>
+  patchNotes(ids, { status: status === 'not-started' ? undefined : status });
+export const setConfidence = (id: string, confidence: number) =>
+  patchNote(id, { confidence: confidence >= 1 && confidence <= 5 ? Math.round(confidence) : undefined });
+/** `date` = 'YYYY-MM-DD', or null to clear. Anything that is not a real calendar date clears it. */
+export const setExamDate = (id: string, date: string | null) =>
+  patchNote(id, { examDate: date && parseLocalDate(date) ? date : undefined });
 export const moveNotes = (ids: string[], folderId: string | null) => patchNotes(ids, { folderId });
 export const trashNotes = (ids: string[]) => patchNotes(ids, { trashedAt: nowIso(), pinned: false });
 export const restoreNotes = (ids: string[]) => patchNotes(ids, { trashedAt: null });
