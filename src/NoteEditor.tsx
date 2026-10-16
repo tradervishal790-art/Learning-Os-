@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Editor } from '@tiptap/react';
-import { ArrowLeft, ChevronDown, ChevronUp, Copy, Minimize2, Plus, Star, Trash2 } from 'lucide-react';
+import { ArrowLeft, ChevronDown, ChevronUp, Copy, LayoutGrid, Minimize2, Plus, Star, Trash2, X } from 'lucide-react';
 import { useTranslation } from './i18n/LanguageContext';
 import { format } from './i18n/format';
 import { loadNoteContent, saveNoteContent, getIndex, type InkStroke, type NotePage } from './notebookStore';
@@ -8,6 +8,13 @@ import { useInkPrefs, type InkMode } from './inkPrefs';
 import InkToolbar, { ModeSwitch } from './InkToolbar';
 import InkOcrDialog, { type OcrState } from './InkOcrDialog';
 import ConfirmDialog from './ConfirmDialog';
+import PageThumbnails from './PageThumbnails';
+import ZoomControls from './ZoomControls';
+import { isTemplateId } from './pageTemplates';
+import { useZoom } from './useZoom';
+import { useAppDark } from './useAppDark';
+import { useElementSize, useFillHeight } from './useLayoutSize';
+import { useMediaQuery } from './useMediaQuery';
 import { addPageAfter, blankPage, deletePage, duplicatePage, inkOf, movePage, patchPage, restorePage } from './pageOps';
 import { recognizeHandwriting } from './inkOcrApi';
 import { getClipboard, nextPasteOffset, setClipboard, useClipboardCount } from './inkClipboard';
@@ -25,6 +32,8 @@ import EditorToolbar from './EditorToolbar';
 
 const AUTOSAVE_MS = 700;
 const OCR_OK_KEY = 'learning_os_ink_ocr_ok';
+const NO_STROKES: InkStroke[] = []; // one shared empty array keeps the memo'd thumbnails from re-rendering
+const COLUMN_MAX = 768; // page width at 100% zoom (px)
 
 export default function NoteEditor({ id, onBack }: { id: string; onBack: () => void }) {
   const t = useTranslation().notebook;
@@ -412,19 +421,6 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activePage, ready]);
 
-  /** Everything the page-list panel (thumbnails) needs. */
-  const pageActions = {
-    add: addPageAt,
-    duplicate: duplicatePageById,
-    remove: askDeletePage,
-    move: movePageById,
-    setTemplate: setPageTemplate,
-    setPaper: setPagePaper,
-    toggleBookmark,
-    goTo: scrollToPage,
-  };
-  void pageActions; // wired to the thumbnail panel in the next step
-
   // Word/character counts across all pages, kept in a cheap side map.
   const [stats, setStats] = useState<Record<string, string>>({});
   const totals = useMemo(() => {
@@ -432,6 +428,93 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
     const words = text.trim() ? text.trim().split(/\s+/).length : 0;
     return { words, chars: text.replace(/\s/g, '').length, minutes: Math.max(1, Math.ceil(words / 200)) };
   }, [pages, stats]);
+
+  // ---------- layout: pages panel, zoom, scrolling area ----------
+
+  const appDark = useAppDark();
+  const isDesktop = useMediaQuery('(min-width: 768px)');
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const scrollerRef = useRef<HTMLDivElement | null>(null);
+  const [scrollerEl, setScrollerEl] = useState<HTMLDivElement | null>(null);
+  const setScroller = useCallback((el: HTMLDivElement | null) => {
+    scrollerRef.current = el;
+    setScrollerEl(el);
+  }, []);
+  const { zoom, fitWidth, zoomIn, zoomOut } = useZoom(scrollerRef);
+  const scroller = useElementSize(scrollerEl);
+  useFillHeight(scrollerEl, 64);
+  const [viewPage, setViewPage] = useState<string | null>(null);
+
+  // Which page is on screen (for the thumbnail highlight). Separate from `activePage`, which is where
+  // the student last wrote and which Undo applies to.
+  useEffect(() => {
+    if (!scrollerEl) return;
+    let raf = 0;
+    const spy = () => {
+      raf = 0;
+      const top = scrollerEl.getBoundingClientRect().top + 120;
+      const els = Array.from(scrollerEl.querySelectorAll<HTMLElement>('[data-page-id]'));
+      const hit = els.find((el) => el.getBoundingClientRect().bottom > top) ?? els[els.length - 1];
+      const pid = hit?.getAttribute('data-page-id') ?? null;
+      setViewPage((cur) => (cur === pid ? cur : pid));
+    };
+    const onScroll = () => {
+      if (!raf) raf = requestAnimationFrame(spy);
+    };
+    scrollerEl.addEventListener('scroll', onScroll, { passive: true });
+    spy();
+    return () => {
+      scrollerEl.removeEventListener('scroll', onScroll);
+      cancelAnimationFrame(raf);
+    };
+  }, [scrollerEl, pages.length]);
+
+  const thumbPages = useMemo(
+    () =>
+      pages.map((p) => ({
+        id: p.id,
+        strokes: ink[p.id] ?? NO_STROKES,
+        template: isTemplateId(p.template) ? p.template : undefined,
+        paper: p.paper,
+        preview: p.text.slice(0, 80),
+        bookmarked: !!p.bookmarked,
+      })),
+    [pages, ink]
+  );
+  const thumbLabels = useMemo(
+    () => ({
+      title: t.pageOps.panelTitle, page: t.editor.pageLabel, add: t.pageOps.panelAdd, duplicate: t.pageOps.duplicatePage,
+      delete: t.pageOps.deleteBtn, moveUp: t.pageOps.moveUp, moveDown: t.pageOps.moveDown, bookmark: t.pageOps.bookmark,
+      removeBookmark: t.pageOps.removeBookmark, template: t.pageOps.template, paper: t.pageOps.paper,
+      templates: { blank: t.pageOps.tplBlank, ruled: t.pageOps.tplRuled, dotted: t.pageOps.tplDotted, grid: t.pageOps.tplGrid, cornell: t.pageOps.tplCornell },
+      collapse: t.pageOps.collapsePanel, expand: t.pageOps.expandPanel,
+    }),
+    [t]
+  );
+
+  const columnW = Math.round(Math.min(Math.max(scroller.w - 24, 200), COLUMN_MAX) * zoom);
+
+  const thumbs = (
+    <PageThumbnails
+      pages={thumbPages}
+      activeId={viewPage ?? activePage}
+      dark={appDark}
+      labels={thumbLabels}
+      onSelect={(pid) => {
+        setViewPage(pid);
+        setActivePage(pid);
+        scrollToPage(pid);
+        setDrawerOpen(false);
+      }}
+      onAdd={(afterId, template) => addPageAt(afterId, template)}
+      onDuplicate={duplicatePageById}
+      onDelete={askDeletePage}
+      onMove={movePageById}
+      onSetTemplate={setPageTemplate}
+      onSetPaper={setPagePaper}
+      onToggleBookmark={toggleBookmark}
+    />
+  );
 
   if (failed) {
     return (
@@ -444,7 +527,7 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
   if (!ready) return null;
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="max-w-6xl mx-auto">
       {focusMode ? (
         <div className="flex justify-end mb-2">
           <button
@@ -455,19 +538,36 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
           </button>
         </div>
       ) : (
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
           <button
             onClick={onBack}
             className="flex items-center gap-1.5 text-sm text-gray-600 dark:text-white/70 hover:text-black dark:hover:text-white"
           >
             <ArrowLeft size={16} /> {t.editor.back}
           </button>
-          <SaveChip />
+          <div className="flex items-center gap-2">
+            {!isDesktop && (
+              <button
+                onClick={() => setDrawerOpen(true)}
+                className="h-9 px-3 rounded-lg border border-gray-200 dark:border-white/10 text-xs flex items-center gap-1.5 text-gray-700 dark:text-white/80"
+              >
+                <LayoutGrid size={14} /> {t.pageOps.pagesButton}
+              </button>
+            )}
+            <ZoomControls
+              zoom={zoom}
+              onZoomIn={zoomIn}
+              onZoomOut={zoomOut}
+              onFit={fitWidth}
+              labels={{ zoomIn: t.pageOps.zoomIn, zoomOut: t.pageOps.zoomOut, fit: t.pageOps.zoomFit }}
+            />
+            <SaveChip />
+          </div>
         </div>
       )}
 
       {!focusMode && (
-        <div className="sticky top-0 z-40 -mx-1 px-1 py-2 bg-white/95 dark:bg-black/95 backdrop-blur border-b border-gray-200 dark:border-white/10 mb-4">
+        <div className="py-2 border-b border-gray-200 dark:border-white/10 mb-3">
           <ModeSwitch mode={mode} onMode={chooseMode} />
           {mode === 'type' ? (
             <EditorToolbar editor={active} onFocusMode={() => setFocusMode(true)} />
@@ -508,45 +608,65 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
         value={title}
         onChange={(e) => changeTitle(e.target.value)}
         placeholder={t.editor.titlePlaceholder}
-        className="w-full bg-transparent text-2xl font-bold mb-4 outline-none placeholder:text-gray-300 dark:placeholder:text-white/30"
+        className="w-full bg-transparent text-2xl font-bold mb-3 outline-none placeholder:text-gray-300 dark:placeholder:text-white/30"
       />
 
-      {pages.map((p, i) => (
-        <div key={p.id} data-page-id={p.id} className="mb-4 scroll-mt-40">
-          <div className="flex items-center justify-between mb-1 text-xs text-gray-400 dark:text-white/40">
-            <span>{format(t.pageOps.pageOf, i + 1, pages.length)}</span>
-            <span className="flex items-center gap-0.5">
-              <PageBtn label={p.bookmarked ? t.pageOps.removeBookmark : t.pageOps.bookmark} active={!!p.bookmarked} onClick={() => toggleBookmark(p.id)}>
-                <Star size={14} fill={p.bookmarked ? 'currentColor' : 'none'} />
-              </PageBtn>
-              <PageBtn label={t.pageOps.moveUp} disabled={i === 0} onClick={() => movePageById(p.id, i - 1)}><ChevronUp size={14} /></PageBtn>
-              <PageBtn label={t.pageOps.moveDown} disabled={i === pages.length - 1} onClick={() => movePageById(p.id, i + 1)}><ChevronDown size={14} /></PageBtn>
-              <PageBtn label={t.pageOps.duplicatePage} onClick={() => duplicatePageById(p.id)}><Copy size={14} /></PageBtn>
-              <PageBtn label={t.pageOps.deleteBtn} onClick={() => askDeletePage(p.id)}><Trash2 size={14} /></PageBtn>
-            </span>
+      <div className="flex gap-3">
+        {isDesktop && !focusMode && (
+          <div className="shrink-0" style={{ height: scroller.h || undefined }}>
+            {thumbs}
           </div>
-          <PageEditor
-            page={p}
-            strokes={ink[p.id] ?? []}
-            placeholder={i === 0 ? t.editor.bodyPlaceholder : ''}
-            autoFocus={focusNew === p.id}
-            primary={i === 0}
-            mode={mode}
-            prefs={prefs}
-            selectedIds={selection?.pageId === p.id ? selection.ids : []}
-            onSelect={selectOn}
-            onEditor={(pageId, ed) => (editors.current[pageId] = ed)}
-            onChange={changePage}
-            onActive={(ed, pageId) => {
-              setActive(ed);
-              setActivePage(pageId);
-            }}
-            onInk={commitInk}
-          />
-        </div>
-      ))}
+        )}
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
+        {/* The pages scroll inside their own box, so zooming (and scrolling sideways when zoomed in) never moves the toolbar. */}
+        <div
+          ref={setScroller}
+          className="flex-1 min-w-0 overflow-auto rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/[0.02]"
+          style={{ touchAction: 'pan-x pan-y' }}
+        >
+          <div className="py-3" style={{ width: Math.max(scroller.w, columnW + 24) }}>
+            <div style={{ width: columnW, margin: '0 auto' }}>
+              {pages.map((p, i) => (
+                <div key={p.id} data-page-id={p.id} className="mb-4 scroll-mt-2">
+                  <div className="flex items-center justify-between mb-1 text-xs text-gray-400 dark:text-white/40">
+                    <span>{format(t.pageOps.pageOf, i + 1, pages.length)}</span>
+                    <span className="flex items-center gap-0.5">
+                      <PageBtn label={p.bookmarked ? t.pageOps.removeBookmark : t.pageOps.bookmark} active={!!p.bookmarked} onClick={() => toggleBookmark(p.id)}>
+                        <Star size={14} fill={p.bookmarked ? 'currentColor' : 'none'} />
+                      </PageBtn>
+                      <PageBtn label={t.pageOps.moveUp} disabled={i === 0} onClick={() => movePageById(p.id, i - 1)}><ChevronUp size={14} /></PageBtn>
+                      <PageBtn label={t.pageOps.moveDown} disabled={i === pages.length - 1} onClick={() => movePageById(p.id, i + 1)}><ChevronDown size={14} /></PageBtn>
+                      <PageBtn label={t.pageOps.duplicatePage} onClick={() => duplicatePageById(p.id)}><Copy size={14} /></PageBtn>
+                      <PageBtn label={t.pageOps.deleteBtn} onClick={() => askDeletePage(p.id)}><Trash2 size={14} /></PageBtn>
+                    </span>
+                  </div>
+                  <PageEditor
+                    page={p}
+                    strokes={ink[p.id] ?? NO_STROKES}
+                    placeholder={i === 0 ? t.editor.bodyPlaceholder : ''}
+                    autoFocus={focusNew === p.id}
+                    primary={i === 0}
+                    mode={mode}
+                    prefs={prefs}
+                    zoom={zoom}
+                    selectedIds={selection?.pageId === p.id ? selection.ids : []}
+                    onSelect={selectOn}
+                    onEditor={(pageId, ed) => (editors.current[pageId] = ed)}
+                    onChange={changePage}
+                    onActive={(ed, pageId) => {
+                      setActive(ed);
+                      setActivePage(pageId);
+                    }}
+                    onInk={commitInk}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3 mt-3">
         <button
           onClick={() => addPageAt(pages[pages.length - 1]?.id ?? null)}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-200 dark:border-white/10 text-gray-600 dark:text-white/70 hover:bg-gray-100 dark:hover:bg-white/10"
@@ -559,6 +679,15 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
           <span>{format(t.editor.readTime, totals.minutes)}</span>
         </div>
       </div>
+
+      {!isDesktop && drawerOpen && (
+        <div className="fixed inset-0 z-50 flex">
+          <div className="h-full bg-white dark:bg-black">{thumbs}</div>
+          <button aria-label={t.pageOps.closePanel} className="flex-1 bg-black/40 flex items-start justify-end p-3" onClick={() => setDrawerOpen(false)}>
+            <X size={20} className="text-white" />
+          </button>
+        </div>
+      )}
       {confirmDeleteId && (
         <ConfirmDialog
           danger

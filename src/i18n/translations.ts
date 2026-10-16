@@ -441,6 +441,22 @@ export interface TranslationShape {
       pageOf: string;
       duplicatePage: string;
       addPageAfter: string;
+      panelTitle: string;
+      panelAdd: string;
+      template: string;
+      paper: string;
+      collapsePanel: string;
+      expandPanel: string;
+      tplBlank: string;
+      tplRuled: string;
+      tplDotted: string;
+      tplGrid: string;
+      tplCornell: string;
+      zoomIn: string;
+      zoomOut: string;
+      zoomFit: string;
+      pagesButton: string;
+      closePanel: string;
     };
     ink: {
       modeType: string;
@@ -1555,6 +1571,22 @@ export const translations: Record<Locale, TranslationShape> = {
         pageOf: "Page {0} of {1}",
         duplicatePage: "Duplicate page",
         addPageAfter: "Add page after this",
+        panelTitle: "Pages",
+        panelAdd: "Add page",
+        template: "Template",
+        paper: "Paper",
+        collapsePanel: "Hide pages panel",
+        expandPanel: "Show pages panel",
+        tplBlank: "Blank",
+        tplRuled: "Ruled",
+        tplDotted: "Dotted",
+        tplGrid: "Grid",
+        tplCornell: "Cornell",
+        zoomIn: "Zoom in",
+        zoomOut: "Zoom out",
+        zoomFit: "Fit",
+        pagesButton: "Pages",
+        closePanel: "Close",
       },
       ink: {
         modeType: "Type",
@@ -2680,6 +2712,22 @@ export const translations: Record<Locale, TranslationShape> = {
         pageOf: "पेज {0} / {1}",
         duplicatePage: "पेज की कॉपी बनाओ",
         addPageAfter: "इसके बाद पेज जोड़ो",
+        panelTitle: "पेज",
+        panelAdd: "पेज जोड़ो",
+        template: "टेम्पलेट",
+        paper: "कागज़",
+        collapsePanel: "पेज पैनल छुपाओ",
+        expandPanel: "पेज पैनल दिखाओ",
+        tplBlank: "सादा",
+        tplRuled: "लाइन वाला",
+        tplDotted: "बिंदु वाला",
+        tplGrid: "ग्रिड",
+        tplCornell: "कॉर्नेल",
+        zoomIn: "ज़ूम इन",
+        zoomOut: "ज़ूम आउट",
+        zoomFit: "फिट",
+        pagesButton: "पेज",
+        closePanel: "बंद करो",
       },
       ink: {
         modeType: "टाइप",
@@ -3804,6 +3852,22 @@ export const translations: Record<Locale, TranslationShape> = {
         pageOf: "Page {0} / {1}",
         duplicatePage: "Page ki copy banao",
         addPageAfter: "Iske baad page jodo",
+        panelTitle: "Pages",
+        panelAdd: "Page jodo",
+        template: "Template",
+        paper: "Kaagaz",
+        collapsePanel: "Pages panel chhupao",
+        expandPanel: "Pages panel dikhao",
+        tplBlank: "Saada",
+        tplRuled: "Line wala",
+        tplDotted: "Bindu wala",
+        tplGrid: "Grid",
+        tplCornell: "Cornell",
+        zoomIn: "Zoom in",
+        zoomOut: "Zoom out",
+        zoomFit: "Fit",
+        pagesButton: "Pages",
+        closePanel: "Band karo",
       },
       ink: {
         modeType: "Type",

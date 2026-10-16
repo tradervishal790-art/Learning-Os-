@@ -5,6 +5,9 @@ import { pageToHtml, type InkStroke, type NotePage } from './notebookStore';
 import type { InkMode, InkPrefs } from './inkPrefs';
 import { PAGE_RATIO, PAGE_UNITS, inkExtentY } from './inkEngine';
 import InkLayer from './InkLayer';
+import PageBackground from './PageBackground';
+import { isTemplateId, paperIsDark } from './pageTemplates';
+import { useAppDark } from './useAppDark';
 import './noteEditor.css';
 
 /** One page "sheet": highlights under the text, rich text in the middle, pen ink on top. */
@@ -16,6 +19,7 @@ export default function PageEditor({
   primary,
   mode,
   prefs,
+  zoom,
   selectedIds,
   onChange,
   onActive,
@@ -31,6 +35,8 @@ export default function PageEditor({
   primary: boolean;
   mode: InkMode;
   prefs: InkPrefs;
+  /** 1 = fit width. Text scales with the sheet, so zooming behaves like zooming a real page. */
+  zoom: number;
   selectedIds: string[];
   onChange: (pageId: string, html: string, text: string) => void;
   onActive: (editor: Editor, pageId: string) => void;
@@ -77,12 +83,19 @@ export default function PageEditor({
   // At least an A4 sheet; grows when handwriting reaches the bottom.
   const minHeight = size.w > 0 ? Math.max(size.w * PAGE_RATIO, extent * scale + 160) : undefined;
 
+  const appDark = useAppDark();
+  const template = isTemplateId(page.template) ? page.template : 'blank';
+  const darkPaper = paperIsDark(page.paper, appDark);
+
   return (
     <div
       ref={sheet}
-      style={{ minHeight }}
-      className="relative isolate p-4 rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 focus-within:border-gray-400 dark:focus-within:border-white/30"
+      style={{ minHeight, fontSize: `${16 * zoom}px` }}
+      className={`relative isolate p-4 rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 focus-within:border-gray-400 dark:focus-within:border-white/30 ${
+        darkPaper ? 'note-paper-dark' : ''
+      }`}
     >
+      {size.w > 0 && <PageBackground template={template} paper={page.paper} width={size.w} height={size.h} dark={appDark} />}
       <div className="relative z-10">
         <EditorContent editor={editor} />
       </div>
@@ -93,6 +106,7 @@ export default function PageEditor({
           height={size.h}
           mode={mode}
           prefs={prefs}
+          paperDark={darkPaper}
           selectedIds={selectedIds}
           onSelect={(ids) => onSelect(page.id, ids)}
           onCommit={(next) => onInk(page.id, next)}

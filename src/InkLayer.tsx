@@ -32,7 +32,7 @@ type XOp = 'move' | 'nw' | 'ne' | 'se' | 'sw' | 'rot';
 type Gesture =
   | { type: 'draw'; id: number; stroke: InkStroke; anchor: [number, number]; snapped: boolean; timer?: ReturnType<typeof setTimeout> }
   | { type: 'erase'; id: number; working: InkStroke[]; last: [number, number] }
-  | { type: 'pan'; id: number; lastY: number; scroller: HTMLElement | null }
+  | { type: 'pan'; id: number; lastX: number; lastY: number; scroller: HTMLElement | null; suspended: boolean }
   | { type: 'lasso'; id: number; start: [number, number]; pts: [number, number][]; sx: number; sy: number; moved: boolean }
   | { type: 'xform'; id: number; op: XOp; start: [number, number]; pivot: [number, number]; box: Box; sel: InkStroke[]; xf: Xform };
 
@@ -53,7 +53,7 @@ const HOLD_MS = 550; // hold still this long to snap a shape
 interface Preview { box: Box; rotDeg: number }
 
 export default function InkLayer({
-  strokes, width, height, mode, prefs, selectedIds, onCommit, onActivate, onSelect,
+  strokes, width, height, mode, prefs, selectedIds, paperDark = false, onCommit, onActivate, onSelect,
 }: {
   strokes: InkStroke[];
   width: number;
@@ -61,6 +61,8 @@ export default function InkLayer({
   mode: InkMode;
   prefs: InkPrefs;
   selectedIds: string[];
+  /** The paper is dark (e.g. a charcoal page in light theme): 'auto' ink must be light. */
+  paperDark?: boolean;
   onCommit: (next: InkStroke[]) => void;
   onActivate: () => void;
   onSelect: (ids: string[]) => void;
@@ -79,7 +81,8 @@ export default function InkLayer({
 
   const [draft, setDraft] = useState<InkStroke[] | null>(null); // strokes while erasing / dragging
   const [preview, setPreview] = useState<Preview | null>(null);
-  const [dark, setDark] = useState(isDarkNow);
+  const [themeDark, setDark] = useState(isDarkNow);
+  const dark = themeDark || paperDark;
   const shown = draft ?? strokes;
   const scale = width > 0 ? width / PAGE_UNITS : 1;
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -203,6 +206,11 @@ export default function InkLayer({
   // ---------- pointer: drawing / erasing / lasso (on the live canvas) ----------
 
   const onDown = (e: React.PointerEvent) => {
+    // a second finger lands while one finger is scrolling: that is a pinch-zoom, stop scrolling
+    if (e.pointerType === 'touch' && gesture.current?.type === 'pan') {
+      gesture.current.suspended = true;
+      return;
+    }
     if (mode === 'type' || gesture.current) return;
     if (e.pointerType === 'mouse' && e.button !== 0 && e.button !== 5) return;
     if (e.pointerType === 'pen') lastPen.current = Date.now();
@@ -210,7 +218,7 @@ export default function InkLayer({
     if (e.pointerType === 'touch') {
       if (!prefs.fingerDraw) {
         // a finger scrolls the page
-        gesture.current = { type: 'pan', id: e.pointerId, lastY: e.clientY, scroller: findScroller(liveRef.current) };
+        gesture.current = { type: 'pan', id: e.pointerId, lastX: e.clientX, lastY: e.clientY, scroller: findScroller(liveRef.current), suspended: false };
         liveRef.current!.setPointerCapture(e.pointerId);
         return;
       }
@@ -270,10 +278,13 @@ export default function InkLayer({
     if (g.id !== e.pointerId) return;
 
     if (g.type === 'pan') {
+      const dx = g.lastX - e.clientX;
       const dy = g.lastY - e.clientY;
+      g.lastX = e.clientX;
       g.lastY = e.clientY;
-      if (g.scroller) g.scroller.scrollBy(0, dy);
-      else window.scrollBy(0, dy);
+      if (g.suspended) return; // two fingers = pinch zoom, the zoom handler owns the scroll position
+      if (g.scroller) g.scroller.scrollBy(dx, dy);
+      else window.scrollBy(dx, dy);
       return;
     }
     if (g.type === 'xform') return; // handled by the overlay
