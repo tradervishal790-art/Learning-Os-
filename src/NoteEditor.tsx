@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Editor } from '@tiptap/react';
-import { ArrowLeft, Minimize2, Plus } from 'lucide-react';
+import { ArrowLeft, ChevronDown, ChevronUp, Copy, Minimize2, Plus, Star, Trash2 } from 'lucide-react';
 import { useTranslation } from './i18n/LanguageContext';
 import { format } from './i18n/format';
 import { loadNoteContent, saveNoteContent, getIndex, type InkStroke, type NotePage } from './notebookStore';
 import { useInkPrefs, type InkMode } from './inkPrefs';
 import InkToolbar, { ModeSwitch } from './InkToolbar';
 import InkOcrDialog, { type OcrState } from './InkOcrDialog';
+import ConfirmDialog from './ConfirmDialog';
+import { addPageAfter, blankPage, deletePage, duplicatePage, inkOf, movePage, patchPage, restorePage } from './pageOps';
 import { recognizeHandwriting } from './inkOcrApi';
 import { getClipboard, nextPasteOffset, setClipboard, useClipboardCount } from './inkClipboard';
 import {
@@ -23,7 +25,6 @@ import EditorToolbar from './EditorToolbar';
 
 const AUTOSAVE_MS = 700;
 const OCR_OK_KEY = 'learning_os_ink_ocr_ok';
-const newPageId = () => `pg_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 
 export default function NoteEditor({ id, onBack }: { id: string; onBack: () => void }) {
   const t = useTranslation().notebook;
@@ -48,6 +49,9 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
   const [ocr, setOcr] = useState<(OcrState & { pageId: string; ids: string[] }) | null>(null);
   const ocrToken = useRef(0);
   const clipCount = useClipboardCount();
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [deletedPage, setDeletedPage] = useState<{ page: NotePage; ink: InkStroke[]; index: number } | null>(null);
+  const deletedTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   // Latest values for the unmount / pagehide flush (state would be stale there).
   const latest = useRef({ title: '', pages: [] as NotePage[] });
@@ -314,15 +318,112 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
     return () => window.removeEventListener('keydown', onKey);
   });
 
-  const addPage = () => {
-    const page: NotePage = { id: newPageId(), text: '', html: '<p></p>' };
-    const next = [...latest.current.pages, page];
+  // ---------- pages: add / duplicate / delete / reorder / bookmark ----------
+  // Always addressed by page id. `latest.current.pages` holds the freshest text + ink, so every
+  // change starts from it and then refreshes the rendered list.
+
+  const setAllPages = (next: NotePage[]) => {
     commit(latest.current.title, next);
+    setPages(next);
+  };
+
+  const scrollToPage = (id: string) =>
+    requestAnimationFrame(() => document.querySelector(`[data-page-id="${id}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+
+  const addPageAt = (afterId: string | null, template?: string) => {
+    const page = blankPage({ template });
     inkRef.current = { ...inkRef.current, [page.id]: [] };
     setInk(inkRef.current);
-    setPages(next);
+    setAllPages(addPageAfter(latest.current.pages, afterId, page).pages);
     setFocusNew(page.id);
+    scrollToPage(page.id);
   };
+
+  const duplicatePageById = (id: string) => {
+    const r = duplicatePage(latest.current.pages, id);
+    if (!r) return;
+    inkRef.current = { ...inkRef.current, [r.copy.id]: inkOf(r.copy) };
+    setInk(inkRef.current);
+    setAllPages(r.pages);
+    scrollToPage(r.copy.id);
+  };
+
+  const askDeletePage = (id: string) => {
+    if (latest.current.pages.length <= 1) return flash(t.pageOps.needOnePage);
+    setConfirmDeleteId(id);
+  };
+
+  const deletePageById = (id: string) => {
+    setConfirmDeleteId(null);
+    const r = deletePage(latest.current.pages, id);
+    if (!r) return;
+    const { [id]: gone, ...restInk } = inkRef.current;
+    inkRef.current = restInk;
+    setInk(restInk);
+    delete hist.current[id];
+    delete editors.current[id];
+    if (selection?.pageId === id) setSelection(null);
+    if (activePage === id) {
+      const nextActive = r.pages[Math.min(r.index, r.pages.length - 1)];
+      setActivePage(nextActive.id);
+      setActive(editors.current[nextActive.id] ?? null);
+    }
+    setAllPages(r.pages);
+    // keep it for a moment so Undo can bring it back (text, handwriting and position)
+    clearTimeout(deletedTimer.current);
+    setDeletedPage({ page: r.removed, ink: gone ?? [], index: r.index });
+    deletedTimer.current = setTimeout(() => setDeletedPage(null), 8000);
+  };
+
+  const undoDeletePage = () => {
+    if (!deletedPage) return;
+    const { page, ink: strokes, index } = deletedPage;
+    clearTimeout(deletedTimer.current);
+    setDeletedPage(null);
+    inkRef.current = { ...inkRef.current, [page.id]: strokes };
+    setInk(inkRef.current);
+    setAllPages(restorePage(latest.current.pages, { ...page, ink: strokes }, index));
+    scrollToPage(page.id);
+  };
+
+  const movePageById = (id: string, toIndex: number) => setAllPages(movePage(latest.current.pages, id, toIndex));
+  const setPageTemplate = (id: string, template: string) => setAllPages(patchPage(latest.current.pages, id, { template }));
+  const setPagePaper = (id: string, paper: string) => setAllPages(patchPage(latest.current.pages, id, { paper }));
+  const toggleBookmark = (id: string) => {
+    const cur = latest.current.pages.find((p) => p.id === id);
+    if (cur) setAllPages(patchPage(latest.current.pages, id, { bookmarked: !cur.bookmarked }));
+  };
+
+  // Open the note where the student left off (this device only).
+  const lastPageKey = `learning_os_note_lastpage_${id}`;
+  useEffect(() => {
+    if (!ready) return;
+    const saved = localStorage.getItem(lastPageKey);
+    if (saved && saved !== pages[0]?.id && pages.some((p) => p.id === saved)) setTimeout(() => scrollToPage(saved), 150);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready]);
+  useEffect(() => {
+    if (!ready || !activePage) return;
+    try {
+      localStorage.setItem(lastPageKey, activePage);
+    } catch {
+      // not critical
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activePage, ready]);
+
+  /** Everything the page-list panel (thumbnails) needs. */
+  const pageActions = {
+    add: addPageAt,
+    duplicate: duplicatePageById,
+    remove: askDeletePage,
+    move: movePageById,
+    setTemplate: setPageTemplate,
+    setPaper: setPagePaper,
+    toggleBookmark,
+    goTo: scrollToPage,
+  };
+  void pageActions; // wired to the thumbnail panel in the next step
 
   // Word/character counts across all pages, kept in a cheap side map.
   const [stats, setStats] = useState<Record<string, string>>({});
@@ -384,7 +485,7 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
               select={{
                 count: currentSelection()?.ids.size ?? 0,
                 canPaste: clipCount > 0,
-                notice,
+                notice: '',
                 onAll: selectAll,
                 onDelete: deleteSel,
                 onCopy: copySel,
@@ -411,12 +512,19 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
       />
 
       {pages.map((p, i) => (
-        <div key={p.id} className="mb-4">
-          {pages.length > 1 && (
-            <div className="text-xs text-gray-400 dark:text-white/40 mb-1">
-              {t.editor.pageLabel} {i + 1}
-            </div>
-          )}
+        <div key={p.id} data-page-id={p.id} className="mb-4 scroll-mt-40">
+          <div className="flex items-center justify-between mb-1 text-xs text-gray-400 dark:text-white/40">
+            <span>{format(t.pageOps.pageOf, i + 1, pages.length)}</span>
+            <span className="flex items-center gap-0.5">
+              <PageBtn label={p.bookmarked ? t.pageOps.removeBookmark : t.pageOps.bookmark} active={!!p.bookmarked} onClick={() => toggleBookmark(p.id)}>
+                <Star size={14} fill={p.bookmarked ? 'currentColor' : 'none'} />
+              </PageBtn>
+              <PageBtn label={t.pageOps.moveUp} disabled={i === 0} onClick={() => movePageById(p.id, i - 1)}><ChevronUp size={14} /></PageBtn>
+              <PageBtn label={t.pageOps.moveDown} disabled={i === pages.length - 1} onClick={() => movePageById(p.id, i + 1)}><ChevronDown size={14} /></PageBtn>
+              <PageBtn label={t.pageOps.duplicatePage} onClick={() => duplicatePageById(p.id)}><Copy size={14} /></PageBtn>
+              <PageBtn label={t.pageOps.deleteBtn} onClick={() => askDeletePage(p.id)}><Trash2 size={14} /></PageBtn>
+            </span>
+          </div>
           <PageEditor
             page={p}
             strokes={ink[p.id] ?? []}
@@ -440,7 +548,7 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <button
-          onClick={addPage}
+          onClick={() => addPageAt(pages[pages.length - 1]?.id ?? null)}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-200 dark:border-white/10 text-gray-600 dark:text-white/70 hover:bg-gray-100 dark:hover:bg-white/10"
         >
           <Plus size={14} /> {t.editor.addPage}
@@ -451,7 +559,47 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
           <span>{format(t.editor.readTime, totals.minutes)}</span>
         </div>
       </div>
+      {confirmDeleteId && (
+        <ConfirmDialog
+          danger
+          message={format(t.pageOps.deleteConfirm, pages.findIndex((p) => p.id === confirmDeleteId) + 1)}
+          confirmLabel={t.pageOps.deleteBtn}
+          cancelLabel={t.cancel}
+          onConfirm={() => deletePageById(confirmDeleteId)}
+          onCancel={() => setConfirmDeleteId(null)}
+        />
+      )}
+      {notice && (
+        // sits above the Undo toast so both can be visible at once
+        <div className={`fixed left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-xl bg-black text-white dark:bg-white dark:text-black text-sm shadow-lg ${deletedPage ? 'bottom-20' : 'bottom-6'}`}>
+          {notice}
+        </div>
+      )}
+      {deletedPage && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-4 px-4 py-2.5 rounded-xl bg-black text-white dark:bg-white dark:text-black text-sm shadow-lg">
+          <span>{t.pageOps.toastDeleted}</span>
+          <button onClick={undoDeletePage} className="font-semibold underline">{t.undo}</button>
+        </div>
+      )}
       {ocr && <InkOcrDialog state={ocr} onText={(v) => setOcr({ ...ocr, text: v })} onInsert={insertOcr} onClose={closeOcr} />}
     </div>
+  );
+}
+
+/** Tiny icon button for the per-page controls. */
+function PageBtn({ label, onClick, active, disabled, children }: { label: string; onClick: () => void; active?: boolean; disabled?: boolean; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      title={label}
+      aria-label={label}
+      disabled={disabled}
+      onClick={onClick}
+      className={`h-9 w-9 rounded-lg flex items-center justify-center disabled:opacity-25 hover:bg-gray-100 dark:hover:bg-white/10 ${
+        active ? 'text-amber-500' : 'text-gray-500 dark:text-white/60'
+      }`}
+    >
+      {children}
+    </button>
   );
 }

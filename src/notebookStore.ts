@@ -78,6 +78,12 @@ export interface NotePage {
   html?: string;
   ink?: InkStroke[];
   hasInk?: boolean;
+  /** Paper pattern (Part 5): 'blank' | 'ruled' | 'dotted' | 'grid' | 'cornell'. Unknown / missing = blank. Kept as a plain string so old and new app versions can share a note. */
+  template?: string;
+  /** Paper colour id (Part 5). Missing = the theme's default page colour. */
+  paper?: string;
+  /** Student bookmarked this page (Part 5). */
+  bookmarked?: boolean;
 }
 
 /** Notes made before the rich editor only have `text` — show it as paragraphs. */
@@ -383,6 +389,35 @@ async function pushIndex(): Promise<void> {
 
 const contentTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
+/** Page ids each note had the last time we saw it, so a deleted page can be spotted on the next save. */
+const knownPageIds = new Map<string, string[]>();
+/** Pages removed from a note whose cloud ink document still has to be deleted. */
+const removedPages = new Map<string, Set<string>>();
+
+function trackPages(noteId: string, pages: NotePage[], previous: string[] | undefined): void {
+  const ids = pages.map((p) => p.id);
+  knownPageIds.set(noteId, ids);
+  const keep = new Set(ids);
+  const gone = (previous ?? []).filter((x) => !keep.has(x));
+  const pending = removedPages.get(noteId) ?? new Set<string>();
+  gone.forEach((x) => pending.add(x));
+  ids.forEach((x) => pending.delete(x)); // a page that came back (undo delete) must not be cleaned up
+  if (pending.size > 0) removedPages.set(noteId, pending);
+  else removedPages.delete(noteId);
+}
+
+/** Delete the cloud ink documents of pages the student removed. Called after a successful push. */
+function cleanRemovedPages(noteId: string): void {
+  const pending = removedPages.get(noteId);
+  if (!pending) return;
+  pending.forEach((pageId) => {
+    const key = cloudInkKey(noteId, pageId);
+    inkSigs.delete(key);
+    void deleteFromCloud(key);
+  });
+  removedPages.delete(noteId);
+}
+
 function scheduleContentPush(id: string, content: NoteContent): void {
   pendingContent.add(id);
   clearTimeout(contentTimers.get(id));
@@ -391,6 +426,7 @@ function scheduleContentPush(id: string, content: NoteContent): void {
     setTimeout(async () => {
       contentTimers.delete(id);
       const ok = await pushContent(content);
+      if (ok) cleanRemovedPages(id);
       pendingContent.delete(id);
       settleStatus(ok);
     }, 2500)
@@ -428,7 +464,10 @@ export async function createNote(folderId: string | null = null, title = ''): Pr
 export async function loadNoteContent(id: string): Promise<NoteContent | null> {
   try {
     const local = await idbGet(id);
-    if (local) return local;
+    if (local) {
+      knownPageIds.set(id, local.pages.map((p) => p.id));
+      return local;
+    }
   } catch {
     // fall through to cloud
   }
@@ -448,12 +487,15 @@ export async function saveNoteContent(id: string, title: string, pages: NotePage
   const t = nowIso();
   const content: NoteContent = { id, schemaVersion: 1, pages, updatedAt: t };
   setStatus('saving');
+  let previous = knownPageIds.get(id);
+  if (!previous) previous = (await idbGet(id).catch(() => null))?.pages.map((p) => p.id);
   try {
     await idbPut(id, content);
   } catch {
     setStatus('error'); // device storage refused the write — tell the student honestly
     return false;
   }
+  trackPages(id, pages, previous);
   const idx = getIndex();
   commitIndex(
     {

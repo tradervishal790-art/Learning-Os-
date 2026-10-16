@@ -429,6 +429,19 @@ export interface TranslationShape {
     offline: string;
     saveError: string;
     syncNow: string;
+    pageOps: {
+      deleteConfirm: string;
+      deleteBtn: string;
+      needOnePage: string;
+      toastDeleted: string;
+      moveUp: string;
+      moveDown: string;
+      bookmark: string;
+      removeBookmark: string;
+      pageOf: string;
+      duplicatePage: string;
+      addPageAfter: string;
+    };
     ink: {
       modeType: string;
       modePen: string;
@@ -1530,6 +1543,19 @@ export const translations: Record<Locale, TranslationShape> = {
       offline: "Offline - saved on this device",
       saveError: "Could not save - storage is full or blocked",
       syncNow: "Sync now",
+      pageOps: {
+        deleteConfirm: "Delete page {0}? Its text and handwriting will be removed. You can undo this right after.",
+        deleteBtn: "Delete page",
+        needOnePage: "A note needs at least one page.",
+        toastDeleted: "Page deleted",
+        moveUp: "Move page up",
+        moveDown: "Move page down",
+        bookmark: "Bookmark this page",
+        removeBookmark: "Remove bookmark",
+        pageOf: "Page {0} of {1}",
+        duplicatePage: "Duplicate page",
+        addPageAfter: "Add page after this",
+      },
       ink: {
         modeType: "Type",
         modePen: "Pen",
@@ -2642,6 +2668,19 @@ export const translations: Record<Locale, TranslationShape> = {
       offline: "ऑफलाइन - इस डिवाइस पर सेव है",
       saveError: "सेव नहीं हो पाया - स्टोरेज भरा है या बंद है",
       syncNow: "अभी सिंक करो",
+      pageOps: {
+        deleteConfirm: "पेज {0} हटाना है? इसका टेक्स्ट और हैंडराइटिंग हट जाएगी। हटाने के तुरंत बाद वापस ला सकते हो।",
+        deleteBtn: "पेज हटाओ",
+        needOnePage: "नोट में कम से कम एक पेज रहना चाहिए।",
+        toastDeleted: "पेज हट गया",
+        moveUp: "पेज ऊपर करो",
+        moveDown: "पेज नीचे करो",
+        bookmark: "इस पेज पर बुकमार्क लगाओ",
+        removeBookmark: "बुकमार्क हटाओ",
+        pageOf: "पेज {0} / {1}",
+        duplicatePage: "पेज की कॉपी बनाओ",
+        addPageAfter: "इसके बाद पेज जोड़ो",
+      },
       ink: {
         modeType: "टाइप",
         modePen: "पेन",
@@ -3753,6 +3792,19 @@ export const translations: Record<Locale, TranslationShape> = {
       offline: "Offline - is device par save hai",
       saveError: "Save nahi ho paya - storage bhara hai ya band hai",
       syncNow: "Abhi sync karo",
+      pageOps: {
+        deleteConfirm: "Page {0} hatana hai? Iska text aur handwriting hat jayegi. Hatane ke turant baad wapas la sakte ho.",
+        deleteBtn: "Page hatao",
+        needOnePage: "Note mein kam se kam ek page rehna chahiye.",
+        toastDeleted: "Page hat gaya",
+        moveUp: "Page upar karo",
+        moveDown: "Page neeche karo",
+        bookmark: "Is page par bookmark lagao",
+        removeBookmark: "Bookmark hatao",
+        pageOf: "Page {0} / {1}",
+        duplicatePage: "Page ki copy banao",
+        addPageAfter: "Iske baad page jodo",
+      },
       ink: {
         modeType: "Type",
         modePen: "Pen",
