@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Editor } from '@tiptap/react';
-import { ArrowLeft, ChevronDown, ChevronUp, Copy, LayoutGrid, Minimize2, Plus, Star, Trash2, X } from 'lucide-react';
+import { ArrowLeft, ChevronDown, ChevronUp, Copy, LayoutGrid, Minimize2, Plus, Sparkles, Star, Trash2, X } from 'lucide-react';
 import { useTranslation } from './i18n/LanguageContext';
 import { format } from './i18n/format';
 import { loadNoteContent, saveNoteContent, getIndex, type InkStroke, type NotePage } from './notebookStore';
@@ -24,6 +24,7 @@ import {
 import { SaveChip } from './SaveChip';
 import PageEditor from './PageEditor';
 import EditorToolbar from './EditorToolbar';
+import NoteAiPanel from './NoteAiPanel';
 
 // ============================================================
 // NoteEditor.tsx — title + pages (rich text from Part 2, handwriting from
@@ -327,6 +328,65 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
     return () => window.removeEventListener('keydown', onKey);
   });
 
+  // ---------- AI tools (Part 8) ----------
+  // The panel works on text only. The student chooses the scope; nothing is sent before they agree (see NoteAiPanel).
+
+  const [aiOpen, setAiOpen] = useState(false);
+  const otherNotes = useRef<{ id: string; title: string; text: string }[]>([]);
+
+  // Other notes are only read (and only on this device's copy when possible) while the panel is open, for "Ask my notes".
+  useEffect(() => {
+    if (!aiOpen) return;
+    let alive = true;
+    const metas = getIndex()
+      .notes.filter((n) => n.id !== id && !n.trashedAt)
+      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+      .slice(0, 20);
+    void Promise.allSettled(
+      metas.map(async (m) => {
+        const c = await loadNoteContent(m.id);
+        return c ? { id: m.id, title: m.title || t.untitled, text: c.pages.map((p) => p.text).join('\n').slice(0, 6000) } : null;
+      })
+    ).then((rs) => {
+      if (!alive) return;
+      otherNotes.current = rs.flatMap((r) => (r.status === 'fulfilled' && r.value && r.value.text.trim() ? [r.value] : []));
+    });
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [aiOpen, id]);
+
+  const getAiSource = () => {
+    const sel = active ? active.state.doc.textBetween(active.state.selection.from, active.state.selection.to, '\n') : '';
+    const pageText = latest.current.pages.find((p) => p.id === activePage)?.text ?? '';
+    const noteText = latest.current.pages.map((p) => p.text).join('\n');
+    return { selectedText: sel, pageText, noteText };
+  };
+
+  const textToNodes = (text: string) =>
+    text.split('\n').map((line) => (line.trim() ? { type: 'paragraph', content: [{ type: 'text', text: line }] } : { type: 'paragraph' }));
+
+  /** "Add to note": at the end of the page the student is on. */
+  const aiInsert = (text: string) => {
+    const ed = (activePage && editors.current[activePage]) || active || editors.current[latest.current.pages[0]?.id ?? ''];
+    if (!ed || !text.trim()) return;
+    ed.chain().focus('end').insertContent(textToNodes(text)).run();
+    setMode('type');
+  };
+
+  /** "Replace selection" and its Undo: the new text stays selected, so Undo can replace it again. */
+  const aiReplace = (text: string) => {
+    const ed = active;
+    if (!ed) return;
+    const { from, to } = ed.state.selection;
+    if (from === to) return flash(t.ai.noTextHint);
+    const content = text.includes('\n') ? textToNodes(text) : text ? { type: 'text', text } : null;
+    if (!content) return;
+    ed.chain().focus().insertContentAt({ from, to }, content).run();
+    ed.commands.setTextSelection({ from, to: ed.state.selection.to });
+  };
+
   // ---------- pages: add / duplicate / delete / reorder / bookmark ----------
   // Always addressed by page id. `latest.current.pages` holds the freshest text + ink, so every
   // change starts from it and then refreshes the rendered list.
@@ -554,6 +614,12 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
                 <LayoutGrid size={14} /> {t.pageOps.pagesButton}
               </button>
             )}
+            <button
+              onClick={() => setAiOpen(true)}
+              className="h-9 px-3 rounded-lg border border-gray-200 dark:border-white/10 text-xs flex items-center gap-1.5 text-gray-700 dark:text-white/80"
+            >
+              <Sparkles size={14} /> {t.ai.openButton}
+            </button>
             <ZoomControls
               zoom={zoom}
               onZoomIn={zoomIn}
@@ -708,6 +774,30 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-4 px-4 py-2.5 rounded-xl bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white text-sm shadow-lg">
           <span>{t.pageOps.toastDeleted}</span>
           <button onClick={undoDeletePage} className="font-semibold underline">{t.undo}</button>
+        </div>
+      )}
+      {aiOpen && (
+        <div className="fixed inset-0 z-50 flex justify-end">
+          <button aria-label={t.ai.closePanel} className="hidden sm:block flex-1 bg-black/30" onClick={() => setAiOpen(false)} />
+          <div className="h-full w-full sm:w-[440px] overflow-y-auto bg-white dark:bg-black border-l border-gray-200 dark:border-white/10 p-3">
+            <div className="flex items-center justify-end mb-2">
+              <button
+                onClick={() => setAiOpen(false)}
+                aria-label={t.ai.closePanel}
+                title={t.ai.closePanel}
+                className="h-9 w-9 rounded-lg flex items-center justify-center text-gray-500 dark:text-white/60 hover:bg-gray-100 dark:hover:bg-white/10"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <NoteAiPanel
+              getSource={getAiSource}
+              getOtherNotes={() => otherNotes.current}
+              onInsertText={aiInsert}
+              onReplaceSelection={aiReplace}
+              labels={t.ai}
+            />
+          </div>
         </div>
       )}
       {ocr && <InkOcrDialog state={ocr} onText={(v) => setOcr({ ...ocr, text: v })} onInsert={insertOcr} onClose={closeOcr} />}

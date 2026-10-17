@@ -1,6 +1,6 @@
 // api/extract-questions.ts
 //
-// (Also serves ?op=insight, ?op=personality and ?op=ink-ocr — see below.)
+// (Also serves ?op=insight, ?op=personality, ?op=ink-ocr and ?op=note-ai — see below.)
 // Server-side proxy for "add questions / answers from a photo or PDF" in the
 // test builder (TestBuilder.tsx → PhotoImport.tsx). The client sends ONE
 // compressed photo per request (so a 4-photo import stays well under
@@ -26,6 +26,7 @@ import { requireUser } from './_lib/auth.js';
 import { handleInsight } from './_lib/testInsight.js';
 import { handlePersonalityReport } from './_lib/personalityReport.js';
 import { handleInkOcr } from './_lib/inkOcr.js';
+import { handleNoteAi } from './_lib/noteAi.js';
 
 const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp', 'application/pdf']);
 const MAX_BASE64_CHARS = 3_400_000; // ~2.5 MB file; keeps the request under Vercel's 4.5 MB limit (client splits bigger PDFs)
@@ -132,6 +133,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const uid = await requireUser(req, res); // login-only: guests are rejected (403 account-required)
   if (!uid) return;
+  // Notebook AI tools have their own text limits and share only requireUser's per-account budget (not the photo-import counter).
+  if (req.query?.op === 'note-ai') return handleNoteAi(req, res); // notebook: AI tools (summarize, quiz, ...)
   if (rateLimited(uid)) return res.status(429).json({ error: 'Too many photo imports — please wait a few minutes.' });
 
   // Same function also serves the one-line AI study suggestion shown after a test (keeps us at 12 functions).
