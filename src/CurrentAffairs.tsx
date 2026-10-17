@@ -1,5 +1,6 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
-import { Newspaper, Flame, RotateCw, Check, X } from 'lucide-react';
+import { Newspaper, Flame, RotateCw, Check, X, CirclePlay, Bookmark, ExternalLink, ListChecks, Landmark, Globe, TrendingUp, Trophy, FlaskConical, LayoutGrid } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { useTranslation, useLanguage } from './i18n/LanguageContext';
 import { format } from './i18n/format';
 import {
@@ -10,13 +11,27 @@ import {
   computeStreak,
   hydrateCurrentAffairsFromCloud,
 } from './currentAffairsStore';
-import type { CACategory, CADay, CAProgress, CAQuizQuestion } from './currentAffairsStore';
+import type { CACategory, CADay, CAPoint, CAProgress, CAQuizQuestion } from './currentAffairsStore';
+import { loadSaved, toggleSaved, savedKey } from './caSavedStore';
+import type { SavedPoint } from './caSavedStore';
 
 const ChannelDigest = lazy(() => import('./ChannelDigest'));
 
 type Tab = 'all' | CACategory;
 const TAB_ORDER: Tab[] = ['all', 'national', 'international', 'economy', 'sports', 'scitech'];
 const PREVIOUS_DAYS = 6;
+
+const TAB_ICONS: Record<Tab, LucideIcon> = {
+  all: LayoutGrid,
+  national: Landmark,
+  international: Globe,
+  economy: TrendingUp,
+  sports: Trophy,
+  scitech: FlaskConical,
+};
+
+/** Hides the scrollbar on horizontal icon/chip rows (Instagram-style swipe rows). */
+const SWIPE_ROW = 'flex gap-2 overflow-x-auto md:flex-wrap -mx-4 px-4 md:mx-0 md:px-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden';
 
 function formatDateLabel(date: string, locale: string): string {
   try {
@@ -35,16 +50,21 @@ export default function CurrentAffairs() {
 
   return (
     <div className="max-w-3xl mx-auto">
-      <div className="inline-flex p-1 rounded-full border border-gray-200 dark:border-white/10 text-sm">
-        {(['news', 'channels'] as const).map((v) => (
+      <div className="flex border-b border-gray-200 dark:border-white/10">
+        {([['news', Newspaper, c.switchNews], ['channels', CirclePlay, c.switchChannels]] as const).map(([v, Icon, label]) => (
           <button
             key={v}
             onClick={() => setView(v)}
-            className={`px-4 py-1.5 rounded-full transition ${
-              view === v ? 'bg-black text-white dark:bg-white dark:text-black' : 'text-gray-600 dark:text-white/60 hover:bg-gray-100 dark:hover:bg-white/10'
+            aria-label={label}
+            title={label}
+            aria-pressed={view === v}
+            className={`flex-1 h-12 flex items-center justify-center border-b-2 transition ${
+              view === v
+                ? 'border-black dark:border-white text-black dark:text-white'
+                : 'border-transparent text-gray-400 dark:text-white/40 hover:text-black dark:hover:text-white'
             }`}
           >
-            {v === 'news' ? c.switchNews : c.switchChannels}
+            <Icon className="w-6 h-6" strokeWidth={view === v ? 2.2 : 1.75} />
           </button>
         ))}
       </div>
@@ -72,6 +92,10 @@ function NewspaperCurrentAffairs() {
   const [error, setError] = useState('');
   const [tab, setTab] = useState<Tab>('all');
   const [progress, setProgress] = useState<CAProgress>(() => loadProgress());
+  const [saved, setSaved] = useState<SavedPoint[]>(() => loadSaved());
+  const [showSaved, setShowSaved] = useState(false);
+  const savedKeys = useMemo(() => new Set(saved.map((x) => savedKey(x.date, x))), [saved]);
+  const goToQuiz = () => document.getElementById('ca-quiz')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
   useEffect(() => {
     void hydrateCurrentAffairsFromCloud().then(() => setProgress(loadProgress()));
@@ -108,39 +132,50 @@ function NewspaperCurrentAffairs() {
 
   return (
     <div className="mt-6">
-      <div className="flex items-start justify-between gap-3 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-semibold flex items-center gap-2">
-            <Newspaper className="w-6 h-6" />
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-xl md:text-2xl font-semibold flex items-center gap-2">
+            <Newspaper className="hidden md:block w-6 h-6" />
             {c.title}
           </h1>
-          <p className="text-sm text-gray-500 dark:text-white/50 mt-1">{c.subtitle}</p>
+          <p className="hidden md:block text-sm text-gray-500 dark:text-white/50 mt-1">{c.subtitle}</p>
         </div>
-        {(streak > 0 || doneToday) && (
-          <div className="flex items-center gap-2 text-sm">
-            {streak > 0 && (
-              <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full border border-gray-200 dark:border-white/10">
-                <Flame className="w-4 h-4" />
-                {format(c.streak, streak)}
-              </span>
-            )}
-            {doneToday && (
-              <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-black text-white dark:bg-white dark:text-black">
-                <Check className="w-4 h-4" />
-                {c.streakDone}
-              </span>
-            )}
-          </div>
-        )}
+        <div className="flex items-center gap-2 text-sm flex-shrink-0">
+          {streak > 0 && (
+            <span className="inline-flex items-center gap-1 h-9 px-3 rounded-full border border-gray-200 dark:border-white/10" title={format(c.streak, streak)}>
+              <Flame className="w-4 h-4" />
+              <span className="md:hidden">{streak}</span>
+              <span className="hidden md:inline">{format(c.streak, streak)}</span>
+            </span>
+          )}
+          {doneToday && (
+            <span className="inline-flex items-center gap-1 h-9 px-3 rounded-full bg-black text-white dark:bg-white dark:text-black" title={c.streakDone} aria-label={c.streakDone}>
+              <Check className="w-4 h-4" />
+              <span className="hidden md:inline">{c.streakDone}</span>
+            </span>
+          )}
+          <button
+            onClick={() => setShowSaved((v) => !v)}
+            aria-label="Saved"
+            title="Saved"
+            aria-pressed={showSaved}
+            className={`relative w-10 h-10 rounded-full flex items-center justify-center transition ${
+              showSaved ? 'bg-black text-white dark:bg-white dark:text-black' : 'border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10'
+            }`}
+          >
+            <Bookmark className="w-5 h-5" strokeWidth={1.75} fill={showSaved || saved.length > 0 ? 'currentColor' : 'none'} />
+          </button>
+        </div>
       </div>
 
       {/* Day picker: today + last few days (only days someone already opened are available) */}
-      <div className="mt-5 flex flex-wrap gap-2">
+      {!showSaved && (
+      <div className={`mt-4 ${SWIPE_ROW}`}>
         {Array.from({ length: PREVIOUS_DAYS + 1 }, (_, i) => istDateKey(i)).map((d) => (
           <button
             key={d}
             onClick={() => setDate(d)}
-            className={`px-3 py-1.5 text-sm rounded-full border transition ${
+            className={`flex-shrink-0 h-10 px-4 text-sm rounded-full border transition ${
               d === date
                 ? 'bg-black text-white border-black dark:bg-white dark:text-black dark:border-white'
                 : 'border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10'
@@ -150,10 +185,11 @@ function NewspaperCurrentAffairs() {
           </button>
         ))}
       </div>
+      )}
 
-      {loading && <p className="mt-8 text-gray-500 dark:text-white/50 animate-pulse">{c.loading}</p>}
+      {!showSaved && loading && <p className="mt-8 text-gray-500 dark:text-white/50 animate-pulse">{c.loading}</p>}
 
-      {!loading && error && (
+      {!showSaved && !loading && error && (
         <div className="mt-8">
           <p className="text-gray-500 dark:text-white/60">{error}</p>
           {date === today && (
@@ -168,37 +204,55 @@ function NewspaperCurrentAffairs() {
         </div>
       )}
 
-      {!loading && day && (
+      {showSaved && (
+        <div className="mt-6">
+          {saved.length === 0 ? (
+            <div className="py-16 flex justify-center text-gray-300 dark:text-white/20" aria-label="No saved points yet">
+              <Bookmark className="w-12 h-12" strokeWidth={1.25} />
+            </div>
+          ) : (
+            <ul className="space-y-3">
+              {saved.map((p) => (
+                <PointCard key={savedKey(p.date, p)} point={p} saved onToggleSave={() => setSaved(toggleSaved(p.date, p))} sourceLabel={c.sourceLabel} />
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
+      {!showSaved && !loading && day && (
         <>
-          <div className="mt-6 flex flex-wrap gap-2">
-            {presentTabs.map((x) => (
-              <button
-                key={x}
-                onClick={() => setTab(x)}
-                className={`px-3 py-1 text-xs rounded-full transition ${
-                  tab === x ? 'bg-gray-900 text-white dark:bg-white dark:text-black' : 'bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-white/60'
-                }`}
-              >
-                {c.tabs[x]}
-              </button>
-            ))}
+          <div className={`mt-5 ${SWIPE_ROW}`}>
+            {presentTabs.map((x) => {
+              const TabIcon = TAB_ICONS[x];
+              return (
+                <button
+                  key={x}
+                  onClick={() => setTab(x)}
+                  aria-label={c.tabs[x]}
+                  title={c.tabs[x]}
+                  aria-pressed={tab === x}
+                  className={`flex-shrink-0 h-10 min-w-10 px-3 inline-flex items-center justify-center gap-1.5 text-xs rounded-full transition ${
+                    tab === x ? 'bg-gray-900 text-white dark:bg-white dark:text-black' : 'bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-white/60'
+                  }`}
+                >
+                  <TabIcon className="w-4 h-4" strokeWidth={1.75} />
+                  <span className="hidden md:inline">{c.tabs[x]}</span>
+                </button>
+              );
+            })}
           </div>
 
           <ul className="mt-4 space-y-3">
             {visiblePoints.map((p, i) => (
-              <li key={`${tab}-${i}`} className="border border-gray-200 dark:border-white/10 rounded-lg p-4">
-                <p className="leading-relaxed">{p.text}</p>
-                <p className="mt-2 text-xs text-gray-500 dark:text-white/50">
-                  {c.sourceLabel}:{' '}
-                  {p.link && /^https?:\/\//i.test(p.link) ? (
-                    <a href={p.link} target="_blank" rel="noopener noreferrer" className="underline hover:text-black dark:hover:text-white">
-                      {p.source}
-                    </a>
-                  ) : (
-                    p.source
-                  )}
-                </p>
-              </li>
+              <PointCard
+                key={`${tab}-${i}`}
+                point={p}
+                saved={savedKeys.has(savedKey(date, p))}
+                onToggleSave={() => setSaved(toggleSaved(date, p))}
+                onQuiz={day.quiz.length > 0 ? goToQuiz : undefined}
+                sourceLabel={c.sourceLabel}
+              />
             ))}
           </ul>
 
@@ -217,7 +271,7 @@ function NewspaperCurrentAffairs() {
         </>
       )}
 
-      {progress.mistakes.length > 0 && (
+      {!showSaved && progress.mistakes.length > 0 && (
         <div className="mt-10">
           <h2 className="text-lg font-semibold">{c.mistakesTitle}</h2>
           <ul className="mt-3 space-y-3">
@@ -267,7 +321,7 @@ function Quiz({
   }, [finished]);
 
   return (
-    <div className="mt-10">
+    <div id="ca-quiz" className="mt-10 scroll-mt-4">
       <h2 className="text-lg font-semibold">{c.quizTitle}</h2>
       <p className="text-sm text-gray-500 dark:text-white/50">{c.quizSubtitle}</p>
 
@@ -292,7 +346,7 @@ function Quiz({
                       key={oi}
                       disabled={revealed}
                       onClick={() => setPicked((prev) => ({ ...prev, [qi]: oi }))}
-                      className={`w-full text-left px-3 py-2 text-sm rounded-lg border transition flex items-center gap-2 ${style} ${revealed ? 'cursor-default' : ''}`}
+                      className={`w-full text-left px-3 py-3 min-h-11 text-sm rounded-lg border transition flex items-center gap-2 ${style} ${revealed ? 'cursor-default' : ''}`}
                     >
                       <span className="flex-1">{opt}</span>
                       {revealed && isCorrect && <Check className="w-4 h-4 text-green-500" />}
@@ -316,5 +370,62 @@ function Quiz({
         <p className="mt-5 text-lg font-semibold">{format(c.scoreLine, score, total)}</p>
       )}
     </div>
+  );
+}
+
+const CATEGORY_ICON = TAB_ICONS;
+
+/** One news point: category icon, text, source, and icon-only actions (read / save / quiz). */
+function PointCard({
+  point,
+  saved,
+  onToggleSave,
+  onQuiz,
+  sourceLabel,
+}: {
+  point: CAPoint;
+  saved: boolean;
+  onToggleSave: () => void;
+  onQuiz?: () => void;
+  sourceLabel: string;
+}) {
+  const Icon = CATEGORY_ICON[point.category];
+  const hasLink = !!point.link && /^https?:\/\//i.test(point.link);
+  const action = 'w-11 h-11 rounded-full flex items-center justify-center text-gray-500 dark:text-white/50 hover:bg-gray-100 dark:hover:bg-white/10 active:bg-gray-200 dark:active:bg-white/15 transition-colors';
+  return (
+    <li className="border border-gray-200 dark:border-white/10 rounded-2xl p-4">
+      <div className="flex gap-3">
+        <span className="w-9 h-9 rounded-full bg-gray-100 dark:bg-white/10 flex items-center justify-center flex-shrink-0" aria-hidden="true">
+          <Icon className="w-[18px] h-[18px]" strokeWidth={1.75} />
+        </span>
+        <p className="leading-relaxed min-w-0">{point.text}</p>
+      </div>
+      <div className="mt-2 flex items-center justify-between gap-2">
+        <p className="text-xs text-gray-500 dark:text-white/50 truncate min-w-0" title={`${sourceLabel}: ${point.source}`}>
+          {point.source}
+        </p>
+        <div className="flex items-center flex-shrink-0 -mr-2">
+          {hasLink && (
+            <a href={point.link} target="_blank" rel="noopener noreferrer" aria-label="Read" title="Read" className={action}>
+              <ExternalLink className="w-5 h-5" strokeWidth={1.75} />
+            </a>
+          )}
+          <button
+            onClick={onToggleSave}
+            aria-label={saved ? 'Remove from saved' : 'Save'}
+            title={saved ? 'Remove from saved' : 'Save'}
+            aria-pressed={saved}
+            className={`${action} ${saved ? 'text-black dark:text-white' : ''}`}
+          >
+            <Bookmark className="w-5 h-5" strokeWidth={1.75} fill={saved ? 'currentColor' : 'none'} />
+          </button>
+          {onQuiz && (
+            <button onClick={onQuiz} aria-label="Quiz" title="Quiz" className={action}>
+              <ListChecks className="w-5 h-5" strokeWidth={1.75} />
+            </button>
+          )}
+        </div>
+      </div>
+    </li>
   );
 }
