@@ -1,6 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { MENTOR_PREFILL_KEY } from './mentorPrefill';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Lightbulb, BookOpenText, Link2, ListChecks, Hammer, Bug, SendHorizontal } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+import { setImmersive, useImmersive } from './immersive';
 import { useTranslation, useLanguage } from './i18n/LanguageContext';
 import { format } from './i18n/format';
 import type { TranslationShape } from './i18n/translations';
@@ -72,6 +75,12 @@ async function generateMentorResponse(
   }
 }
 
+// Quick-prompt icons by position (the translation data still carries emoji; the UI uses these instead).
+const PROMPT_ICONS: LucideIcon[] = [Lightbulb, BookOpenText, Link2, ListChecks, Hammer, Bug];
+
+/** Strips a leading emoji from a translated label ("👤 You" -> "You"). */
+const stripEmoji = (label: string) => label.replace(/^[\p{Extended_Pictographic}\uFE0F\s]+/u, '');
+
 export default function Mentor() {
   const t = useTranslation();
   const { locale } = useLanguage();
@@ -97,6 +106,9 @@ export default function Mentor() {
   const [loading, setLoading] = useState(false);
   const [contextTopic, setContextTopic] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  // While the keyboard is up the bottom bar steps aside so the input gets the room.
+  const typing = useImmersive();
+  useEffect(() => () => setImmersive(false), []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -149,14 +161,14 @@ export default function Mentor() {
 
   return (
     <div className="min-h-dvh bg-white dark:bg-black text-black dark:text-white flex flex-col p-4 md:p-8">
-      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
-        <h1 className="text-4xl font-bold mb-2">{t.mentor.header.title}</h1>
-        <p className="text-gray-500 dark:text-white/60">{t.mentor.header.subtitle}</p>
+      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-4 md:mb-6">
+        <h1 className="text-2xl md:text-4xl font-bold mb-1 md:mb-2">{t.mentor.header.title}</h1>
+        <p className="hidden md:block text-gray-500 dark:text-white/60">{t.mentor.header.subtitle}</p>
       </motion.div>
 
       {/* Chat area */}
-      <div className="flex-1 max-w-4xl mx-auto w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl flex flex-col overflow-hidden">
-        <div className="flex-1 overflow-y-auto p-6 space-y-4" style={{ maxHeight: '60vh' }}>
+      <div className="flex-1 max-w-4xl mx-auto w-full md:bg-gray-50 md:dark:bg-white/5 md:border md:border-gray-200 md:dark:border-white/10 md:rounded-2xl flex flex-col md:overflow-hidden">
+        <div className="flex-1 md:overflow-y-auto md:p-6 space-y-3 md:space-y-4 md:max-h-[60vh]">
           <AnimatePresence>
             {messages.map((msg) => (
               <motion.div
@@ -166,14 +178,14 @@ export default function Mentor() {
                 className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div
-                  className={`max-w-[80%] p-4 rounded-2xl ${
+                  className={`max-w-[85%] md:max-w-[80%] px-4 py-3 md:p-4 rounded-2xl ${
                     msg.role === 'user'
                       ? 'bg-black text-white dark:bg-white dark:text-black'
                       : 'bg-gray-100 dark:bg-white/10 border border-gray-200 dark:border-white/10 text-black dark:text-white'
                   }`}
                 >
-                  <div className="text-xs opacity-60 mb-1">
-                    {msg.role === 'user' ? t.mentor.youLabel : t.mentor.mentorLabel}
+                  <div className="hidden md:block text-xs opacity-60 mb-1">
+                    {stripEmoji(msg.role === 'user' ? t.mentor.youLabel : t.mentor.mentorLabel)}
                   </div>
                   <div className="whitespace-pre-wrap text-sm leading-relaxed">{msg.content}</div>
                 </div>
@@ -191,41 +203,58 @@ export default function Mentor() {
               </motion.div>
             )}
           </AnimatePresence>
+          <div className="h-44 md:hidden" aria-hidden="true" />
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Quick prompts */}
-        <div className="px-6 py-3 border-t border-gray-200 dark:border-white/5 flex gap-2 overflow-x-auto">
-          {t.mentor.suggestedPrompts.map((p) => (
-            <button
-              key={p.label}
-              onClick={() => sendMessage(p.prompt)}
-              disabled={loading}
-              className="flex-shrink-0 px-3 py-1.5 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-full text-xs hover:bg-gray-100 dark:hover:bg-white/10 transition disabled:opacity-50"
-            >
-              {p.icon} {p.label}
-            </button>
-          ))}
-        </div>
+        {/* Prompts + input — pinned above the bottom bar on phones (Instagram DM style) */}
+        <div
+          className={`fixed inset-x-0 z-30 md:static bg-white/95 dark:bg-black/95 backdrop-blur md:backdrop-blur-none md:bg-transparent border-t border-gray-200 dark:border-white/10 md:border-white/5 ${
+            typing ? 'bottom-[env(safe-area-inset-bottom)]' : 'bottom-[calc(3.5rem+env(safe-area-inset-bottom))]'
+          } md:bottom-auto`}
+        >
+          <div className="px-4 md:px-6 py-2 md:py-3 flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {t.mentor.suggestedPrompts.map((p, i) => {
+              const PromptIcon = PROMPT_ICONS[i] ?? Lightbulb;
+              return (
+                <button
+                  key={p.label}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => sendMessage(p.prompt)}
+                  disabled={loading}
+                  className="flex-shrink-0 h-9 px-3 inline-flex items-center gap-1.5 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-full text-xs hover:bg-gray-100 dark:hover:bg-white/10 transition disabled:opacity-40"
+                >
+                  <PromptIcon className="w-3.5 h-3.5" strokeWidth={1.75} />
+                  {p.label}
+                </button>
+              );
+            })}
+          </div>
 
-        {/* Input */}
-        <div className="p-4 border-t border-gray-200 dark:border-white/10 flex gap-2">
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && sendMessage(input)}
-            placeholder={t.mentor.inputPlaceholder}
-            disabled={loading}
-            className="flex-1 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-2.5 placeholder-gray-400 dark:placeholder-white/40 focus:outline-none focus:border-black dark:focus:border-white"
-          />
-          <button
-            onClick={() => sendMessage(input)}
-            disabled={loading || !input.trim()}
-            className="px-5 py-2.5 bg-black text-white dark:bg-white dark:text-black disabled:opacity-40 rounded-xl font-semibold transition"
-          >
-            {t.mentor.sendCta}
-          </button>
+          <div className="px-4 pb-3 md:p-4 md:border-t md:border-gray-200 md:dark:border-white/10 flex gap-2">
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && sendMessage(input)}
+              onFocus={() => setImmersive(true)}
+              onBlur={() => setImmersive(false)}
+              placeholder={t.mentor.inputPlaceholder}
+              disabled={loading}
+              className="flex-1 min-w-0 h-11 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-full md:rounded-xl px-4 placeholder-gray-400 dark:placeholder-white/40 focus:outline-none focus:border-black dark:focus:border-white"
+            />
+            <button
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => sendMessage(input)}
+              disabled={loading || !input.trim()}
+              aria-label={t.mentor.sendCta}
+              title={t.mentor.sendCta}
+              className="flex-shrink-0 w-11 h-11 md:w-auto md:px-5 flex items-center justify-center bg-black text-white dark:bg-white dark:text-black disabled:opacity-40 rounded-full md:rounded-xl font-semibold transition"
+            >
+              <SendHorizontal className="w-5 h-5 md:hidden" strokeWidth={1.75} />
+              <span className="hidden md:inline">{t.mentor.sendCta}</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
