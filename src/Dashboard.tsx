@@ -6,6 +6,7 @@ import { Search, Film, BookOpen, ClipboardCheck, Newspaper, Lock, Settings as Se
 import PagePlaceholder from './PagePlaceholder';
 import BottomNav from './BottomNav';
 import QuickRow from './QuickRow';
+import { useImmersive } from './immersive';
 import { getRoadmapData, getCurrentTopic } from './roadmapData';
 import { getRevisionStats, getRevisionDataForGoals } from './revisionData';
 import { getPersonalityProfile, savePersonalityProfile, clearPersonalityProfile } from './personalityProfileStore';
@@ -329,6 +330,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   );
 
   const [streak, setStreak] = useState(0);
+  const immersive = useImmersive(); // true while a full-attention flow (e.g. a timed test) hides the bottom bar
   // Bell + sound reminder — computed once when the app/home page opens (not
   // only on navigating into the Revision tab), so nothing due gets missed.
   const [revisionAlert, setRevisionAlert] = useState<{ dueToday: number; overdue: number } | null>(null);
@@ -757,7 +759,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
         {SidebarContent}
       </aside>
 
-      <div className="flex-1 overflow-auto min-w-0 pb-[calc(3.5rem+env(safe-area-inset-bottom))] md:pb-0">
+      <div className={`flex-1 overflow-auto min-w-0 md:pb-0 ${immersive ? '' : 'pb-[calc(3.5rem+env(safe-area-inset-bottom))]'}`}>
         <motion.div
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}

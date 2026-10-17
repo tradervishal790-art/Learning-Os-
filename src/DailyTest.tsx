@@ -139,7 +139,7 @@ export default function DailyTest({ onStart, onExit }: { onStart: (paper: TestPa
           <div className={card}>
             {status === 'done' ? (
               <>
-                <p className="font-semibold">Today's test is done ✅</p>
+                <p className="font-semibold">Today's test is done</p>
                 <p className="text-sm text-gray-500 dark:text-white/60">Your next test will be ready tomorrow. See your result in Past attempts.</p>
               </>
             ) : (

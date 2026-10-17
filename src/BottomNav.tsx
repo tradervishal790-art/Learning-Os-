@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LayoutGrid, Lock } from 'lucide-react';
 import { NAV_ICONS } from './navIcons';
+import { useImmersive } from './immersive';
 
 /**
  * Mobile-only bottom navigation, Instagram-style: icons only, no visible
@@ -34,6 +35,7 @@ interface Props {
 
 export default function BottomNav({ items, activeId, onSelect }: Props) {
   const [moreOpen, setMoreOpen] = useState(false);
+  const immersive = useImmersive();
 
   const primary = PRIMARY_IDS.map((id) => items.find((i) => i.id === id)).filter(
     (i): i is NavEntry => Boolean(i),
@@ -45,6 +47,8 @@ export default function BottomNav({ items, activeId, onSelect }: Props) {
     setMoreOpen(false);
     onSelect(id);
   };
+
+  if (immersive) return null;
 
   const tone = (active: boolean, locked: boolean) =>
     active

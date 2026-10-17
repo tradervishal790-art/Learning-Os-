@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Download, RotateCcw, CheckCircle2, XCircle, HelpCircle, History, Plus, Pencil, Trash2, Clock, Flag, Users, CalendarCheck } from 'lucide-react';
+import { Download, RotateCcw, CheckCircle2, XCircle, HelpCircle, History, Plus, Pencil, Trash2, Clock, Flag, Users, CalendarCheck, ChevronRight, Play } from 'lucide-react';
 import type { TestPaper, TestQuestion, TestUserAnswer, TestAttempt, MCQQuestion, SubjectiveQuestion } from './types';
 import { getTestPapers, saveTestPaper, deleteTestPaper, hydrateTestBankFromCloud } from './testBankStore';
 import { OFFICIAL_TESTS } from './officialTests';
@@ -12,6 +12,7 @@ import TestAnalysis from './TestAnalysis';
 import LiveHost from './LiveHost';
 import { loadDraft, saveDraft, clearDraft } from './testDraft';
 import DailyTest from './DailyTest';
+import { setImmersive } from './immersive';
 import { completeDailyTest, isDailyPaper, getDailyStatus } from './dailyTestStore';
 
 // ============================================================
@@ -41,6 +42,11 @@ export default function Test() {
   // Resume an unfinished test after refresh / tab close (see testDraft.ts).
   const [draft] = useState(() => loadDraft());
   const [stage, setStage] = useState<Stage>(draft ? 'taking' : 'list');
+  // Hide the mobile bottom bar while a timed test is running.
+  useEffect(() => {
+    setImmersive(stage === 'taking');
+    return () => setImmersive(false);
+  }, [stage]);
   const [papers, setPapers] = useState<TestPaper[]>([]);
   const [history, setHistory] = useState<TestAttempt[]>([]);
   const [editingPaper, setEditingPaper] = useState<TestPaper | null>(null);
@@ -275,10 +281,10 @@ export default function Test() {
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-black text-black dark:text-white p-4 md:p-8">
+    <div className="min-h-dvh bg-white dark:bg-black text-black dark:text-white p-4 md:p-8">
       {stage !== 'taking' && (
-        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-          <h1 className="text-4xl font-bold mb-2">Tests</h1>
+        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-5 md:mb-8">
+          <h1 className="text-2xl md:text-4xl font-bold mb-1 md:mb-2">Tests</h1>
           <p className="text-gray-500 dark:text-white/60">Take official tests, or build your own for practice.</p>
         </motion.div>
       )}
@@ -357,7 +363,7 @@ function TestList({
   onOpenAttempt: (a: TestAttempt) => void;
 }) {
   const dailyStatus = getDailyStatus();
-  const dailyLabel = { empty: 'Set up once — a new test every day', pending: "Today's test is waiting", ready: "Today's test is ready", done: "Done for today ✅" }[dailyStatus];
+  const dailyLabel = { empty: 'Set up once — a new test every day', pending: "Today's test is waiting", ready: "Today's test is ready", done: "Done for today" }[dailyStatus];
   return (
     <div className="max-w-3xl mx-auto">
       <button
@@ -371,7 +377,7 @@ function TestList({
             <p className="text-xs text-gray-500 dark:text-white/50">{dailyLabel}</p>
           </div>
         </div>
-        <span className="text-sm font-semibold flex-shrink-0">{dailyStatus === 'ready' || dailyStatus === 'pending' ? 'Open →' : 'Open'}</span>
+        <ChevronRight className="w-5 h-5 flex-shrink-0" aria-label="Open" />
       </button>
 
       {OFFICIAL_TESTS.length > 0 && (
@@ -381,7 +387,7 @@ function TestList({
             {OFFICIAL_TESTS.map((p) => (
               <div
                 key={p.id}
-                className="flex items-center justify-between gap-3 px-5 py-4 rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10"
+                className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 px-4 md:px-5 py-4 rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10"
               >
                 <div className="min-w-0">
                   <p className="font-semibold truncate">{p.title}</p>
@@ -390,12 +396,12 @@ function TestList({
                     {p.durationMinutes > 0 ? ` · ${p.durationMinutes} min` : ' · no timer'}
                   </p>
                 </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <button onClick={() => onLive(p)} className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-gray-300 dark:border-white/20 text-sm font-semibold transition" title="Run this test live for many people">
-                    <Users className="w-4 h-4" /> Live
+                <div className="flex items-center justify-end gap-2 flex-shrink-0">
+                  <button onClick={() => onLive(p)} className="h-11 md:h-auto min-w-11 flex items-center justify-center gap-1.5 md:px-3 md:py-2 rounded-full md:rounded-lg border border-gray-300 dark:border-white/20 text-sm font-semibold transition" title="Run live" aria-label="Run live">
+                    <Users className="w-4 h-4" /><span className="hidden md:inline">Live</span>
                   </button>
-                  <button onClick={() => onTake(p)} className="px-4 py-2 rounded-lg bg-black text-white dark:bg-white dark:text-black text-sm font-semibold transition">
-                    Take Test
+                  <button onClick={() => onTake(p)} className="h-11 md:h-auto min-w-11 flex items-center justify-center gap-1.5 md:px-4 md:py-2 rounded-full md:rounded-lg bg-black text-white dark:bg-white dark:text-black text-sm font-semibold transition" title="Take test" aria-label="Take test">
+                    <Play className="w-4 h-4" fill="currentColor" /><span className="hidden md:inline">Take Test</span>
                   </button>
                 </div>
               </div>
@@ -407,7 +413,7 @@ function TestList({
       <h2 className="text-sm font-semibold text-gray-500 dark:text-white/50 mb-3">My tests</h2>
       <button
         onClick={onCreate}
-        className="w-full flex items-center justify-center gap-2 py-3.5 mb-8 rounded-xl bg-black text-white dark:bg-white dark:text-black font-semibold transition"
+        className="w-full flex items-center justify-center gap-2 py-3.5 mb-6 md:mb-8 rounded-xl bg-black text-white dark:bg-white dark:text-black font-semibold transition"
       >
         <Plus className="w-4 h-4" /> Create New Test
       </button>
@@ -419,7 +425,7 @@ function TestList({
           {papers.map((p) => (
             <div
               key={p.id}
-              className="flex items-center justify-between gap-3 px-5 py-4 rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10"
+              className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 px-4 md:px-5 py-4 rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10"
             >
               <div className="min-w-0">
                 <p className="font-semibold truncate">{p.title}</p>
@@ -428,18 +434,18 @@ function TestList({
                   {p.durationMinutes > 0 ? ` · ${p.durationMinutes} min` : ' · no timer'}
                 </p>
               </div>
-              <div className="flex items-center gap-1.5 flex-shrink-0">
-                <button onClick={() => onEdit(p)} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10" aria-label="Edit test">
+              <div className="flex items-center justify-end gap-1.5 md:gap-2 flex-shrink-0">
+                <button onClick={() => onEdit(p)} className="w-11 h-11 md:w-auto md:h-auto md:p-2 flex items-center justify-center rounded-full md:rounded-lg hover:bg-gray-100 dark:hover:bg-white/10" aria-label="Edit test" title="Edit test">
                   <Pencil className="w-4 h-4" />
                 </button>
-                <button onClick={() => onDelete(p.id)} className="p-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-500/10 text-red-500" aria-label="Delete test">
+                <button onClick={() => onDelete(p.id)} className="w-11 h-11 md:w-auto md:h-auto md:p-2 flex items-center justify-center rounded-full md:rounded-lg hover:bg-red-100 dark:hover:bg-red-500/10 text-red-500" aria-label="Delete test" title="Delete test">
                   <Trash2 className="w-4 h-4" />
                 </button>
-                <button onClick={() => onLive(p)} className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-gray-300 dark:border-white/20 text-sm font-semibold transition" title="Run this test live for many people">
-                  <Users className="w-4 h-4" /> Live
+                <button onClick={() => onLive(p)} className="h-11 md:h-auto min-w-11 flex items-center justify-center gap-1.5 md:px-3 md:py-2 rounded-full md:rounded-lg border border-gray-300 dark:border-white/20 text-sm font-semibold transition" title="Run live" aria-label="Run live">
+                  <Users className="w-4 h-4" /><span className="hidden md:inline">Live</span>
                 </button>
-                <button onClick={() => onTake(p)} className="px-4 py-2 rounded-lg bg-black text-white dark:bg-white dark:text-black text-sm font-semibold transition">
-                  Take Test
+                <button onClick={() => onTake(p)} className="h-11 md:h-auto min-w-11 flex items-center justify-center gap-1.5 md:px-4 md:py-2 rounded-full md:rounded-lg bg-black text-white dark:bg-white dark:text-black text-sm font-semibold transition" title="Take test" aria-label="Take test">
+                  <Play className="w-4 h-4" fill="currentColor" /><span className="hidden md:inline">Take Test</span>
                 </button>
               </div>
             </div>
