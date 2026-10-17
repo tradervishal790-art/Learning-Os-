@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Star, Check, Flame, Lock, Route, Target, Gauge, CircleCheck, Clock, X as CloseIcon, ChartNoAxesColumn, Link2, CircleHelp, Globe, TriangleAlert } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { getRoadmapData, getRoadmapProgress, markTopicFinished, hydrateRoadmapDataFromCloud } from './roadmapData';
 import { hasSavedVideoForTopic, getSavedVideoIdForTopic } from './VideoIntel';
 import { MAX_ACTIVE_GOALS } from './goalsStore';
@@ -13,11 +15,11 @@ import HintBubble from './HintBubble';
 import { useTranslation } from './i18n/LanguageContext';
 import { format } from './i18n/format';
 
-const statusIcons: Record<Topic['status'], string> = {
-  mastered: '⭐',
-  completed: '✓',
-  learning: '🔥',
-  locked: '🔒',
+const statusIcons: Record<Topic['status'], ReactNode> = {
+  mastered: <Star className="w-4 h-4 md:w-5 md:h-5" strokeWidth={2} fill="currentColor" />,
+  completed: <Check className="w-4 h-4 md:w-5 md:h-5" strokeWidth={2.5} />,
+  learning: <Flame className="w-4 h-4 md:w-5 md:h-5" strokeWidth={2} />,
+  locked: <Lock className="w-4 h-4 md:w-5 md:h-5" strokeWidth={2} />,
 };
 
 const statusStyles: Record<Topic['status'], { bg: string; border: string; text: string }> = {
@@ -389,7 +391,7 @@ export default function Roadmap({
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="mb-4">
         <div className="flex items-center gap-3 mb-2">
-          <span className="text-2xl">🗺️</span>
+          <Route className="w-6 h-6 md:w-8 md:h-8" strokeWidth={1.75} />
           <h1 className="text-2xl md:text-4xl font-bold">{t.roadmap.header.title}</h1>
         </div>
         <p className="text-sm text-gray-500 dark:text-white/60">{t.roadmap.header.subtitle}</p>
@@ -400,27 +402,27 @@ export default function Roadmap({
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.05, duration: 0.4 }}
-        className="flex items-center gap-2 mb-6 flex-wrap"
+        className="flex items-center gap-2 mb-6 overflow-x-auto md:flex-wrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {activeGoals.map((g) => (
           <button
             key={g.id}
             onClick={() => onSwitchGoal(g.id)}
-            className={`px-4 py-2 rounded-xl text-sm font-medium border transition truncate max-w-[220px] ${
+            className={`flex-shrink-0 px-4 py-2 rounded-xl text-sm font-medium border transition truncate max-w-[220px] ${
               g.id === activeGoalId
                 ? 'bg-black text-white dark:bg-white dark:text-black border-transparent'
                 : 'border-gray-200 dark:border-white/10 text-gray-500 dark:text-white/50 hover:bg-gray-100 dark:hover:bg-white/10'
             }`}
             title={g.title || t.roadmap.goalTabs.newGoal}
           >
-            🎯 {g.title || t.roadmap.goalTabs.newGoal}
+            <Target className="w-4 h-4 inline -mt-0.5 mr-1.5" strokeWidth={1.75} />{g.title || t.roadmap.goalTabs.newGoal}
           </button>
         ))}
 
         {canAddGoal ? (
           <button
             onClick={onAddGoal}
-            className="px-4 py-2 rounded-xl text-sm font-medium border border-dashed border-gray-300 dark:border-white/20 text-gray-500 dark:text-white/50 hover:bg-gray-100 dark:hover:bg-white/10 transition"
+            className="flex-shrink-0 px-4 py-2 rounded-xl text-sm font-medium border border-dashed border-gray-300 dark:border-white/20 text-gray-500 dark:text-white/50 hover:bg-gray-100 dark:hover:bg-white/10 transition"
           >
             {t.roadmap.goalTabs.addGoal}
           </button>
@@ -433,7 +435,7 @@ export default function Roadmap({
         {activeGoalId && !hasNoRoadmap && (
           <button
             onClick={() => setConfirmEndGoal(true)}
-            className="ml-auto px-3 py-2 rounded-xl text-xs font-medium border border-red-200 dark:border-red-500/20 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition"
+            className="flex-shrink-0 ml-auto px-3 py-2 rounded-xl text-xs font-medium border border-red-200 dark:border-red-500/20 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition"
           >
             {t.roadmap.goalTabs.endGoal}
           </button>
@@ -483,28 +485,24 @@ export default function Roadmap({
         )}
       </AnimatePresence>
 
-      {/* Top stats */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.5 }} className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-8">
-        <div className="p-4 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5">
-          <div className="text-xs text-gray-400 dark:text-white/40 uppercase tracking-wider mb-1">{t.roadmap.stats.progress}</div>
-          <div className="text-2xl font-bold">{progressPercent}%</div>
-        </div>
-        <div className="p-4 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5">
-          <div className="text-xs text-gray-400 dark:text-white/40 uppercase tracking-wider mb-1">{t.roadmap.stats.done}</div>
-          <div className="text-2xl font-bold">{completedTopics}/{totalTopics}</div>
-        </div>
-        <div className="p-4 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5">
-          <div className="text-xs text-gray-400 dark:text-white/40 uppercase tracking-wider mb-1">{t.roadmap.stats.inProgress}</div>
-          <div className="text-2xl font-bold">{learningTopics}</div>
-        </div>
-        <div className="p-4 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5">
-          <div className="text-xs text-gray-400 dark:text-white/40 uppercase tracking-wider mb-1">{t.roadmap.stats.estTime}</div>
-          <div className="text-2xl font-bold">{roadmap.estimatedTime}</div>
-        </div>
+      {/* Top stats — one surface, icon-first on phones */}
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.5 }} className="rounded-2xl border border-gray-200 dark:border-white/10 overflow-hidden grid grid-cols-4 divide-x divide-gray-200 dark:divide-white/10 mb-6 md:mb-8">
+        {[
+          { label: t.roadmap.stats.progress, value: `${progressPercent}%`, Icon: Gauge },
+          { label: t.roadmap.stats.done, value: `${completedTopics}/${totalTopics}`, Icon: CircleCheck },
+          { label: t.roadmap.stats.inProgress, value: String(learningTopics), Icon: Flame },
+          { label: t.roadmap.stats.estTime, value: String(roadmap.estimatedTime), Icon: Clock },
+        ].map(({ label, value, Icon }) => (
+          <div key={label} title={label} aria-label={`${label}: ${value}`} className="px-2 md:px-4 py-3 md:py-4 text-center md:text-left min-w-0">
+            <Icon className="md:hidden w-5 h-5 mx-auto mb-1 text-gray-500 dark:text-white/50" strokeWidth={1.75} />
+            <div className="hidden md:block text-xs text-gray-400 dark:text-white/40 uppercase tracking-wider mb-1">{label}</div>
+            <div className="text-sm md:text-2xl font-bold truncate">{value}</div>
+          </div>
+        ))}
       </motion.div>
 
       {/* Progress bar */}
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2, duration: 0.5 }} className="mb-10">
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2, duration: 0.5 }} className="mb-6 md:mb-10">
         <div className="h-2 bg-gray-100 dark:bg-white/5 rounded-full overflow-hidden">
           <motion.div
             initial={{ width: 0 }}
@@ -519,7 +517,7 @@ export default function Roadmap({
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.5 }} className="p-5 md:p-6 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 mb-6">
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-black dark:bg-white flex items-center justify-center text-2xl flex-shrink-0">🎯</div>
+            <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-black dark:bg-white text-white dark:text-black flex items-center justify-center flex-shrink-0"><Target className="w-6 h-6" strokeWidth={1.75} /></div>
             <div>
              <h2 className="text-lg md:text-xl font-bold">{roadmap.title}</h2>
               <p className="text-sm text-gray-500 dark:text-white/50">{roadmap.description}</p>
@@ -651,29 +649,42 @@ export default function Roadmap({
         )}
       </motion.div>
 
-      {/* Topic list */}
-      <div className="space-y-3">
+      {/* Topic list — vertical timeline: status circle on a rail, card beside it */}
+      <div>
         {roadmap.children?.map((topic, i) => {
           const status = { ...statusStyles[topic.status], icon: statusIcons[topic.status], label: statusLabels[topic.status] };
           const isLast = i === (roadmap.children?.length ?? 0) - 1;
+          const isLocked = topic.status === 'locked';
+          const isDone = topic.status === 'completed' || topic.status === 'mastered';
+          const isActive = topic.status === 'learning';
           return (
-            <motion.button
-              key={topic.id}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.4 + i * 0.08, duration: 0.4 }}
-              onClick={() => openTopic(topic)}
-              disabled={topic.status === 'locked'}
-              className={`relative w-full p-4 md:p-5 rounded-2xl border ${status.border} ${status.bg} text-left transition-all ${
-                topic.status === 'locked' ? 'opacity-50 cursor-not-allowed' : 'hover:scale-[1.01] active:scale-[0.99] cursor-pointer'
-              }`}
-            >
-              <div className="flex items-center gap-3 md:gap-4">
-                <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl border border-gray-200 dark:border-white/10 flex items-center justify-center text-lg md:text-xl flex-shrink-0">
+            <div key={topic.id} className="flex gap-3 md:gap-4">
+              <div className="flex flex-col items-center flex-shrink-0">
+                <div
+                  title={status.label}
+                  aria-label={status.label}
+                  className={`w-9 h-9 md:w-11 md:h-11 rounded-full flex items-center justify-center flex-shrink-0 ${
+                    isDone
+                      ? 'bg-black text-white dark:bg-white dark:text-black'
+                      : isActive
+                      ? 'border-2 border-black dark:border-white text-black dark:text-white'
+                      : 'border border-gray-200 dark:border-white/15 text-gray-300 dark:text-white/30'
+                  }`}
+                >
                   {status.icon}
                 </div>
+                {!isLast && <div className={`flex-1 w-0.5 my-1 rounded-full ${isDone ? 'bg-black dark:bg-white' : 'bg-gray-200 dark:bg-white/10'}`} />}
+              </div>
 
-                <div className="flex-1 min-w-0">
+              <button
+                onClick={() => openTopic(topic)}
+                disabled={isLocked}
+                className={`flex-1 min-w-0 mb-3 p-4 md:p-5 rounded-2xl border ${status.border} ${status.bg} text-left transition-all ${
+                  isLocked ? 'opacity-50 cursor-not-allowed' : 'hover:scale-[1.01] active:scale-[0.99] cursor-pointer'
+                }`}
+              >
+                <div className="flex items-center gap-3 md:gap-4">
+                  <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-[10px] text-gray-400 dark:text-white/30">{format(t.roadmap.step, i + 1)}</span>
                     <span className={`text-[10px] uppercase tracking-wider ${difficultyConfig[topic.difficulty]}`}>
@@ -694,20 +705,21 @@ export default function Roadmap({
                       </span>
                     )}
                   </div>
-                  <h3 className="font-semibold mb-1 text-sm md:text-base">{topic.title}</h3>
-                  <p className="text-xs md:text-sm text-gray-500 dark:text-white/50 line-clamp-1">{topic.description}</p>
-                </div>
+                    <h3 className="font-semibold mb-1 text-sm md:text-base">{topic.title}</h3>
+                    <p className="text-xs md:text-sm text-gray-500 dark:text-white/50 line-clamp-2 md:line-clamp-1">{topic.description}</p>
+                    <div className="sm:hidden flex items-center gap-1 mt-2 text-xs text-gray-400 dark:text-white/40">
+                      <Clock className="w-3.5 h-3.5" strokeWidth={1.75} />
+                      {topic.estimatedTime}
+                    </div>
+                  </div>
 
-                <div className="text-right flex-shrink-0">
-                  <div className={`text-[10px] uppercase tracking-wider ${status.text} mb-1`}>{status.label}</div>
-                  <div className="text-xs text-gray-400 dark:text-white/40">{topic.estimatedTime}</div>
+                  <div className="hidden sm:block text-right flex-shrink-0">
+                    <div className={`text-[10px] uppercase tracking-wider ${status.text} mb-1`}>{status.label}</div>
+                    <div className="text-xs text-gray-400 dark:text-white/40">{topic.estimatedTime}</div>
+                  </div>
                 </div>
-              </div>
-
-              {!isLast && (
-                <div className="absolute left-[2.2rem] md:left-[2.4rem] -bottom-3 w-0.5 h-3 bg-gradient-to-b from-gray-200 dark:from-white/20 to-transparent" />
-              )}
-            </motion.button>
+              </button>
+            </div>
           );
         })}
       </div>
@@ -719,16 +731,16 @@ export default function Roadmap({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-            style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end md:items-center justify-center p-0 md:p-4"
             onClick={() => setSelectedTopic(null)}
           >
             <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
+              initial={{ y: 40, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 40, opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-white/10 rounded-3xl max-w-3xl w-full max-h-[90vh] overflow-auto text-black dark:text-white"
+              className="bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-white/10 rounded-t-3xl md:rounded-3xl max-w-3xl w-full max-h-[90dvh] overflow-auto text-black dark:text-white"
+              style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
               onClick={(e) => e.stopPropagation()}
             >
               <div className="p-5 md:p-6 border-b border-gray-200 dark:border-white/5">
@@ -740,17 +752,18 @@ export default function Roadmap({
                   </span>
                   <button
                     onClick={() => setSelectedTopic(null)}
-                    className="w-8 h-8 rounded-full border border-gray-200 dark:border-white/10 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-white/10 transition flex-shrink-0"
+                    aria-label="Close"
+                    className="w-10 h-10 -mr-2 rounded-full flex items-center justify-center hover:bg-gray-100 dark:hover:bg-white/10 transition flex-shrink-0"
                   >
-                    ✕
+                    <CloseIcon className="w-5 h-5" strokeWidth={1.75} />
                   </button>
                 </div>
                 <h2 className="text-xl md:text-2xl font-bold mb-2">{selectedTopic.title}</h2>
                 <p className="text-gray-500 dark:text-white/60 text-sm">{selectedTopic.description}</p>
                 <div className="flex items-center gap-3 mt-3 text-xs text-gray-400 dark:text-white/40">
-                  <span>⏱️ {selectedTopic.estimatedTime}</span>
+                  <span className="inline-flex items-center gap-1"><Clock className="w-3.5 h-3.5" strokeWidth={1.75} />{selectedTopic.estimatedTime}</span>
                   <span>•</span>
-                  <span className={difficultyConfig[selectedTopic.difficulty]}>📊 {selectedTopic.difficulty}</span>
+                  <span className={`inline-flex items-center gap-1 ${difficultyConfig[selectedTopic.difficulty]}`}><ChartNoAxesColumn className="w-3.5 h-3.5" strokeWidth={1.75} />{selectedTopic.difficulty}</span>
                 </div>
               </div>
 
@@ -795,7 +808,7 @@ export default function Roadmap({
                             <span className="text-black dark:text-white font-medium">{bridge.toTopicTitle}</span>
                           </div>
                           <div className="flex items-start gap-2">
-                            <span className="text-lg leading-none">🔗</span>
+                            <Link2 className="w-4 h-4 flex-shrink-0 mt-0.5" strokeWidth={1.75} />
                             <p className="text-sm text-gray-600 dark:text-white/70 leading-relaxed">{bridge.connectText}</p>
                           </div>
                         </div>
@@ -861,10 +874,10 @@ export default function Roadmap({
                 ) : (
                   <div className="space-y-3">
                     {[
-                      { label: t.roadmap.topicModal.whyItems.learn, content: selectedTopic.why.learn, icon: '❓' },
-                      { label: t.roadmap.topicModal.whyItems.connect, content: selectedTopic.why.connect, icon: '🔗' },
-                      { label: t.roadmap.topicModal.whyItems.system, content: selectedTopic.why.system, icon: '🌐' },
-                      { label: t.roadmap.topicModal.whyItems.risk, content: selectedTopic.why.risk, icon: '⚠️' },
+                      { label: t.roadmap.topicModal.whyItems.learn, content: selectedTopic.why.learn, Icon: CircleHelp },
+                      { label: t.roadmap.topicModal.whyItems.connect, content: selectedTopic.why.connect, Icon: Link2 },
+                      { label: t.roadmap.topicModal.whyItems.system, content: selectedTopic.why.system, Icon: Globe },
+                      { label: t.roadmap.topicModal.whyItems.risk, content: selectedTopic.why.risk, Icon: TriangleAlert },
                     ].map((item, i) => (
                       <motion.div
                         key={item.label}
@@ -874,7 +887,7 @@ export default function Roadmap({
                         className="p-4 rounded-xl border border-gray-200 dark:border-white/10"
                       >
                         <div className="flex items-center gap-2 mb-2">
-                          <span className="text-lg">{item.icon}</span>
+                          <item.Icon className="w-4 h-4" strokeWidth={1.75} />
                           <h3 className="text-sm font-semibold">{item.label}</h3>
                         </div>
                         <p className="text-sm text-gray-600 dark:text-white/70 leading-relaxed">{item.content}</p>
