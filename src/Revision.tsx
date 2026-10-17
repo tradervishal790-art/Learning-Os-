@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RotateCcw, Route, FileText, Flame, TriangleAlert, CalendarDays, Star, LayoutGrid, Target, PenLine, Check, Play, Sprout, PartyPopper, Gauge } from 'lucide-react';
 import type { ReactNode } from 'react';
+import NotesToRevise from './NotesToRevise';
 import { getRevisionStats, getRevisionDataForGoals } from './revisionData';
 import { markDayReviewed, hydrateRevisionFromCloud } from './revisionstore';
 import { markTopicFinished } from './roadmapData';
@@ -137,6 +138,7 @@ export default function Revision({ goals = [] }: RevisionProps) {
         <StudyPlan />
       ) : (
         <>
+      <NotesToRevise />
       {/* Top stats — one surface, icon-first on phones */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.5 }} className="rounded-2xl card overflow-hidden grid grid-cols-4 divide-x divide-gray-200 dark:divide-white/10 mb-5 md:mb-8">
         {[
