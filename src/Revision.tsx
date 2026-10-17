@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { RotateCcw, Route, FileText, Flame, TriangleAlert, CalendarDays, Star, LayoutGrid, Target, PenLine, Check, Play, Sprout, PartyPopper, Gauge } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { getRevisionStats, getRevisionDataForGoals } from './revisionData';
 import { markDayReviewed, hydrateRevisionFromCloud } from './revisionstore';
 import { markTopicFinished } from './roadmapData';
@@ -10,11 +12,19 @@ import StudyPlan from './StudyPlan';
 import { studyPlanText } from './studyPlanText';
 import { useLanguage } from './i18n/LanguageContext';
 
-const statusIcons: Record<RevisionStatus, string> = {
-  'due-today': '🔥',
-  overdue: '⚠️',
-  upcoming: '📅',
-  mastered: '⭐',
+const statusIcons: Record<RevisionStatus, ReactNode> = {
+  'due-today': <Flame className="w-3 h-3" strokeWidth={2} />,
+  overdue: <TriangleAlert className="w-3 h-3" strokeWidth={2} />,
+  upcoming: <CalendarDays className="w-3 h-3" strokeWidth={2} />,
+  mastered: <Star className="w-3 h-3" strokeWidth={2} fill="currentColor" />,
+};
+
+const FILTER_ICONS: Record<FilterId, typeof Flame> = {
+  all: LayoutGrid,
+  'due-today': Flame,
+  overdue: TriangleAlert,
+  upcoming: CalendarDays,
+  mastered: Star,
 };
 
 const difficultyConfig: Record<RevisionDifficulty, string> = {
@@ -92,29 +102,33 @@ export default function Revision({ goals = [] }: RevisionProps) {
   const filteredItems = filter === 'all' ? items : items.filter((i) => i.status === filter);
 
   return (
-    <div className="p-8 max-w-6xl mx-auto text-black dark:text-white">
+    <div className="p-4 md:p-8 max-w-6xl mx-auto text-black dark:text-white">
       {/* Header */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="mb-8">
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="mb-5 md:mb-8">
         <div className="flex items-center gap-3">
-          <span className="text-2xl">🔄</span>
-          <h1 className="text-3xl md:text-4xl font-bold">{t.revision.header.title}</h1>
+          <RotateCcw className="w-6 h-6 md:w-8 md:h-8" strokeWidth={1.75} />
+          <h1 className="text-2xl md:text-4xl font-bold">{t.revision.header.title}</h1>
         </div>
         <p className="text-sm text-gray-500 dark:text-white/60 mt-1">{mode === 'files' ? sp.subtitle : t.revision.header.subtitle}</p>
       </motion.div>
 
       {/* Source switch: roadmap topics vs the learner's own files */}
-      <div className="flex gap-2 mb-6">
-        {([['roadmap', sp.tabRoadmap], ['files', sp.tabFiles]] as const).map(([id, text]) => (
+      <div className="flex border-b border-gray-200 dark:border-white/10 mb-5 md:mb-6">
+        {([['roadmap', sp.tabRoadmap, Route], ['files', sp.tabFiles, FileText]] as const).map(([id, text, Icon]) => (
           <button
             key={id}
             onClick={() => setMode(id)}
-            className={`px-4 py-2 rounded-full text-sm font-medium border transition-all ${
+            aria-label={text}
+            title={text}
+            aria-pressed={mode === id}
+            className={`flex-1 h-12 flex items-center justify-center gap-2 border-b-2 transition ${
               mode === id
-                ? 'bg-black text-white dark:bg-white dark:text-black border-transparent'
-                : 'border-gray-200 dark:border-white/10 text-gray-500 dark:text-white/60 hover:bg-gray-100 dark:hover:bg-white/10'
+                ? 'border-black dark:border-white text-black dark:text-white'
+                : 'border-transparent text-gray-400 dark:text-white/40 hover:text-black dark:hover:text-white'
             }`}
           >
-            {text}
+            <Icon className="w-6 h-6" strokeWidth={mode === id ? 2.2 : 1.75} />
+            <span className="hidden md:inline text-sm font-medium">{text}</span>
           </button>
         ))}
       </div>
@@ -123,28 +137,24 @@ export default function Revision({ goals = [] }: RevisionProps) {
         <StudyPlan />
       ) : (
         <>
-      {/* Top stats */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.5 }} className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        <div className="p-4 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5">
-          <div className="text-xs text-gray-400 dark:text-white/40 uppercase tracking-wider mb-1">{t.revision.stats.dueToday}</div>
-          <div className="text-3xl font-bold">{stats.dueToday}</div>
-        </div>
-        <div className="p-4 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5">
-          <div className="text-xs text-gray-400 dark:text-white/40 uppercase tracking-wider mb-1">{t.revision.stats.overdue}</div>
-          <div className="text-3xl font-bold">{stats.overdue}</div>
-        </div>
-        <div className="p-4 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5">
-          <div className="text-xs text-gray-400 dark:text-white/40 uppercase tracking-wider mb-1">{t.revision.stats.mastered}</div>
-          <div className="text-3xl font-bold">{stats.mastered}</div>
-        </div>
-        <div className="p-4 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5">
-          <div className="text-xs text-gray-400 dark:text-white/40 uppercase tracking-wider mb-1">{t.revision.stats.retention}</div>
-          <div className="text-3xl font-bold">{stats.avgRetention}%</div>
-        </div>
+      {/* Top stats — one surface, icon-first on phones */}
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.5 }} className="rounded-2xl border border-gray-200 dark:border-white/10 overflow-hidden grid grid-cols-4 divide-x divide-gray-200 dark:divide-white/10 mb-5 md:mb-8">
+        {[
+          { label: t.revision.stats.dueToday, value: String(stats.dueToday), Icon: Flame },
+          { label: t.revision.stats.overdue, value: String(stats.overdue), Icon: TriangleAlert },
+          { label: t.revision.stats.mastered, value: String(stats.mastered), Icon: Star },
+          { label: t.revision.stats.retention, value: `${stats.avgRetention}%`, Icon: Gauge },
+        ].map(({ label, value, Icon }) => (
+          <div key={label} title={label} aria-label={`${label}: ${value}`} className="px-2 md:px-4 py-3 md:py-4 text-center md:text-left min-w-0">
+            <Icon className="md:hidden w-5 h-5 mx-auto mb-1 text-gray-500 dark:text-white/50" strokeWidth={1.75} />
+            <div className="hidden md:block text-xs text-gray-400 dark:text-white/40 uppercase tracking-wider mb-1">{label}</div>
+            <div className="text-xl md:text-3xl font-bold tabular-nums">{value}</div>
+          </div>
+        ))}
       </motion.div>
 
       {/* Filter tabs */}
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2, duration: 0.5 }} className="flex gap-2 mb-6 overflow-x-auto pb-2">
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2, duration: 0.5 }} className="flex gap-2 mb-4 md:mb-6 overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {(
           [
             { id: 'all', label: t.revision.filters.all, count: stats.total },
@@ -153,19 +163,27 @@ export default function Revision({ goals = [] }: RevisionProps) {
             { id: 'upcoming', label: t.revision.filters.upcoming, count: stats.upcoming },
             { id: 'mastered', label: t.revision.filters.mastered, count: stats.mastered },
           ] as { id: FilterId; label: string; count: number }[]
-        ).map((tab) => (
+        ).map((tab) => {
+          const FilterIcon = FILTER_ICONS[tab.id];
+          return (
           <button
             key={tab.id}
             onClick={() => setFilter(tab.id)}
-            className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all border ${
+            aria-label={tab.label}
+            title={tab.label}
+            aria-pressed={filter === tab.id}
+            className={`flex-shrink-0 h-11 px-4 inline-flex items-center gap-2 rounded-full text-sm font-medium whitespace-nowrap transition-all border ${
               filter === tab.id
                 ? 'bg-black text-white dark:bg-white dark:text-black border-transparent'
                 : 'border-gray-200 dark:border-white/10 text-gray-500 dark:text-white/60 hover:bg-gray-100 dark:hover:bg-white/10'
             }`}
           >
-            {tab.label} <span className="opacity-60">({tab.count})</span>
+            <FilterIcon className="w-4 h-4" strokeWidth={1.75} />
+            <span className="hidden md:inline">{tab.label}</span>
+            <span className="opacity-60 tabular-nums">{tab.count}</span>
           </button>
-        ))}
+          );
+        })}
       </motion.div>
 
       {/* Revision cards */}
@@ -183,25 +201,25 @@ export default function Revision({ goals = [] }: RevisionProps) {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 20 }}
                 transition={{ delay: i * 0.05, duration: 0.3 }}
-                className={`p-5 rounded-2xl border bg-gray-50 dark:bg-white/5 transition-all ${
+                className={`p-4 md:p-5 rounded-2xl border bg-gray-50 dark:bg-white/5 transition-all ${
                   isReviewing ? 'border-black dark:border-white' : 'border-gray-200 dark:border-white/10'
                 }`}
               >
-                <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-2xl border border-gray-200 dark:border-white/10 flex flex-col items-center justify-center flex-shrink-0">
+                <div className="flex items-center gap-3 md:gap-4">
+                  <div className="w-12 h-12 md:w-16 md:h-16 rounded-2xl border border-gray-200 dark:border-white/10 flex flex-col items-center justify-center flex-shrink-0">
                     <span className="text-[10px] uppercase tracking-wider text-gray-400 dark:text-white/50">{t.revision.card.day}</span>
-                    <span className="text-2xl font-bold">{item.day}</span>
+                    <span className="text-lg md:text-2xl font-bold">{item.day}</span>
                   </div>
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full border border-gray-200 dark:border-white/10 text-gray-600 dark:text-white/70">
-                        {statusIcon} {statusLabel}
+                      <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full border border-gray-200 dark:border-white/10 text-gray-600 dark:text-white/70" title={statusLabel} aria-label={statusLabel}>
+                        {statusIcon}<span className="hidden md:inline">{statusLabel}</span>
                       </span>
                       <span className="text-[10px] text-gray-400 dark:text-white/40 uppercase tracking-wider">• {item.category}</span>
                       {item.goalTitle && (
-                        <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full border border-gray-200 dark:border-white/10 text-gray-500 dark:text-white/50">
-                          🎯 {item.goalTitle}
+                        <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full border border-gray-200 dark:border-white/10 text-gray-500 dark:text-white/50 max-w-[160px]">
+                          <Target className="w-3 h-3 flex-shrink-0" strokeWidth={2} /><span className="truncate">{item.goalTitle}</span>
                         </span>
                       )}
                       <span className={`text-[10px] uppercase tracking-wider ${difficultyConfig[item.difficulty]}`}>
@@ -215,10 +233,10 @@ export default function Revision({ goals = [] }: RevisionProps) {
                     </div>
                     <h3 className="font-semibold mb-1">{item.topic}</h3>
                     {item.status !== 'mastered' && (
-                      <p className="text-xs text-gray-500 dark:text-white/60 mb-1">📝 {item.task}</p>
+                      <p className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-white/60 mb-1"><PenLine className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.75} /><span className="min-w-0">{item.task}</span></p>
                     )}
                     <div className="flex items-center gap-3 text-xs text-gray-400 dark:text-white/50">
-                      <span>📅 {item.dueDate}</span>
+                      <span className="inline-flex items-center gap-1"><CalendarDays className="w-3.5 h-3.5" strokeWidth={1.75} />{item.dueDate}</span>
                       <span>•</span>
                       <span>{format(t.revision.card.retentionLabel, item.retention)}</span>
                     </div>
@@ -235,22 +253,29 @@ export default function Revision({ goals = [] }: RevisionProps) {
 
                   <div className="flex flex-col gap-2 flex-shrink-0">
                     {item.status === 'mastered' ? (
-                      <span className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-white/10 text-xs font-medium text-center">
-                        {t.revision.card.doneLabel}
+                      <span className="w-11 h-11 md:w-auto md:h-auto md:px-3 md:py-1.5 flex items-center justify-center rounded-full md:rounded-lg border border-gray-200 dark:border-white/10 text-xs font-medium text-center" title={t.revision.card.doneLabel} aria-label={t.revision.card.doneLabel}>
+                        <Check className="w-5 h-5 md:hidden" strokeWidth={2} />
+                        <span className="hidden md:inline">{t.revision.card.doneLabel}</span>
                       </span>
                     ) : (
                       <>
                         <button
                           onClick={() => handleMarkDone(item)}
-                          className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all border bg-black text-white dark:bg-white dark:text-black border-transparent hover:opacity-80"
+                          aria-label={t.revision.card.doneCta}
+                          title={t.revision.card.doneCta}
+                          className="w-11 h-11 md:w-auto md:h-auto md:px-3 md:py-1.5 flex items-center justify-center rounded-full md:rounded-lg text-xs font-medium transition-all border bg-black text-white dark:bg-white dark:text-black border-transparent hover:opacity-80"
                         >
-                          {t.revision.card.doneCta}
+                          <Check className="w-5 h-5 md:hidden" strokeWidth={2.2} />
+                          <span className="hidden md:inline">{t.revision.card.doneCta}</span>
                         </button>
                         <button
                           onClick={() => handleReviewNow(item.id)}
-                          className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-white/10 text-gray-600 dark:text-white/70 text-xs font-medium hover:bg-gray-100 dark:hover:bg-white/10 transition"
+                          aria-label={isReviewing ? t.revision.card.reviewingCta : t.revision.card.reviewNowCta}
+                          title={isReviewing ? t.revision.card.reviewingCta : t.revision.card.reviewNowCta}
+                          className="w-11 h-11 md:w-auto md:h-auto md:px-3 md:py-1.5 flex items-center justify-center rounded-full md:rounded-lg border border-gray-200 dark:border-white/10 text-gray-600 dark:text-white/70 text-xs font-medium hover:bg-gray-100 dark:hover:bg-white/10 transition"
                         >
-                          {isReviewing ? t.revision.card.reviewingCta : t.revision.card.reviewNowCta}
+                          <Play className="w-5 h-5 md:hidden" strokeWidth={1.75} fill={isReviewing ? 'currentColor' : 'none'} />
+                          <span className="hidden md:inline">{isReviewing ? t.revision.card.reviewingCta : t.revision.card.reviewNowCta}</span>
                         </button>
                       </>
                     )}
@@ -263,15 +288,15 @@ export default function Revision({ goals = [] }: RevisionProps) {
       </div>
 
       {filteredItems.length === 0 && items.length === 0 && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-12 text-center">
-          <div className="text-5xl mb-4">🌱</div>
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-8 md:p-12 text-center">
+          <Sprout className="w-12 h-12 mx-auto mb-4 text-gray-400 dark:text-white/40" strokeWidth={1.5} />
           <h3 className="text-xl font-semibold mb-2">{t.revision.emptyState.noRevisionTitle}</h3>
           <p className="text-gray-400 dark:text-white/60">{t.revision.emptyState.noRevisionBody}</p>
         </motion.div>
       )}
       {filteredItems.length === 0 && items.length > 0 && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-12 text-center">
-          <div className="text-5xl mb-4">🎉</div>
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-8 md:p-12 text-center">
+          <PartyPopper className="w-12 h-12 mx-auto mb-4 text-gray-400 dark:text-white/40" strokeWidth={1.5} />
           <h3 className="text-xl font-semibold mb-2">{t.revision.emptyState.allCaughtUpTitle}</h3>
           <p className="text-gray-400 dark:text-white/60">{t.revision.emptyState.allCaughtUpBody}</p>
         </motion.div>
