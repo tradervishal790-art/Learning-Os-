@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState, lazy, Suspense } from 'react';
 import type { ComponentType } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Film, BookOpen, ClipboardCheck, Newspaper, Lock, Settings as SettingsIcon, Bell, X as CloseIcon, Target, RotateCcw, Flame } from 'lucide-react';
+import { Search, Film, BookOpen, ClipboardCheck, Newspaper, Lock, Settings as SettingsIcon, Bell, X as CloseIcon, Target, RotateCcw, Flame, Check } from 'lucide-react';
 import PagePlaceholder from './PagePlaceholder';
 import BottomNav from './BottomNav';
 import QuickRow from './QuickRow';
@@ -830,7 +830,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                             : 'border border-gray-300 dark:border-white/30 text-gray-400 dark:text-white/40'
                         }`}
                       >
-                        {step.done ? '✓' : i + 1}
+                        {step.done ? <Check className="w-3.5 h-3.5" strokeWidth={2.5} /> : i + 1}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-medium truncate">{step.title}</div>

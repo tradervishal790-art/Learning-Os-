@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { Check, Construction } from 'lucide-react';
 import type { PageStatus } from './types';
 
 interface PagePlaceholderProps {
@@ -51,8 +52,8 @@ export default function PagePlaceholder({ title, description, icon, features, st
             transition={{ delay: 0.2 + i * 0.1, duration: 0.4 }}
             className="p-5 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 flex items-start gap-3"
           >
-            <div className="w-8 h-8 rounded-lg border border-gray-200 dark:border-white/10 flex items-center justify-center text-sm flex-shrink-0">
-              ✓
+            <div className="w-8 h-8 rounded-lg border border-gray-200 dark:border-white/10 flex items-center justify-center flex-shrink-0">
+              <Check className="w-4 h-4" strokeWidth={2} />
             </div>
             <div className="flex-1">
               <div className="font-medium text-sm">{feature}</div>
@@ -68,7 +69,7 @@ export default function PagePlaceholder({ title, description, icon, features, st
         transition={{ delay: 0.5, duration: 0.5 }}
         className="p-8 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-center"
       >
-        <div className="text-5xl mb-4">🚧</div>
+        <Construction className="w-12 h-12 mx-auto mb-4 text-gray-400 dark:text-white/40" strokeWidth={1.5} />
         <h3 className="text-xl font-semibold mb-2">Under Construction</h3>
         <p className="text-gray-500 dark:text-white/60 text-sm max-w-md mx-auto">
           Part of the Learning OS roadmap — UI ready, connecting it to data and engines next.
