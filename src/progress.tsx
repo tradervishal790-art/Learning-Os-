@@ -1,4 +1,6 @@
 import { motion } from 'framer-motion';
+import { ChartNoAxesColumn, Flame, Clock, Gauge, Sprout, Target, Star, Check } from 'lucide-react';
+import type { ReactNode } from 'react';
 import type { Goal } from './types';
 import {
   getStreakStats,
@@ -22,10 +24,10 @@ const masteryColor = (score: number): string => {
   return 'bg-gray-200 dark:bg-white/10';
 };
 
-const statusIcon: Record<string, string> = {
-  mastered: '⭐',
-  completed: '✓',
-  learning: '🔥',
+const statusIcon: Record<string, ReactNode> = {
+  mastered: <Star className="w-3.5 h-3.5" fill="currentColor" strokeWidth={2} />,
+  completed: <Check className="w-3.5 h-3.5" strokeWidth={2.5} />,
+  learning: <Flame className="w-3.5 h-3.5" strokeWidth={2} />,
 };
 
 export default function Progress({ goals = [] }: ProgressProps) {
@@ -41,38 +43,49 @@ export default function Progress({ goals = [] }: ProgressProps) {
   const hasAnyTopics = heatmap.length > 0;
 
   return (
-    <div className="p-8 max-w-6xl mx-auto text-black dark:text-white">
+    <div className="p-4 md:p-8 max-w-6xl mx-auto text-black dark:text-white">
       {/* Header */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="mb-8">
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="mb-5 md:mb-8">
         <div className="flex items-center gap-3">
-          <span className="text-2xl">📊</span>
-          <h1 className="text-3xl md:text-4xl font-bold">{t.progress.header.title}</h1>
+          <ChartNoAxesColumn className="w-6 h-6 md:w-8 md:h-8" strokeWidth={1.75} />
+          <h1 className="text-2xl md:text-4xl font-bold">{t.progress.header.title}</h1>
         </div>
         <p className="text-sm text-gray-500 dark:text-white/60 mt-1">{t.progress.header.subtitle}</p>
       </motion.div>
 
-      {/* Top stats */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.5 }} className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-8">
-        <div className="p-4 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5">
-          <div className="text-xs text-gray-400 dark:text-white/40 uppercase tracking-wider mb-1">{t.progress.stats.completion}</div>
-          <div className="text-2xl font-bold">{completion.percent}%</div>
+      {/* Hero: completion ring + key numbers */}
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.5 }} className="rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 p-4 md:p-6 flex items-center gap-5 md:gap-10 mb-5 md:mb-6">
+        <div className="relative w-28 h-28 md:w-36 md:h-36 flex-shrink-0" role="img" aria-label={`${t.progress.stats.completion}: ${completion.percent}%`}>
+          <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+            <circle cx="50" cy="50" r="42" fill="none" strokeWidth="8" className="stroke-gray-200 dark:stroke-white/10" />
+            <motion.circle
+              cx="50" cy="50" r="42" fill="none" strokeWidth="8" strokeLinecap="round"
+              className="stroke-black dark:stroke-white"
+              strokeDasharray={2 * Math.PI * 42}
+              initial={{ strokeDashoffset: 2 * Math.PI * 42 }}
+              animate={{ strokeDashoffset: 2 * Math.PI * 42 * (1 - completion.percent / 100) }}
+              transition={{ delay: 0.3, duration: 1, ease: 'easeOut' }}
+            />
+          </svg>
+          <div className="absolute inset-0 flex items-center justify-center text-2xl md:text-3xl font-bold">{completion.percent}%</div>
         </div>
-        <div className="p-4 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5">
-          <div className="text-xs text-gray-400 dark:text-white/40 uppercase tracking-wider mb-1">{t.progress.stats.streak}</div>
-          <div className="text-2xl font-bold">🔥 {streak.currentStreak}d</div>
-        </div>
-        <div className="p-4 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5">
-          <div className="text-xs text-gray-400 dark:text-white/40 uppercase tracking-wider mb-1">{t.progress.stats.totalWatchTime}</div>
-          <div className="text-2xl font-bold">{time.totalHours}h</div>
-        </div>
-        <div className="p-4 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5">
-          <div className="text-xs text-gray-400 dark:text-white/40 uppercase tracking-wider mb-1">{t.progress.stats.retention}</div>
-          <div className="text-2xl font-bold">{retention.avgRetention}%</div>
+        <div className="flex-1 min-w-0 grid gap-3 md:gap-4">
+          {[
+            { label: t.progress.stats.streak, value: `${streak.currentStreak}d`, Icon: Flame },
+            { label: t.progress.stats.totalWatchTime, value: `${time.totalHours}h`, Icon: Clock },
+            { label: t.progress.stats.retention, value: `${retention.avgRetention}%`, Icon: Gauge },
+          ].map(({ label, value, Icon }) => (
+            <div key={label} title={label} aria-label={`${label}: ${value}`} className="flex items-center gap-3 min-w-0">
+              <Icon className="w-5 h-5 flex-shrink-0 text-gray-500 dark:text-white/50" strokeWidth={1.75} />
+              <span className="text-lg md:text-xl font-bold tabular-nums">{value}</span>
+              <span className="hidden md:inline text-xs text-gray-400 dark:text-white/40 uppercase tracking-wider truncate">{label}</span>
+            </div>
+          ))}
         </div>
       </motion.div>
 
       {/* Completion progress bar */}
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.15, duration: 0.5 }} className="mb-10">
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.15, duration: 0.5 }} className="mb-6 md:mb-10">
         <div className="flex justify-between text-xs text-gray-400 dark:text-white/40 mb-2">
           <span>{format(t.progress.completionBar.topicsDone, completion.completed, completion.total)}</span>
           <span>{format(t.progress.completionBar.inProgress, completion.learning)}</span>
@@ -88,8 +101,8 @@ export default function Progress({ goals = [] }: ProgressProps) {
       </motion.div>
 
       {!hasAnyTopics ? (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-12 text-center rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5">
-          <div className="text-5xl mb-4">🌱</div>
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-8 md:p-12 text-center rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5">
+          <Sprout className="w-12 h-12 mx-auto mb-4 text-gray-400 dark:text-white/40" strokeWidth={1.5} />
           <h3 className="text-xl font-semibold mb-2">{t.progress.emptyState.title}</h3>
           <p className="text-gray-400 dark:text-white/60">{t.progress.emptyState.body}</p>
         </motion.div>
@@ -119,7 +132,7 @@ export default function Progress({ goals = [] }: ProgressProps) {
             </div>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-4 md:mb-6">
             {/* Mastery heatmap */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25, duration: 0.5 }} className="p-5 md:p-6 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5">
               <h2 className="font-semibold mb-5">{t.progress.masteryHeatmap.title}</h2>
@@ -181,7 +194,12 @@ export default function Progress({ goals = [] }: ProgressProps) {
                     <div className="min-w-0">
                       <div className="font-medium text-sm truncate">{topic.title}</div>
                       <div className="text-[10px] text-gray-400 dark:text-white/40 uppercase tracking-wider">
-                        {topic.difficulty}{topic.goalTitle ? ` • 🎯 ${topic.goalTitle}` : ''}
+                        {topic.difficulty}
+                        {topic.goalTitle && (
+                          <span className="inline-flex items-center gap-1 ml-1">
+                            • <Target className="w-3 h-3" strokeWidth={2} /> {topic.goalTitle}
+                          </span>
+                        )}
                       </div>
                     </div>
                     <div className="text-right flex-shrink-0 ml-3">
