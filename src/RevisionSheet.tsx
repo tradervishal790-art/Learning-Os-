@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, Copy, Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, Copy, Eye, EyeOff, Plus, Trash2 } from 'lucide-react';
 import { useTranslation } from './i18n/LanguageContext';
 import { format } from './i18n/format';
 import { getIndex, loadNoteContent, pageToHtml } from './notebookStore';
+import { addMistake, getMistakes, removeMistake, type Mistake } from './mistakeStore';
 import { extractHighlights, itemsToText, type HighlightItem, type HighlightKind } from './revisionExtract';
 
 // ============================================================
@@ -20,6 +21,9 @@ export default function RevisionSheet({ id, onBack }: { id: string; onBack: () =
   const [filter, setFilter] = useState<'all' | HighlightKind>('all');
   const [copied, setCopied] = useState(false);
   // Recall: every line is covered until tapped (nothing is saved).
+  const [tab, setTab] = useState<'highlights' | 'mistakes'>('highlights');
+  const [mistakes, setMistakes] = useState<Mistake[]>(() => getMistakes().filter((m) => m.noteId === id));
+  const refreshMistakes = () => setMistakes(getMistakes().filter((m) => m.noteId === id));
   const [recall, setRecall] = useState(false);
   const [shownKeys, setShownKeys] = useState<Set<string>>(new Set());
   const meta = getIndex().notes.find((n) => n.id === id);
@@ -100,14 +104,21 @@ export default function RevisionSheet({ id, onBack }: { id: string; onBack: () =
         {format(t.summary, items?.length ?? 0)}
       </p>
 
-      {items && items.length === 0 && (
+      <div className="flex gap-2 mb-4">
+        <button className={chip(tab === 'highlights')} onClick={() => setTab('highlights')}>{t.tabHighlights}</button>
+        <button className={chip(tab === 'mistakes')} onClick={() => setTab('mistakes')}>{t.tabMistakes} ({mistakes.length})</button>
+      </div>
+
+      {tab === 'mistakes' && <MistakeList noteId={id} mistakes={mistakes} onChange={refreshMistakes} labels={t} />}
+
+      {tab === 'highlights' && items && items.length === 0 && (
         <div className="py-12 text-center">
           <p className="font-medium">{t.empty}</p>
           <p className="text-sm text-gray-500 dark:text-white/60 mt-1">{t.emptyHint}</p>
         </div>
       )}
 
-      {items && items.length > 0 && (
+      {tab === 'highlights' && items && items.length > 0 && (
         <>
           <div className="flex flex-wrap gap-2 mb-4">
             <button className={chip(filter === 'all')} onClick={() => setFilter('all')}>
@@ -133,11 +144,100 @@ export default function RevisionSheet({ id, onBack }: { id: string; onBack: () =
                     {kindLabel[i.kind]} · {t.page} {i.pages.map((p) => p.pageNumber).join(', ')}
                     {i.count > 1 ? ` · ×${i.count}` : ''}
                   </p>
+                  {i.kind === 'doubt' && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (addMistake({ text: i.text, noteId: id })) refreshMistakes();
+                      }}
+                      className="mt-2 text-xs underline text-gray-600 dark:text-white/70"
+                    >
+                      {t.addFromDoubt}
+                    </button>
+                  )}
                 </div>
               </li>
             ))}
           </ul>
         </>
+      )}
+    </div>
+  );
+}
+
+function MistakeList({ noteId, mistakes, onChange, labels: t }: { noteId: string; mistakes: Mistake[]; onChange: () => void; labels: Record<string, string> }) {
+  const [adding, setAdding] = useState(false);
+  const [text, setText] = useState('');
+  const [fix, setFix] = useState('');
+  const [open, setOpen] = useState<Set<string>>(new Set());
+  const [err, setErr] = useState(false);
+  const field = 'w-full rounded-lg border border-gray-200 dark:border-white/10 bg-transparent p-2 text-sm outline-none';
+
+  const save = () => {
+    if (!addMistake({ text, fix, noteId })) return setErr(true);
+    setText('');
+    setFix('');
+    setErr(false);
+    setAdding(false);
+    onChange();
+  };
+
+  return (
+    <div>
+      {adding ? (
+        <div className="mb-4 space-y-2 rounded-xl border border-gray-200 dark:border-white/10 p-3">
+          <label className="block text-xs text-gray-500 dark:text-white/60">{t.mistakeLabel}
+            <textarea value={text} onChange={(e) => { setText(e.target.value); setErr(false); }} rows={2} className={`${field} mt-1`} />
+          </label>
+          <label className="block text-xs text-gray-500 dark:text-white/60">{t.fixLabel}
+            <textarea value={fix} onChange={(e) => setFix(e.target.value)} rows={2} className={`${field} mt-1`} />
+          </label>
+          {err && <p role="alert" className="text-xs text-red-600 dark:text-red-400">{t.needText}</p>}
+          <div className="flex gap-2">
+            <button onClick={save} className="h-9 px-3 rounded-lg bg-black text-white dark:bg-white dark:text-black text-xs font-medium">{t.save}</button>
+            <button onClick={() => setAdding(false)} className="h-9 px-3 rounded-lg border border-gray-200 dark:border-white/10 text-xs">{t.cancel}</button>
+          </div>
+        </div>
+      ) : (
+        <button onClick={() => setAdding(true)} className="mb-4 h-9 px-3 rounded-lg border border-gray-200 dark:border-white/10 text-xs flex items-center gap-1.5">
+          <Plus size={14} /> {t.addMistake}
+        </button>
+      )}
+      {mistakes.length === 0 ? (
+        <div className="py-10 text-center">
+          <p className="font-medium">{t.emptyMistakes}</p>
+          <p className="text-sm text-gray-500 dark:text-white/60 mt-1">{t.emptyMistakesHint}</p>
+        </div>
+      ) : (
+        <ul className="space-y-2">
+          {mistakes.map((m) => {
+            const shown = open.has(m.id);
+            return (
+              <li key={m.id} className="rounded-xl border border-gray-200 dark:border-white/10 p-3">
+                <p className="text-sm whitespace-pre-wrap break-words">{m.text}</p>
+                {m.fix && (
+                  <button
+                    onClick={() => setOpen((cur) => { const n = new Set(cur); if (n.has(m.id)) n.delete(m.id); else n.add(m.id); return n; })}
+                    className={`mt-2 block w-full rounded-lg p-2 text-left text-sm ${shown ? 'bg-green-100 text-green-900 dark:bg-green-900/30 dark:text-green-100' : 'bg-gray-200 text-transparent dark:bg-white/20'}`}
+                    aria-label={shown ? undefined : t.tapFix}
+                  >
+                    {shown ? m.fix : m.fix.replace(/\S/g, '•')}
+                  </button>
+                )}
+                <div className="mt-2 flex justify-end">
+                  <button
+                    onClick={() => { if (window.confirm(t.removeConfirm)) { removeMistake(m.id); onChange(); } }}
+                    aria-label={t.remove}
+                    title={t.remove}
+                    className="h-8 w-8 rounded-lg flex items-center justify-center text-gray-500 dark:text-white/60 hover:bg-gray-100 dark:hover:bg-white/10"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
       )}
     </div>
   );
