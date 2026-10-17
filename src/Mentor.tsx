@@ -148,7 +148,7 @@ export default function Mentor() {
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-black text-black dark:text-white flex flex-col p-4 md:p-8">
+    <div className="min-h-dvh bg-white dark:bg-black text-black dark:text-white flex flex-col p-4 md:p-8">
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
         <h1 className="text-4xl font-bold mb-2">{t.mentor.header.title}</h1>
         <p className="text-gray-500 dark:text-white/60">{t.mentor.header.subtitle}</p>

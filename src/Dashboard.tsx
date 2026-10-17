@@ -2,8 +2,9 @@ import { useCallback, useEffect, useState, lazy, Suspense } from 'react';
 import type { ComponentType } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Film, BookOpen, ClipboardCheck, Newspaper, Menu as MenuIcon, Settings as SettingsIcon, Bell, X as CloseIcon } from 'lucide-react';
+import { Search, Film, BookOpen, ClipboardCheck, Newspaper, Lock, Settings as SettingsIcon, Bell, X as CloseIcon } from 'lucide-react';
 import PagePlaceholder from './PagePlaceholder';
+import BottomNav from './BottomNav';
 import { getRoadmapData, getCurrentTopic } from './roadmapData';
 import { getRevisionStats, getRevisionDataForGoals } from './revisionData';
 import { getPersonalityProfile, savePersonalityProfile, clearPersonalityProfile } from './personalityProfileStore';
@@ -68,6 +69,11 @@ function PageLoading() {
 // engine works (ported from uixmat/onborda, MIT). Each `selector` below
 // must match an `id` added on the actual sidebar/nav element it targets.
 function getDashboardTour(t: ReturnType<typeof useTranslation>): Tour[] {
+  // Phones have no sidebar — the tour points at the bottom bar there.
+  // Revision lives behind the "More" slot on phones.
+  const phone = typeof window !== 'undefined' && !window.matchMedia('(min-width: 768px)').matches;
+  const navSel = (id: string) => (phone ? `#onborda-bnav-${id === 'revision' ? 'more' : id}` : `#onborda-nav-${id}`);
+  const navSide = phone ? 'top' : 'right';
   return [
     {
       tour: 'dashboard-intro',
@@ -75,20 +81,20 @@ function getDashboardTour(t: ReturnType<typeof useTranslation>): Tour[] {
         {
           title: t.dashboard.tour.dashboardIntro[0].title,
           content: t.dashboard.tour.dashboardIntro[0].content,
-          selector: '#onborda-nav-roadmap',
-          side: 'right',
+          selector: navSel('roadmap'),
+          side: navSide,
         },
         {
           title: t.dashboard.tour.dashboardIntro[1].title,
           content: t.dashboard.tour.dashboardIntro[1].content,
-          selector: '#onborda-nav-revision',
-          side: 'right',
+          selector: navSel('revision'),
+          side: navSide,
         },
         {
           title: t.dashboard.tour.dashboardIntro[2].title,
           content: t.dashboard.tour.dashboardIntro[2].content,
-          selector: '#onborda-nav-progress',
-          side: 'right',
+          selector: navSel('progress'),
+          side: navSide,
         },
         {
           title: t.dashboard.tour.dashboardIntro[3].title,
@@ -319,7 +325,6 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
     [navigate]
   );
 
-  const [showSidebar, setShowSidebar] = useState(false);
   const [streak, setStreak] = useState(0);
   // Bell + sound reminder — computed once when the app/home page opens (not
   // only on navigating into the Revision tab), so nothing due gets missed.
@@ -670,6 +675,30 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   const showLoginRequired = isGuest && LOGIN_ONLY_PAGES.includes(activePage);
   const loginRequiredLabel = getSidebarItems(t).find((i) => i.id === activePage)?.label ?? '';
 
+  // Two different locks: authLocked = needs a real account (guest);
+  // roadmapLocked = needs a roadmap first. A guest can never build a
+  // roadmap (it needs an account), so Videos stays open for them.
+  // Progressive disclosure: Revision/Notes/Videos/Progress only make sense
+  // once a roadmap exists (they're all built around topics), so a new user
+  // never lands on an empty page on their very first visit.
+  const navState = (id: DashboardPageId) => {
+    const authLocked = isGuest && LOGIN_ONLY_PAGES.includes(id);
+    const roadmapLocked = ['revision', 'notes', 'videos', 'progress'].includes(id) && !hasRoadmap && !(isGuest && id === 'videos');
+    return { authLocked, roadmapLocked, isLocked: authLocked || roadmapLocked };
+  };
+  // Shared by the desktop sidebar and the mobile bottom bar. Locked items
+  // redirect to Roadmap instead of opening an empty page — nudges toward
+  // the actual next step rather than silently doing nothing.
+  const selectNav = (id: DashboardPageId, label: string) => {
+    const { authLocked, roadmapLocked } = navState(id);
+    if (authLocked) {
+      requireAccount(label); // opens the sign-in modal for guests
+      return;
+    }
+    setActivePage(roadmapLocked ? 'roadmap' : id);
+  };
+  const sidebarItems = getSidebarItems(t);
+
   const SidebarContent = (
     <>
       <div className="mb-10 flex items-center justify-between">
@@ -677,22 +706,10 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
           <h1 className="text-xl font-bold bg-gradient-to-r from-purple-500 via-pink-500 to-orange-400 bg-clip-text text-transparent">Learning OS</h1>
           <p className="text-xs text-gray-400 dark:text-white/40 mt-1">v1.0 - Beta</p>
         </div>
-        <button onClick={() => setShowSidebar(false)} className="md:hidden w-8 h-8 rounded-full border border-gray-200 dark:border-white/10 flex items-center justify-center">X</button>
       </div>
       <nav className="space-y-1 flex-1">
-        {getSidebarItems(t).map((item, i) => {
-          // Progressive disclosure: Revision/Notes/Videos/Progress only make
-          // sense once a roadmap exists (they're all built around topics).
-          // Locking them until then stops a new user from landing on an
-          // empty "Progress" or "Revision" page with zero context on their
-          // very first visit — Dashboard/Roadmap/Mentor/Research stay open
-          // always since they're useful even with no roadmap yet.
-          // Two different locks: authLocked = needs a real account (guest);
-          // roadmapLocked = needs a roadmap first. A guest can never build a
-          // roadmap (it needs an account), so Videos stays open for them.
-          const authLocked = isGuest && LOGIN_ONLY_PAGES.includes(item.id);
-          const roadmapLocked = ['revision', 'notes', 'videos', 'progress'].includes(item.id) && !hasRoadmap && !(isGuest && item.id === 'videos');
-          const isLocked = authLocked || roadmapLocked;
+        {sidebarItems.map((item, i) => {
+          const { isLocked } = navState(item.id);
           return (
             <motion.button
               key={item.id}
@@ -700,18 +717,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.1 + i * 0.05, duration: 0.4 }}
-              onClick={() => {
-                // Locked items redirect to Roadmap instead of opening an
-                // empty page — nudges toward the actual next step rather
-                // than silently doing nothing.
-                if (authLocked) {
-                  requireAccount(item.label); // opens the sign-in modal for guests
-                  setShowSidebar(false);
-                  return;
-                }
-                setActivePage(roadmapLocked ? 'roadmap' : item.id);
-                setShowSidebar(false);
-              }}
+              onClick={() => selectNav(item.id, item.label)}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
                 isLocked
                   ? 'text-gray-300 dark:text-white/20 hover:text-gray-400 dark:hover:text-white/30'
@@ -722,7 +728,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
             >
               {item.icon && <item.icon className="w-4 h-4" />}
               <span className="flex-1 text-left">{item.label}</span>
-              {isLocked && <span className="text-xs">🔒</span>}
+              {isLocked && <Lock className="w-3.5 h-3.5" strokeWidth={2} />}
             </motion.button>
           );
         })}
@@ -743,35 +749,12 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
 
   return (
     <Onborda steps={getDashboardTour(t)} cardComponent={OnbordaCard}>
-    <div className="min-h-screen bg-white dark:bg-black flex text-black dark:text-white">
+    <div className="min-h-dvh bg-white dark:bg-black flex text-black dark:text-white">
       <aside className="hidden md:flex w-64 border-r border-gray-200 dark:border-white/10 p-6 flex-col flex-shrink-0">
         {SidebarContent}
       </aside>
 
-      <AnimatePresence>
-        {showSidebar && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="md:hidden fixed inset-0 bg-black/50 z-40"
-            onClick={() => setShowSidebar(false)}
-          >
-            <motion.aside
-              initial={{ x: -280 }}
-              animate={{ x: 0 }}
-              exit={{ x: -280 }}
-              transition={{ duration: 0.25, ease: 'easeOut' }}
-              className="w-64 h-full bg-white dark:bg-black border-r border-gray-200 dark:border-white/10 p-6 flex flex-col"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {SidebarContent}
-            </motion.aside>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <div className="flex-1 overflow-auto min-w-0">
+      <div className="flex-1 overflow-auto min-w-0 pb-[calc(3.5rem+env(safe-area-inset-bottom))] md:pb-0">
         <motion.div
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -779,9 +762,6 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
           className="border-b border-gray-200 dark:border-white/10 px-4 md:px-8 py-4 md:py-6 flex justify-between items-center gap-3"
         >
           <div className="flex items-center gap-3 min-w-0">
-            <button onClick={() => setShowSidebar(true)} aria-label="Open menu" className="md:hidden -ml-1.5 w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 hover:bg-gray-100 dark:hover:bg-white/10 active:bg-gray-200 dark:active:bg-white/15 transition-colors">
-              <MenuIcon className="w-[22px] h-[22px]" strokeWidth={1.75} />
-            </button>
             <h2 className="text-lg md:text-2xl font-bold truncate">
               {getGreeting()},{' '}
               <span className="bg-gradient-to-r from-purple-500 via-pink-500 to-orange-400 bg-clip-text text-transparent">
@@ -1394,6 +1374,15 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
           </motion.div>
         )}
       </AnimatePresence>
+
+      <BottomNav
+        items={sidebarItems.map((i) => ({ id: i.id, label: i.label, locked: navState(i.id).isLocked }))}
+        activeId={activePage}
+        onSelect={(id) => {
+          const item = sidebarItems.find((i) => i.id === id);
+          if (item) selectNav(item.id, item.label);
+        }}
+      />
     </div>
     </Onborda>
   );
