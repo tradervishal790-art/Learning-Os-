@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Editor } from '@tiptap/react';
-import { ArrowLeft, ChevronDown, ChevronUp, Copy, LayoutGrid, Minimize2, Plus, Sparkles, Star, Trash2, X } from 'lucide-react';
+import { ArrowLeft, ChevronDown, ChevronUp, Copy, Download, FilePlus, LayoutGrid, Minimize2, Plus, Sparkles, Star, Trash2, X } from 'lucide-react';
 import { useTranslation } from './i18n/LanguageContext';
 import { format } from './i18n/format';
-import { loadNoteContent, saveNoteContent, getIndex, type InkStroke, type NotePage } from './notebookStore';
+import { loadNoteContent, saveNoteContent, getIndex, type InkStroke, type NotePage, type PageAttachment } from './notebookStore';
 import { useInkPrefs, type InkMode } from './inkPrefs';
 import InkToolbar, { ModeSwitch } from './InkToolbar';
 import InkOcrDialog, { type OcrState } from './InkOcrDialog';
@@ -15,7 +15,7 @@ import { useZoom } from './useZoom';
 import { useAppDark } from './useAppDark';
 import { useElementSize, useFillHeight } from './useLayoutSize';
 import { useMediaQuery } from './useMediaQuery';
-import { addPageAfter, blankPage, deletePage, duplicatePage, inkOf, movePage, patchPage, restorePage } from './pageOps';
+import { addPageAfter, blankPage, deletePage, duplicatePage, inkOf, movePage, newPageId, patchPage, restorePage } from './pageOps';
 import { recognizeHandwriting } from './inkOcrApi';
 import { getClipboard, nextPasteOffset, setClipboard, useClipboardCount } from './inkClipboard';
 import {
@@ -25,6 +25,8 @@ import { SaveChip } from './SaveChip';
 import PageEditor from './PageEditor';
 import EditorToolbar from './EditorToolbar';
 import NoteAiPanel from './NoteAiPanel';
+import PdfPageSheet from './PdfPageSheet';
+import { getPdf, newAttachId, putPdf } from './attachStore';
 
 // ============================================================
 // NoteEditor.tsx — title + pages (rich text from Part 2, handwriting from
@@ -35,6 +37,7 @@ const AUTOSAVE_MS = 700;
 const OCR_OK_KEY = 'learning_os_ink_ocr_ok';
 const NO_STROKES: InkStroke[] = []; // one shared empty array keeps the memo'd thumbnails from re-rendering
 const COLUMN_MAX = 768; // page width at 100% zoom (px)
+const MAX_PDF_PAGES = 150; // one PDF becomes at most this many note pages
 
 export default function NoteEditor({ id, onBack }: { id: string; onBack: () => void }) {
   const t = useTranslation().notebook;
@@ -328,6 +331,95 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
     return () => window.removeEventListener('keydown', onKey);
   });
 
+  // ---------- photos, audio and PDFs (Part 9) ----------
+
+  const setAttachments = (pageId: string, next: PageAttachment[]) => setAllPages(patchPage(latest.current.pages, pageId, { attachments: next }));
+
+  const pdfInput = useRef<HTMLInputElement>(null);
+  const [pdfBusy, setPdfBusy] = useState(false);
+
+  /** Each PDF page becomes a note page; the file stays on this device, handwriting goes on top. */
+  const importPdf = async (file: File | undefined) => {
+    if (!file) return;
+    setPdfBusy(true);
+    flash(t.attach.pdfOpening);
+    try {
+      const { openPdf, PdfError } = await import('./pdfTools');
+      let doc: Awaited<ReturnType<typeof openPdf>>;
+      try {
+        doc = await openPdf(file);
+      } catch (e) {
+        const code = e instanceof PdfError ? e.code : 'unknown';
+        return flash(t.attach[{ password: 'pdfErrPassword', invalid: 'pdfErrInvalid', 'too-large': 'pdfErrTooLarge', unknown: 'pdfErrUnknown' }[code]]);
+      }
+      const total = doc.numPages;
+      const count = Math.min(total, MAX_PDF_PAGES);
+      const fileId = newAttachId('pd');
+      const added: NotePage[] = [];
+      for (let n = 1; n <= count; n++) {
+        let text = '';
+        try {
+          text = (await doc.getText(n)).slice(0, 20000); // so search and the AI tools can read the PDF too
+        } catch {
+          // a page without readable text is still a fine page
+        }
+        added.push({ id: newPageId(), text, html: '<p></p>', ink: [], pdf: { fileId, pageNumber: n, name: file.name } });
+      }
+      doc.destroy();
+      await putPdf(fileId, file, file.name);
+      const cur = latest.current.pages;
+      const onlyEmpty = cur.length === 1 && !cur[0].text.trim() && !(inkRef.current[cur[0].id]?.length) && !(cur[0].attachments?.length) && !cur[0].pdf;
+      const base = onlyEmpty ? [] : cur;
+      const ink2 = { ...inkRef.current };
+      added.forEach((p) => (ink2[p.id] = []));
+      inkRef.current = ink2;
+      setInk(ink2);
+      setAllPages([...base, ...added]);
+      scrollToPage(added[0].id);
+      flash(total > count ? format(t.attach.pdfTooMany, total, count) : format(t.attach.pdfAdded, count));
+    } catch {
+      flash(t.attach.errStorage);
+    } finally {
+      setPdfBusy(false);
+    }
+  };
+
+  const hasPdf = pages.some((p) => p.pdf);
+
+  /** Save a copy of every imported PDF with the handwriting drawn into it (the original file is untouched). */
+  const exportPdfs = async () => {
+    flash(t.attach.pdfExporting);
+    try {
+      const { exportAnnotatedPdf } = await import('./exportAnnotatedPdf');
+      const groups = new Map<string, { name: string; pages: { pageNumber: number; strokes: InkStroke[] }[] }>();
+      for (const p of latest.current.pages) {
+        if (!p.pdf) continue;
+        const g = groups.get(p.pdf.fileId) ?? { name: p.pdf.name, pages: [] };
+        g.pages.push({ pageNumber: p.pdf.pageNumber, strokes: inkRef.current[p.id] ?? [] });
+        groups.set(p.pdf.fileId, g);
+      }
+      for (const [fileId, g] of groups) {
+        const blob = await getPdf(fileId);
+        if (!blob) {
+          flash(t.attach.pdfMissing);
+          continue;
+        }
+        const bytes = await exportAnnotatedPdf(await blob.arrayBuffer(), g.pages);
+        const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: 'application/pdf' }));
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${g.name.replace(/\.pdf$/i, '') || 'note'}-annotated.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 10_000);
+      }
+      flash(t.attach.pdfExportDone);
+    } catch {
+      flash(t.attach.pdfExportFail);
+    }
+  };
+
   // ---------- AI tools (Part 8) ----------
   // The panel works on text only. The student chooses the scope; nothing is sent before they agree (see NoteAiPanel).
 
@@ -615,6 +707,23 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
               </button>
             )}
             <button
+              onClick={() => pdfInput.current?.click()}
+              disabled={pdfBusy}
+              className="h-9 px-3 rounded-lg border border-gray-200 dark:border-white/10 text-xs flex items-center gap-1.5 text-gray-700 dark:text-white/80 disabled:opacity-40"
+            >
+              <FilePlus size={14} /> {t.attach.addPdf}
+            </button>
+            {hasPdf && (
+              <button
+                onClick={() => void exportPdfs()}
+                aria-label={t.attach.pdfExport}
+                title={t.attach.pdfExport}
+                className="h-9 w-9 rounded-lg border border-gray-200 dark:border-white/10 flex items-center justify-center text-gray-700 dark:text-white/80"
+              >
+                <Download size={14} />
+              </button>
+            )}
+            <button
               onClick={() => setAiOpen(true)}
               className="h-9 px-3 rounded-lg border border-gray-200 dark:border-white/10 text-xs flex items-center gap-1.5 text-gray-700 dark:text-white/80"
             >
@@ -706,6 +815,20 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
                       <PageBtn label={t.pageOps.deleteBtn} onClick={() => askDeletePage(p.id)}><Trash2 size={14} /></PageBtn>
                     </span>
                   </div>
+                  {p.pdf ? (
+                    <PdfPageSheet
+                      fileId={p.pdf.fileId}
+                      pageNumber={p.pdf.pageNumber}
+                      strokes={ink[p.id] ?? NO_STROKES}
+                      mode={mode}
+                      prefs={prefs}
+                      selectedIds={selection?.pageId === p.id ? selection.ids : []}
+                      onSelect={(ids) => selectOn(p.id, ids)}
+                      onInk={(next) => commitInk(p.id, next)}
+                      onActivate={() => setActivePage(p.id)}
+                      labels={t.attach}
+                    />
+                  ) : (
                   <PageEditor
                     page={p}
                     strokes={ink[p.id] ?? NO_STROKES}
@@ -724,7 +847,10 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
                       setActivePage(pageId);
                     }}
                     onInk={commitInk}
+                    onAttachments={setAttachments}
+                    attachLabels={t.attach}
                   />
+                  )}
                 </div>
               ))}
             </div>
@@ -776,6 +902,7 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
           <button onClick={undoDeletePage} className="font-semibold underline">{t.undo}</button>
         </div>
       )}
+      <input ref={pdfInput} type="file" accept="application/pdf" hidden onChange={(e) => { void importPdf(e.target.files?.[0]); e.target.value = ''; }} />
       {aiOpen && (
         <div className="fixed inset-0 z-50 flex justify-end">
           <button aria-label={t.ai.closePanel} className="hidden sm:block flex-1 bg-black/30" onClick={() => setAiOpen(false)} />

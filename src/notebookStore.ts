@@ -93,6 +93,16 @@ export interface NotePage {
   paper?: string;
   /** Student bookmarked this page (Part 5). */
   bookmarked?: boolean;
+  /** Photos and voice recordings added to this page (Part 9). The files live on the device that added them (attachStore / audioStore); only this small reference syncs. */
+  attachments?: PageAttachment[];
+  /** This page shows page `pageNumber` of an imported PDF (Part 9); handwriting is drawn over it. */
+  pdf?: { fileId: string; pageNumber: number; name: string };
+}
+
+export interface PageAttachment {
+  id: string;
+  kind: 'image' | 'audio';
+  name: string;
 }
 
 /** Notes made before the rich editor only have `text` — show it as paragraphs. */

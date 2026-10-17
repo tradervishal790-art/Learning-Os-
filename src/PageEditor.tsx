@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { EditorContent, useEditor, type Editor } from '@tiptap/react';
 import { buildExtensions } from './editorExtensions';
-import { pageToHtml, type InkStroke, type NotePage } from './notebookStore';
+import { pageToHtml, type InkStroke, type NotePage, type PageAttachment } from './notebookStore';
 import type { InkMode, InkPrefs } from './inkPrefs';
 import { PAGE_RATIO, PAGE_UNITS, inkExtentY } from './inkEngine';
 import InkLayer from './InkLayer';
 import PageBackground from './PageBackground';
+import PageAttachments from './PageAttachments';
 import { isTemplateId, paperIsDark } from './pageTemplates';
 import { useAppDark } from './useAppDark';
 import './noteEditor.css';
@@ -26,6 +27,8 @@ export default function PageEditor({
   onEditor,
   onInk,
   onSelect,
+  onAttachments,
+  attachLabels,
 }: {
   page: NotePage;
   strokes: InkStroke[];
@@ -43,6 +46,8 @@ export default function PageEditor({
   onEditor: (pageId: string, editor: Editor) => void;
   onInk: (pageId: string, next: InkStroke[]) => void;
   onSelect: (pageId: string, ids: string[]) => void;
+  onAttachments: (pageId: string, next: PageAttachment[]) => void;
+  attachLabels: Record<string, string>;
 }) {
   const editor = useEditor({
     extensions: buildExtensions(placeholder),
@@ -99,6 +104,7 @@ export default function PageEditor({
       <div className="relative z-10">
         <EditorContent editor={editor} />
       </div>
+      <PageAttachments attachments={page.attachments ?? []} onChange={(next) => onAttachments(page.id, next)} labels={attachLabels} />
       {size.w > 0 && (
         <InkLayer
           strokes={strokes}
