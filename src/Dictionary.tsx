@@ -81,7 +81,7 @@ export default function Dictionary() {
     : [];
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="mx-auto w-full min-w-0 max-w-3xl break-words [overflow-wrap:anywhere]">
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-white/40" />
         <input
