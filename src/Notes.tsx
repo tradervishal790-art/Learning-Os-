@@ -1,6 +1,8 @@
 /// <reference types="vite/client" />
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { FileText, PenLine, Lightbulb, Calculator, TriangleAlert, Globe, Rocket, Target, Sparkles, Loader2, CirclePlay } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { useTranslation } from './i18n/LanguageContext';
 import type { TranslationShape } from './i18n/translations';
 import { authFetch } from './apiFetch';
@@ -285,6 +287,18 @@ export default function Notes({ videoTitle, videoDescription, videoId }: { video
     { id: 'insights', label: t.notes.sections.insights, key: 'keyInsights' },
   ];
 
+  const SECTION_ICONS: Record<string, LucideIcon> = {
+    summary: FileText,
+    mynotes: PenLine,
+    coreConcept: Lightbulb,
+    workedExamples: Calculator,
+    misconceptions: TriangleAlert,
+    realworld: Globe,
+    advanced: Rocket,
+    practice: Target,
+    insights: Sparkles,
+  };
+
   const renderContent = () => {
     if (!notes) return null;
     const section = sections.find((s) => s.id === activeSection) ?? sections[0];
@@ -324,10 +338,10 @@ export default function Notes({ videoTitle, videoDescription, videoId }: { video
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-black text-black dark:text-white p-4 md:p-8">
-      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-        <h1 className="text-4xl font-bold mb-2">{t.notes.header.title}</h1>
-        <p className="text-gray-500 dark:text-white/60">{t.notes.header.subtitle}</p>
+    <div className="min-h-dvh bg-white dark:bg-black text-black dark:text-white p-4 md:p-8">
+      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-5 md:mb-8">
+        <h1 className="text-2xl md:text-4xl font-bold mb-1 md:mb-2">{t.notes.header.title}</h1>
+        <p className="text-sm md:text-base text-gray-500 dark:text-white/60">{t.notes.header.subtitle}</p>
       </motion.div>
 
       <div className="max-w-4xl mx-auto mb-6">
@@ -338,14 +352,17 @@ export default function Notes({ videoTitle, videoDescription, videoId }: { video
             onChange={(e) => setTopic(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleGenerate()}
             placeholder={t.notes.topicPlaceholder}
-            className="flex-1 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 placeholder-gray-400 dark:placeholder-white/40 focus:outline-none focus:border-black dark:focus:border-white"
+            className="flex-1 min-w-0 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 placeholder-gray-400 dark:placeholder-white/40 focus:outline-none focus:border-black dark:focus:border-white"
           />
           <button
             onClick={handleGenerate}
             disabled={loading || !topic.trim()}
-            className="px-6 py-3 bg-black text-white dark:bg-white dark:text-black disabled:opacity-40 rounded-xl font-semibold transition"
+            aria-label={t.notes.deepDiveCta}
+            title={t.notes.deepDiveCta}
+            className="flex-shrink-0 w-12 md:w-auto h-12 md:h-auto md:px-6 md:py-3 flex items-center justify-center gap-2 bg-black text-white dark:bg-white dark:text-black disabled:opacity-40 rounded-xl font-semibold transition"
           >
-            {loading ? '...' : t.notes.deepDiveCta}
+            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5 md:hidden" strokeWidth={1.75} />}
+            <span className="hidden md:inline">{loading ? '...' : t.notes.deepDiveCta}</span>
           </button>
         </div>
 
@@ -356,14 +373,17 @@ export default function Notes({ videoTitle, videoDescription, videoId }: { video
             onChange={(e) => setYoutubeUrl(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleGenerateFromVideo()}
             placeholder={t.notes.linkPlaceholder}
-            className="flex-1 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 placeholder-gray-400 dark:placeholder-white/40 focus:outline-none focus:border-black dark:focus:border-white"
+            className="flex-1 min-w-0 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 placeholder-gray-400 dark:placeholder-white/40 focus:outline-none focus:border-black dark:focus:border-white"
           />
           <button
             onClick={handleGenerateFromVideo}
             disabled={loading || !youtubeUrl.trim()}
-            className="px-6 py-3 border border-gray-300 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/20 disabled:opacity-40 rounded-xl font-semibold transition"
+            aria-label={t.notes.fromVideoCta}
+            title={t.notes.fromVideoCta}
+            className="flex-shrink-0 w-12 md:w-auto h-12 md:h-auto md:px-6 md:py-3 flex items-center justify-center gap-2 border border-gray-300 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/20 disabled:opacity-40 rounded-xl font-semibold transition"
           >
-            {loading ? '...' : t.notes.fromVideoCta}
+            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <CirclePlay className="w-5 h-5 md:hidden" strokeWidth={1.75} />}
+            <span className="hidden md:inline">{loading ? '...' : t.notes.fromVideoCta}</span>
           </button>
         </div>
 
@@ -372,27 +392,34 @@ export default function Notes({ videoTitle, videoDescription, videoId }: { video
 
       {notes && (
         <div className="max-w-5xl mx-auto">
-          <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-            {sections.map((s) => (
-              <button
-                key={s.id}
-                onClick={() => setActiveSection(s.id)}
-                className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition ${
-                  activeSection === s.id
-                    ? 'bg-black text-white dark:bg-white dark:text-black'
-                    : 'bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-500 dark:text-white/60 hover:bg-gray-100 dark:hover:bg-white/10'
-                }`}
-              >
-                {s.label}
-              </button>
-            ))}
+          <div className="flex gap-2 mb-4 md:mb-6 overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {sections.map((s) => {
+              const SectionIcon = SECTION_ICONS[s.id] ?? FileText;
+              return (
+                <button
+                  key={s.id}
+                  onClick={() => setActiveSection(s.id)}
+                  aria-label={s.label}
+                  title={s.label}
+                  aria-pressed={activeSection === s.id}
+                  className={`flex-shrink-0 h-11 min-w-11 px-3 md:px-4 inline-flex items-center justify-center gap-2 rounded-full text-sm font-medium transition ${
+                    activeSection === s.id
+                      ? 'bg-black text-white dark:bg-white dark:text-black'
+                      : 'bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-500 dark:text-white/60 hover:bg-gray-100 dark:hover:bg-white/10'
+                  }`}
+                >
+                  <SectionIcon className="w-5 h-5" strokeWidth={1.75} />
+                  <span className="hidden md:inline">{s.label}</span>
+                </button>
+              );
+            })}
           </div>
 
           <motion.div
             key={activeSection}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl p-8"
+            className="bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl p-4 md:p-8 break-words"
           >
             {currentVideoId && (
               <a
@@ -410,7 +437,7 @@ export default function Notes({ videoTitle, videoDescription, videoId }: { video
             {notes.notesSource === 'metadata' && (
               <p className="text-xs text-gray-400 dark:text-white/40 mb-3">{t.notes.metadataSourceNote}</p>
             )}
-            <h2 className="text-2xl font-bold mb-4">
+            <h2 className="text-xl md:text-2xl font-bold mb-4">
               {sections.find((s) => s.id === activeSection)?.label} — {notes.topic}
             </h2>
             {renderContent()}
