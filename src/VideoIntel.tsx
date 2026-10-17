@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Play, CheckCircle, ThumbsUp, ThumbsDown, SkipForward, MessageCircle } from 'lucide-react';
+import { Search, Play, CheckCircle, ThumbsUp, ThumbsDown, SkipForward, MessageCircle, Link2, X as CloseIcon } from 'lucide-react';
 import type { Video, VideoWatchData, WatchHistoryEntry, EngagementSession, FeedbackValue, Topic, TopicBridge } from './types';
 import { withComputedSignal } from './engagementScoring';
 import { upsertEngagementSession } from './engagementStore';
@@ -813,7 +813,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
   const hasNextVideo = !!selectedVideo;
 
   return (
-    <div className="min-h-screen bg-white dark:bg-black text-black dark:text-white">
+    <div className="min-h-dvh bg-white dark:bg-black text-black dark:text-white">
       {showDeepNotes && selectedVideo ? (
         <div className="p-4 md:p-8">
           <button
@@ -826,9 +826,9 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
         </div>
       ) : (
         <div className="p-4 md:p-8">
-          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-            <h1 className="text-4xl font-bold mb-2">{t.videos.header.title}</h1>
-            <p className="text-gray-500 dark:text-white/60">{t.videos.header.subtitle}</p>
+          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-5 md:mb-8">
+            <h1 className="text-2xl md:text-4xl font-bold mb-1 md:mb-2">{t.videos.header.title}</h1>
+            <p className="text-sm md:text-base text-gray-500 dark:text-white/60">{t.videos.header.subtitle}</p>
           </motion.div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -949,7 +949,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                       since verifyBridgeForVideo now re-checks on every pick. */}
                   {activeBridge && activeBridge.verified !== false && (
                     <div className="flex items-start gap-2 p-4 rounded-xl border border-gray-300 dark:border-white/20 bg-gray-50 dark:bg-white/5">
-                      <span className="text-lg leading-none">🔗</span>
+                      <Link2 className="w-4 h-4 flex-shrink-0 mt-0.5" strokeWidth={1.75} />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1 text-xs text-gray-400 dark:text-white/40">
                           <span>{activeBridge.fromTopicTitle}</span>
@@ -965,10 +965,10 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                       </div>
                       <button
                         onClick={() => setActiveBridge(null)}
-                        className="text-gray-400 dark:text-white/40 hover:text-black dark:hover:text-white transition flex-shrink-0"
+                        className="w-10 h-10 -m-2 flex items-center justify-center text-gray-400 dark:text-white/40 hover:text-black dark:hover:text-white transition flex-shrink-0"
                         aria-label={t.videos.dismissAria}
                       >
-                        ✕
+                        <CloseIcon className="w-4 h-4" strokeWidth={1.75} />
                       </button>
                     </div>
                   )}

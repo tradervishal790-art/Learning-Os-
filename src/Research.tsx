@@ -200,12 +200,12 @@ export default function Research({ embedded = false, onClose }: ResearchProps) {
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-black text-black dark:text-white p-4 md:p-8">
-      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-        <h1 className="text-4xl font-bold mb-2 flex items-center gap-3">
-          <Search className="w-8 h-8" /> {t.research.header.title}
+    <div className="min-h-dvh bg-white dark:bg-black text-black dark:text-white p-4 md:p-8">
+      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-5 md:mb-8">
+        <h1 className="text-2xl md:text-4xl font-bold mb-1 md:mb-2 flex items-center gap-3">
+          <Search className="w-6 h-6 md:w-8 md:h-8" /> {t.research.header.title}
         </h1>
-        <p className="text-gray-500 dark:text-white/60">{t.research.header.subtitle}</p>
+        <p className="text-sm md:text-base text-gray-500 dark:text-white/60">{t.research.header.subtitle}</p>
       </motion.div>
 
       <div className="max-w-3xl mx-auto mb-6">

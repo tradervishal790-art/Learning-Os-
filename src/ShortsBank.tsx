@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ChevronLeft, Wallet } from 'lucide-react';
 import type { SavedShort } from './focusStore';
 import { decodeHtml } from './textUtil';
 
@@ -35,12 +36,12 @@ export default function ShortsBank({
   const stat = 'rounded-2xl border border-black/10 p-3 dark:border-white/15';
 
   return (
-    <div className="min-h-screen bg-white text-black dark:bg-black dark:text-white">
+    <div className="min-h-dvh bg-white text-black dark:bg-black dark:text-white">
       <div className="mx-auto max-w-3xl px-4 py-8">
         <div className="mb-6 flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Shorts bank 💰</h1>
-          <button onClick={onBack} className="rounded-lg px-3 py-1.5 text-sm hover:bg-black/5 dark:hover:bg-white/10">
-            ← Back
+          <h1 className="text-2xl font-bold flex items-center gap-2"><Wallet className="w-6 h-6" strokeWidth={1.75} />Shorts bank</h1>
+          <button onClick={onBack} aria-label="Back" title="Back" className="w-11 h-11 flex items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10">
+            <ChevronLeft className="w-6 h-6" strokeWidth={1.75} />
           </button>
         </div>
 
@@ -101,7 +102,7 @@ export default function ShortsBank({
       {watching && (
         <div className="fixed inset-0 z-50 flex flex-col bg-black text-white">
           <div className="flex items-center justify-between px-4 py-3">
-            <span className="text-sm opacity-70">Paid from your bank 💰</span>
+            <span className="text-sm opacity-70 inline-flex items-center gap-1.5"><Wallet className="w-4 h-4" strokeWidth={1.75} />Paid from your bank</span>
             <button
               onClick={() => {
                 onRemove(watching.id);
