@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Editor } from '@tiptap/react';
-import { ArrowLeft, ChevronDown, ChevronUp, Copy, Download, FilePlus, HelpCircle, LayoutGrid, Minimize2, Plus, RotateCcw, Sparkles, Star, Trash2, Video, VideoOff, X } from 'lucide-react';
+import { ArrowLeft, ChevronDown, ChevronUp, Copy, Download, Eye, EyeOff, FilePlus, HelpCircle, LayoutGrid, Minimize2, Plus, RotateCcw, Sparkles, Star, Trash2, Video, VideoOff, X } from 'lucide-react';
 import { useTranslation } from './i18n/LanguageContext';
 import { format } from './i18n/format';
 import { loadNoteContent, saveNoteContent, getIndex, type InkStroke, type NotePage, type NoteVideo, type PageAttachment } from './notebookStore';
@@ -70,6 +70,7 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
   const [video, setVideo] = useState<NoteVideo | null>(null);
   const videoRef = useRef<NoteVideo | null>(null);
   const playerRef = useRef<VideoPlayerApi | null>(null);
+  const [recall, setRecall] = useState(false);
   const [linking, setLinking] = useState(false);
   const [linkUrl, setLinkUrl] = useState('');
   const [linkError, setLinkError] = useState(false);
@@ -342,6 +343,19 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   });
+
+  // ---------- recall mode (Part 6) ----------
+  // Highlights cover their own text; a tap shows one. Only a class on the element: nothing is saved in the note.
+  const toggleRecall = () => {
+    document.querySelectorAll('.note-prose mark.revealed').forEach((m) => m.classList.remove('revealed'));
+    setRecall((r) => !r);
+    flash(recall ? t.rsheet.recallOff : t.rsheet.recallOn);
+  };
+  const onPagesClick = (e: React.MouseEvent) => {
+    if (!recall) return;
+    const mark = (e.target as Element).closest('mark');
+    if (mark) mark.classList.toggle('revealed');
+  };
 
   // ---------- lecture video beside the note (Part 7) ----------
 
@@ -758,7 +772,7 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
   };
 
   const pagesArea = (
-      <div className="flex gap-3">
+      <div className={`flex gap-3 ${recall ? 'recall-on' : ''}`} onClick={onPagesClick}>
         {isDesktop && !focusMode && (
           <div className="shrink-0" style={{ height: scroller.h || undefined }}>
             {thumbs}
@@ -822,6 +836,7 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
                     onAttachments={setAttachments}
                     attachLabels={t.attach}
                     onSeekVideo={seekFromChip}
+                    recall={recall}
                   />
                   )}
                 </div>
@@ -860,6 +875,14 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
                 <LayoutGrid size={14} /> {t.pageOps.pagesButton}
               </button>
             )}
+            <button
+              onClick={toggleRecall}
+              aria-pressed={recall}
+              title={recall ? t.rsheet.recallOn : t.rsheet.tapReveal}
+              className={`h-9 px-3 rounded-lg border text-xs flex items-center gap-1.5 ${recall ? 'bg-black text-white dark:bg-white dark:text-black border-transparent' : 'border-gray-200 dark:border-white/10 text-gray-700 dark:text-white/80'}`}
+            >
+              {recall ? <EyeOff size={14} /> : <Eye size={14} />} {t.rsheet.recall}
+            </button>
             <button
               onClick={() => (video ? unlinkVideo() : setLinking((v) => !v))}
               className="h-9 px-3 rounded-lg border border-gray-200 dark:border-white/10 text-xs flex items-center gap-1.5 text-gray-700 dark:text-white/80"

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, Copy } from 'lucide-react';
+import { ArrowLeft, Copy, Eye, EyeOff } from 'lucide-react';
 import { useTranslation } from './i18n/LanguageContext';
 import { format } from './i18n/format';
 import { getIndex, loadNoteContent, pageToHtml } from './notebookStore';
@@ -19,6 +19,9 @@ export default function RevisionSheet({ id, onBack }: { id: string; onBack: () =
   const [failed, setFailed] = useState(false);
   const [filter, setFilter] = useState<'all' | HighlightKind>('all');
   const [copied, setCopied] = useState(false);
+  // Recall: every line is covered until tapped (nothing is saved).
+  const [recall, setRecall] = useState(false);
+  const [shownKeys, setShownKeys] = useState<Set<string>>(new Set());
   const meta = getIndex().notes.find((n) => n.id === id);
 
   useEffect(() => {
@@ -74,6 +77,18 @@ export default function RevisionSheet({ id, onBack }: { id: string; onBack: () =
           <ArrowLeft size={16} /> {t.back}
         </button>
         {shown.length > 0 && (
+          <button
+            onClick={() => {
+              setRecall((r) => !r);
+              setShownKeys(new Set());
+            }}
+            aria-pressed={recall}
+            className={`h-9 px-3 rounded-lg border text-xs flex items-center gap-1.5 ml-auto mr-2 ${recall ? 'bg-black text-white dark:bg-white dark:text-black border-transparent' : 'border-gray-200 dark:border-white/10'}`}
+          >
+            {recall ? <EyeOff size={14} /> : <Eye size={14} />} {t.recall}
+          </button>
+        )}
+        {shown.length > 0 && (
           <button onClick={() => void copyAll()} className="h-9 px-3 rounded-lg border border-gray-200 dark:border-white/10 text-xs flex items-center gap-1.5">
             <Copy size={14} /> {copied ? t.copied : t.copyAll}
           </button>
@@ -106,10 +121,14 @@ export default function RevisionSheet({ id, onBack }: { id: string; onBack: () =
           </div>
           <ul className="space-y-2">
             {shown.map((i) => (
-              <li key={i.key} className="rounded-xl border border-gray-200 dark:border-white/10 p-3 flex gap-3">
+              <li
+                key={i.key}
+                onClick={() => recall && setShownKeys((cur) => { const n = new Set(cur); if (n.has(i.key)) n.delete(i.key); else n.add(i.key); return n; })}
+                className={`rounded-xl border border-gray-200 dark:border-white/10 p-3 flex gap-3 ${recall ? 'cursor-pointer' : ''}`}
+              >
                 <span className="w-1.5 shrink-0 rounded-full" style={{ background: i.color }} aria-hidden />
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm whitespace-pre-wrap break-words">{i.text}</p>
+                  <p className={`text-sm whitespace-pre-wrap break-words ${recall && !shownKeys.has(i.key) ? 'text-transparent select-none rounded' : ''}`} style={recall && !shownKeys.has(i.key) ? { background: i.color } : undefined}>{i.text}</p>
                   <p className="mt-1 text-xs text-gray-400 dark:text-white/40">
                     {kindLabel[i.kind]} · {t.page} {i.pages.map((p) => p.pageNumber).join(', ')}
                     {i.count > 1 ? ` · ×${i.count}` : ''}

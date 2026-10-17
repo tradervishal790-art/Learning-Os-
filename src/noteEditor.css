@@ -35,3 +35,7 @@
 .note-paper-dark .note-prose blockquote { color: rgba(255,255,255,0.65); border-color: rgba(255,255,255,0.3); }
 .note-paper-dark .note-prose a { color: #93c5fd; }
 .note-paper-dark .note-prose p.is-editor-empty:first-child::before { color: rgba(255,255,255,0.4); }
+
+/* Recall mode (Part 6): highlights cover their own text; tap one to see it. Same idea as the cover on a highlighted line in Samsung Notes. */
+.recall-on .note-prose mark:not(.revealed) { color: transparent !important; cursor: pointer; }
+.recall-on .note-prose mark.revealed { cursor: pointer; }

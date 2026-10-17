@@ -30,6 +30,7 @@ export default function PageEditor({
   onAttachments,
   attachLabels,
   onSeekVideo,
+  recall = false,
 }: {
   page: NotePage;
   strokes: InkStroke[];
@@ -51,6 +52,8 @@ export default function PageEditor({
   attachLabels: Record<string, string>;
   /** A time chip in the text was clicked (Part 7). */
   onSeekVideo?: (seconds: number, videoId: string | null) => void;
+  /** Recall mode: read-only, highlights are covered (see noteEditor.css). */
+  recall?: boolean;
 }) {
   const seekRef = useRef(onSeekVideo);
   useEffect(() => {
@@ -75,8 +78,8 @@ export default function PageEditor({
 
   // Typing and drawing never fight: the text is read-only while a pen tool is active.
   useEffect(() => {
-    editor?.setEditable(mode === 'type');
-  }, [editor, mode]);
+    editor?.setEditable(mode === 'type' && !recall);
+  }, [editor, mode, recall]);
 
   // The sheet's size drives the ink canvases; ink and text share one coordinate space.
   const sheet = useRef<HTMLDivElement>(null);
