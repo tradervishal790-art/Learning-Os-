@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Archive, ArchiveRestore, Check, ChevronRight, Copy, FileText, GraduationCap, Folder as FolderIcon, FolderInput,
-  FolderPlus, MoreVertical, Pencil, Pin, PinOff, Plus, RotateCcw, Search, Star, Tag, Trash2, X,
+  FolderPlus, ListChecks, MoreVertical, Pencil, Pin, PinOff, Plus, RotateCcw, Search, Star, Tag, Trash2, X,
 } from 'lucide-react';
 import { useTranslation } from './i18n/LanguageContext';
 import { format } from './i18n/format';
@@ -16,6 +16,7 @@ import StudyDialog from './StudyDialog';
 import { STUDY_STATUSES, examChip, examSoon, examSortKey } from './studyInfo';
 // The rich-text editor (TipTap) is the heaviest part of the notebook — load it only when a note opens.
 const NoteEditor = lazy(() => import('./NoteEditor'));
+const RevisionSheet = lazy(() => import('./RevisionSheet'));
 
 // ============================================================
 // NoteLibrary.tsx — Notebook Part 1: the library (folders, tags, search,
@@ -104,6 +105,7 @@ export default function NoteLibrary() {
   const idx = useNotebookIndex();
 
   const [openId, setOpenId] = useState<string | null>(null);
+  const [sheetId, setSheetId] = useState<string | null>(null);
   const [view, setView] = useState<View>('all');
   const [sort, setSort] = useState<Sort>('recent');
   const [tag, setTag] = useState('');
@@ -276,6 +278,7 @@ export default function NoteLibrary() {
           { label: n.pinned ? t.unpin : t.pin, icon: n.pinned ? <PinOff size={14} /> : <Pin size={14} />, onClick: () => togglePin(n.id, !n.pinned) },
           { label: n.favorite ? t.unfavorite : t.favorite, icon: <Star size={14} />, onClick: () => toggleFavorite(n.id, !n.favorite) },
           { label: t.study.details, icon: <GraduationCap size={14} />, onClick: () => setStudyNoteId(n.id) },
+          { label: t.rsheet.menu, icon: <ListChecks size={14} />, onClick: () => setSheetId(n.id) },
           { label: t.editTags, icon: <Tag size={14} />, onClick: () => editTags(n) },
           { label: t.move, icon: <FolderInput size={14} />, onClick: () => setMoveIds([n.id]) },
           { label: t.duplicate, icon: <Copy size={14} />, onClick: () => void duplicateNote(n.id).then(() => flashToast(t.toastDuplicated)) },
@@ -293,6 +296,13 @@ export default function NoteLibrary() {
   };
 
   // ---------- editor open ----------
+
+  if (sheetId)
+    return (
+      <Suspense fallback={null}>
+        <RevisionSheet id={sheetId} onBack={() => setSheetId(null)} />
+      </Suspense>
+    );
 
   if (openId)
     return (
