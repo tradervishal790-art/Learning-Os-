@@ -1,21 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  House,
-  Route,
-  MessageCircle,
-  ChartNoAxesColumn,
-  LayoutGrid,
-  RotateCcw,
-  NotebookPen,
-  ClipboardCheck,
-  Film,
-  Search,
-  BookOpen,
-  Newspaper,
-  Lock,
-} from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
+import { LayoutGrid, Lock } from 'lucide-react';
+import { NAV_ICONS } from './navIcons';
 
 /**
  * Mobile-only bottom navigation, Instagram-style: icons only, no visible
@@ -29,20 +15,6 @@ export interface NavEntry {
   label: string;
   locked: boolean;
 }
-
-const ICONS: Record<string, LucideIcon> = {
-  dashboard: House,
-  roadmap: Route,
-  mentor: MessageCircle,
-  progress: ChartNoAxesColumn,
-  revision: RotateCcw,
-  notes: NotebookPen,
-  test: ClipboardCheck,
-  videos: Film,
-  research: Search,
-  dictionary: BookOpen,
-  'current-affairs': Newspaper,
-};
 
 const PRIMARY_IDS = ['dashboard', 'roadmap', 'mentor', 'progress'];
 
@@ -104,7 +76,7 @@ export default function BottomNav({ items, activeId, onSelect }: Props) {
               style={{ bottom: 'calc(3.5rem + env(safe-area-inset-bottom) + 0.5rem)' }}
             >
               {more.map((item) => {
-                const Icon = ICONS[item.id] ?? LayoutGrid;
+                const Icon = NAV_ICONS[item.id] ?? LayoutGrid;
                 const active = item.id === activeId;
                 return (
                   <button
@@ -136,7 +108,7 @@ export default function BottomNav({ items, activeId, onSelect }: Props) {
       >
         <div className="h-14 flex items-center justify-around">
           {primary.map((item) => {
-            const Icon = ICONS[item.id] ?? LayoutGrid;
+            const Icon = NAV_ICONS[item.id] ?? LayoutGrid;
             const active = item.id === activeId && !moreOpen;
             return (
               <button

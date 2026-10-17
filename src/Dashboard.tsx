@@ -2,9 +2,10 @@ import { useCallback, useEffect, useState, lazy, Suspense } from 'react';
 import type { ComponentType } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Film, BookOpen, ClipboardCheck, Newspaper, Lock, Settings as SettingsIcon, Bell, X as CloseIcon } from 'lucide-react';
+import { Search, Film, BookOpen, ClipboardCheck, Newspaper, Lock, Settings as SettingsIcon, Bell, X as CloseIcon, Target, RotateCcw, Flame } from 'lucide-react';
 import PagePlaceholder from './PagePlaceholder';
 import BottomNav from './BottomNav';
+import QuickRow from './QuickRow';
 import { getRoadmapData, getCurrentTopic } from './roadmapData';
 import { getRevisionStats, getRevisionDataForGoals } from './revisionData';
 import { getPersonalityProfile, savePersonalityProfile, clearPersonalityProfile } from './personalityProfileStore';
@@ -220,6 +221,8 @@ function getSidebarItems(t: ReturnType<typeof useTranslation>): { id: DashboardP
     { id: 'current-affairs', label: t.dashboard.sidebar.currentAffairs, icon: Newspaper },
   ];
 }
+
+const STAT_ICONS = { target: Target, refresh: RotateCcw, streak: Flame } as const;
 
 const roleOptions = ['student', 'developer', 'researcher', 'business', 'exam', 'creator'];
 const languageOptions = ['hindi', 'english', 'hinglish', 'any'];
@@ -781,7 +784,21 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
         <Suspense fallback={<PageLoading />}>
         {showLoginRequired && <LoginRequired feature={loginRequiredLabel} />}
         {activePage === 'dashboard' && (
-          <div className="p-4 md:p-8 space-y-6">
+          <div className="p-4 md:p-8 space-y-4 md:space-y-6">
+            <QuickRow
+              items={sidebarItems
+                .filter((i) => !['dashboard', 'roadmap', 'mentor', 'progress'].includes(i.id))
+                .map((i) => ({
+                  id: i.id,
+                  label: i.label,
+                  locked: navState(i.id).isLocked,
+                  highlight: i.id === 'revision' && revisionStats.dueToday + revisionStats.overdue > 0,
+                }))}
+              onSelect={(id) => {
+                const item = sidebarItems.find((i) => i.id === id);
+                if (item) selectNav(item.id, item.label);
+              }}
+            />
             <WelcomeBack goals={goals} revisionTasks={t.revisionTasks} onOpen={setActivePage} />
             <DailyHabit />
             {showOnboardingChecklist && (
@@ -868,18 +885,23 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
               )}
             </AnimatePresence>
 
-            <div className="rounded-2xl border border-gray-200 dark:border-white/10 overflow-hidden grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-gray-200 dark:divide-white/10">
-              {statsCards.map((card) => (
+            <div className="rounded-2xl border border-gray-200 dark:border-white/10 overflow-hidden grid grid-cols-3 divide-x divide-gray-200 dark:divide-white/10">
+              {statsCards.map((card) => {
+                const StatIcon = STAT_ICONS[card.icon as keyof typeof STAT_ICONS];
+                return (
                 <button
                   key={card.title}
                   onClick={card.onClick}
-                  className="text-left px-5 py-4 md:py-5 hover:bg-gray-50 dark:hover:bg-white/5 active:bg-gray-100 dark:active:bg-white/10 transition-colors"
+                  aria-label={card.title}
+                  className="text-center md:text-left px-2 md:px-5 py-4 md:py-5 hover:bg-gray-50 dark:hover:bg-white/5 active:bg-gray-100 dark:active:bg-white/10 transition-colors"
                 >
-                  <div className="text-xs text-gray-500 dark:text-white/50 mb-1">{card.title}</div>
-                  <div className="text-xl font-semibold tabular-nums line-clamp-1">{card.value}</div>
-                  <div className="text-sm text-gray-500 dark:text-white/50">{card.subtitle}</div>
+                  <StatIcon className="md:hidden w-5 h-5 mx-auto mb-1.5 text-gray-500 dark:text-white/50" strokeWidth={1.75} />
+                  <div className="hidden md:block text-xs text-gray-500 dark:text-white/50 mb-1">{card.title}</div>
+                  <div className="text-sm md:text-xl font-semibold tabular-nums line-clamp-2 md:line-clamp-1">{card.value}</div>
+                  <div className="hidden md:block text-sm text-gray-500 dark:text-white/50">{card.subtitle}</div>
                 </button>
-              ))}
+                );
+              })}
             </div>
 
             <button
