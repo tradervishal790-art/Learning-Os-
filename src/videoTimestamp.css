@@ -1,0 +1,81 @@
+/* src/videoTimestamp.css
+   Opaque chip, so it stays readable on any paper colour.
+   Dark variant: `.dark` on <html> (or any ancestor) and `.note-paper-dark` ancestor. */
+
+.video-ts {
+  --vts-bg: #f4f4f5;
+  --vts-bg-active: #e4e4e7;
+  --vts-fg: #18181b;
+  --vts-border: #71717a;
+  --vts-ring: #18181b;
+
+  position: relative;
+  display: inline-block;
+  box-sizing: border-box;
+  margin: 0 0.1em;
+  padding: 0.05em 0.6em;
+  border: 1px solid var(--vts-border);
+  border-radius: 999px;
+  background: var(--vts-bg);
+  color: var(--vts-fg);
+  font-size: 0.85em;
+  font-weight: 600;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+  font-variant-emoji: text; /* keep "▶" a plain glyph on iOS instead of the emoji button */
+  white-space: nowrap;
+  text-decoration: none;
+  vertical-align: baseline;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-user-drag: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.dark .video-ts,
+.note-paper-dark .video-ts {
+  --vts-bg: #3f3f46;
+  --vts-bg-active: #52525b;
+  --vts-fg: #fafafa;
+  --vts-border: #a1a1aa;
+  --vts-ring: #fafafa;
+}
+
+/* 36px-tall touch target without making the text line taller. */
+.video-ts::after {
+  content: '';
+  position: absolute;
+  left: -4px;
+  right: -4px;
+  top: 50%;
+  height: max(100%, 36px);
+  transform: translateY(-50%);
+}
+
+.video-ts:active {
+  background: var(--vts-bg-active);
+}
+
+/* Hover is only an enhancement; everything works with touch alone. */
+@media (hover: hover) {
+  .video-ts:hover {
+    background: var(--vts-bg-active);
+  }
+}
+
+.video-ts:focus-visible {
+  outline: 2px solid var(--vts-ring);
+  outline-offset: 2px;
+}
+
+@media (forced-colors: active) {
+  .video-ts {
+    border-color: ButtonText;
+  }
+  .video-ts:focus-visible {
+    outline-color: Highlight;
+  }
+}

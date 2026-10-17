@@ -19,6 +19,8 @@
 import { useSyncExternalStore } from 'react';
 import { pullFromCloud, pushToCloudChecked, deleteFromCloud } from './cloudSync';
 import { parseLocalDate } from './studyInfo';
+import type { VideoMoment } from './videoTime';
+import { cloneAttachment } from './attachClone';
 
 // ---------- types ----------
 
@@ -115,11 +117,22 @@ export function pageToHtml(p: NotePage): string {
     .join('');
 }
 
+/** A lecture video linked to a note (Part 7): the note and the video sit side by side, and time chips jump to a moment. */
+export interface NoteVideo {
+  videoId: string;
+  /** Where the video starts, in seconds. */
+  startAt?: number;
+  /** Moments the student marked (confusing / important / revisit). */
+  moments: VideoMoment[];
+}
+
 export interface NoteContent {
   id: string;
   schemaVersion: 1;
   pages: NotePage[];
   updatedAt: string;
+  /** Present only while a video is linked (Firestore rejects undefined values, so the key is omitted otherwise). */
+  video?: NoteVideo;
 }
 
 export interface NotebookIndex {
@@ -502,9 +515,10 @@ export async function loadNoteContent(id: string): Promise<NoteContent | null> {
 }
 
 /** Called by the editor's autosave. Writes content, refreshes the note's meta. */
-export async function saveNoteContent(id: string, title: string, pages: NotePage[]): Promise<boolean> {
+export async function saveNoteContent(id: string, title: string, pages: NotePage[], video?: NoteVideo | null): Promise<boolean> {
   const t = nowIso();
   const content: NoteContent = { id, schemaVersion: 1, pages, updatedAt: t };
+  if (video) content.video = video;
   setStatus('saving');
   let previous = knownPageIds.get(id);
   if (!previous) previous = (await idbGet(id).catch(() => null))?.pages.map((p) => p.id);
@@ -587,12 +601,24 @@ export async function duplicateNote(id: string): Promise<NoteMeta | null> {
     createdAt: t,
     updatedAt: t,
   };
+  // Photos and recordings are copied too, so removing one in the copy never deletes the original's file.
+  const pages = await Promise.all(
+    content.pages.map(async (p): Promise<NotePage> => {
+      const next: NotePage = { ...p, id: newId('pg') };
+      if (p.attachments?.length) {
+        const cloned = await Promise.all(p.attachments.map((a) => cloneAttachment(a)));
+        next.attachments = cloned.filter((a): a is NonNullable<typeof a> => a !== null);
+      }
+      return next;
+    })
+  );
   const copyContent: NoteContent = {
     id: copy.id,
     schemaVersion: 1,
-    pages: content.pages.map((p) => ({ ...p, id: newId('pg') })),
+    pages,
     updatedAt: t,
   };
+  if (content.video) copyContent.video = content.video;
   await idbPut(copy.id, copyContent);
   const idx = getIndex();
   commitIndex({ ...idx, notes: [copy, ...idx.notes] });

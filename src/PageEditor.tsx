@@ -29,6 +29,7 @@ export default function PageEditor({
   onSelect,
   onAttachments,
   attachLabels,
+  onSeekVideo,
 }: {
   page: NotePage;
   strokes: InkStroke[];
@@ -48,9 +49,16 @@ export default function PageEditor({
   onSelect: (pageId: string, ids: string[]) => void;
   onAttachments: (pageId: string, next: PageAttachment[]) => void;
   attachLabels: Record<string, string>;
+  /** A time chip in the text was clicked (Part 7). */
+  onSeekVideo?: (seconds: number, videoId: string | null) => void;
 }) {
+  const seekRef = useRef(onSeekVideo);
+  useEffect(() => {
+    seekRef.current = onSeekVideo;
+  });
   const editor = useEditor({
-    extensions: buildExtensions(placeholder),
+    // The editor is created once, so the chip handler reads the newest callback through a ref.
+    extensions: buildExtensions(placeholder, (sec, vid) => seekRef.current?.(sec, vid)),
     content: pageToHtml(page),
     editorProps: { attributes: { class: 'note-prose' } },
     onUpdate: ({ editor: ed }) => onChange(page.id, ed.getHTML(), ed.getText({ blockSeparator: '\n' })),

@@ -7,10 +7,11 @@ import Subscript from '@tiptap/extension-subscript';
 import Superscript from '@tiptap/extension-superscript';
 import TextAlign from '@tiptap/extension-text-align';
 import { Placeholder } from '@tiptap/extensions';
+import { VideoTimestamp } from './timestampNode';
 
 /** Everything the typed editor supports. Content is parsed through this
  *  schema on load, so HTML coming from the cloud can't smuggle in scripts. */
-export function buildExtensions(placeholder: string) {
+export function buildExtensions(placeholder: string, onSeek?: (seconds: number, videoId: string | null) => void) {
   return [
     StarterKit.configure({
       heading: { levels: [1, 2, 3] },
@@ -25,6 +26,8 @@ export function buildExtensions(placeholder: string) {
     Superscript,
     TextAlign.configure({ types: ['heading', 'paragraph'] }),
     Placeholder.configure({ placeholder }),
+    // Lecture-video time chips (Part 7). Clicking one seeks the linked video.
+    VideoTimestamp.configure({ onSeek: (s, v) => onSeek?.(s, v) }),
   ];
 }
 

@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Editor } from '@tiptap/react';
-import { ArrowLeft, ChevronDown, ChevronUp, Copy, Download, FilePlus, LayoutGrid, Minimize2, Plus, Sparkles, Star, Trash2, X } from 'lucide-react';
+import { ArrowLeft, ChevronDown, ChevronUp, Copy, Download, FilePlus, HelpCircle, LayoutGrid, Minimize2, Plus, RotateCcw, Sparkles, Star, Trash2, Video, VideoOff, X } from 'lucide-react';
 import { useTranslation } from './i18n/LanguageContext';
 import { format } from './i18n/format';
-import { loadNoteContent, saveNoteContent, getIndex, type InkStroke, type NotePage, type PageAttachment } from './notebookStore';
+import { loadNoteContent, saveNoteContent, getIndex, type InkStroke, type NotePage, type NoteVideo, type PageAttachment } from './notebookStore';
 import { useInkPrefs, type InkMode } from './inkPrefs';
 import InkToolbar, { ModeSwitch } from './InkToolbar';
 import InkOcrDialog, { type OcrState } from './InkOcrDialog';
@@ -26,6 +26,10 @@ import PageEditor from './PageEditor';
 import EditorToolbar from './EditorToolbar';
 import NoteAiPanel from './NoteAiPanel';
 import PdfPageSheet from './PdfPageSheet';
+import VideoNotesPane, { type VideoPlayerApi } from './VideoNotesPane';
+import MomentList from './MomentList';
+import { newMomentId, parseYouTubeUrl, timestampUrl, type MomentKind } from './videoTime';
+import { cloneAttachment } from './attachClone';
 import { getPdf, newAttachId, putPdf } from './attachStore';
 
 // ============================================================
@@ -63,11 +67,17 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
   const ocrToken = useRef(0);
   const clipCount = useClipboardCount();
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [video, setVideo] = useState<NoteVideo | null>(null);
+  const videoRef = useRef<NoteVideo | null>(null);
+  const playerRef = useRef<VideoPlayerApi | null>(null);
+  const [linking, setLinking] = useState(false);
+  const [linkUrl, setLinkUrl] = useState('');
+  const [linkError, setLinkError] = useState(false);
   const [deletedPage, setDeletedPage] = useState<{ page: NotePage; ink: InkStroke[]; index: number } | null>(null);
   const deletedTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   // Latest values for the unmount / pagehide flush (state would be stale there).
-  const latest = useRef({ title: '', pages: [] as NotePage[] });
+  const latest = useRef<{ title: string; pages: NotePage[]; video?: NoteVideo }>({ title: '', pages: [] });
   const dirty = useRef(false);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
@@ -81,7 +91,9 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
         setFailed(true);
         return;
       }
-      latest.current = { title: meta.title, pages: content.pages };
+      latest.current = { title: meta.title, pages: content.pages, video: content.video };
+      videoRef.current = content.video ?? null;
+      setVideo(content.video ?? null);
       const initial: Record<string, InkStroke[]> = {};
       content.pages.forEach((p) => (initial[p.id] = p.ink ?? []));
       inkRef.current = initial;
@@ -100,7 +112,7 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
     clearTimeout(timer.current);
     if (!dirty.current) return;
     dirty.current = false;
-    void saveNoteContent(id, latest.current.title, latest.current.pages);
+    void saveNoteContent(id, latest.current.title, latest.current.pages, latest.current.video);
   };
 
   // Save whatever is pending when the student leaves the note or hides the tab.
@@ -119,7 +131,7 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
   }, [id]);
 
   const commit = (nextTitle: string, nextPages: NotePage[]) => {
-    latest.current = { title: nextTitle, pages: nextPages };
+    latest.current = { ...latest.current, title: nextTitle, pages: nextPages };
     dirty.current = true;
     clearTimeout(timer.current);
     timer.current = setTimeout(flush, AUTOSAVE_MS);
@@ -331,6 +343,55 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
     return () => window.removeEventListener('keydown', onKey);
   });
 
+  // ---------- lecture video beside the note (Part 7) ----------
+
+  /** Link / change / unlink the video (null = unlink). Saved with the note, so it follows the student across devices. */
+  const updateVideo = (next: NoteVideo | null) => {
+    latest.current = { ...latest.current, video: next ?? undefined };
+    videoRef.current = next;
+    setVideo(next);
+    commit(latest.current.title, latest.current.pages);
+  };
+
+  const submitLink = () => {
+    const info = parseYouTubeUrl(linkUrl);
+    if (!info) return setLinkError(true);
+    const same = videoRef.current?.videoId === info.videoId;
+    updateVideo({ videoId: info.videoId, startAt: info.startSeconds || undefined, moments: same ? (videoRef.current?.moments ?? []) : [] });
+    setLinking(false);
+    setLinkUrl('');
+    setLinkError(false);
+  };
+
+  const unlinkVideo = () => {
+    if (!window.confirm(t.video.unlinkConfirm)) return;
+    updateVideo(null);
+  };
+
+  /** A time chip in the text was clicked: jump the linked video there, or open another video at that time on YouTube. */
+  const seekFromChip = useRef((seconds: number, videoId: string | null) => {
+    const cur = videoRef.current;
+    const player = playerRef.current;
+    if (cur && player && (videoId === null || videoId === cur.videoId)) {
+      player.seekTo(seconds);
+      player.play();
+    } else if (videoId) {
+      window.open(timestampUrl(videoId, seconds), '_blank', 'noopener,noreferrer');
+    }
+  }).current;
+
+  /** "Add time": puts a chip with the video's current time into the page the student is writing on. */
+  const captureTime = (seconds: number) => {
+    const cur = videoRef.current;
+    const ed = active ?? editors.current[latest.current.pages.find((p) => !p.pdf)?.id ?? ''];
+    if (!cur || !ed) return;
+    const insert = () => ed.commands.insertTimestamp({ seconds, videoId: cur.videoId });
+    if (mode !== 'type') {
+      setMode('type'); // a pen tool makes the text read-only
+      setTimeout(insert, 0);
+    } else insert();
+  };
+
   // ---------- photos, audio and PDFs (Part 9) ----------
 
   const setAttachments = (pageId: string, next: PageAttachment[]) => setAllPages(patchPage(latest.current.pages, pageId, { attachments: next }));
@@ -507,6 +568,14 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
     setInk(inkRef.current);
     setAllPages(r.pages);
     scrollToPage(r.copy.id);
+    // The copy gets its own photo / recording files, so removing one never deletes the original's.
+    const copyId = r.copy.id;
+    if (r.copy.attachments?.length) {
+      void Promise.all(r.copy.attachments.map((a) => cloneAttachment(a))).then((cloned) => {
+        const own = cloned.filter((a): a is PageAttachment => a !== null);
+        if (latest.current.pages.some((p) => p.id === copyId)) setAllPages(patchPage(latest.current.pages, copyId, { attachments: own }));
+      });
+    }
   };
 
   const askDeletePage = (id: string) => {
@@ -678,6 +747,91 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
   }
   if (!ready) return null;
 
+  const videoLabels = {
+    addTimestamp: t.video.addTimestamp,
+    speed: t.video.speed,
+    collapse: t.video.collapse,
+    expand: t.video.expand,
+    retry: t.video.retry,
+    resizeHandle: t.video.resizeHandle,
+    errors: { 'not-embeddable': t.video.errNotEmbeddable, 'not-found': t.video.errNotFound, network: t.video.errNetwork, unknown: t.video.errUnknown },
+  };
+
+  const pagesArea = (
+      <div className="flex gap-3">
+        {isDesktop && !focusMode && (
+          <div className="shrink-0" style={{ height: scroller.h || undefined }}>
+            {thumbs}
+          </div>
+        )}
+
+        {/* The pages scroll inside their own box, so zooming (and scrolling sideways when zoomed in) never moves the toolbar. */}
+        <div
+          ref={setScroller}
+          className="flex-1 min-w-0 overflow-auto rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/[0.02]"
+          style={{ touchAction: 'pan-x pan-y' }}
+        >
+          <div className="py-3" style={{ width: Math.max(scroller.w, columnW + 24) }}>
+            <div style={{ width: columnW, margin: '0 auto' }}>
+              {pages.map((p, i) => (
+                <div key={p.id} data-page-id={p.id} className="mb-4 scroll-mt-2">
+                  <div className="flex items-center justify-between mb-1 text-xs text-gray-400 dark:text-white/40">
+                    <span>{format(t.pageOps.pageOf, i + 1, pages.length)}</span>
+                    <span className="flex items-center gap-0.5">
+                      <PageBtn label={p.bookmarked ? t.pageOps.removeBookmark : t.pageOps.bookmark} active={!!p.bookmarked} onClick={() => toggleBookmark(p.id)}>
+                        <Star size={14} fill={p.bookmarked ? 'currentColor' : 'none'} />
+                      </PageBtn>
+                      <PageBtn label={t.pageOps.moveUp} disabled={i === 0} onClick={() => movePageById(p.id, i - 1)}><ChevronUp size={14} /></PageBtn>
+                      <PageBtn label={t.pageOps.moveDown} disabled={i === pages.length - 1} onClick={() => movePageById(p.id, i + 1)}><ChevronDown size={14} /></PageBtn>
+                      <PageBtn label={t.pageOps.duplicatePage} onClick={() => duplicatePageById(p.id)}><Copy size={14} /></PageBtn>
+                      <PageBtn label={t.pageOps.deleteBtn} onClick={() => askDeletePage(p.id)}><Trash2 size={14} /></PageBtn>
+                    </span>
+                  </div>
+                  {p.pdf ? (
+                    <PdfPageSheet
+                      fileId={p.pdf.fileId}
+                      pageNumber={p.pdf.pageNumber}
+                      strokes={ink[p.id] ?? NO_STROKES}
+                      mode={mode}
+                      prefs={prefs}
+                      selectedIds={selection?.pageId === p.id ? selection.ids : []}
+                      onSelect={(ids) => selectOn(p.id, ids)}
+                      onInk={(next) => commitInk(p.id, next)}
+                      onActivate={() => setActivePage(p.id)}
+                      labels={t.attach}
+                    />
+                  ) : (
+                  <PageEditor
+                    page={p}
+                    strokes={ink[p.id] ?? NO_STROKES}
+                    placeholder={i === 0 ? t.editor.bodyPlaceholder : ''}
+                    autoFocus={focusNew === p.id}
+                    primary={i === 0}
+                    mode={mode}
+                    prefs={prefs}
+                    zoom={zoom}
+                    selectedIds={selection?.pageId === p.id ? selection.ids : []}
+                    onSelect={selectOn}
+                    onEditor={(pageId, ed) => (editors.current[pageId] = ed)}
+                    onChange={changePage}
+                    onActive={(ed, pageId) => {
+                      setActive(ed);
+                      setActivePage(pageId);
+                    }}
+                    onInk={commitInk}
+                    onAttachments={setAttachments}
+                    attachLabels={t.attach}
+                    onSeekVideo={seekFromChip}
+                  />
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+  );
+
   return (
     <div className="max-w-6xl mx-auto">
       {focusMode ? (
@@ -706,6 +860,12 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
                 <LayoutGrid size={14} /> {t.pageOps.pagesButton}
               </button>
             )}
+            <button
+              onClick={() => (video ? unlinkVideo() : setLinking((v) => !v))}
+              className="h-9 px-3 rounded-lg border border-gray-200 dark:border-white/10 text-xs flex items-center gap-1.5 text-gray-700 dark:text-white/80"
+            >
+              {video ? <VideoOff size={14} /> : <Video size={14} />} {video ? t.video.unlinkVideo : t.video.linkVideo}
+            </button>
             <button
               onClick={() => pdfInput.current?.click()}
               disabled={pdfBusy}
@@ -779,6 +939,30 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
         </div>
       )}
 
+      {linking && !video && !focusMode && (
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <input
+            autoFocus
+            value={linkUrl}
+            onChange={(e) => {
+              setLinkUrl(e.target.value);
+              setLinkError(false);
+            }}
+            onKeyDown={(e) => e.key === 'Enter' && submitLink()}
+            placeholder={t.video.linkPlaceholder}
+            aria-invalid={linkError}
+            className="h-9 min-w-[200px] flex-1 rounded-lg border border-gray-200 dark:border-white/10 bg-transparent px-3 text-sm outline-none"
+          />
+          <button onClick={submitLink} className="h-9 px-3 rounded-lg bg-black text-white dark:bg-white dark:text-black text-xs font-medium">
+            {t.video.linkConfirm}
+          </button>
+          <button onClick={() => setLinking(false)} className="h-9 px-3 rounded-lg border border-gray-200 dark:border-white/10 text-xs">
+            {t.video.linkCancel}
+          </button>
+          {linkError && <span role="alert" className="w-full text-xs text-red-600 dark:text-red-400">{t.video.linkInvalid}</span>}
+        </div>
+      )}
+
       <input
         value={title}
         onChange={(e) => changeTitle(e.target.value)}
@@ -786,77 +970,26 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
         className="w-full bg-transparent text-2xl font-bold mb-3 outline-none placeholder:text-gray-300 dark:placeholder:text-white/30"
       />
 
-      <div className="flex gap-3">
-        {isDesktop && !focusMode && (
-          <div className="shrink-0" style={{ height: scroller.h || undefined }}>
-            {thumbs}
-          </div>
-        )}
-
-        {/* The pages scroll inside their own box, so zooming (and scrolling sideways when zoomed in) never moves the toolbar. */}
-        <div
-          ref={setScroller}
-          className="flex-1 min-w-0 overflow-auto rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/[0.02]"
-          style={{ touchAction: 'pan-x pan-y' }}
-        >
-          <div className="py-3" style={{ width: Math.max(scroller.w, columnW + 24) }}>
-            <div style={{ width: columnW, margin: '0 auto' }}>
-              {pages.map((p, i) => (
-                <div key={p.id} data-page-id={p.id} className="mb-4 scroll-mt-2">
-                  <div className="flex items-center justify-between mb-1 text-xs text-gray-400 dark:text-white/40">
-                    <span>{format(t.pageOps.pageOf, i + 1, pages.length)}</span>
-                    <span className="flex items-center gap-0.5">
-                      <PageBtn label={p.bookmarked ? t.pageOps.removeBookmark : t.pageOps.bookmark} active={!!p.bookmarked} onClick={() => toggleBookmark(p.id)}>
-                        <Star size={14} fill={p.bookmarked ? 'currentColor' : 'none'} />
-                      </PageBtn>
-                      <PageBtn label={t.pageOps.moveUp} disabled={i === 0} onClick={() => movePageById(p.id, i - 1)}><ChevronUp size={14} /></PageBtn>
-                      <PageBtn label={t.pageOps.moveDown} disabled={i === pages.length - 1} onClick={() => movePageById(p.id, i + 1)}><ChevronDown size={14} /></PageBtn>
-                      <PageBtn label={t.pageOps.duplicatePage} onClick={() => duplicatePageById(p.id)}><Copy size={14} /></PageBtn>
-                      <PageBtn label={t.pageOps.deleteBtn} onClick={() => askDeletePage(p.id)}><Trash2 size={14} /></PageBtn>
-                    </span>
-                  </div>
-                  {p.pdf ? (
-                    <PdfPageSheet
-                      fileId={p.pdf.fileId}
-                      pageNumber={p.pdf.pageNumber}
-                      strokes={ink[p.id] ?? NO_STROKES}
-                      mode={mode}
-                      prefs={prefs}
-                      selectedIds={selection?.pageId === p.id ? selection.ids : []}
-                      onSelect={(ids) => selectOn(p.id, ids)}
-                      onInk={(next) => commitInk(p.id, next)}
-                      onActivate={() => setActivePage(p.id)}
-                      labels={t.attach}
-                    />
-                  ) : (
-                  <PageEditor
-                    page={p}
-                    strokes={ink[p.id] ?? NO_STROKES}
-                    placeholder={i === 0 ? t.editor.bodyPlaceholder : ''}
-                    autoFocus={focusNew === p.id}
-                    primary={i === 0}
-                    mode={mode}
-                    prefs={prefs}
-                    zoom={zoom}
-                    selectedIds={selection?.pageId === p.id ? selection.ids : []}
-                    onSelect={selectOn}
-                    onEditor={(pageId, ed) => (editors.current[pageId] = ed)}
-                    onChange={changePage}
-                    onActive={(ed, pageId) => {
-                      setActive(ed);
-                      setActivePage(pageId);
-                    }}
-                    onInk={commitInk}
-                    onAttachments={setAttachments}
-                    attachLabels={t.attach}
-                  />
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
+      {video ? (
+        <VideoNotesPane
+          videoId={video.videoId}
+          startAt={video.startAt}
+          playerRef={playerRef}
+          onCapture={captureTime}
+          notes={pagesArea}
+          labels={videoLabels}
+        />
+      ) : (
+        pagesArea
+      )}
+      {video && (
+        <MomentsPanel
+          video={video}
+          playerRef={playerRef}
+          onChange={(moments) => updateVideo({ ...video, moments })}
+          labels={t.video}
+        />
+      )}
 
       <div className="flex flex-wrap items-center justify-between gap-3 mt-3">
         <button
@@ -947,5 +1080,80 @@ function PageBtn({ label, onClick, active, disabled, children }: { label: string
     >
       {children}
     </button>
+  );
+}
+
+const MARK_ICON: Record<MomentKind, React.ComponentType<{ size?: number }>> = { confusing: HelpCircle, important: Star, revisit: RotateCcw };
+
+/** Buttons to mark the current video moment + the list of marked moments (Part 7). */
+function MomentsPanel({
+  video,
+  playerRef,
+  onChange,
+  labels,
+}: {
+  video: NoteVideo;
+  playerRef: React.MutableRefObject<VideoPlayerApi | null>;
+  onChange: (moments: NoteVideo['moments']) => void;
+  labels: Record<string, string>;
+}) {
+  const [now, setNow] = useState(0);
+  // The list highlights the moment being played; a 1-second tick is plenty and keeps the editor out of it.
+  useEffect(() => {
+    const timerId = setInterval(() => {
+      const sec = playerRef.current?.getTime();
+      if (typeof sec === 'number' && Number.isFinite(sec)) setNow(Math.floor(sec));
+    }, 1000);
+    return () => clearInterval(timerId);
+  }, [playerRef]);
+
+  const mark = (kind: MomentKind) => {
+    const sec = playerRef.current?.getTime();
+    if (typeof sec !== 'number' || !Number.isFinite(sec)) return;
+    onChange([...video.moments, { id: newMomentId(), seconds: Math.floor(sec), kind, note: '', createdAt: new Date().toISOString() }]);
+  };
+  const kindLabel: Record<MomentKind, string> = { confusing: labels.kindConfusing, important: labels.kindImportant, revisit: labels.kindRevisit };
+
+  return (
+    <div className="mt-3 rounded-2xl border border-gray-200 dark:border-white/10 p-3">
+      <div className="mb-2 flex flex-wrap items-center gap-2">
+        <span className="text-xs text-gray-500 dark:text-white/60">{labels.markHint}</span>
+        {(['confusing', 'important', 'revisit'] as MomentKind[]).map((k) => {
+          const Icon = MARK_ICON[k];
+          return (
+            <button
+              key={k}
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => mark(k)}
+              className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-gray-200 dark:border-white/10 px-3 text-xs"
+            >
+              <Icon size={14} /> {kindLabel[k]}
+            </button>
+          );
+        })}
+      </div>
+      <MomentList
+        moments={video.moments}
+        currentSeconds={now}
+        labels={{
+          title: labels.momentsTitle,
+          empty: labels.momentsEmpty,
+          all: labels.momentsAll,
+          kinds: kindLabel,
+          editNote: labels.editNote,
+          saveNote: labels.saveNote,
+          cancel: labels.cancel,
+          remove: labels.remove,
+          notePlaceholder: labels.notePlaceholder,
+        }}
+        onSeek={(sec) => {
+          playerRef.current?.seekTo(sec);
+          playerRef.current?.play();
+        }}
+        onDelete={(mid) => onChange(video.moments.filter((m) => m.id !== mid))}
+        onEditNote={(mid, note) => onChange(video.moments.map((m) => (m.id === mid ? { ...m, note } : m)))}
+      />
+    </div>
   );
 }
