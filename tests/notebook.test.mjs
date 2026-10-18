@@ -192,3 +192,26 @@ test('dialogs render with roles, close on Escape, versions restore through the c
   assert.ok(host.textContent.includes('Z') && host.textContent.includes('?'));
   await act(async () => root.unmount());
 });
+
+test('notes translations: English button names everywhere, Hinglish = English, Hindi = Devanagari only', async () => {
+  const { translations: T } = await loadTs('src/i18n/translations.ts');
+  const flat = (o, p = '') => Object.entries(o).flatMap(([k, v]) => (typeof v === 'string' ? [[p + k, v]] : v && typeof v === 'object' ? flat(v, p + k + '.') : []));
+  const en = Object.fromEntries(flat(T.en.notebook));
+  const hi = Object.fromEntries(flat(T.hi.notebook));
+  const hg = Object.fromEntries(flat(T.hinglish.notebook));
+  assert.deepEqual(hg, en, 'the Hinglish notes section shows plain English (no Roman-Hindi text)');
+  const ph = (s) => (s.match(/\{\d\}/g) || []).sort().join('');
+  for (const k of Object.keys(en)) assert.equal(ph(hi[k]), ph(en[k]), `placeholders of ${k}`);
+  // Hindi sentences use Devanagari words only (acronyms / the "New note" button name excepted)
+  for (const [k, v] of Object.entries(hi)) {
+    if (!/[\u0900-\u097F]/.test(v)) continue;
+    const latin = (v.match(/[A-Za-z]{2,}/g) || []).filter((w) => !/^(AI|PDF|YouTube|MB|New|note|https)$/i.test(w));
+    assert.deepEqual(latin, [], `${k} mixes English words into Hindi: ${v}`);
+    assert.ok(!/(करो|ढूँढो|चुनो|जोड़ो|हटाओ|खोलो|बदलो|चलाओ)\b/.test(v), `${k} uses casual Hinglish verbs: ${v}`);
+  }
+  // buttons are English in every language
+  for (const k of ['ai.insert', 'polish.saveNow', 'polish.share', 'polish.restore', 'rsheet.copyAll', 'ink.selDelete', 'editor.bold', 'newNote', 'deleteForever']) {
+    assert.equal(hi[k], en[k], `${k} (button) stays English in Hindi`);
+  }
+  assert.equal(en['polish.saveNow'], 'Save');
+});
