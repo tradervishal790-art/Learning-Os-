@@ -810,16 +810,16 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
           <Notes videoTitle={selectedVideo.title} videoId={selectedVideo.id} />
         </div>
       ) : (
-        <div className="p-4 md:p-8">
-          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-5 md:mb-8">
-            <h1 className="text-2xl md:text-4xl font-bold mb-1 md:mb-2">{t.videos.header.title}</h1>
+        <div className="p-3 sm:p-4 md:p-6">
+          <motion.div initial={{ opacity: 1 }} animate={{ opacity: 1 }} className="mb-4 md:mb-5">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold mb-1">{t.videos.header.title}</h1>
             {t.videos.header.subtitle && <p className="text-sm md:text-base text-gray-500 dark:text-white/60">{t.videos.header.subtitle}</p>}
           </motion.div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-5">
             {/* LEFT: SEARCH */}
             <div className="lg:col-span-1">
-              <div className="flex gap-2 mb-4">
+              <div className="flex gap-2 mb-3">
                 <div className="flex-1 relative">
                   <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400 dark:text-white/40" />
                   <input
@@ -831,13 +831,13 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                       setErrorMessage('');
                     }}
                     onKeyDown={(e) => e.key === 'Enter' && searchVideos()}
-                    className="w-full card border-0 rounded-xl pl-10 pr-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                    className="w-full min-w-0 card border-0 rounded-lg pl-10 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400"
                   />
                 </div>
                 <button
                   onClick={searchVideos}
                   disabled={loading}
-                  className="px-5 py-2.5 bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white disabled:opacity-40 rounded-lg font-semibold transition"
+                  className="shrink-0 px-3 sm:px-4 py-2 bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white disabled:opacity-40 rounded-lg text-sm font-semibold transition"
                 >
                   {loading ? '...' : t.videos.searchCta}
                 </button>
@@ -856,19 +856,19 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                 )}
               </AnimatePresence>
 
-              <div className="flex flex-wrap gap-2 mb-6">
+              <div className="flex flex-wrap gap-1.5 mb-4">
                 {suggestions.map((s) => (
                   <button
                     key={s}
                     onClick={() => setSearchQuery(s)}
-                    className="px-3 py-1.5 border border-gray-200 dark:border-white/10 rounded-full text-sm hover:bg-gray-100 dark:hover:bg-white/10 transition"
+                    className="max-w-full px-2.5 py-1 border border-gray-200 dark:border-white/10 rounded-full text-xs sm:text-sm hover:bg-gray-100 dark:hover:bg-white/10 transition"
                   >
                     {s}
                   </button>
                 ))}
               </div>
 
-              <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
+              <div className="space-y-2 max-h-[520px] overflow-y-auto pr-1">
                 {videos.length === 0 ? (
                   <div className="text-center py-8 md:py-12 text-gray-400 dark:text-white/60">
                     <Play className="w-12 h-12 mx-auto mb-3 opacity-30" />
@@ -920,7 +920,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
             {/* RIGHT: PLAYER */}
             <div className="lg:col-span-2">
               {selectedVideo ? (
-                <motion.div key={selectedVideo.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+                <motion.div key={selectedVideo.id} initial={{ opacity: 1 }} animate={{ opacity: 1 }} className="space-y-3 sm:space-y-4">
                   {/* verified === false means Gemini actually checked the two videos'
                       real content and found no genuine connection — showing the
                       original unproven claim in that case would be worse than
@@ -930,7 +930,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                       whichever video is actually selected — primary or fallback —
                       since verifyBridgeForVideo now re-checks on every pick. */}
                   {activeBridge && activeBridge.verified !== false && (
-                    <div className="flex items-start gap-2 p-4 rounded-xl border border-gray-300 dark:border-white/20 card">
+                    <div className="flex items-start gap-2 p-3 rounded-lg border border-gray-300 dark:border-white/20 card">
                       <Link2 className="w-4 h-4 flex-shrink-0 mt-0.5" strokeWidth={1.75} />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1 text-xs text-gray-400 dark:text-white/40">
@@ -954,7 +954,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                       </button>
                     </div>
                   )}
-                  <div className="bg-black rounded-2xl overflow-hidden border border-gray-200 dark:border-white/10">
+                  <div className="bg-black rounded-xl overflow-hidden border border-gray-200 dark:border-white/10">
                     <YouTubePlayer
                       videoId={selectedVideo.id}
                       playerRef={playerRef}
@@ -974,14 +974,14 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                     />
                   )}
 
-                  <div className="card rounded-xl p-6">
-                    <div className="mb-4">
-                      <h2 className="break-words text-xl sm:text-2xl font-bold mb-1">{selectedVideo.title}</h2>
+                  <div className="card rounded-xl p-3 sm:p-4 md:p-5">
+                    <div className="mb-3">
+                      <h2 className="break-words text-lg sm:text-xl font-bold mb-1">{selectedVideo.title}</h2>
                       <p className="text-gray-500 dark:text-white/60">{selectedVideo.channel}</p>
                     </div>
 
                     {/* Feedback + Next controls */}
-                    <div className="flex flex-wrap items-center gap-2 mb-4">
+                    <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-3">
                       <button
                         onClick={() => handleFeedback('like')}
                         className={`flex min-w-0 items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition border ${
@@ -1029,15 +1029,15 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                       )}
                     </div>
 
-                    <div className="border border-gray-200 dark:border-white/10 rounded-lg p-4 mb-4">
-                      <h3 className="font-semibold mb-3">{t.videos.watchProgress.title}</h3>
+                    <div className="border border-gray-200 dark:border-white/10 rounded-lg p-3 mb-3">
+                      <h3 className="font-semibold text-sm mb-2">{t.videos.watchProgress.title}</h3>
                       <div className="flex justify-between text-sm mb-2">
                         <span>{t.videos.watchProgress.watched}</span>
                         <span className="text-gray-500 dark:text-white/60">
                           {formatTime(watchStats.watchedDuration)} / {formatTime(watchStats.totalDuration)}
                         </span>
                       </div>
-                      <div className="w-full bg-gray-100 dark:bg-white/10 rounded-full h-2 mb-4">
+                      <div className="w-full bg-gray-100 dark:bg-white/10 rounded-full h-1.5 mb-3">
                         <div
                           className="h-full bg-black dark:bg-white rounded-full transition-all"
                           style={{ width: `${watchStats.watchPercentage}%` }}
@@ -1063,16 +1063,16 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                       </div>
                     </div>
 
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                       <button
                         onClick={() => setShowDeepNotes(true)}
-                        className="flex-1 px-4 py-2.5 border border-gray-300 dark:border-white/10 rounded-lg font-semibold hover:bg-gray-100 dark:hover:bg-white/10 transition"
+                        className="flex-1 min-w-[120px] px-3 py-2 border border-gray-300 dark:border-white/10 rounded-lg text-sm font-semibold hover:bg-gray-100 dark:hover:bg-white/10 transition"
                       >
                         {t.videos.deepNotesCta}
                       </button>
                       <button
                         onClick={() => setShowResearch((v) => !v)}
-                        className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-semibold transition border ${
+                        className={`flex-1 min-w-[120px] flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition border ${
                           showResearch
                             ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white border-transparent'
                             : 'border-gray-300 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10'
