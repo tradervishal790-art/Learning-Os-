@@ -20,7 +20,6 @@ import DailyHabit from './DailyHabit';
 import { analyzeAttempt, analyzeHistory } from './testAnalytics';
 import { getTestAttempts } from './testStore';
 import { getLearningProfile, saveLearningProfile, clearLearningProfile } from './learningProfileStore';
-import { getEngagementSessions } from './engagementStore';
 import { pushToCloud, pullFromCloud } from './cloudSync';
 import { buildCandidatePoolForConcept } from './conceptVideoPool';
 import { selectPlaylistForConcept, analyzedVideoToVideo } from './PlaylistBuilder';
@@ -29,11 +28,6 @@ import { useTheme } from './ThemeContext';
 import { signOutOfApp, getCurrentUser } from './authStore';
 import { useAuthPrompt, SignInButton, LoginRequired } from './AuthPrompt';
 import type { DashboardPageId, PageConfig, UserOnboardingData, LearningProfile, Video, Topic, Goal, TopicBridge } from './types';
-import Onborda from './Onborda';
-import { OnbordaProvider, useOnborda } from './OnbordaContext';
-import OnbordaCard from './OnbordaCard';
-import type { Tour } from './onbordaTypes';
-import { hasSeenTour, markTourSeen } from './tourStore';
 import { useTranslation } from './i18n/LanguageContext';
 import { format } from './i18n/format';
 
@@ -64,65 +58,6 @@ function PageLoading() {
       Loading…
     </div>
   );
-}
-
-// Guided spotlight tour for first-time users — see Onborda.tsx for how this
-// engine works (ported from uixmat/onborda, MIT). Each `selector` below
-// must match an `id` added on the actual sidebar/nav element it targets.
-function getDashboardTour(t: ReturnType<typeof useTranslation>): Tour[] {
-  // Phones have no sidebar — the tour points at the bottom bar there.
-  // Revision lives behind the "More" slot on phones.
-  const phone = typeof window !== 'undefined' && !window.matchMedia('(min-width: 768px)').matches;
-  const navSel = (id: string) => (phone ? `#onborda-bnav-${id === 'revision' ? 'more' : id}` : `#onborda-nav-${id}`);
-  const navSide = phone ? 'top' : 'right';
-  return [
-    {
-      tour: 'dashboard-intro',
-      steps: [
-        {
-          title: t.dashboard.tour.dashboardIntro[0].title,
-          content: t.dashboard.tour.dashboardIntro[0].content,
-          selector: navSel('roadmap'),
-          side: navSide,
-        },
-        {
-          title: t.dashboard.tour.dashboardIntro[1].title,
-          content: t.dashboard.tour.dashboardIntro[1].content,
-          selector: navSel('revision'),
-          side: navSide,
-        },
-        {
-          title: t.dashboard.tour.dashboardIntro[2].title,
-          content: t.dashboard.tour.dashboardIntro[2].content,
-          selector: navSel('progress'),
-          side: navSide,
-        },
-        {
-          title: t.dashboard.tour.dashboardIntro[3].title,
-          content: t.dashboard.tour.dashboardIntro[3].content,
-          selector: '#onborda-settings-button',
-          side: 'left',
-        },
-      ],
-    },
-    {
-      tour: 'video-picker-intro',
-      steps: [
-        {
-          title: t.dashboard.tour.videoPickerIntro[0].title,
-          content: t.dashboard.tour.videoPickerIntro[0].content,
-          selector: '#onborda-video-primary',
-          side: 'right',
-        },
-        {
-          title: t.dashboard.tour.videoPickerIntro[1].title,
-          content: t.dashboard.tour.videoPickerIntro[1].content,
-          selector: '#onborda-video-fallback',
-          side: 'right',
-        },
-      ],
-    },
-  ];
 }
 
 interface DashboardProps {
@@ -294,19 +229,6 @@ function trackAndComputeStreak(): number {
 function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGenerateForSubject, roadmapVersion, lastRoadmapError, goals, activeGoalId, onAddGoal, onEndGoal, onSwitchGoal }: DashboardProps) {
   const t = useTranslation();
   const { isGuest, requireAccount, openSignIn } = useAuthPrompt();
-  const { startOnborda } = useOnborda();
-
-  // Auto-start the guided tour once, for a first-time learner only.
-  useEffect(() => {
-    if (!hasSeenTour('dashboard-intro')) {
-      const timer = setTimeout(() => {
-        startOnborda('dashboard-intro');
-        markTourSeen('dashboard-intro');
-      }, 800);
-      return () => clearTimeout(timer);
-    }
-  }, [startOnborda]);
-
   const { theme, toggleTheme } = useTheme();
   // activePage now mirrors the real URL (/dashboard/:page) instead of being
   // plain React state — this is what gives every page its own shareable,
@@ -718,7 +640,6 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   );
 
   return (
-    <Onborda steps={getDashboardTour(t)} cardComponent={OnbordaCard}>
     <div className="min-h-dvh bg-[#f4f6ff] dark:bg-black flex text-black dark:text-white">
       <aside className="hidden md:flex w-64 border-r border-gray-200 dark:border-white/10 p-6 flex-col flex-shrink-0">
         {SidebarContent}
@@ -1357,14 +1278,9 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
         }}
       />
     </div>
-    </Onborda>
   );
 }
 
 export default function Dashboard(props: DashboardProps) {
-  return (
-    <OnbordaProvider>
-      <DashboardInner {...props} />
-    </OnbordaProvider>
-  );
+  return <DashboardInner {...props} />;
 }
