@@ -976,15 +976,15 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
 
                   <div className="card rounded-xl p-6">
                     <div className="mb-4">
-                      <h2 className="text-2xl font-bold mb-1">{selectedVideo.title}</h2>
+                      <h2 className="break-words text-xl sm:text-2xl font-bold mb-1">{selectedVideo.title}</h2>
                       <p className="text-gray-500 dark:text-white/60">{selectedVideo.channel}</p>
                     </div>
 
                     {/* Feedback + Next controls */}
-                    <div className="flex items-center gap-3 mb-4">
+                    <div className="flex flex-wrap items-center gap-2 mb-4">
                       <button
                         onClick={() => handleFeedback('like')}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition border ${
+                        className={`flex min-w-0 items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition border ${
                           feedbackGiven === 'like'
                             ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white border-transparent'
                             : 'border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10'
@@ -994,7 +994,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                       </button>
                       <button
                         onClick={() => handleFeedback('dislike')}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition border ${
+                        className={`flex min-w-0 items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition border ${
                           feedbackGiven === 'dislike'
                             ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white border-transparent'
                             : 'border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10'
@@ -1013,7 +1013,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                           }
                           navigate('/dashboard/mentor');
                         }}
-                        className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10"
+                        className="flex min-w-0 items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10"
                       >
                         <MessageCircle className="w-4 h-4" /> Ask Mentor
                       </button>
@@ -1022,7 +1022,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                         <button
                           onClick={handleNextVideo}
                           disabled={loadingMore}
-                          className="ml-auto flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white hover:opacity-80 transition disabled:opacity-50"
+                          className="ml-0 sm:ml-auto flex shrink-0 items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white hover:opacity-80 transition disabled:opacity-50"
                         >
                           {loadingMore ? t.videos.loadingNextCta : t.videos.nextCta} <SkipForward className="w-4 h-4" />
                         </button>
