@@ -350,7 +350,7 @@ function QuestionCard({
               <Plus className="w-3.5 h-3.5" /> Add option
             </button>
           )}
-          <p className="text-xs text-gray-400 dark:text-white/40 pl-6">Select the radio button next to the correct option. {MIN_OPTIONS}–{MAX_OPTIONS} options allowed; empty options are dropped when you save.</p>
+          <p className="text-xs text-gray-400 dark:text-white/40 pl-6">Choose the correct option. {MIN_OPTIONS}–{MAX_OPTIONS} options.</p>
         </div>
       ) : (
         <textarea
