@@ -386,7 +386,7 @@ export default function Roadmap({
   };
 
   return (
-    <div className="p-4 md:p-8 max-w-6xl mx-auto text-black dark:text-white">
+    <div className="p-3 sm:p-4 md:p-6 max-w-6xl mx-auto text-black dark:text-white">
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="mb-4">
         <div className="flex items-center gap-3 mb-2">
@@ -488,23 +488,23 @@ export default function Roadmap({
       </AnimatePresence>
 
       {/* Top stats — one surface, icon-first on phones */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.5 }} className="rounded-2xl card overflow-hidden grid grid-cols-4 divide-x divide-gray-100 dark:divide-white/10 mb-4 md:mb-8">
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.5 }} className="rounded-xl card overflow-hidden grid grid-cols-4 divide-x divide-gray-100 dark:divide-white/10 mb-3 md:mb-5">
         {[
           { label: t.roadmap.stats.progress, value: `${progressPercent}%`, Icon: Gauge },
           { label: t.roadmap.stats.done, value: `${completedTopics}/${totalTopics}`, Icon: CircleCheck },
           { label: t.roadmap.stats.inProgress, value: String(learningTopics), Icon: Flame },
           { label: t.roadmap.stats.estTime, value: String(roadmap.estimatedTime), Icon: Clock },
         ].map(({ label, value, Icon }) => (
-          <div key={label} title={label} aria-label={`${label}: ${value}`} className="px-2 md:px-4 py-3 md:py-4 text-center md:text-left min-w-0">
+          <div key={label} title={label} aria-label={`${label}: ${value}`} className="px-1.5 sm:px-2 md:px-4 py-2 md:py-3 text-center md:text-left min-w-0">
             <Icon className="md:hidden w-5 h-5 mx-auto mb-1 text-gray-500 dark:text-white/50" strokeWidth={1.75} />
             <div className="hidden md:block text-xs text-gray-400 dark:text-white/40 uppercase tracking-wider mb-1">{label}</div>
-            <div className="text-sm md:text-2xl font-bold truncate">{value}</div>
+            <div className="text-sm sm:text-base md:text-xl font-bold truncate">{value}</div>
           </div>
         ))}
       </motion.div>
 
       {/* Progress bar */}
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2, duration: 0.5 }} className="mb-4 md:mb-10">
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2, duration: 0.5 }} className="mb-3 md:mb-6">
         <div className="h-2 bg-indigo-100 dark:bg-white/5 rounded-full overflow-hidden">
           <motion.div
             initial={{ width: 0 }}
@@ -516,10 +516,10 @@ export default function Roadmap({
       </motion.div>
 
       {/* Main path card */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.5 }} className="p-4 md:p-6 rounded-2xl card mb-4 md:mb-6">
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.5 }} className="p-3 sm:p-4 md:p-5 rounded-xl md:rounded-2xl card mb-3 md:mb-5">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-start gap-3 md:gap-4">
-            <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white flex items-center justify-center flex-shrink-0"><Target className="w-6 h-6" strokeWidth={1.75} /></div>
+            <div className="w-9 h-9 md:w-12 md:h-12 rounded-xl bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white flex items-center justify-center flex-shrink-0"><Target className="w-6 h-6" strokeWidth={1.75} /></div>
             <div className="min-w-0">
               <h2 className="text-base md:text-xl font-bold leading-snug">{roadmap.title}</h2>
               <p className="text-sm text-gray-500 dark:text-white/50 line-clamp-3 md:line-clamp-none mt-1">{roadmap.description}</p>
@@ -681,7 +681,7 @@ export default function Roadmap({
               <button
                 onClick={() => openTopic(topic)}
                 disabled={isLocked}
-                className={`flex-1 min-w-0 mb-3 p-4 md:p-5 rounded-2xl border ${status.border} ${status.bg} text-left transition-all ${
+                className={`flex-1 min-w-0 mb-2 p-3 sm:p-4 rounded-xl border ${status.border} ${status.bg} text-left transition-colors ${
                   isLocked ? 'opacity-50 cursor-not-allowed' : 'hover:scale-[1.01] active:scale-[0.99] cursor-pointer'
                 }`}
               >
@@ -745,7 +745,7 @@ export default function Roadmap({
               style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="p-5 md:p-6 border-b border-gray-200 dark:border-white/5">
+              <div className="p-4 sm:p-5 md:p-6 border-b border-gray-200 dark:border-white/5">
                 <div className="flex items-center justify-between mb-3">
                   <span
                     className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full border ${statusStyles[selectedTopic.status].border} ${statusStyles[selectedTopic.status].text}`}
@@ -784,7 +784,7 @@ export default function Roadmap({
                 </button>
               </div>
 
-              <div className="p-5 md:p-6">
+              <div className="p-4 sm:p-5 md:p-6">
                 {!showWhy ? (
                   <div className="space-y-4">
                     <div className="p-4 rounded-xl border border-gray-200 dark:border-white/10">
