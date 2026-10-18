@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Editor } from '@tiptap/react';
-import { ArrowLeft, ChevronDown, ChevronUp, Copy, Download, Eye, EyeOff, FilePlus, HelpCircle, LayoutGrid, Minimize2, Plus, RotateCcw, Sparkles, Star, Trash2, Video, VideoOff, X } from 'lucide-react';
+import { ArrowLeft, ChevronDown, ChevronUp, Copy, Download, Eye, EyeOff, FilePlus, HelpCircle, LayoutGrid, Maximize2, Minimize2, Plus, RotateCcw, Sparkles, Star, Trash2, Video, VideoOff, X } from 'lucide-react';
 import { useTranslation } from './i18n/LanguageContext';
 import { format } from './i18n/format';
 import { loadNoteContent, saveNoteContent, getIndex, type InkStroke, type NotePage, type NoteVideo, type PageAttachment } from './notebookStore';
@@ -25,6 +25,7 @@ import { SaveChip } from './SaveChip';
 import PageEditor from './PageEditor';
 import EditorToolbar from './EditorToolbar';
 import NoteAiPanel from './NoteAiPanel';
+import NoteMenu, { type MenuItem } from './NoteMenu';
 import PdfPageSheet from './PdfPageSheet';
 import VideoNotesPane, { type VideoPlayerApi } from './VideoNotesPane';
 import MomentList from './MomentList';
@@ -761,6 +762,21 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
   }
   if (!ready) return null;
 
+  const menuItems: MenuItem[] = [
+    { key: 'recall', label: recall ? t.rsheet.recallOn : t.rsheet.recall, icon: recall ? <EyeOff size={16} /> : <Eye size={16} />, onClick: toggleRecall, active: recall },
+    { key: 'video', label: video ? t.video.unlinkVideo : t.video.linkVideo, icon: video ? <VideoOff size={16} /> : <Video size={16} />, onClick: () => (video ? unlinkVideo() : setLinking((v) => !v)) },
+    { key: 'pdf', label: t.attach.addPdf, icon: <FilePlus size={16} />, onClick: () => pdfInput.current?.click(), disabled: pdfBusy },
+    ...(hasPdf ? [{ key: 'pdfx', label: t.attach.pdfExport, icon: <Download size={16} />, onClick: () => void exportPdfs() }] : []),
+    ...(!isDesktop
+      ? [
+          { key: 'zin', label: t.pageOps.zoomIn, icon: <Plus size={16} />, onClick: zoomIn, divider: true },
+          { key: 'zout', label: t.pageOps.zoomOut, icon: <Minimize2 size={16} />, onClick: zoomOut },
+          { key: 'zfit', label: t.pageOps.zoomFit, icon: <LayoutGrid size={16} />, onClick: fitWidth },
+        ]
+      : []),
+    { key: 'focus', label: t.editor.focusMode, icon: <Maximize2 size={16} />, onClick: () => setFocusMode(true), divider: true },
+  ];
+
   const videoLabels = {
     addTimestamp: t.video.addTimestamp,
     speed: t.video.speed,
@@ -850,68 +866,57 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
   return (
     <div className="max-w-6xl mx-auto">
       {focusMode ? (
-        <div className="flex justify-end mb-2">
+        <div className="flex items-center gap-2 mb-2">
+          <input
+            value={title}
+            onChange={(e) => changeTitle(e.target.value)}
+            placeholder={t.editor.titlePlaceholder}
+            aria-label={t.editor.titlePlaceholder}
+            className="min-w-0 flex-1 bg-transparent text-base font-semibold outline-none placeholder:text-gray-300 dark:placeholder:text-white/30"
+          />
           <button
             onClick={() => setFocusMode(false)}
-            className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-white/60 hover:text-black dark:hover:text-white"
+            className="h-10 sm:h-9 px-3 flex items-center gap-1.5 rounded-lg text-xs text-gray-600 dark:text-white/70 hover:bg-gray-100 dark:hover:bg-white/10 shrink-0"
           >
             <Minimize2 size={14} /> {t.editor.exitFocus}
           </button>
         </div>
       ) : (
-        <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+        <div className="flex items-center gap-1 mb-1.5">
           <button
             onClick={onBack}
-            className="flex items-center gap-1.5 text-sm text-gray-600 dark:text-white/70 hover:text-black dark:hover:text-white"
+            aria-label={t.editor.back}
+            title={t.editor.back}
+            className="h-10 w-10 sm:h-9 sm:w-9 shrink-0 rounded-lg flex items-center justify-center text-gray-700 dark:text-white/80 hover:bg-gray-100 dark:hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-500"
           >
-            <ArrowLeft size={16} /> {t.editor.back}
+            <ArrowLeft size={18} />
           </button>
-          <div className="flex items-center gap-2">
-            {!isDesktop && (
-              <button
-                onClick={() => setDrawerOpen(true)}
-                className="h-9 px-3 rounded-lg border border-gray-200 dark:border-white/10 text-xs flex items-center gap-1.5 text-gray-700 dark:text-white/80"
-              >
-                <LayoutGrid size={14} /> {t.pageOps.pagesButton}
-              </button>
-            )}
+          <input
+            value={title}
+            onChange={(e) => changeTitle(e.target.value)}
+            placeholder={t.editor.titlePlaceholder}
+            aria-label={t.editor.titlePlaceholder}
+            className="min-w-0 flex-1 bg-transparent text-lg sm:text-xl font-bold outline-none placeholder:text-gray-300 dark:placeholder:text-white/30"
+          />
+          {!isDesktop && (
             <button
-              onClick={toggleRecall}
-              aria-pressed={recall}
-              title={recall ? t.rsheet.recallOn : t.rsheet.tapReveal}
-              className={`h-9 px-3 rounded-lg border text-xs flex items-center gap-1.5 ${recall ? 'bg-black text-white dark:bg-white dark:text-black border-transparent' : 'border-gray-200 dark:border-white/10 text-gray-700 dark:text-white/80'}`}
+              onClick={() => setDrawerOpen(true)}
+              aria-label={t.pageOps.pagesButton}
+              title={t.pageOps.pagesButton}
+              className="h-10 w-10 shrink-0 rounded-lg flex items-center justify-center text-gray-700 dark:text-white/80 hover:bg-gray-100 dark:hover:bg-white/10"
             >
-              {recall ? <EyeOff size={14} /> : <Eye size={14} />} {t.rsheet.recall}
+              <LayoutGrid size={18} />
             </button>
-            <button
-              onClick={() => (video ? unlinkVideo() : setLinking((v) => !v))}
-              className="h-9 px-3 rounded-lg border border-gray-200 dark:border-white/10 text-xs flex items-center gap-1.5 text-gray-700 dark:text-white/80"
-            >
-              {video ? <VideoOff size={14} /> : <Video size={14} />} {video ? t.video.unlinkVideo : t.video.linkVideo}
-            </button>
-            <button
-              onClick={() => pdfInput.current?.click()}
-              disabled={pdfBusy}
-              className="h-9 px-3 rounded-lg border border-gray-200 dark:border-white/10 text-xs flex items-center gap-1.5 text-gray-700 dark:text-white/80 disabled:opacity-40"
-            >
-              <FilePlus size={14} /> {t.attach.addPdf}
-            </button>
-            {hasPdf && (
-              <button
-                onClick={() => void exportPdfs()}
-                aria-label={t.attach.pdfExport}
-                title={t.attach.pdfExport}
-                className="h-9 w-9 rounded-lg border border-gray-200 dark:border-white/10 flex items-center justify-center text-gray-700 dark:text-white/80"
-              >
-                <Download size={14} />
-              </button>
-            )}
-            <button
-              onClick={() => setAiOpen(true)}
-              className="h-9 px-3 rounded-lg border border-gray-200 dark:border-white/10 text-xs flex items-center gap-1.5 text-gray-700 dark:text-white/80"
-            >
-              <Sparkles size={14} /> {t.ai.openButton}
-            </button>
+          )}
+          <button
+            onClick={() => setAiOpen(true)}
+            aria-label={t.ai.panelTitle}
+            title={t.ai.panelTitle}
+            className="h-10 w-10 sm:h-9 sm:w-auto sm:px-3 shrink-0 rounded-lg flex items-center justify-center gap-1.5 text-xs font-medium text-indigo-600 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-500/15 hover:bg-indigo-100 dark:hover:bg-indigo-500/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-500"
+          >
+            <Sparkles size={16} /> <span className="hidden sm:inline">{t.ai.openButton}</span>
+          </button>
+          {isDesktop && (
             <ZoomControls
               zoom={zoom}
               onZoomIn={zoomIn}
@@ -919,13 +924,14 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
               onFit={fitWidth}
               labels={{ zoomIn: t.pageOps.zoomIn, zoomOut: t.pageOps.zoomOut, fit: t.pageOps.zoomFit }}
             />
-            <SaveChip />
-          </div>
+          )}
+          <NoteMenu label={t.polish.menuTitle} items={menuItems} />
+          <SaveChip />
         </div>
       )}
 
       {!focusMode && (
-        <div className="py-2 border-b border-gray-200 dark:border-white/10 mb-3">
+        <div className="pb-1.5 border-b border-gray-200 dark:border-white/10 mb-2">
           <ModeSwitch mode={mode} onMode={chooseMode} />
           {mode === 'type' ? (
             <EditorToolbar editor={active} onFocusMode={() => setFocusMode(true)} />
@@ -985,13 +991,6 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
           {linkError && <span role="alert" className="w-full text-xs text-red-600 dark:text-red-400">{t.video.linkInvalid}</span>}
         </div>
       )}
-
-      <input
-        value={title}
-        onChange={(e) => changeTitle(e.target.value)}
-        placeholder={t.editor.titlePlaceholder}
-        className="w-full bg-transparent text-2xl font-bold mb-3 outline-none placeholder:text-gray-300 dark:placeholder:text-white/30"
-      />
 
       {video ? (
         <VideoNotesPane

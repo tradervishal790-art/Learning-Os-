@@ -365,6 +365,7 @@ export interface TranslationShape {
     attach: Record<string, string>;
     video: Record<string, string>;
     rsheet: Record<string, string>;
+    polish: Record<string, string>;
     searchPlaceholder: string;
     newNote: string;
     newFolder: string;
@@ -1751,6 +1752,11 @@ export const translations: Record<Locale, TranslationShape> = {
         dueTitle: "Notes to revise",
         dueHint: "Needs revision, or exam is close",
         open: "Open revision sheet",
+      },
+      polish: {
+        more: "More",
+        colorMore: "More colours",
+        menuTitle: "Note menu",
       },
       searchPlaceholder: "Search title, tags or text...",
       newNote: "New note",
@@ -3150,6 +3156,11 @@ export const translations: Record<Locale, TranslationShape> = {
         dueHint: "रिवीज़न चाहिए, या एग्ज़ाम पास है",
         open: "रिवीज़न शीट खोलो",
       },
+      polish: {
+        more: "और",
+        colorMore: "और रंग",
+        menuTitle: "नोट मेनू",
+      },
       searchPlaceholder: "टाइटल, टैग या टेक्स्ट खोजो...",
       newNote: "नया नोट",
       newFolder: "नया फोल्डर",
@@ -4546,6 +4557,11 @@ export const translations: Record<Locale, TranslationShape> = {
         dueTitle: "Dohrane wale notes",
         dueHint: "Revision chahiye, ya exam paas hai",
         open: "Revision sheet kholo",
+      },
+      polish: {
+        more: "Aur",
+        colorMore: "Aur colours",
+        menuTitle: "Note menu",
       },
       searchPlaceholder: "Title, tag ya text dhundo...",
       newNote: "Naya note",

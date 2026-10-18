@@ -20,21 +20,24 @@ export function ModeSwitch({ mode, onMode }: { mode: InkMode; onMode: (m: InkMod
     ['select', t.modeSelect, <LassoSelect size={15} key="s" />],
   ];
   return (
-    <div className="flex gap-1 mb-2 overflow-x-auto" role="tablist">
+    <div className="flex gap-1 mb-1.5 overflow-x-auto" role="tablist">
       {items.map(([m, label, icon]) => (
         <button
           key={m}
           role="tab"
           aria-selected={mode === m}
           onClick={() => onMode(m)}
-          className={`h-9 px-3 rounded-full text-xs font-medium flex items-center gap-1.5 border transition-all ${
+          title={label}
+          aria-label={label}
+          className={`h-10 sm:h-9 px-3 rounded-full text-xs font-medium flex items-center gap-1.5 border transition-all shrink-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-500 ${
             mode === m
               ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white border-transparent'
               : 'border-gray-200 dark:border-white/10 text-gray-600 dark:text-white/70 hover:bg-gray-100 dark:hover:bg-white/10'
           }`}
         >
           {icon}
-          {label}
+          {/* phones: only the active tool shows its name, so the five tools fit on one line */}
+          <span className={mode === m ? '' : 'hidden sm:inline'}>{label}</span>
         </button>
       ))}
     </div>
@@ -42,7 +45,7 @@ export function ModeSwitch({ mode, onMode }: { mode: InkMode; onMode: (m: InkMod
 }
 
 const chip = (on: boolean) =>
-  `h-8 px-2.5 rounded-lg text-xs border shrink-0 transition-colors ${
+  `h-9 sm:h-8 px-2.5 rounded-lg text-xs border shrink-0 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-500 ${
     on
       ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white border-transparent'
       : 'border-gray-200 dark:border-white/10 text-gray-700 dark:text-white/80 hover:bg-gray-100 dark:hover:bg-white/10'
@@ -108,6 +111,7 @@ export default function InkToolbar({
 
   const palette = isHl ? HL_COLORS : INK_COLORS;
   const presets = isHl ? [2, 3, 5, 8] : WIDTH_PRESETS;
+  const quick = palette.slice(0, isHl ? 4 : 7);
 
   const addFavorite = () =>
     setPrefs({ favorites: [...prefs.favorites, { kind: prefs.kind, color: prefs.color, width: prefs.width }].slice(0, 5) });
@@ -204,9 +208,30 @@ export default function InkToolbar({
           ))}
         </select>
       )}
+      {/* the first colours sit right on the toolbar; the rest (and "recent" + custom) are one tap away */}
+      {quick.map((c) => (
+        <button
+          key={c}
+          type="button"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => setColor(c)}
+          title={c === 'auto' ? t.colorAuto : c}
+          aria-label={c === 'auto' ? t.colorAuto : c}
+          aria-pressed={color === c}
+          className="h-10 w-9 sm:h-9 sm:w-8 shrink-0 flex items-center justify-center rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-500"
+        >
+          <span className={`rounded-full ${color === c ? 'ring-2 ring-indigo-500 ring-offset-2 ring-offset-white dark:ring-offset-black' : ''}`}>
+            <Dot color={c} size={22} />
+          </span>
+        </button>
+      ))}
       <Pop trigger={(toggle) => (
-        <button type="button" onClick={toggle} title={t.color} aria-label={t.color} className="h-9 px-2 rounded-lg flex items-center gap-1.5 border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10">
-          <Dot color={color} size={20} />
+        <button type="button" onClick={toggle} title={t.color} aria-label={t.color} className="h-10 sm:h-9 px-2 rounded-lg flex items-center gap-1.5 border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-500">
+          <span className="grid grid-cols-2 gap-0.5" aria-hidden>
+            {palette.slice(quick.length, quick.length + 4).map((c) => (
+              <span key={c} className="w-2.5 h-2.5 rounded-full" style={{ background: resolveColor(c, document.documentElement.classList.contains('dark')) }} />
+            ))}
+          </span>
         </button>
       )}>
         <div onClick={(e) => e.stopPropagation()} className="space-y-2">
