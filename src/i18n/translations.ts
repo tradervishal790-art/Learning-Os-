@@ -4109,8 +4109,8 @@ export const translations: Record<Locale, TranslationShape> = {
       transcriptSourceNote: 'Video transcript se banaye gaye notes',
       metadataSourceNote: 'Transcript available nahi thi — sirf title/description se banaye gaye',
       emptyState: {
-        title: 'Enter a topic for comprehensive, deep learning notes',
-        subtitle: 'Goes beyond basics - covers WHY, HOW, and WHERE',
+        title: 'Abhi notes nahi hain',
+        subtitle: '',
       },
     },
     videos: {
