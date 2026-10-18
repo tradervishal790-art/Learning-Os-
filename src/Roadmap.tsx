@@ -11,7 +11,6 @@ import { selectPlaylistForConceptV2, analyzedVideoToVideo, getLastTeacherForConc
 import { getLearningProfile } from './learningProfileStore';
 import { expandSearchQuery } from './queryExpander';
 import DeepDiveChat from './DeepDiveChat';
-import HintBubble from './HintBubble';
 import { useTranslation } from './i18n/LanguageContext';
 import { format } from './i18n/format';
 
@@ -803,7 +802,6 @@ export default function Roadmap({
                       if (!bridge) return null;
                       return (
                         <>
-                        <HintBubble id="bridge" text={t.roadmap.topicModal.bridgeHint} />
                         <div className="p-4 rounded-xl border border-gray-300 dark:border-white/20 card">
                           <div className="flex items-center gap-2 mb-2 text-xs text-gray-400 dark:text-white/40">
                             <span>{bridge.fromTopicTitle}</span>
