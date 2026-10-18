@@ -827,7 +827,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
         <div className="p-4 md:p-8">
           <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-5 md:mb-8">
             <h1 className="text-2xl md:text-4xl font-bold mb-1 md:mb-2">{t.videos.header.title}</h1>
-            <p className="text-sm md:text-base text-gray-500 dark:text-white/60">{t.videos.header.subtitle}</p>
+            {t.videos.header.subtitle && <p className="text-sm md:text-base text-gray-500 dark:text-white/60">{t.videos.header.subtitle}</p>}
           </motion.div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
