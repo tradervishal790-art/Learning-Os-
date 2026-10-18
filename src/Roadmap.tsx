@@ -772,13 +772,13 @@ export default function Roadmap({
               <div className="flex border-b border-gray-200 dark:border-white/5">
                 <button
                   onClick={() => setShowWhy(false)}
-                  className={`flex-1 px-6 py-3 text-sm font-medium transition ${!showWhy ? 'border-b-2 border-black dark:border-white' : 'text-gray-400 dark:text-white/50 hover:text-black dark:hover:text-white'}`}
+                  className={`flex-1 px-3 sm:px-6 py-3 text-sm font-medium transition ${!showWhy ? 'border-b-2 border-black dark:border-white' : 'text-gray-400 dark:text-white/50 hover:text-black dark:hover:text-white'}`}
                 >
                   {t.roadmap.topicModal.overviewTab}
                 </button>
                 <button
                   onClick={() => setShowWhy(true)}
-                  className={`flex-1 px-6 py-3 text-sm font-medium transition ${showWhy ? 'border-b-2 border-black dark:border-white' : 'text-gray-400 dark:text-white/50 hover:text-black dark:hover:text-white'}`}
+                  className={`flex-1 px-3 sm:px-6 py-3 text-sm font-medium transition ${showWhy ? 'border-b-2 border-black dark:border-white' : 'text-gray-400 dark:text-white/50 hover:text-black dark:hover:text-white'}`}
                 >
                   {t.roadmap.topicModal.whyTab}
                 </button>
