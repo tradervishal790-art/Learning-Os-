@@ -4069,7 +4069,7 @@ export const translations: Record<Locale, TranslationShape> = {
         replaceAll: "Sab badlo",
         noMatches: "Kuch nahi mila",
         matchCount: "{1} mein se {0}",
-        next: "Agla",
+        next: "Next",
         prev: "Pichla",
         close: "Band karo",
         words: "{0} words",
