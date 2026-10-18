@@ -175,7 +175,7 @@ export default function LiveHost({ paper, onExit }: { paper: TestPaper; onExit: 
 
       <div className="mb-6">
         <h2 className="text-2xl font-bold">Live Test · {paper.title}</h2>
-        <p className="text-sm text-gray-500 dark:text-white/60">One test, many people at the same time. Everyone is ranked by marks at the end.</p>
+        
       </div>
 
       {error && <p className="mb-4 px-4 py-3 rounded-xl bg-red-100 dark:bg-red-500/10 text-red-600 dark:text-red-400 text-sm">{error}</p>}
@@ -358,7 +358,7 @@ function GuestList({
       <p className="flex items-center gap-2 font-semibold mb-1">
         <Users className="w-4 h-4" /> Allowed students · {allowed.length} added · {joinedCount} joined
       </p>
-      <p className="text-xs text-gray-500 dark:text-white/60 mb-3">Only these phone numbers can join, and each number can take the test only once.</p>
+      
 
       {!locked && (
         <>
