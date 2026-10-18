@@ -165,7 +165,7 @@ export default function Mentor() {
     <div className="min-h-dvh text-black dark:text-white flex flex-col p-4 md:p-8">
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-4 md:mb-6">
         <h1 className="text-2xl md:text-4xl font-bold mb-1 md:mb-2">{t.mentor.header.title}</h1>
-        <p className="hidden md:block text-gray-500 dark:text-white/60">{t.mentor.header.subtitle}</p>
+        {t.mentor.header.subtitle && <p className="hidden md:block text-gray-500 dark:text-white/60">{t.mentor.header.subtitle}</p>}
       </motion.div>
 
       {/* Chat area */}
