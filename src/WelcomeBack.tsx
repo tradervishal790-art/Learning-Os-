@@ -34,7 +34,7 @@ export default function WelcomeBack({ goals, revisionTasks, onOpen }: Props) {
     <motion.div
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="p-5 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5"
+      className="p-5 rounded-2xl card"
     >
       <h3 className="font-semibold mb-1">Welcome back</h3>
       <p className="text-sm text-gray-500 dark:text-white/60 mb-4">
@@ -45,7 +45,7 @@ export default function WelcomeBack({ goals, revisionTasks, onOpen }: Props) {
       <div className="flex gap-2">
         <button
           onClick={() => onOpen(next ? 'revision' : 'roadmap')}
-          className="px-4 py-2 rounded-xl text-sm font-medium bg-black text-white dark:bg-white dark:text-black"
+          className="px-4 py-2 rounded-xl text-sm font-medium bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white"
         >
           {next ? 'Start 5-min revision' : 'Open roadmap'}
         </button>

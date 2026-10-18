@@ -223,7 +223,7 @@ export default function TasteOnboarding({ onComplete, onClose }: TasteOnboarding
               <button
                 onClick={handleSubmit}
                 disabled={!canSubmit}
-                className="w-full px-4 py-3.5 md:py-2.5 rounded-lg bg-black text-white dark:bg-white dark:text-black disabled:opacity-40 text-sm font-semibold transition active:scale-[0.98]"
+                className="w-full px-4 py-3.5 md:py-2.5 rounded-lg bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white disabled:opacity-40 text-sm font-semibold transition active:scale-[0.98]"
               >
                 {format(t.tasteOnboarding.analyzeCta, filledEntries.length >= MIN_VIDEOS ? filledEntries.length : MIN_VIDEOS)}
               </button>
@@ -246,7 +246,7 @@ export default function TasteOnboarding({ onComplete, onClose }: TasteOnboarding
                   .map((entry, i) => (
                     <div
                       key={entry.id}
-                      className="flex items-center gap-3 text-xs p-2.5 rounded-lg bg-gray-50 dark:bg-white/5"
+                      className="flex items-center gap-3 text-xs p-2.5 rounded-lg card"
                     >
                       <span className="w-4 flex-shrink-0">
                         {entry.status === 'done' && '✅'}
@@ -277,7 +277,7 @@ export default function TasteOnboarding({ onComplete, onClose }: TasteOnboarding
               </p>
               <button
                 onClick={onClose}
-                className="px-5 py-2.5 rounded-lg bg-black text-white dark:bg-white dark:text-black text-sm font-medium hover:opacity-80 transition"
+                className="px-5 py-2.5 rounded-lg bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white text-sm font-medium hover:opacity-80 transition"
               >
                 {t.tasteOnboarding.doneCta}
               </button>

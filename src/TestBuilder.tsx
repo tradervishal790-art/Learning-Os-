@@ -115,7 +115,7 @@ export default function TestBuilder({ initialPaper, onSave, onCancel, variant }:
   return (
     <div className="max-w-3xl mx-auto">
       {!isDaily && (
-      <div className="bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl p-6 mb-6">
+      <div className="card rounded-2xl p-6 mb-6">
         <div className="grid md:grid-cols-3 gap-4 mb-1">
           <div className="md:col-span-2">
             <label className="block text-sm font-medium mb-1.5 text-gray-600 dark:text-white/70">Test title</label>
@@ -195,7 +195,7 @@ export default function TestBuilder({ initialPaper, onSave, onCancel, variant }:
       {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
 
       <div className="flex gap-3">
-        <button onClick={handleSave} className="px-6 py-3 rounded-xl bg-black text-white dark:bg-white dark:text-black font-semibold transition">
+        <button onClick={handleSave} className="px-6 py-3 rounded-xl bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white font-semibold transition">
           {isDaily ? 'Save Question Bank' : initialPaper ? 'Save Changes' : 'Save Test'}
         </button>
         <button onClick={onCancel} className="px-6 py-3 rounded-xl border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10 font-medium transition">
@@ -218,7 +218,7 @@ function BulkImportPanel({ onImport, onClose }: { onImport: (questions: TestQues
   };
 
   return (
-    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl p-5 mb-6">
+    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="card rounded-2xl p-5 mb-6">
       <div className="flex items-center justify-between mb-3">
         <p className="font-semibold">Bulk Import</p>
         <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10" aria-label="Close bulk import">
@@ -249,7 +249,7 @@ function BulkImportPanel({ onImport, onClose }: { onImport: (questions: TestQues
         </div>
       )}
       <div className="flex gap-3">
-        <button onClick={handleImport} disabled={!text.trim()} className="px-5 py-2.5 rounded-xl bg-black text-white dark:bg-white dark:text-black disabled:opacity-30 text-sm font-semibold transition">
+        <button onClick={handleImport} disabled={!text.trim()} className="px-5 py-2.5 rounded-xl bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white disabled:opacity-30 text-sm font-semibold transition">
           Import Questions
         </button>
         <button onClick={onClose} className="px-5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10 text-sm font-medium transition">

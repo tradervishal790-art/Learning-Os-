@@ -44,7 +44,7 @@ export function PersonalityResultRows({ profile }: { profile: PersonalityProfile
       {TRAITS.map((trait) => {
         const r = profile.traits[trait];
         return (
-          <div key={trait} className="rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 px-3 py-2.5">
+          <div key={trait} className="rounded-xl card px-3 py-2.5">
             <div className="flex items-center gap-2.5">
               <span className="text-xs font-medium w-32 flex-shrink-0 text-gray-700 dark:text-white/70">{TRAIT_LABELS[trait]}</span>
               <ZoneBar zone={r.zone} unsure={r.unsure} />

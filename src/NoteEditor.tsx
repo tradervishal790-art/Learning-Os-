@@ -700,12 +700,12 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
       )}
       {notice && (
         // sits above the Undo toast so both can be visible at once
-        <div className={`fixed left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-xl bg-black text-white dark:bg-white dark:text-black text-sm shadow-lg ${deletedPage ? 'bottom-20' : 'bottom-6'}`}>
+        <div className={`fixed left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-xl bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white text-sm shadow-lg ${deletedPage ? 'bottom-20' : 'bottom-6'}`}>
           {notice}
         </div>
       )}
       {deletedPage && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-4 px-4 py-2.5 rounded-xl bg-black text-white dark:bg-white dark:text-black text-sm shadow-lg">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-4 px-4 py-2.5 rounded-xl bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white text-sm shadow-lg">
           <span>{t.pageOps.toastDeleted}</span>
           <button onClick={undoDeletePage} className="font-semibold underline">{t.undo}</button>
         </div>

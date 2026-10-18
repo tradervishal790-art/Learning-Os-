@@ -87,7 +87,7 @@ const EDGE_SCROLL_ZONE = 48;
 const EDGE_SCROLL_MAX = 18;
 
 const BTN = 'px-3 py-1.5 rounded-lg text-xs border border-gray-200 dark:border-white/10';
-const SELECTED = 'bg-black text-white dark:bg-white dark:text-black';
+const SELECTED = 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white';
 const FOCUS =
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black dark:focus-visible:ring-white';
 const ICON_BTN = `inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 ${FOCUS}`;

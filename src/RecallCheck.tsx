@@ -34,7 +34,7 @@ export default function RecallCheck({ videoId, onDone }: { videoId: string; onDo
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="p-5 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5"
+      className="p-5 rounded-2xl card"
     >
       <h3 className="font-semibold mb-1">Quick recall — before the next video</h3>
       <p className="text-sm text-gray-500 dark:text-white/60 mb-3">
@@ -54,7 +54,7 @@ export default function RecallCheck({ videoId, onDone }: { videoId: string; onDo
             saveRecall({ videoId, text: text.trim(), at: new Date().toISOString() });
             onDone();
           }}
-          className="px-4 py-2 rounded-xl text-sm font-medium bg-black text-white dark:bg-white dark:text-black disabled:opacity-40"
+          className="px-4 py-2 rounded-xl text-sm font-medium bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white disabled:opacity-40"
         >
           Done — next video
         </button>

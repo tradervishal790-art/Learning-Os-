@@ -282,7 +282,7 @@ export default function LiveJoin() {
   const shell = (children: ReactNode) => (
     <div className="min-h-screen bg-white dark:bg-black text-black dark:text-white p-4 md:p-8 flex flex-col items-center justify-center">{children}</div>
   );
-  const box = 'w-full max-w-md bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl p-6 text-center';
+  const box = 'w-full max-w-md card rounded-2xl p-6 text-center';
 
   if (session === 'loading') return shell(<p className="text-gray-400">Loading...</p>);
   if (!live) {
@@ -337,7 +337,7 @@ export default function LiveJoin() {
           className="w-full mb-3 px-4 py-3 rounded-xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 focus:outline-none focus:border-black dark:focus:border-white"
         />
         {formError && <p className="text-sm text-red-500 mb-3">{formError}</p>}
-        <button onClick={handleJoin} disabled={busy} className="w-full py-3 rounded-xl bg-black text-white dark:bg-white dark:text-black font-semibold disabled:opacity-40">
+        <button onClick={handleJoin} disabled={busy} className="w-full py-3 rounded-xl bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white font-semibold disabled:opacity-40">
           {busy ? 'Joining...' : 'Join test'}
         </button>
       </div>
@@ -365,7 +365,7 @@ export default function LiveJoin() {
           <li>Keep this page open until you submit</li>
         </ul>
         {formError && <p className="text-sm text-red-500 mb-3">{formError}</p>}
-        <button onClick={handleBegin} disabled={busy} className="w-full py-3 rounded-xl bg-black text-white dark:bg-white dark:text-black font-semibold disabled:opacity-40">
+        <button onClick={handleBegin} disabled={busy} className="w-full py-3 rounded-xl bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white font-semibold disabled:opacity-40">
           {busy ? 'Starting...' : 'Start test'}
         </button>
       </div>
@@ -390,7 +390,7 @@ export default function LiveJoin() {
         <div className="max-w-6xl mx-auto mb-4 px-4 py-3 rounded-xl bg-amber-100 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300 text-sm flex items-center justify-between gap-3">
           <span>{submitState === 'sending' ? 'Sending your answers...' : 'Could not send your answers. Check your internet.'}</span>
           {submitState === 'failed' && (
-            <button onClick={() => void doSubmit()} className="px-3 py-1.5 rounded-lg bg-black text-white dark:bg-white dark:text-black font-semibold">
+            <button onClick={() => void doSubmit()} className="px-3 py-1.5 rounded-lg bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white font-semibold">
               Retry
             </button>
           )}

@@ -160,7 +160,7 @@ export default function Dictionary() {
             )}
           </div>
 
-          <div className="rounded-lg bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 p-4 space-y-1">
+          <div className="rounded-lg card p-4 space-y-1">
             <p>
               <span className="text-gray-500 dark:text-white/40">Hindi: </span>
               <span className="text-lg">{hindiSummary.join(', ') || '—'}</span>

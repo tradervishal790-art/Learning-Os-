@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LayoutGrid, Lock } from 'lucide-react';
-import { NAV_ICONS } from './navIcons';
+import { NAV_ICONS, NAV_TONES } from './navIcons';
 import { useImmersive } from './immersive';
 
 /**
@@ -52,7 +52,7 @@ export default function BottomNav({ items, activeId, onSelect }: Props) {
 
   const tone = (active: boolean, locked: boolean) =>
     active
-      ? 'text-black dark:text-white'
+      ? 'text-indigo-600 dark:text-indigo-400'
       : locked
       ? 'text-gray-300 dark:text-white/25'
       : 'text-gray-500 dark:text-white/50';
@@ -89,12 +89,10 @@ export default function BottomNav({ items, activeId, onSelect }: Props) {
                     onClick={() => pick(item.id)}
                     aria-label={item.label}
                     title={item.label}
-                    className={`relative h-16 rounded-2xl flex items-center justify-center transition-colors active:bg-gray-100 dark:active:bg-white/10 ${tone(active, item.locked)} ${
-                      active ? 'bg-gray-100 dark:bg-white/10' : ''
-                    }`}
+                    className={`relative h-16 rounded-2xl flex items-center justify-center transition active:scale-95 ${item.locked ? 'opacity-50' : ''}`}
                   >
-                    <span className="relative">
-                      <Icon className="w-[26px] h-[26px]" strokeWidth={active ? 2.4 : 1.75} />
+                    <span className={`relative w-12 h-12 rounded-2xl flex items-center justify-center ${NAV_TONES[item.id] ?? NAV_TONES.revision} ${active ? 'ring-2 ring-indigo-500 dark:ring-indigo-400' : ''}`}>
+                      <Icon className="w-6 h-6" strokeWidth={active ? 2.2 : 1.75} />
                       {item.locked && <LockBadge />}
                     </span>
                   </button>

@@ -128,7 +128,7 @@ export default function DeepDiveChat({ onComplete, onClose }: DeepDiveChatProps)
               <button
                 onClick={handleNext}
                 disabled={!currentAnswer.trim()}
-                className="w-full px-4 py-3.5 md:py-2.5 rounded-lg bg-black text-white dark:bg-white dark:text-black disabled:opacity-40 text-sm font-semibold transition active:scale-[0.98]"
+                className="w-full px-4 py-3.5 md:py-2.5 rounded-lg bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white disabled:opacity-40 text-sm font-semibold transition active:scale-[0.98]"
               >
                 {isLastStep ? t.deepDiveChat.submitCta : t.deepDiveChat.nextCta}
               </button>

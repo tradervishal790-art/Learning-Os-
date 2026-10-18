@@ -92,7 +92,7 @@ export default function AuthForm({ onSuccess, initialMode = 'signin' }: { onSucc
       <button
         disabled={busy}
         onClick={submit}
-        className="w-full py-3 rounded-xl bg-black text-white dark:bg-white dark:text-black text-sm font-semibold disabled:opacity-50 mb-3"
+        className="w-full py-3 rounded-xl bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white text-sm font-semibold disabled:opacity-50 mb-3"
       >
         {busy ? '...' : mode === 'create' ? t.authScreen.createAccountCta : t.authScreen.signInCta}
       </button>

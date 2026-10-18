@@ -14,3 +14,11 @@ html, body, #root {
 * {
   box-sizing: border-box;
 }
+
+/* Soft white card used across the app (Learning OS look): no hard border,
+   a faint ring + a tinted shadow. Radius comes from the element's own rounded-* class. */
+@layer components {
+  .card {
+    @apply bg-white shadow-card ring-1 ring-black/[0.04] dark:bg-white/5 dark:shadow-none dark:ring-white/10;
+  }
+}

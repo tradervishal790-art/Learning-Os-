@@ -104,7 +104,7 @@ export default function ReviewSession({ topic, onMarkDone, onClose }: ReviewSess
               <div
                 className={`max-w-[85%] px-3 py-2 rounded-xl text-sm whitespace-pre-wrap ${
                   m.role === 'user'
-                    ? 'bg-black text-white dark:bg-white dark:text-black'
+                    ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white'
                     : 'bg-gray-100 dark:bg-white/10'
                 }`}
               >
@@ -135,7 +135,7 @@ export default function ReviewSession({ topic, onMarkDone, onClose }: ReviewSess
         <button
           onClick={send}
           disabled={loading || !input.trim()}
-          className="px-4 py-2 rounded-lg bg-black text-white dark:bg-white dark:text-black text-sm font-medium disabled:opacity-40"
+          className="px-4 py-2 rounded-lg bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white text-sm font-medium disabled:opacity-40"
         >
           Send
         </button>

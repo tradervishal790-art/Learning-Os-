@@ -152,7 +152,7 @@ export function LoginRequired({ feature }: { feature: string }) {
         <p className="text-sm text-gray-500 dark:text-white/50 mb-6">{format(t.authPrompt.lockedBody, feature)}</p>
         <button
           onClick={() => openSignIn(feature)}
-          className="px-6 py-3 rounded-xl bg-black text-white dark:bg-white dark:text-black text-sm font-semibold"
+          className="px-6 py-3 rounded-xl bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white text-sm font-semibold"
         >
           {t.authPrompt.lockedCta}
         </button>

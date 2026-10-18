@@ -104,7 +104,7 @@ export default function PersonalityReportCard({
             </p>
             <button
               onClick={generate}
-              className="mt-3 px-4 py-2.5 rounded-xl bg-black text-white dark:bg-white dark:text-black text-sm font-semibold transition active:scale-[0.98]"
+              className="mt-3 px-4 py-2.5 rounded-xl bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white text-sm font-semibold transition active:scale-[0.98]"
             >
               {error ? 'Try again' : 'Get AI report'}
             </button>

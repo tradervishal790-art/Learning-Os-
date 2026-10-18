@@ -164,8 +164,8 @@ export default function LiveHost({ paper, onExit }: { paper: TestPaper; onExit: 
     <GuestList code={code} allowed={allowed} players={players} submissions={submissions} locked={session?.status === 'ended'} onError={setError} />
   ) : null;
 
-  const card = 'bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl p-6';
-  const primaryBtn = 'px-5 py-3 rounded-xl bg-black text-white dark:bg-white dark:text-black font-semibold transition disabled:opacity-40';
+  const card = 'card rounded-2xl p-6';
+  const primaryBtn = 'px-5 py-3 rounded-xl bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white font-semibold transition disabled:opacity-40';
 
   return (
     <div className="max-w-3xl mx-auto">
@@ -301,7 +301,7 @@ export default function LiveHost({ paper, onExit }: { paper: TestPaper; onExit: 
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl p-4 text-center">
+    <div className="card rounded-2xl p-4 text-center">
       <p className="text-xs uppercase tracking-wide text-gray-400 dark:text-white/40 mb-1">{label}</p>
       <p className="text-2xl font-bold flex items-center justify-center gap-1.5">
         {value}
@@ -354,7 +354,7 @@ function GuestList({
   const joinedCount = allowed.filter((a) => joined.has(a.phone)).length;
 
   return (
-    <div className="bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl p-6">
+    <div className="card rounded-2xl p-6">
       <p className="flex items-center gap-2 font-semibold mb-1">
         <Users className="w-4 h-4" /> Allowed students · {allowed.length} added · {joinedCount} joined
       </p>
@@ -370,7 +370,7 @@ function GuestList({
             className="w-full bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-black dark:focus:border-white resize-none"
           />
           <div className="flex items-center gap-3 mt-2 mb-4">
-            <button onClick={add} disabled={busy} className="px-4 py-2 rounded-xl bg-black text-white dark:bg-white dark:text-black text-sm font-semibold disabled:opacity-40">
+            <button onClick={add} disabled={busy} className="px-4 py-2 rounded-xl bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white text-sm font-semibold disabled:opacity-40">
               {busy ? 'Adding...' : 'Add numbers'}
             </button>
             {note && <span className="text-xs text-gray-500 dark:text-white/60">{note}</span>}

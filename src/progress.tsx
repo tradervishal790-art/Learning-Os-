@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { ChartNoAxesColumn, Flame, Clock, Gauge, Sprout, Target, Star, Check } from 'lucide-react';
+import { ChartNoAxesColumn, Flame, Clock, Brain, Sprout, Target, Star, Check } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { Goal } from './types';
 import {
@@ -18,10 +18,10 @@ interface ProgressProps {
 }
 
 const masteryColor = (score: number): string => {
-  if (score >= 80) return 'bg-black dark:bg-white';
-  if (score >= 60) return 'bg-gray-500 dark:bg-white/60';
-  if (score >= 40) return 'bg-gray-300 dark:bg-white/30';
-  return 'bg-gray-200 dark:bg-white/10';
+  if (score >= 80) return 'bg-indigo-600 dark:bg-indigo-400';
+  if (score >= 60) return 'bg-indigo-400 dark:bg-indigo-400/70';
+  if (score >= 40) return 'bg-indigo-200 dark:bg-indigo-400/30';
+  return 'bg-indigo-100 dark:bg-white/10';
 };
 
 const statusIcon: Record<string, ReactNode> = {
@@ -54,13 +54,13 @@ export default function Progress({ goals = [] }: ProgressProps) {
       </motion.div>
 
       {/* Hero: completion ring + key numbers */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.5 }} className="rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 p-4 md:p-6 flex items-center gap-5 md:gap-10 mb-5 md:mb-6">
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.5 }} className="rounded-2xl card p-4 md:p-6 flex items-center gap-5 md:gap-10 mb-5 md:mb-6">
         <div className="relative w-28 h-28 md:w-36 md:h-36 flex-shrink-0" role="img" aria-label={`${t.progress.stats.completion}: ${completion.percent}%`}>
           <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
-            <circle cx="50" cy="50" r="42" fill="none" strokeWidth="8" className="stroke-gray-200 dark:stroke-white/10" />
+            <circle cx="50" cy="50" r="42" fill="none" strokeWidth="8" className="stroke-indigo-100 dark:stroke-white/10" />
             <motion.circle
               cx="50" cy="50" r="42" fill="none" strokeWidth="8" strokeLinecap="round"
-              className="stroke-black dark:stroke-white"
+              className="stroke-indigo-600 dark:stroke-indigo-400"
               strokeDasharray={2 * Math.PI * 42}
               initial={{ strokeDashoffset: 2 * Math.PI * 42 }}
               animate={{ strokeDashoffset: 2 * Math.PI * 42 * (1 - completion.percent / 100) }}
@@ -73,7 +73,7 @@ export default function Progress({ goals = [] }: ProgressProps) {
           {[
             { label: t.progress.stats.streak, value: `${streak.currentStreak}d`, Icon: Flame },
             { label: t.progress.stats.totalWatchTime, value: `${time.totalHours}h`, Icon: Clock },
-            { label: t.progress.stats.retention, value: `${retention.avgRetention}%`, Icon: Gauge },
+            { label: t.progress.stats.retention, value: `${retention.avgRetention}%`, Icon: Brain },
           ].map(({ label, value, Icon }) => (
             <div key={label} title={label} aria-label={`${label}: ${value}`} className="flex items-center gap-3 min-w-0">
               <Icon className="w-5 h-5 flex-shrink-0 text-gray-500 dark:text-white/50" strokeWidth={1.75} />
@@ -90,18 +90,18 @@ export default function Progress({ goals = [] }: ProgressProps) {
           <span>{format(t.progress.completionBar.topicsDone, completion.completed, completion.total)}</span>
           <span>{format(t.progress.completionBar.inProgress, completion.learning)}</span>
         </div>
-        <div className="h-2 bg-gray-100 dark:bg-white/5 rounded-full overflow-hidden">
+        <div className="h-2 bg-indigo-100 dark:bg-white/5 rounded-full overflow-hidden">
           <motion.div
             initial={{ width: 0 }}
             animate={{ width: `${completion.percent}%` }}
             transition={{ delay: 0.3, duration: 1, ease: 'easeOut' }}
-            className="h-full bg-black dark:bg-white rounded-full"
+            className="h-full bg-gradient-to-r from-indigo-500 to-violet-500 rounded-full"
           />
         </div>
       </motion.div>
 
       {!hasAnyTopics ? (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-8 md:p-12 text-center rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-8 md:p-12 text-center rounded-2xl card">
           <Sprout className="w-12 h-12 mx-auto mb-4 text-gray-400 dark:text-white/40" strokeWidth={1.5} />
           <h3 className="text-xl font-semibold mb-2">{t.progress.emptyState.title}</h3>
           <p className="text-gray-400 dark:text-white/60">{t.progress.emptyState.body}</p>
@@ -109,20 +109,20 @@ export default function Progress({ goals = [] }: ProgressProps) {
       ) : (
         <>
           {/* Time tracking — last 7 days */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.5 }} className="p-5 md:p-6 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 mb-6">
-            <div className="flex items-center justify-between mb-5">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.5 }} className="p-4 md:p-6 rounded-2xl card mb-4 md:mb-6">
+            <div className="flex items-center justify-between mb-3 md:mb-5">
               <h2 className="font-semibold">{t.progress.timeTracking.title}</h2>
               <span className="text-xs text-gray-400 dark:text-white/40">{format(t.progress.timeTracking.last7Days, time.last7DaysMinutes)}</span>
             </div>
-            <div className="flex items-end justify-between gap-2 h-28">
+            <div className="flex items-end justify-between gap-2 md:h-28">
               {time.dailyMinutes.map((d, i) => (
                 <div key={i} className="flex-1 flex flex-col items-center gap-2">
-                  <div className="w-full h-20 flex items-end">
+                  <div className="w-full h-14 md:h-20 flex items-end">
                     <motion.div
                       initial={{ height: 0 }}
                       animate={{ height: `${Math.max(4, (d.minutes / maxDailyMinutes) * 100)}%` }}
                       transition={{ delay: 0.3 + i * 0.05, duration: 0.6, ease: 'easeOut' }}
-                      className="w-full rounded-t-md bg-black dark:bg-white"
+                      className="w-full rounded-t-md bg-indigo-500 dark:bg-indigo-400"
                       title={`${d.minutes} min`}
                     />
                   </div>
@@ -134,35 +134,35 @@ export default function Progress({ goals = [] }: ProgressProps) {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-4 md:mb-6">
             {/* Mastery heatmap */}
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25, duration: 0.5 }} className="p-5 md:p-6 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5">
-              <h2 className="font-semibold mb-5">{t.progress.masteryHeatmap.title}</h2>
-              <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25, duration: 0.5 }} className="p-4 md:p-6 rounded-2xl card">
+              <h2 className="font-semibold mb-3 md:mb-5">{t.progress.masteryHeatmap.title}</h2>
+              <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-5 gap-2">
                 {heatmap.map((topic) => (
                   <div
                     key={topic.topicId}
                     title={`${topic.title} — ${topic.masteryScore}%`}
-                    className={`aspect-square rounded-lg ${masteryColor(topic.masteryScore)} flex items-center justify-center text-[10px] font-medium ${topic.masteryScore >= 60 ? 'text-white dark:text-black' : 'text-gray-500 dark:text-white/60'}`}
+                    className={`aspect-[5/4] md:aspect-square rounded-lg ${masteryColor(topic.masteryScore)} flex items-center justify-center text-[10px] font-medium ${topic.masteryScore >= 60 ? 'text-white dark:text-black' : 'text-indigo-400 dark:text-white/60'}`}
                   >
                     {statusIcon[topic.status] ?? ''}
                   </div>
                 ))}
               </div>
               <div className="flex items-center gap-3 mt-4 text-[10px] text-gray-400 dark:text-white/40">
-                <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-gray-200 dark:bg-white/10 inline-block" /> {t.progress.masteryHeatmap.legendWeak}</span>
-                <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-gray-500 dark:bg-white/60 inline-block" /> {t.progress.masteryHeatmap.legendOk}</span>
-                <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-black dark:bg-white inline-block" /> {t.progress.masteryHeatmap.legendStrong}</span>
+                <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-indigo-100 dark:bg-white/10 inline-block" /> {t.progress.masteryHeatmap.legendWeak}</span>
+                <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-indigo-400 dark:bg-indigo-400/70 inline-block" /> {t.progress.masteryHeatmap.legendOk}</span>
+                <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-indigo-600 dark:bg-indigo-400 inline-block" /> {t.progress.masteryHeatmap.legendStrong}</span>
               </div>
             </motion.div>
 
             {/* Retention detail */}
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.5 }} className="p-5 md:p-6 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5">
-              <h2 className="font-semibold mb-5">{t.progress.retentionDetail.title}</h2>
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.5 }} className="p-4 md:p-6 rounded-2xl card">
+              <h2 className="font-semibold mb-3 md:mb-5">{t.progress.retentionDetail.title}</h2>
               <div className="h-2 bg-gray-100 dark:bg-white/5 rounded-full overflow-hidden mb-4">
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${retention.avgRetention}%` }}
                   transition={{ delay: 0.4, duration: 0.8 }}
-                  className="h-full bg-black dark:bg-white rounded-full"
+                  className="h-full bg-gradient-to-r from-indigo-500 to-violet-500 rounded-full"
                 />
               </div>
               <div className="grid grid-cols-3 gap-3 text-center">
@@ -183,14 +183,14 @@ export default function Progress({ goals = [] }: ProgressProps) {
           </div>
 
           {/* Weak areas */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35, duration: 0.5 }} className="p-5 md:p-6 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5">
-            <h2 className="font-semibold mb-5">{t.progress.weakAreas.title}</h2>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35, duration: 0.5 }} className="p-4 md:p-6 rounded-2xl card">
+            <h2 className="font-semibold mb-3 md:mb-5">{t.progress.weakAreas.title}</h2>
             {weakAreas.length === 0 ? (
               <p className="text-sm text-gray-400 dark:text-white/50">{t.progress.weakAreas.noneFound}</p>
             ) : (
-              <div className="space-y-3">
+              <div className="divide-y divide-gray-100 dark:divide-white/10">
                 {weakAreas.map((topic) => (
-                  <div key={topic.topicId} className="flex items-center justify-between p-3 rounded-xl border border-gray-200 dark:border-white/10">
+                  <div key={topic.topicId} className="flex items-center justify-between py-3">
                     <div className="min-w-0">
                       <div className="font-medium text-sm truncate">{topic.title}</div>
                       <div className="text-[10px] text-gray-400 dark:text-white/40 uppercase tracking-wider">

@@ -258,7 +258,7 @@ export default function BlueprintInterview({
                       <div
                         key={d.key}
                         onClick={() => setExpandedDim(isOpen ? null : d.key)}
-                        className="rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 px-3 py-2.5 cursor-pointer transition"
+                        className="rounded-xl card px-3 py-2.5 cursor-pointer transition"
                       >
                         <div className="flex items-center gap-2.5">
                           <span className="text-xs font-medium w-28 flex-shrink-0 text-gray-700 dark:text-white/70">
@@ -317,7 +317,7 @@ export default function BlueprintInterview({
           <div className="p-4 border-t border-gray-200 dark:border-white/10">
             <button
               onClick={onClose}
-              className="w-full px-4 py-3 rounded-xl bg-black text-white dark:bg-white dark:text-black text-sm font-semibold transition active:scale-[0.98]"
+              className="w-full px-4 py-3 rounded-xl bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white text-sm font-semibold transition active:scale-[0.98]"
             >
               {t.blueprintInterview.doneCta}
             </button>

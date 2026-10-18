@@ -31,7 +31,7 @@ export default function StudyDialog({
   const chip = (on: boolean) =>
     `min-h-9 px-3 rounded-lg text-xs border transition-colors ${
       on
-        ? 'bg-black text-white dark:bg-white dark:text-black border-transparent'
+        ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white border-transparent'
         : 'border-gray-200 dark:border-white/10 text-gray-700 dark:text-white/80 hover:bg-gray-100 dark:hover:bg-white/10'
     }`;
 

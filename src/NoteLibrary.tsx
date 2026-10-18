@@ -27,8 +27,8 @@ type Sort = 'recent' | 'created' | 'title' | 'exam';
 type StatusFilter = 'all' | 'exam-soon' | StudyStatus;
 
 const btn = 'px-3 py-1.5 rounded-lg text-xs font-medium transition-all border';
-const btnPrimary = `${btn} bg-black text-white dark:bg-white dark:text-black border-transparent hover:opacity-80`;
-const btnGhost = `${btn} border-gray-200 dark:border-white/10 text-gray-600 dark:text-white/70 hover:bg-gray-100 dark:hover:bg-white/10`;
+const btnPrimary = `${btn} bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white border-transparent hover:opacity-80`;
+const btnGhost = `${btn} card border-transparent text-gray-600 dark:text-white/70 hover:bg-gray-50 dark:hover:bg-white/10`;
 
 interface MenuItem {
   label: string;
@@ -313,7 +313,7 @@ export default function NoteLibrary() {
       }}
       className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-left ${
         view === v
-          ? 'bg-black text-white dark:bg-white dark:text-black'
+          ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white'
           : 'text-gray-700 dark:text-white/80 hover:bg-gray-100 dark:hover:bg-white/10'
       }`}
     >
@@ -360,13 +360,13 @@ export default function NoteLibrary() {
     <div className="max-w-6xl mx-auto">
       {/* top bar */}
       <div className="flex flex-wrap items-center gap-2 mb-4">
-        <div className="relative flex-1 min-w-[200px]">
+        <div className="relative flex-1 min-w-0">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-white/40" />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={t.searchPlaceholder}
-            className="w-full pl-9 pr-8 py-2 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-black text-sm"
+            className="w-full pl-9 pr-8 py-2.5 rounded-xl card border-0 bg-white dark:bg-black text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
           />
           {query && (
             <button onClick={() => setQuery('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 dark:text-white/40" aria-label="Clear">
@@ -374,15 +374,30 @@ export default function NoteLibrary() {
             </button>
           )}
         </div>
-        <button className={btnGhost} onClick={() => addFolder(currentFolder?.id ?? null)}>
-          <FolderPlus size={14} className="inline mr-1 -mt-0.5" />
-          {currentFolder ? t.newSubfolder : t.newFolder}
+        <button
+          className={`${btnGhost} !px-0 md:!px-3 w-10 md:w-auto h-10 md:h-auto inline-flex items-center justify-center`}
+          onClick={() => addFolder(currentFolder?.id ?? null)}
+          aria-label={currentFolder ? t.newSubfolder : t.newFolder}
+          title={currentFolder ? t.newSubfolder : t.newFolder}
+        >
+          <FolderPlus size={16} className="md:mr-1" />
+          <span className="hidden md:inline">{currentFolder ? t.newSubfolder : t.newFolder}</span>
         </button>
-        <button className={btnPrimary} onClick={() => void newNote()}>
+        <button className={`${btnPrimary} hidden md:inline-block`} onClick={() => void newNote()}>
           <Plus size={14} className="inline mr-1 -mt-0.5" />
           {t.newNote}
         </button>
         <SaveChip />
+        {/* Phones: New note is a floating button above the bottom bar */}
+        <button
+          onClick={() => void newNote()}
+          aria-label={t.newNote}
+          title={t.newNote}
+          className="md:hidden fixed right-4 z-30 w-14 h-14 rounded-full bg-indigo-600 text-white shadow-lg shadow-indigo-500/30 flex items-center justify-center active:scale-95 transition-transform"
+          style={{ bottom: 'calc(4.5rem + env(safe-area-inset-bottom))' }}
+        >
+          <Plus size={26} />
+        </button>
       </div>
 
       <div className="flex flex-col md:flex-row gap-6">
@@ -411,7 +426,7 @@ export default function NoteLibrary() {
                         }}
                         className={`flex-1 min-w-0 flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-left ${
                           view === v
-                            ? 'bg-black text-white dark:bg-white dark:text-black'
+                            ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white'
                             : 'text-gray-700 dark:text-white/80 hover:bg-gray-100 dark:hover:bg-white/10'
                         }`}
                       >
@@ -508,7 +523,7 @@ export default function NoteLibrary() {
           {view === 'trash' && <p className="text-xs text-gray-400 dark:text-white/40 mb-3">{t.trashInfo}</p>}
 
           {selectMode && selected.size > 0 && (
-            <div className="flex flex-wrap items-center gap-2 mb-3 p-2 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5">
+            <div className="flex flex-wrap items-center gap-2 mb-3 p-2 rounded-xl card">
               <span className="text-xs px-2">{format(t.selected, selected.size)}</span>
               {view === 'trash' ? (
                 <>
@@ -546,9 +561,9 @@ export default function NoteLibrary() {
                   <li
                     key={n.id}
                     onClick={() => (selectMode ? toggleSelected(n.id) : n.trashedAt ? undefined : setOpenId(n.id))}
-                    className={`flex items-start gap-3 p-4 rounded-2xl border bg-gray-50 dark:bg-white/5 ${
-                      n.trashedAt ? '' : 'cursor-pointer hover:border-gray-400 dark:hover:border-white/30'
-                    } ${isSel ? 'border-black dark:border-white' : 'border-gray-200 dark:border-white/10'}`}
+                    className={`flex items-start gap-3 p-4 rounded-2xl border card ${
+                      n.trashedAt ? '' : 'cursor-pointer hover:shadow-md'
+                    } ${isSel ? 'border-indigo-500 dark:border-indigo-400' : 'border-transparent'}`}
                   >
                     {selectMode && (
                       <span
@@ -652,7 +667,7 @@ export default function NoteLibrary() {
 
       {/* undo toast */}
       {toast && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-4 px-4 py-2.5 rounded-xl bg-black text-white dark:bg-white dark:text-black text-sm shadow-lg">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-4 px-4 py-2.5 rounded-xl bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white text-sm shadow-lg">
           <span>{toast.message}</span>
           <button onClick={undo} className="font-semibold underline">{t.undo}</button>
         </div>

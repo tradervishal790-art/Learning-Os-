@@ -2,10 +2,10 @@ import { useCallback, useEffect, useState, lazy, Suspense } from 'react';
 import type { ComponentType } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Film, BookOpen, ClipboardCheck, Newspaper, Lock, Settings as SettingsIcon, Bell, X as CloseIcon, Target, RotateCcw, Flame, Check } from 'lucide-react';
+import { Search, Film, BookOpen, ClipboardCheck, Newspaper, Lock, Settings as SettingsIcon, Bell, X as CloseIcon, Target, RotateCcw, Flame, Check, ChevronRight } from 'lucide-react';
 import PagePlaceholder from './PagePlaceholder';
 import BottomNav from './BottomNav';
-import QuickRow from './QuickRow';
+import QuickGrid from './QuickGrid';
 import { useImmersive } from './immersive';
 import { getRoadmapData, getCurrentTopic } from './roadmapData';
 import { getRevisionStats, getRevisionDataForGoals } from './revisionData';
@@ -727,7 +727,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                 isLocked
                   ? 'text-gray-300 dark:text-white/20 hover:text-gray-400 dark:hover:text-white/30'
                   : activePage === item.id
-                  ? 'bg-black text-white dark:bg-white dark:text-black'
+                  ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white'
                   : 'text-gray-500 dark:text-white/50 hover:text-black dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5'
               }`}
             >
@@ -754,7 +754,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
 
   return (
     <Onborda steps={getDashboardTour(t)} cardComponent={OnbordaCard}>
-    <div className="min-h-dvh bg-white dark:bg-black flex text-black dark:text-white">
+    <div className="min-h-dvh bg-[#f4f6ff] dark:bg-black flex text-black dark:text-white">
       <aside className="hidden md:flex w-64 border-r border-gray-200 dark:border-white/10 p-6 flex-col flex-shrink-0">
         {SidebarContent}
       </aside>
@@ -775,7 +775,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
             </h2>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
-            <SignInButton className="px-3 md:px-4 py-2 rounded-full bg-black text-white dark:bg-white dark:text-black text-sm font-semibold hover:opacity-90 transition" />
+            <SignInButton className="px-3 md:px-4 py-2 rounded-full bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white text-sm font-semibold hover:opacity-90 transition" />
             <button id="onborda-settings-button" onClick={() => { setShowSettings(true); setShowFullProfileReport(false); }} aria-label={t.settingsModal.title} className="w-10 h-10 md:w-auto md:h-auto md:px-4 md:py-2 rounded-full md:border md:border-gray-300 md:dark:border-white/10 text-sm flex items-center justify-center gap-2 hover:bg-gray-100 dark:hover:bg-white/10 active:bg-gray-200 dark:active:bg-white/15 transition-colors">
             <SettingsIcon className="w-[21px] h-[21px] md:w-4 md:h-4" strokeWidth={1.75} />
             <span className="hidden md:inline">{t.settingsModal.title}</span>
@@ -786,8 +786,43 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
         <Suspense fallback={<PageLoading />}>
         {showLoginRequired && <LoginRequired feature={loginRequiredLabel} />}
         {activePage === 'dashboard' && (
-          <div className="p-4 md:p-8 space-y-4 md:space-y-6">
-            <QuickRow
+          <div className="p-4 md:p-8 flex flex-col gap-4 md:gap-6">
+            {/* Phones: today's goal hero, two quick numbers, then the Quick Access grid */}
+            <div className="md:hidden space-y-3">
+              <button
+                onClick={() => setActivePage('videos')}
+                className="w-full text-left rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white p-4 flex items-center gap-3 shadow-card active:scale-[0.99] transition-transform"
+              >
+                <span className="w-11 h-11 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                  <Target className="w-6 h-6" strokeWidth={1.75} />
+                </span>
+                <span className="flex-1 min-w-0">
+                  <span className="block text-xs text-white/70">{statsCards[0].title}</span>
+                  <span className="block font-semibold leading-snug line-clamp-2">{statsCards[0].value}</span>
+                </span>
+                <span className="w-9 h-9 rounded-full bg-white text-indigo-600 flex items-center justify-center flex-shrink-0">
+                  <ChevronRight className="w-5 h-5" strokeWidth={2.2} />
+                </span>
+              </button>
+              <div className="grid grid-cols-2 gap-3">
+                {statsCards.slice(1).map((card, i) => {
+                  const StatIcon = STAT_ICONS[card.icon as keyof typeof STAT_ICONS];
+                  const tone = i === 0 ? 'bg-violet-100 text-violet-600 dark:bg-violet-500/15 dark:text-violet-300' : 'bg-orange-100 text-orange-600 dark:bg-orange-500/15 dark:text-orange-300';
+                  return (
+                    <button key={card.title} onClick={card.onClick} className="card rounded-2xl p-3 flex items-center gap-3 text-left active:scale-[0.98] transition-transform">
+                      <span className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${tone}`}>
+                        <StatIcon className="w-5 h-5" strokeWidth={1.75} />
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block font-semibold tabular-nums truncate">{card.value}</span>
+                        <span className="block text-[11px] text-gray-500 dark:text-white/50 truncate">{card.title}</span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <QuickGrid
               items={sidebarItems
                 .filter((i) => !['dashboard', 'roadmap', 'mentor', 'progress'].includes(i.id))
                 .map((i) => ({
@@ -807,26 +842,22 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="p-5 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5"
+                className="p-4 md:p-5 rounded-2xl card"
               >
-                <h3 className="font-semibold mb-1">{t.dashboard.checklist.heading}</h3>
-                <p className="text-xs text-gray-400 dark:text-white/40 mb-4">
+                <h3 className="font-semibold mb-0.5">{t.dashboard.checklist.heading}</h3>
+                <p className="text-xs text-gray-400 dark:text-white/40 mb-2">
                   {t.dashboard.checklist.subheading}
                 </p>
-                <div className="space-y-2">
+                <div className="divide-y divide-gray-100 dark:divide-white/10">
                   {onboardingSteps.map((step, i) => (
                     <div
                       key={step.title}
-                      className={`flex items-center gap-3 p-3 rounded-xl border ${
-                        step.done
-                          ? 'border-gray-200 dark:border-white/10 opacity-50'
-                          : 'border-gray-300 dark:border-white/20'
-                      }`}
+                      className={`flex items-center gap-3 py-3 ${step.done ? 'opacity-50' : ''}`}
                     >
                       <div
                         className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0 ${
                           step.done
-                            ? 'bg-black text-white dark:bg-white dark:text-black'
+                            ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white'
                             : 'border border-gray-300 dark:border-white/30 text-gray-400 dark:text-white/40'
                         }`}
                       >
@@ -839,7 +870,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                       {!step.done && (
                         <button
                           onClick={step.action}
-                          className="px-3 py-1.5 rounded-full bg-black text-white dark:bg-white dark:text-black text-xs font-medium hover:opacity-80 transition flex-shrink-0"
+                          className="px-3 py-1.5 rounded-full bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white text-xs font-medium hover:opacity-80 transition flex-shrink-0"
                         >
                           {step.cta}
                         </button>
@@ -856,7 +887,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
-                  className="p-4 rounded-2xl border border-black/10 dark:border-white/20 bg-black text-white dark:bg-white dark:text-black flex items-center gap-3 flex-wrap"
+                  className="p-4 rounded-2xl border border-black/10 dark:border-white/20 bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white flex items-center gap-3 flex-wrap"
                 >
                   <Bell className="w-5 h-5 flex-shrink-0" strokeWidth={1.75} />
                   <div className="flex-1 min-w-[200px]">
@@ -887,7 +918,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
               )}
             </AnimatePresence>
 
-            <div className="rounded-2xl border border-gray-200 dark:border-white/10 overflow-hidden grid grid-cols-3 divide-x divide-gray-200 dark:divide-white/10">
+            <div className="hidden md:grid rounded-2xl card overflow-hidden grid-cols-3 divide-x divide-gray-100 dark:divide-white/10">
               {statsCards.map((card) => {
                 const StatIcon = STAT_ICONS[card.icon as keyof typeof STAT_ICONS];
                 return (
@@ -908,7 +939,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
 
             <button
               onClick={() => setActivePage('videos')}
-              className="w-full md:w-auto px-5 py-2.5 rounded-full bg-black text-white dark:bg-white dark:text-black text-sm font-medium hover:opacity-85 active:opacity-70 transition-opacity"
+              className="hidden md:block px-5 py-2.5 rounded-full bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white text-sm font-medium hover:opacity-85 active:opacity-70 transition-opacity"
             >
               {t.dashboard.home.suggestion.watchCta}
             </button>
@@ -972,7 +1003,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
           <div className="relative">
             <button
               onClick={() => setShowCustomPlaylist(true)}
-              className="absolute top-0 right-0 z-10 px-3 py-1.5 rounded-full border border-gray-300 dark:border-white/15 bg-white dark:bg-black text-xs font-medium text-gray-600 dark:text-white/60 hover:text-black dark:hover:text-white hover:border-gray-400 dark:hover:border-white/30 transition"
+              className="absolute top-4 right-4 md:top-0 md:right-0 z-10 h-9 px-3.5 rounded-full card text-xs font-medium text-indigo-600 dark:text-indigo-300 hover:bg-gray-50 dark:hover:bg-white/10 transition"
             >
               {t.dashboard.home.suggestion.customCta}
             </button>
@@ -1060,7 +1091,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                       <button
                         key={r}
                         onClick={() => setSettingsRole(r)}
-                        className={`px-3 py-1.5 rounded-full text-xs border transition ${settingsRole === r ? 'bg-black text-white dark:bg-white dark:text-black border-transparent' : 'border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10'}`}
+                        className={`px-3 py-1.5 rounded-full text-xs border transition ${settingsRole === r ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white border-transparent' : 'border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10'}`}
                       >
                         {t.onboarding.roles[r]}
                       </button>
@@ -1086,7 +1117,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                       <button
                         key={l}
                         onClick={() => setSettingsLanguage(l)}
-                        className={`px-3 py-1.5 rounded-full text-xs border transition ${settingsLanguage === l ? 'bg-black text-white dark:bg-white dark:text-black border-transparent' : 'border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10'}`}
+                        className={`px-3 py-1.5 rounded-full text-xs border transition ${settingsLanguage === l ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white border-transparent' : 'border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10'}`}
                       >
                         {t.onboarding.languages[l]}
                       </button>
@@ -1227,7 +1258,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                       <p className="text-xs text-gray-400 dark:text-white/40 mb-3">{t.authPrompt.guestAccountNote}</p>
                       <button
                         onClick={() => { setShowSettings(false); openSignIn(); }}
-                        className="w-full py-2.5 rounded-xl bg-black text-white dark:bg-white dark:text-black text-sm font-semibold hover:opacity-90 transition"
+                        className="w-full py-2.5 rounded-xl bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white text-sm font-semibold hover:opacity-90 transition"
                       >
                         {t.authPrompt.lockedCta}
                       </button>
@@ -1252,7 +1283,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                 <button
                   onClick={handleSaveSettings}
                   disabled={!settingsName.trim()}
-                  className="w-full px-6 py-3 rounded-full bg-black text-white dark:bg-white dark:text-black font-semibold text-sm disabled:opacity-40 transition"
+                  className="w-full px-6 py-3 rounded-full bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white font-semibold text-sm disabled:opacity-40 transition"
                 >
                   {t.settingsModal.saveCta}
                 </button>
@@ -1317,7 +1348,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                         key={h}
                         onClick={() => setCustomHours(h)}
                         disabled={customLoading}
-                        className={`flex-1 py-2 rounded-lg text-sm border transition ${customHours === h ? 'bg-black text-white dark:bg-white dark:text-black border-transparent' : 'border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10'}`}
+                        className={`flex-1 py-2 rounded-lg text-sm border transition ${customHours === h ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white border-transparent' : 'border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10'}`}
                       >
                         {h}h
                       </button>
@@ -1333,7 +1364,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                         key={d.id}
                         onClick={() => setCustomDeadline(d.id)}
                         disabled={customLoading}
-                        className={`flex-1 py-2 rounded-lg text-sm border transition ${customDeadline === d.id ? 'bg-black text-white dark:bg-white dark:text-black border-transparent' : 'border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10'}`}
+                        className={`flex-1 py-2 rounded-lg text-sm border transition ${customDeadline === d.id ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white border-transparent' : 'border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10'}`}
                       >
                         {d.label}
                       </button>
@@ -1389,7 +1420,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                 <button
                   onClick={handleCustomPlaylist}
                   disabled={customLoading || !customTopic.trim()}
-                  className="w-full px-6 py-3 rounded-full bg-black text-white dark:bg-white dark:text-black disabled:opacity-40 font-semibold transition"
+                  className="w-full px-6 py-3 rounded-full bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white disabled:opacity-40 font-semibold transition"
                 >
                   {customLoading ? t.customPlaylistModal.generatingCta : t.customPlaylistModal.generateCta}
                 </button>

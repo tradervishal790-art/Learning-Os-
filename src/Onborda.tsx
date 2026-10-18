@@ -258,6 +258,7 @@ const Onborda: React.FC<OnbordaProps> = ({
 
   const variants = { visible: { opacity: 1 }, hidden: { opacity: 0 } };
 
+  const isPhone = typeof window !== 'undefined' && window.innerWidth < 768;
   const pointerPadding = currentTourSteps?.[currentStep]?.pointerPadding ?? 12;
   const pointerPadOffset = pointerPadding / 2;
   const pointerRadius = currentTourSteps?.[currentStep]?.pointerRadius ?? 16;
@@ -299,22 +300,43 @@ const Onborda: React.FC<OnbordaProps> = ({
                 }}
                 transition={cardTransition}
               >
-                <div
-                  className="absolute flex flex-col max-w-[100%] min-w-min pointer-events-auto z-[950]"
-                  style={getCardStyle(currentTourSteps[currentStep]?.side)}
-                >
-                  <CardComponent
-                    step={currentTourSteps[currentStep]}
-                    currentStep={currentStep}
-                    totalSteps={currentTourSteps.length}
-                    nextStep={nextStep}
-                    prevStep={prevStep}
-                    skipTour={closeOnborda}
-                    arrow={<CardArrow />}
-                  />
-                </div>
+                {!isPhone && (
+                  <div
+                    className="absolute flex flex-col max-w-[100%] min-w-min pointer-events-auto z-[950]"
+                    style={getCardStyle(currentTourSteps[currentStep]?.side)}
+                  >
+                    <CardComponent
+                      step={currentTourSteps[currentStep]}
+                      currentStep={currentStep}
+                      totalSteps={currentTourSteps.length}
+                      nextStep={nextStep}
+                      prevStep={prevStep}
+                      skipTour={closeOnborda}
+                      arrow={<CardArrow />}
+                    />
+                  </div>
+                )}
               </motion.div>
             </motion.div>
+            {/* Phones: the card is pinned to the viewport above the bottom bar (a card
+                centred on a bottom-bar icon would hang off the screen edge) and the
+                spotlight still marks the target. */}
+            {isPhone && (
+              <div
+                className="fixed inset-x-3 z-[950] pointer-events-auto"
+                style={{ bottom: 'calc(4.75rem + env(safe-area-inset-bottom))' }}
+              >
+                <CardComponent
+                  step={currentTourSteps[currentStep]}
+                  currentStep={currentStep}
+                  totalSteps={currentTourSteps.length}
+                  nextStep={nextStep}
+                  prevStep={prevStep}
+                  skipTour={closeOnborda}
+                  arrow={<></>}
+                />
+              </div>
+            )}
           </>,
           document.body
         )}

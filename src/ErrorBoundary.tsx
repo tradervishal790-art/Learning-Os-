@@ -51,7 +51,7 @@ export default class ErrorBoundary extends Component<Props, State> {
             <div className="flex flex-col gap-2">
               <button
                 onClick={this.handleReset}
-                className="px-4 py-2.5 rounded-xl bg-black text-white dark:bg-white dark:text-black text-sm font-medium"
+                className="px-4 py-2.5 rounded-xl bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white text-sm font-medium"
               >
                 {t.errorBoundary.reloadCta}
               </button>

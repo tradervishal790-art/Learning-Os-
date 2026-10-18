@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Star, Check, Flame, Lock, Route, Target, Gauge, CircleCheck, Clock, X as CloseIcon, ChartNoAxesColumn, Link2, CircleHelp, Globe, TriangleAlert } from 'lucide-react';
+import { CircleX, Star, Check, Flame, Lock, Route, Target, Gauge, CircleCheck, Clock, X as CloseIcon, ChartNoAxesColumn, Link2, CircleHelp, Globe, TriangleAlert } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { getRoadmapData, getRoadmapProgress, markTopicFinished, hydrateRoadmapDataFromCloud } from './roadmapData';
 import { hasSavedVideoForTopic, getSavedVideoIdForTopic } from './VideoIntel';
@@ -23,10 +23,10 @@ const statusIcons: Record<Topic['status'], ReactNode> = {
 };
 
 const statusStyles: Record<Topic['status'], { bg: string; border: string; text: string }> = {
-  mastered: { bg: 'bg-gray-50 dark:bg-white/5', border: 'border-gray-200 dark:border-white/10', text: 'text-gray-600 dark:text-white/70' },
-  completed: { bg: 'bg-gray-50 dark:bg-white/5', border: 'border-gray-200 dark:border-white/10', text: 'text-gray-600 dark:text-white/70' },
-  learning: { bg: 'bg-gray-50 dark:bg-white/5', border: 'border-gray-300 dark:border-white/20', text: 'text-black dark:text-white' },
-  locked: { bg: 'bg-gray-50 dark:bg-white/5', border: 'border-gray-200 dark:border-white/10', text: 'text-gray-400 dark:text-white/40' },
+  mastered: { bg: 'card', border: 'border-transparent', text: 'text-emerald-600 dark:text-emerald-400' },
+  completed: { bg: 'card', border: 'border-transparent', text: 'text-emerald-600 dark:text-emerald-400' },
+  learning: { bg: 'card', border: 'border-indigo-400 dark:border-indigo-400/60', text: 'text-indigo-600 dark:text-indigo-400' },
+  locked: { bg: 'card', border: 'border-transparent', text: 'text-gray-400 dark:text-white/40' },
 };
 
 const difficultyConfig: Record<Topic['difficulty'], string> = {
@@ -402,16 +402,16 @@ export default function Roadmap({
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.05, duration: 0.4 }}
-        className="flex items-center gap-2 mb-6 overflow-x-auto md:flex-wrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="flex items-center gap-2 mb-4 md:mb-6 overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0 md:flex-wrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {activeGoals.map((g) => (
           <button
             key={g.id}
             onClick={() => onSwitchGoal(g.id)}
-            className={`flex-shrink-0 px-4 py-2 rounded-xl text-sm font-medium border transition truncate max-w-[220px] ${
+            className={`flex-shrink-0 h-10 px-4 rounded-full text-sm font-medium transition truncate max-w-[220px] ${
               g.id === activeGoalId
-                ? 'bg-black text-white dark:bg-white dark:text-black border-transparent'
-                : 'border-gray-200 dark:border-white/10 text-gray-500 dark:text-white/50 hover:bg-gray-100 dark:hover:bg-white/10'
+                ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white'
+                : 'card text-gray-500 dark:text-white/50 hover:bg-gray-50 dark:hover:bg-white/10'
             }`}
             title={g.title || t.roadmap.goalTabs.newGoal}
           >
@@ -427,7 +427,7 @@ export default function Roadmap({
             {t.roadmap.goalTabs.addGoal}
           </button>
         ) : (
-          <span className="text-[11px] text-gray-400 dark:text-white/40 px-1">
+          <span className="hidden md:inline text-[11px] text-gray-400 dark:text-white/40 px-1">
             {format(t.roadmap.goalTabs.maxGoalsNote, MAX_ACTIVE_GOALS)}
           </span>
         )}
@@ -435,9 +435,12 @@ export default function Roadmap({
         {activeGoalId && !hasNoRoadmap && (
           <button
             onClick={() => setConfirmEndGoal(true)}
-            className="flex-shrink-0 ml-auto px-3 py-2 rounded-xl text-xs font-medium border border-red-200 dark:border-red-500/20 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition"
+            aria-label={t.roadmap.goalTabs.endGoal}
+            title={t.roadmap.goalTabs.endGoal}
+            className="flex-shrink-0 ml-auto h-10 min-w-10 inline-flex items-center justify-center gap-1.5 px-3 rounded-full text-xs font-medium border border-red-200 dark:border-red-500/20 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition"
           >
-            {t.roadmap.goalTabs.endGoal}
+            <CircleX className="w-4 h-4 md:hidden" strokeWidth={1.75} />
+            <span className="hidden md:inline">{t.roadmap.goalTabs.endGoal}</span>
           </button>
         )}
       </motion.div>
@@ -486,7 +489,7 @@ export default function Roadmap({
       </AnimatePresence>
 
       {/* Top stats — one surface, icon-first on phones */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.5 }} className="rounded-2xl border border-gray-200 dark:border-white/10 overflow-hidden grid grid-cols-4 divide-x divide-gray-200 dark:divide-white/10 mb-6 md:mb-8">
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.5 }} className="rounded-2xl card overflow-hidden grid grid-cols-4 divide-x divide-gray-100 dark:divide-white/10 mb-4 md:mb-8">
         {[
           { label: t.roadmap.stats.progress, value: `${progressPercent}%`, Icon: Gauge },
           { label: t.roadmap.stats.done, value: `${completedTopics}/${totalTopics}`, Icon: CircleCheck },
@@ -502,30 +505,30 @@ export default function Roadmap({
       </motion.div>
 
       {/* Progress bar */}
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2, duration: 0.5 }} className="mb-6 md:mb-10">
-        <div className="h-2 bg-gray-100 dark:bg-white/5 rounded-full overflow-hidden">
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2, duration: 0.5 }} className="mb-4 md:mb-10">
+        <div className="h-2 bg-indigo-100 dark:bg-white/5 rounded-full overflow-hidden">
           <motion.div
             initial={{ width: 0 }}
             animate={{ width: `${progressPercent}%` }}
             transition={{ delay: 0.3, duration: 1, ease: 'easeOut' }}
-            className="h-full bg-black dark:bg-white rounded-full"
+            className="h-full bg-gradient-to-r from-indigo-500 to-violet-500 rounded-full"
           />
         </div>
       </motion.div>
 
       {/* Main path card */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.5 }} className="p-5 md:p-6 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 mb-6">
-        <div className="flex items-center justify-between flex-wrap gap-3">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-black dark:bg-white text-white dark:text-black flex items-center justify-center flex-shrink-0"><Target className="w-6 h-6" strokeWidth={1.75} /></div>
-            <div>
-             <h2 className="text-lg md:text-xl font-bold">{roadmap.title}</h2>
-              <p className="text-sm text-gray-500 dark:text-white/50">{roadmap.description}</p>
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.5 }} className="p-4 md:p-6 rounded-2xl card mb-4 md:mb-6">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start gap-3 md:gap-4">
+            <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white flex items-center justify-center flex-shrink-0"><Target className="w-6 h-6" strokeWidth={1.75} /></div>
+            <div className="min-w-0">
+              <h2 className="text-base md:text-xl font-bold leading-snug">{roadmap.title}</h2>
+              <p className="text-sm text-gray-500 dark:text-white/50 line-clamp-3 md:line-clamp-none mt-1">{roadmap.description}</p>
+              <span className="inline-block mt-2 text-xs px-3 py-1 rounded-full bg-indigo-50 text-indigo-600 dark:bg-white/10 dark:text-white/70">
+                {roadmap.difficulty}
+              </span>
             </div>
           </div>
-          <span className="text-xs px-3 py-1 rounded-full border border-gray-200 dark:border-white/10">
-           {roadmap.difficulty}
-          </span>
         </div>
 
         {hasNoRoadmap && !activeGoalId && (
@@ -535,7 +538,7 @@ export default function Roadmap({
         )}
 
         {hasNoRoadmap && activeGoalId && onGenerateForSubject && (
-          <div className="mt-5 p-5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5">
+          <div className="mt-4 pt-4 border-t border-gray-100 dark:border-white/10">
             <label className="block text-sm font-semibold mb-2">{t.roadmap.generateForm.label}</label>
             <div className="flex flex-col sm:flex-row gap-3">
               <input
@@ -550,7 +553,7 @@ export default function Roadmap({
               <button
                 onClick={handleGenerateClick}
                 disabled={generating || !subjectInput.trim()}
-                className="px-5 py-2.5 rounded-lg text-sm font-medium bg-black text-white dark:bg-white dark:text-black hover:opacity-80 transition disabled:opacity-40 flex-shrink-0"
+                className="px-5 py-2.5 rounded-lg text-sm font-medium bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white hover:opacity-80 transition disabled:opacity-40 flex-shrink-0"
               >
                 {generating ? t.roadmap.generateForm.generatingCta : t.roadmap.generateForm.generateCta}
               </button>
@@ -575,7 +578,7 @@ export default function Roadmap({
             <div className="mt-4">
               <div className="flex items-center justify-between mb-2">
                 <label className="text-sm font-semibold">{t.roadmap.generateForm.weeklyTimeLabel}</label>
-                <span className="text-sm font-mono px-2 py-0.5 rounded-md bg-black text-white dark:bg-white dark:text-black">
+                <span className="text-sm font-mono px-2 py-0.5 rounded-md bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white">
                   {hoursInput} hrs/week
                 </span>
               </div>
@@ -606,7 +609,7 @@ export default function Roadmap({
                     onClick={() => handleDeadlineUnitChange(unit)}
                     className={`flex-1 py-2 rounded-lg text-sm border transition capitalize ${
                       deadlineUnit === unit
-                        ? 'bg-black text-white dark:bg-white dark:text-black border-transparent'
+                        ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white border-transparent'
                         : 'border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10'
                     }`}
                   >
@@ -616,7 +619,7 @@ export default function Roadmap({
               </div>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs text-gray-400 dark:text-white/40">{t.roadmap.generateForm.deadlineLabel}</span>
-                <span className="text-sm font-mono px-2 py-0.5 rounded-md bg-black text-white dark:bg-white dark:text-black">
+                <span className="text-sm font-mono px-2 py-0.5 rounded-md bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white">
                   {DEADLINE_UNIT_CONFIG[deadlineUnit].label(deadlineValue)}
                 </span>
               </div>
@@ -665,15 +668,15 @@ export default function Roadmap({
                   aria-label={status.label}
                   className={`w-9 h-9 md:w-11 md:h-11 rounded-full flex items-center justify-center flex-shrink-0 ${
                     isDone
-                      ? 'bg-black text-white dark:bg-white dark:text-black'
+                      ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white'
                       : isActive
-                      ? 'border-2 border-black dark:border-white text-black dark:text-white'
+                      ? 'border-2 border-indigo-500 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400 bg-white dark:bg-black'
                       : 'border border-gray-200 dark:border-white/15 text-gray-300 dark:text-white/30'
                   }`}
                 >
                   {status.icon}
                 </div>
-                {!isLast && <div className={`flex-1 w-0.5 my-1 rounded-full ${isDone ? 'bg-black dark:bg-white' : 'bg-gray-200 dark:bg-white/10'}`} />}
+                {!isLast && <div className={`flex-1 w-0.5 my-1 rounded-full ${isDone ? 'bg-indigo-500 dark:bg-indigo-400' : 'bg-indigo-100 dark:bg-white/10'}`} />}
               </div>
 
               <button
@@ -801,7 +804,7 @@ export default function Roadmap({
                       return (
                         <>
                         <HintBubble id="bridge" text={t.roadmap.topicModal.bridgeHint} />
-                        <div className="p-4 rounded-xl border border-gray-300 dark:border-white/20 bg-gray-50 dark:bg-white/5">
+                        <div className="p-4 rounded-xl border border-gray-300 dark:border-white/20 card">
                           <div className="flex items-center gap-2 mb-2 text-xs text-gray-400 dark:text-white/40">
                             <span>{bridge.fromTopicTitle}</span>
                             <span>→</span>
@@ -827,7 +830,7 @@ export default function Roadmap({
                       <button
                         onClick={handleWatchVideos}
                         disabled={playlistLoading}
-                        className="w-full px-4 py-3.5 md:py-2.5 rounded-lg bg-black text-white dark:bg-white dark:text-black disabled:opacity-40 text-sm font-semibold transition active:scale-[0.98]"
+                        className="w-full px-4 py-3.5 md:py-2.5 rounded-lg bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white disabled:opacity-40 text-sm font-semibold transition active:scale-[0.98]"
                       >
                         {playlistLoading ? t.roadmap.topicModal.searchingCta : t.roadmap.topicModal.watchVideosCta}
                       </button>
@@ -854,7 +857,7 @@ export default function Roadmap({
                           handleMarkComplete's pushTrigger check gates completion
                           on an applied challenge. Control-group users never see this. */}
                       {showChallengePrompt && (
-                        <div className="mt-3 p-4 rounded-xl border border-gray-300 dark:border-white/20 bg-gray-50 dark:bg-white/5">
+                        <div className="mt-3 p-4 rounded-xl border border-gray-300 dark:border-white/20 card">
                           <p className="text-sm font-medium mb-2">
                             {t.roadmap.topicModal.challengeTitle}
                           </p>
@@ -863,7 +866,7 @@ export default function Roadmap({
                           </p>
                           <button
                             onClick={handleChallengeSubmit}
-                            className="w-full px-4 py-2.5 rounded-lg bg-black text-white dark:bg-white dark:text-black text-sm font-semibold transition active:scale-[0.98]"
+                            className="w-full px-4 py-2.5 rounded-lg bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white text-sm font-semibold transition active:scale-[0.98]"
                           >
                             {t.roadmap.topicModal.challengeCta}
                           </button>

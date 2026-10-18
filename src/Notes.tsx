@@ -338,7 +338,7 @@ export default function Notes({ videoTitle, videoDescription, videoId }: { video
   };
 
   return (
-    <div className="min-h-dvh bg-white dark:bg-black text-black dark:text-white p-4 md:p-8">
+    <div className="min-h-dvh text-black dark:text-white p-4 md:p-8">
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-5 md:mb-8">
         <h1 className="text-2xl md:text-4xl font-bold mb-1 md:mb-2">{t.notes.header.title}</h1>
         <p className="text-sm md:text-base text-gray-500 dark:text-white/60">{t.notes.header.subtitle}</p>
@@ -359,7 +359,7 @@ export default function Notes({ videoTitle, videoDescription, videoId }: { video
             disabled={loading || !topic.trim()}
             aria-label={t.notes.deepDiveCta}
             title={t.notes.deepDiveCta}
-            className="flex-shrink-0 w-12 md:w-auto h-12 md:h-auto md:px-6 md:py-3 flex items-center justify-center gap-2 bg-black text-white dark:bg-white dark:text-black disabled:opacity-40 rounded-xl font-semibold transition"
+            className="flex-shrink-0 w-12 md:w-auto h-12 md:h-auto md:px-6 md:py-3 flex items-center justify-center gap-2 bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white disabled:opacity-40 rounded-xl font-semibold transition"
           >
             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5 md:hidden" strokeWidth={1.75} />}
             <span className="hidden md:inline">{loading ? '...' : t.notes.deepDiveCta}</span>
@@ -404,8 +404,8 @@ export default function Notes({ videoTitle, videoDescription, videoId }: { video
                   aria-pressed={activeSection === s.id}
                   className={`flex-shrink-0 h-11 min-w-11 px-3 md:px-4 inline-flex items-center justify-center gap-2 rounded-full text-sm font-medium transition ${
                     activeSection === s.id
-                      ? 'bg-black text-white dark:bg-white dark:text-black'
-                      : 'bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-500 dark:text-white/60 hover:bg-gray-100 dark:hover:bg-white/10'
+                      ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white'
+                      : 'card text-gray-500 dark:text-white/60 hover:bg-gray-100 dark:hover:bg-white/10'
                   }`}
                 >
                   <SectionIcon className="w-5 h-5" strokeWidth={1.75} />
@@ -419,7 +419,7 @@ export default function Notes({ videoTitle, videoDescription, videoId }: { video
             key={activeSection}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl p-4 md:p-8 break-words"
+            className="card rounded-2xl p-4 md:p-8 break-words"
           >
             {currentVideoId && (
               <a

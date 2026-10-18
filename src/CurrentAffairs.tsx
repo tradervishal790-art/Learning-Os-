@@ -31,7 +31,7 @@ const TAB_ICONS: Record<Tab, LucideIcon> = {
 };
 
 /** Hides the scrollbar on horizontal icon/chip rows (Instagram-style swipe rows). */
-const SWIPE_ROW = 'flex gap-2 overflow-x-auto md:flex-wrap -mx-4 px-4 md:mx-0 md:px-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden';
+const SWIPE_ROW = 'flex gap-2 overflow-x-auto md:flex-wrap -mx-4 px-4 py-1 md:mx-0 md:px-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden';
 
 function formatDateLabel(date: string, locale: string): string {
   try {
@@ -49,7 +49,7 @@ export default function CurrentAffairs() {
   const c = t.channelDigest;
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="max-w-3xl mx-auto p-4 md:p-8">
       <div className="flex border-b border-gray-200 dark:border-white/10">
         {([['news', Newspaper, c.switchNews], ['channels', CirclePlay, c.switchChannels]] as const).map(([v, Icon, label]) => (
           <button
@@ -60,7 +60,7 @@ export default function CurrentAffairs() {
             aria-pressed={view === v}
             className={`flex-1 h-12 flex items-center justify-center border-b-2 transition ${
               view === v
-                ? 'border-black dark:border-white text-black dark:text-white'
+                ? 'border-indigo-600 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400'
                 : 'border-transparent text-gray-400 dark:text-white/40 hover:text-black dark:hover:text-white'
             }`}
           >
@@ -142,14 +142,14 @@ function NewspaperCurrentAffairs() {
         </div>
         <div className="flex items-center gap-2 text-sm flex-shrink-0">
           {streak > 0 && (
-            <span className="inline-flex items-center gap-1 h-9 px-3 rounded-full border border-gray-200 dark:border-white/10" title={format(c.streak, streak)}>
+            <span className="inline-flex items-center gap-1 h-9 px-3 rounded-full card" title={format(c.streak, streak)}>
               <Flame className="w-4 h-4" />
               <span className="md:hidden">{streak}</span>
               <span className="hidden md:inline">{format(c.streak, streak)}</span>
             </span>
           )}
           {doneToday && (
-            <span className="inline-flex items-center gap-1 h-9 px-3 rounded-full bg-black text-white dark:bg-white dark:text-black" title={c.streakDone} aria-label={c.streakDone}>
+            <span className="inline-flex items-center gap-1 h-9 px-3 rounded-full bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white" title={c.streakDone} aria-label={c.streakDone}>
               <Check className="w-4 h-4" />
               <span className="hidden md:inline">{c.streakDone}</span>
             </span>
@@ -160,7 +160,7 @@ function NewspaperCurrentAffairs() {
             title="Saved"
             aria-pressed={showSaved}
             className={`relative w-10 h-10 rounded-full flex items-center justify-center transition ${
-              showSaved ? 'bg-black text-white dark:bg-white dark:text-black' : 'border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10'
+              showSaved ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white' : 'card hover:bg-gray-50 dark:hover:bg-white/10'
             }`}
           >
             <Bookmark className="w-5 h-5" strokeWidth={1.75} fill={showSaved || saved.length > 0 ? 'currentColor' : 'none'} />
@@ -177,8 +177,8 @@ function NewspaperCurrentAffairs() {
             onClick={() => setDate(d)}
             className={`flex-shrink-0 h-10 px-4 text-sm rounded-full border transition ${
               d === date
-                ? 'bg-black text-white border-black dark:bg-white dark:text-black dark:border-white'
-                : 'border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10'
+                ? 'bg-indigo-600 text-white border-indigo-600 dark:bg-indigo-500 dark:text-white dark:border-indigo-500'
+                : 'card border-transparent hover:bg-gray-50 dark:hover:bg-white/10'
             }`}
           >
             {d === today ? c.today : formatDateLabel(d, locale)}
@@ -233,7 +233,7 @@ function NewspaperCurrentAffairs() {
                   title={c.tabs[x]}
                   aria-pressed={tab === x}
                   className={`flex-shrink-0 h-10 min-w-10 px-3 inline-flex items-center justify-center gap-1.5 text-xs rounded-full transition ${
-                    tab === x ? 'bg-gray-900 text-white dark:bg-white dark:text-black' : 'bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-white/60'
+                    tab === x ? 'bg-indigo-600 text-white dark:bg-indigo-500' : 'card text-gray-600 dark:text-white/60'
                   }`}
                 >
                   <TabIcon className="w-4 h-4" strokeWidth={1.75} />
@@ -276,7 +276,7 @@ function NewspaperCurrentAffairs() {
           <h2 className="text-lg font-semibold">{c.mistakesTitle}</h2>
           <ul className="mt-3 space-y-3">
             {progress.mistakes.slice(0, 5).map((m, i) => (
-              <li key={`${m.date}-${i}`} className="border border-gray-200 dark:border-white/10 rounded-lg p-4 text-sm">
+              <li key={`${m.date}-${i}`} className="card rounded-xl p-4 text-sm">
                 <p>{m.question}</p>
                 <p className="mt-2">
                   <span className="text-gray-500 dark:text-white/40">{c.correctAnswerLabel}: </span>
@@ -330,7 +330,7 @@ function Quiz({
           const sel = picked[qi];
           const revealed = sel !== undefined;
           return (
-            <div key={qi} className="border border-gray-200 dark:border-white/10 rounded-lg p-4">
+            <div key={qi} className="card rounded-xl p-4">
               <p className="font-medium">
                 {qi + 1}. {q.question}
               </p>
@@ -393,12 +393,12 @@ function PointCard({
   const hasLink = !!point.link && /^https?:\/\//i.test(point.link);
   const action = 'w-11 h-11 rounded-full flex items-center justify-center text-gray-500 dark:text-white/50 hover:bg-gray-100 dark:hover:bg-white/10 active:bg-gray-200 dark:active:bg-white/15 transition-colors';
   return (
-    <li className="border border-gray-200 dark:border-white/10 rounded-2xl p-4">
+    <li className="card rounded-2xl p-4">
       <div className="flex gap-3">
         <span className="w-9 h-9 rounded-full bg-gray-100 dark:bg-white/10 flex items-center justify-center flex-shrink-0" aria-hidden="true">
           <Icon className="w-[18px] h-[18px]" strokeWidth={1.75} />
         </span>
-        <p className="leading-relaxed min-w-0">{point.text}</p>
+        <p className="text-[15px] md:text-base leading-relaxed min-w-0">{point.text}</p>
       </div>
       <div className="mt-2 flex items-center justify-between gap-2">
         <p className="text-xs text-gray-500 dark:text-white/50 truncate min-w-0" title={`${sourceLabel}: ${point.source}`}>

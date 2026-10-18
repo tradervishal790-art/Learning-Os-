@@ -140,7 +140,7 @@ export default function Research({ embedded = false, onClose }: ResearchProps) {
         <button
           onClick={handleSearch}
           disabled={loading || !query.trim()}
-          className="flex-1 px-5 py-2.5 bg-black text-white dark:bg-white dark:text-black disabled:opacity-40 rounded-lg font-semibold transition"
+          className="flex-1 px-5 py-2.5 bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white disabled:opacity-40 rounded-lg font-semibold transition"
         >
           {loading ? '...' : t.research.searchCta}
         </button>
@@ -200,7 +200,7 @@ export default function Research({ embedded = false, onClose }: ResearchProps) {
   }
 
   return (
-    <div className="min-h-dvh bg-white dark:bg-black text-black dark:text-white p-4 md:p-8">
+    <div className="min-h-dvh text-black dark:text-white p-4 md:p-8">
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-5 md:mb-8">
         <h1 className="text-2xl md:text-4xl font-bold mb-1 md:mb-2 flex items-center gap-3">
           <Search className="w-6 h-6 md:w-8 md:h-8" /> {t.research.header.title}

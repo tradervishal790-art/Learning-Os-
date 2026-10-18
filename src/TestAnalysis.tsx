@@ -77,7 +77,7 @@ export default function TestAnalysis({
   };
 
   const TrendIcon = h.trend === 'improving' ? TrendingUp : h.trend === 'declining' ? TrendingDown : Minus;
-  const card = 'bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl p-5 mb-4';
+  const card = 'card rounded-2xl p-5 mb-4';
 
   return (
     <div className="mb-8">

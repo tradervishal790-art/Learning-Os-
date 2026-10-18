@@ -123,7 +123,7 @@ export default function Revision({ goals = [] }: RevisionProps) {
             aria-pressed={mode === id}
             className={`flex-1 h-12 flex items-center justify-center gap-2 border-b-2 transition ${
               mode === id
-                ? 'border-black dark:border-white text-black dark:text-white'
+                ? 'border-indigo-600 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400'
                 : 'border-transparent text-gray-400 dark:text-white/40 hover:text-black dark:hover:text-white'
             }`}
           >
@@ -138,7 +138,7 @@ export default function Revision({ goals = [] }: RevisionProps) {
       ) : (
         <>
       {/* Top stats — one surface, icon-first on phones */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.5 }} className="rounded-2xl border border-gray-200 dark:border-white/10 overflow-hidden grid grid-cols-4 divide-x divide-gray-200 dark:divide-white/10 mb-5 md:mb-8">
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.5 }} className="rounded-2xl card overflow-hidden grid grid-cols-4 divide-x divide-gray-200 dark:divide-white/10 mb-5 md:mb-8">
         {[
           { label: t.revision.stats.dueToday, value: String(stats.dueToday), Icon: Flame },
           { label: t.revision.stats.overdue, value: String(stats.overdue), Icon: TriangleAlert },
@@ -174,8 +174,8 @@ export default function Revision({ goals = [] }: RevisionProps) {
             aria-pressed={filter === tab.id}
             className={`flex-shrink-0 h-11 px-4 inline-flex items-center gap-2 rounded-full text-sm font-medium whitespace-nowrap transition-all border ${
               filter === tab.id
-                ? 'bg-black text-white dark:bg-white dark:text-black border-transparent'
-                : 'border-gray-200 dark:border-white/10 text-gray-500 dark:text-white/60 hover:bg-gray-100 dark:hover:bg-white/10'
+                ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white border-transparent'
+                : 'card border-transparent text-gray-500 dark:text-white/60 hover:bg-gray-50 dark:hover:bg-white/10'
             }`}
           >
             <FilterIcon className="w-4 h-4" strokeWidth={1.75} />
@@ -201,8 +201,8 @@ export default function Revision({ goals = [] }: RevisionProps) {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 20 }}
                 transition={{ delay: i * 0.05, duration: 0.3 }}
-                className={`p-4 md:p-5 rounded-2xl border bg-gray-50 dark:bg-white/5 transition-all ${
-                  isReviewing ? 'border-black dark:border-white' : 'border-gray-200 dark:border-white/10'
+                className={`p-4 md:p-5 rounded-2xl border card transition-all ${
+                  isReviewing ? 'border-indigo-400 dark:border-indigo-400/60' : 'border-transparent'
                 }`}
               >
                 <div className="flex items-center gap-3 md:gap-4">
@@ -226,7 +226,7 @@ export default function Revision({ goals = [] }: RevisionProps) {
                         • {difficultyLabels[item.difficulty]}
                       </span>
                       {isReviewing && (
-                        <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full bg-black text-white dark:bg-white dark:text-black">
+                        <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white">
                           {t.revision.card.reviewingNow}
                         </span>
                       )}
@@ -263,7 +263,7 @@ export default function Revision({ goals = [] }: RevisionProps) {
                           onClick={() => handleMarkDone(item)}
                           aria-label={t.revision.card.doneCta}
                           title={t.revision.card.doneCta}
-                          className="w-11 h-11 md:w-auto md:h-auto md:px-3 md:py-1.5 flex items-center justify-center rounded-full md:rounded-lg text-xs font-medium transition-all border bg-black text-white dark:bg-white dark:text-black border-transparent hover:opacity-80"
+                          className="w-11 h-11 md:w-auto md:h-auto md:px-3 md:py-1.5 flex items-center justify-center rounded-full md:rounded-lg text-xs font-medium transition-all border bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white border-transparent hover:opacity-80"
                         >
                           <Check className="w-5 h-5 md:hidden" strokeWidth={2.2} />
                           <span className="hidden md:inline">{t.revision.card.doneCta}</span>

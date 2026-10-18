@@ -813,7 +813,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
   const hasNextVideo = !!selectedVideo;
 
   return (
-    <div className="min-h-dvh bg-white dark:bg-black text-black dark:text-white">
+    <div className="min-h-dvh text-black dark:text-white">
       {showDeepNotes && selectedVideo ? (
         <div className="p-4 md:p-8">
           <button
@@ -846,13 +846,13 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                       setErrorMessage('');
                     }}
                     onKeyDown={(e) => e.key === 'Enter' && searchVideos()}
-                    className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg pl-10 pr-4 py-2.5 focus:outline-none focus:border-black dark:focus:border-white"
+                    className="w-full card border-0 rounded-xl pl-10 pr-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-400"
                   />
                 </div>
                 <button
                   onClick={searchVideos}
                   disabled={loading}
-                  className="px-5 py-2.5 bg-black text-white dark:bg-white dark:text-black disabled:opacity-40 rounded-lg font-semibold transition"
+                  className="px-5 py-2.5 bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white disabled:opacity-40 rounded-lg font-semibold transition"
                 >
                   {loading ? '...' : t.videos.searchCta}
                 </button>
@@ -888,7 +888,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
               )}
               <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
                 {videos.length === 0 ? (
-                  <div className="text-center py-12 text-gray-400 dark:text-white/60">
+                  <div className="text-center py-8 md:py-12 text-gray-400 dark:text-white/60">
                     <Play className="w-12 h-12 mx-auto mb-3 opacity-30" />
                     <p>{t.videos.noResultsYet}</p>
                   </div>
@@ -948,7 +948,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                       whichever video is actually selected — primary or fallback —
                       since verifyBridgeForVideo now re-checks on every pick. */}
                   {activeBridge && activeBridge.verified !== false && (
-                    <div className="flex items-start gap-2 p-4 rounded-xl border border-gray-300 dark:border-white/20 bg-gray-50 dark:bg-white/5">
+                    <div className="flex items-start gap-2 p-4 rounded-xl border border-gray-300 dark:border-white/20 card">
                       <Link2 className="w-4 h-4 flex-shrink-0 mt-0.5" strokeWidth={1.75} />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1 text-xs text-gray-400 dark:text-white/40">
@@ -956,7 +956,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                           <span>→</span>
                           <span className="text-black dark:text-white font-medium">{activeBridge.toTopicTitle}</span>
                           {activeBridge.verified === true && (
-                            <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded-full bg-black text-white dark:bg-white dark:text-black">
+                            <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded-full bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white">
                               {t.videos.verifiedBadge}
                             </span>
                           )}
@@ -992,7 +992,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                     />
                   )}
 
-                  <div className="bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl p-6">
+                  <div className="card rounded-xl p-6">
                     <div className="mb-4">
                       <h2 className="text-2xl font-bold mb-1">{selectedVideo.title}</h2>
                       <p className="text-gray-500 dark:text-white/60">{selectedVideo.channel}</p>
@@ -1004,7 +1004,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                         onClick={() => handleFeedback('like')}
                         className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition border ${
                           feedbackGiven === 'like'
-                            ? 'bg-black text-white dark:bg-white dark:text-black border-transparent'
+                            ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white border-transparent'
                             : 'border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10'
                         }`}
                       >
@@ -1014,7 +1014,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                         onClick={() => handleFeedback('dislike')}
                         className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition border ${
                           feedbackGiven === 'dislike'
-                            ? 'bg-black text-white dark:bg-white dark:text-black border-transparent'
+                            ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white border-transparent'
                             : 'border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10'
                         }`}
                       >
@@ -1040,7 +1040,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                         <button
                           onClick={handleNextVideo}
                           disabled={loadingMore}
-                          className="ml-auto flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-black text-white dark:bg-white dark:text-black hover:opacity-80 transition disabled:opacity-50"
+                          className="ml-auto flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white hover:opacity-80 transition disabled:opacity-50"
                         >
                           {loadingMore ? t.videos.loadingNextCta : t.videos.nextCta} <SkipForward className="w-4 h-4" />
                         </button>
@@ -1092,7 +1092,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                         onClick={() => setShowResearch((v) => !v)}
                         className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-semibold transition border ${
                           showResearch
-                            ? 'bg-black text-white dark:bg-white dark:text-black border-transparent'
+                            ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white border-transparent'
                             : 'border-gray-300 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10'
                         }`}
                       >
@@ -1106,7 +1106,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                   )}
                 </motion.div>
               ) : (
-                <div className="h-96 border border-gray-200 dark:border-white/10 rounded-2xl flex items-center justify-center">
+                <div className="hidden lg:flex h-96 card rounded-2xl items-center justify-center">
                   <div className="text-center">
                     <Play className="w-16 h-16 mx-auto mb-4 text-gray-300 dark:text-white/30" />
                     <p className="text-gray-500 dark:text-white/60">{t.videos.selectVideoPrompt}</p>

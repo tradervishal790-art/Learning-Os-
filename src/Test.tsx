@@ -281,7 +281,7 @@ export default function Test() {
   };
 
   return (
-    <div className="min-h-dvh bg-white dark:bg-black text-black dark:text-white p-4 md:p-8">
+    <div className="min-h-dvh text-black dark:text-white p-4 md:p-8">
       {stage !== 'taking' && (
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-5 md:mb-8">
           <h1 className="text-2xl md:text-4xl font-bold mb-1 md:mb-2">Tests</h1>
@@ -368,16 +368,16 @@ function TestList({
     <div className="max-w-3xl mx-auto">
       <button
         onClick={onDaily}
-        className="w-full flex items-center justify-between gap-3 px-5 py-4 mb-8 rounded-2xl border border-gray-300 dark:border-white/20 bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 text-left transition"
+        className="w-full text-left flex items-center justify-between gap-3 px-4 py-3.5 mb-6 md:mb-8 rounded-2xl bg-gradient-to-r from-indigo-50 to-violet-50 dark:from-white/5 dark:to-white/5 ring-1 ring-indigo-100 dark:ring-white/10 active:scale-[0.99] transition"
       >
         <div className="flex items-center gap-3 min-w-0">
-          <CalendarCheck className="w-6 h-6 flex-shrink-0" />
+          <span className="w-11 h-11 rounded-xl bg-white dark:bg-white/10 text-indigo-600 dark:text-indigo-300 shadow-card flex items-center justify-center flex-shrink-0"><CalendarCheck className="w-6 h-6" strokeWidth={1.75} /></span>
           <div className="min-w-0">
             <p className="font-semibold">Daily Test</p>
             <p className="text-xs text-gray-500 dark:text-white/50">{dailyLabel}</p>
           </div>
         </div>
-        <ChevronRight className="w-5 h-5 flex-shrink-0" aria-label="Open" />
+        <ChevronRight className="w-5 h-5 flex-shrink-0 text-indigo-500" aria-label="Open" />
       </button>
 
       {OFFICIAL_TESTS.length > 0 && (
@@ -387,7 +387,7 @@ function TestList({
             {OFFICIAL_TESTS.map((p) => (
               <div
                 key={p.id}
-                className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 px-4 md:px-5 py-4 rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10"
+                className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 px-4 md:px-5 py-4 rounded-2xl card"
               >
                 <div className="min-w-0">
                   <p className="font-semibold truncate">{p.title}</p>
@@ -400,7 +400,7 @@ function TestList({
                   <button onClick={() => onLive(p)} className="h-11 md:h-auto min-w-11 flex items-center justify-center gap-1.5 md:px-3 md:py-2 rounded-full md:rounded-lg border border-gray-300 dark:border-white/20 text-sm font-semibold transition" title="Run live" aria-label="Run live">
                     <Users className="w-4 h-4" /><span className="hidden md:inline">Live</span>
                   </button>
-                  <button onClick={() => onTake(p)} className="h-11 md:h-auto min-w-11 flex items-center justify-center gap-1.5 md:px-4 md:py-2 rounded-full md:rounded-lg bg-black text-white dark:bg-white dark:text-black text-sm font-semibold transition" title="Take test" aria-label="Take test">
+                  <button onClick={() => onTake(p)} className="h-11 md:h-auto min-w-11 flex items-center justify-center gap-1.5 md:px-4 md:py-2 rounded-full md:rounded-lg bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white text-sm font-semibold transition" title="Take test" aria-label="Take test">
                     <Play className="w-4 h-4" fill="currentColor" /><span className="hidden md:inline">Take Test</span>
                   </button>
                 </div>
@@ -413,7 +413,7 @@ function TestList({
       <h2 className="text-sm font-semibold text-gray-500 dark:text-white/50 mb-3">My tests</h2>
       <button
         onClick={onCreate}
-        className="w-full flex items-center justify-center gap-2 py-3.5 mb-6 md:mb-8 rounded-xl bg-black text-white dark:bg-white dark:text-black font-semibold transition"
+        className="w-full flex items-center justify-center gap-2 py-3.5 mb-6 md:mb-8 rounded-xl bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white font-semibold transition"
       >
         <Plus className="w-4 h-4" /> Create New Test
       </button>
@@ -425,7 +425,7 @@ function TestList({
           {papers.map((p) => (
             <div
               key={p.id}
-              className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 px-4 md:px-5 py-4 rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10"
+              className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 px-4 md:px-5 py-4 rounded-2xl card"
             >
               <div className="min-w-0">
                 <p className="font-semibold truncate">{p.title}</p>
@@ -444,7 +444,7 @@ function TestList({
                 <button onClick={() => onLive(p)} className="h-11 md:h-auto min-w-11 flex items-center justify-center gap-1.5 md:px-3 md:py-2 rounded-full md:rounded-lg border border-gray-300 dark:border-white/20 text-sm font-semibold transition" title="Run live" aria-label="Run live">
                   <Users className="w-4 h-4" /><span className="hidden md:inline">Live</span>
                 </button>
-                <button onClick={() => onTake(p)} className="h-11 md:h-auto min-w-11 flex items-center justify-center gap-1.5 md:px-4 md:py-2 rounded-full md:rounded-lg bg-black text-white dark:bg-white dark:text-black text-sm font-semibold transition" title="Take test" aria-label="Take test">
+                <button onClick={() => onTake(p)} className="h-11 md:h-auto min-w-11 flex items-center justify-center gap-1.5 md:px-4 md:py-2 rounded-full md:rounded-lg bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white text-sm font-semibold transition" title="Take test" aria-label="Take test">
                   <Play className="w-4 h-4" fill="currentColor" /><span className="hidden md:inline">Take Test</span>
                 </button>
               </div>
@@ -463,7 +463,7 @@ function TestList({
               <button
                 key={a.id}
                 onClick={() => onOpenAttempt(a)}
-                className="w-full flex items-center justify-between text-left px-4 py-3 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10 transition"
+                className="w-full flex items-center justify-between text-left px-4 py-3 rounded-xl card hover:bg-gray-100 dark:hover:bg-white/10 transition"
               >
                 <div>
                   <p className="font-medium">{a.testTitle}</p>
@@ -491,7 +491,7 @@ function Instructions({ paper, onStart, onBack }: { paper: TestPaper; onStart: (
 
   return (
     <div className="max-w-2xl mx-auto">
-      <div className="bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl p-6 md:p-8">
+      <div className="card rounded-2xl p-6 md:p-8">
         <h2 className="text-2xl font-bold mb-1">{paper.title}</h2>
         <p className="text-gray-500 dark:text-white/60 mb-6">{paper.topic}</p>
 
@@ -524,7 +524,7 @@ function Instructions({ paper, onStart, onBack }: { paper: TestPaper; onStart: (
         </div>
 
         <div className="flex gap-3">
-          <button onClick={onStart} className="flex-1 py-3 rounded-xl bg-black text-white dark:bg-white dark:text-black font-semibold transition">
+          <button onClick={onStart} className="flex-1 py-3 rounded-xl bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white font-semibold transition">
             Start Test
           </button>
           <button onClick={onBack} className="px-6 py-3 rounded-xl border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10 font-medium transition">
@@ -620,7 +620,7 @@ export function TakingScreen({
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.2 }}
-              className="bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl p-6 md:p-8"
+              className="card rounded-2xl p-6 md:p-8"
             >
               <div className="flex items-center justify-between mb-4">
                 <span className="text-xs font-medium tracking-wide uppercase text-purple-500 dark:text-purple-300/70 bg-purple-100 dark:bg-purple-500/10 border border-purple-300/40 dark:border-purple-500/20 rounded-full px-3 py-1">
@@ -642,7 +642,7 @@ export function TakingScreen({
                         onClick={() => onSelectMCQ(i)}
                         className={`w-full text-left p-4 rounded-xl border transition ${
                           selected
-                            ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                            ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white border-black dark:border-white'
                             : 'bg-white dark:bg-white/5 border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10'
                         }`}
                       >
@@ -670,13 +670,13 @@ export function TakingScreen({
             <button onClick={onMarkForReview} className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-purple-300 dark:border-purple-500/30 text-purple-600 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-500/10 text-sm font-medium transition">
               <Flag className="w-4 h-4" /> Mark for Review & Next
             </button>
-            <button onClick={onSaveAndNext} disabled={isLast} className="ml-auto px-5 py-2.5 rounded-xl bg-black text-white dark:bg-white dark:text-black disabled:opacity-30 text-sm font-semibold transition">
+            <button onClick={onSaveAndNext} disabled={isLast} className="ml-auto px-5 py-2.5 rounded-xl bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white disabled:opacity-30 text-sm font-semibold transition">
               Save & Next
             </button>
           </div>
         </div>
 
-        <div className="bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl p-4 h-fit">
+        <div className="card rounded-2xl p-4 h-fit">
           <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-white/40 mb-3">Question Palette</p>
           <div className="grid grid-cols-5 gap-2">
             {paper.questions.map((q, i) => (
@@ -723,7 +723,7 @@ function ResultsDashboard({
 
   return (
     <div className="max-w-3xl mx-auto">
-      <div className="bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl p-6 md:p-8 mb-8 text-center">
+      <div className="card rounded-2xl p-6 md:p-8 mb-8 text-center">
         <p className="text-sm text-gray-500 dark:text-white/50 mb-1">{attempt.testTitle}</p>
         <p className={`text-5xl font-bold mb-2 ${scoreColor}`}>{attempt.obtainedMarks}/{attempt.totalMarks}</p>
         <p className="text-gray-500 dark:text-white/60 mb-1">{attempt.scorePercent}% · {correctCount} correct</p>
@@ -735,7 +735,7 @@ function ResultsDashboard({
           </div>
         )}
         <div className="flex flex-wrap justify-center gap-3 mt-4">
-          <button onClick={() => downloadTestResultPdf(attempt)} className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-black text-white dark:bg-white dark:text-black text-sm font-semibold transition">
+          <button onClick={() => downloadTestResultPdf(attempt)} className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white text-sm font-semibold transition">
             <Download className="w-4 h-4" /> Download PDF
           </button>
           <button onClick={onRetake} className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10 text-sm font-semibold transition">

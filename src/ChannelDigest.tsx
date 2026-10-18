@@ -199,7 +199,7 @@ export default function ChannelDigest() {
         <button
           onClick={() => void onAdd()}
           disabled={adding || !input.trim() || channels.length >= MAX_CHANNELS}
-          className="inline-flex items-center gap-1.5 px-4 py-2 text-sm rounded-lg bg-black text-white dark:bg-white dark:text-black disabled:opacity-40 transition"
+          className="inline-flex items-center gap-1.5 px-4 py-2 text-sm rounded-lg bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white disabled:opacity-40 transition"
         >
           <Plus className="w-4 h-4" />
           {adding ? c.adding : c.addButton}

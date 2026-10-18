@@ -23,7 +23,7 @@ export function Btn({
       onClick={onClick}
       className={`h-9 min-w-9 px-2 rounded-lg flex items-center justify-center shrink-0 transition-colors disabled:opacity-30 ${
         active
-          ? 'bg-black text-white dark:bg-white dark:text-black'
+          ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white'
           : 'text-gray-700 dark:text-white/80 hover:bg-gray-100 dark:hover:bg-white/10'
       }`}
     >

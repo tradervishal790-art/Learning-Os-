@@ -85,7 +85,7 @@ export default function ShortsBank({
                     onSpend(WATCH_COST_SEC);
                     setWatching(s);
                   }}
-                  className={`rounded-lg px-3 py-1.5 text-sm font-medium ${canWatch ? 'bg-black text-white dark:bg-white dark:text-black' : 'border border-black/15 opacity-50 dark:border-white/20'}`}
+                  className={`rounded-lg px-3 py-1.5 text-sm font-medium ${canWatch ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white' : 'border border-black/15 opacity-50 dark:border-white/20'}`}
                 >
                   Watch · 1 min
                 </button>

@@ -50,7 +50,7 @@ export default function PagePlaceholder({ title, description, icon, features, st
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2 + i * 0.1, duration: 0.4 }}
-            className="p-5 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 flex items-start gap-3"
+            className="p-5 rounded-2xl card flex items-start gap-3"
           >
             <div className="w-8 h-8 rounded-lg border border-gray-200 dark:border-white/10 flex items-center justify-center flex-shrink-0">
               <Check className="w-4 h-4" strokeWidth={2} />
@@ -67,7 +67,7 @@ export default function PagePlaceholder({ title, description, icon, features, st
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.5, duration: 0.5 }}
-        className="p-8 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-center"
+        className="p-8 rounded-2xl card text-center"
       >
         <Construction className="w-12 h-12 mx-auto mb-4 text-gray-400 dark:text-white/40" strokeWidth={1.5} />
         <h3 className="text-xl font-semibold mb-2">Under Construction</h3>

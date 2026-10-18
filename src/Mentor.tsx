@@ -111,7 +111,9 @@ export default function Mentor() {
   useEffect(() => () => setImmersive(false), []);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    // Only follow the conversation once it has started — scrolling on the lone welcome
+    // message pushed the page header off-screen when Mentor opened.
+    if (messages.length > 1) messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     // Persist everything except the localized welcome (rebuilt on every open).
     saveMentorChat(
       messages
@@ -160,7 +162,7 @@ export default function Mentor() {
   };
 
   return (
-    <div className="min-h-dvh bg-white dark:bg-black text-black dark:text-white flex flex-col p-4 md:p-8">
+    <div className="min-h-dvh text-black dark:text-white flex flex-col p-4 md:p-8">
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-4 md:mb-6">
         <h1 className="text-2xl md:text-4xl font-bold mb-1 md:mb-2">{t.mentor.header.title}</h1>
         <p className="hidden md:block text-gray-500 dark:text-white/60">{t.mentor.header.subtitle}</p>
@@ -180,8 +182,8 @@ export default function Mentor() {
                 <div
                   className={`max-w-[85%] md:max-w-[80%] px-4 py-3 md:p-4 rounded-2xl ${
                     msg.role === 'user'
-                      ? 'bg-black text-white dark:bg-white dark:text-black'
-                      : 'bg-gray-100 dark:bg-white/10 border border-gray-200 dark:border-white/10 text-black dark:text-white'
+                      ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white'
+                      : 'card text-black dark:text-white'
                   }`}
                 >
                   <div className="hidden md:block text-xs opacity-60 mb-1">
@@ -222,7 +224,7 @@ export default function Mentor() {
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => sendMessage(p.prompt)}
                   disabled={loading}
-                  className="flex-shrink-0 h-9 px-3 inline-flex items-center gap-1.5 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-full text-xs hover:bg-gray-100 dark:hover:bg-white/10 transition disabled:opacity-40"
+                  className="flex-shrink-0 h-9 px-3 inline-flex items-center gap-1.5 card rounded-full text-xs hover:bg-gray-100 dark:hover:bg-white/10 transition disabled:opacity-40"
                 >
                   <PromptIcon className="w-3.5 h-3.5" strokeWidth={1.75} />
                   {p.label}
@@ -249,7 +251,7 @@ export default function Mentor() {
               disabled={loading || !input.trim()}
               aria-label={t.mentor.sendCta}
               title={t.mentor.sendCta}
-              className="flex-shrink-0 w-11 h-11 md:w-auto md:px-5 flex items-center justify-center bg-black text-white dark:bg-white dark:text-black disabled:opacity-40 rounded-full md:rounded-xl font-semibold transition"
+              className="flex-shrink-0 w-11 h-11 md:w-auto md:px-5 flex items-center justify-center bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white disabled:opacity-40 rounded-full md:rounded-xl font-semibold transition"
             >
               <SendHorizontal className="w-5 h-5 md:hidden" strokeWidth={1.75} />
               <span className="hidden md:inline">{t.mentor.sendCta}</span>

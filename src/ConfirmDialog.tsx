@@ -33,7 +33,7 @@ export default function ConfirmDialog({
             autoFocus
             onClick={onConfirm}
             className={`px-4 py-2 rounded-lg text-sm font-medium border-transparent ${
-              danger ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-black text-white dark:bg-white dark:text-black hover:opacity-80'
+              danger ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white hover:opacity-80'
             }`}
           >
             {confirmLabel}

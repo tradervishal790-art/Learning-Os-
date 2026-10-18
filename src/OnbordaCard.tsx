@@ -46,14 +46,14 @@ export default function OnbordaCard({ step, currentStep, totalSteps, nextStep, p
         {currentStep + 1 !== totalSteps ? (
           <button
             onClick={nextStep}
-            className="px-3 py-1.5 rounded-full text-xs font-medium bg-black text-white dark:bg-white dark:text-black hover:opacity-80 transition"
+            className="px-3 py-1.5 rounded-full text-xs font-medium bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white hover:opacity-80 transition"
           >
             Aage
           </button>
         ) : (
           <button
             onClick={skipTour}
-            className="px-3 py-1.5 rounded-full text-xs font-medium bg-black text-white dark:bg-white dark:text-black hover:opacity-80 transition"
+            className="px-3 py-1.5 rounded-full text-xs font-medium bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white hover:opacity-80 transition"
           >
             Ho gaya
           </button>

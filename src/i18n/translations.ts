@@ -773,61 +773,61 @@ export const translations: Record<Locale, TranslationShape> = {
       dashboardCta: 'Dashboard →',
       steps: [
         {
-          icon: '🎯',
+          icon: '',
           title: '1. Tell us who you are',
           description:
             'A short onboarding captures your role, goal, preferred language, and your name.',
         },
         {
-          icon: '🗺️',
+          icon: '',
           title: '2. Get a personalized roadmap',
           description:
             'Instead of a generic course list, you get a topic sequence built around your goal — with a "WHY layer" explaining why each topic matters, and exam-weightage badges when you\'re prepping for something specific like JEE or board exams.',
         },
         {
-          icon: '🎬',
+          icon: '',
           title: '3. Video Intel',
           description:
             'Pick from curated videos per topic or lock in your own. Deep Notes analyzes the transcript into a structured, section-by-section breakdown so you don\'t have to re-watch to remember what mattered.',
         },
         {
-          icon: '📝',
+          icon: '',
           title: '4. Notes',
           description:
             'Auto-generated notes from what you actually watched — human-style writing, not a wall of AI bullet points.',
         },
         {
-          icon: '🔄',
+          icon: '',
           title: '5. Revision Engine',
           description:
             'Spaced repetition on a proven schedule (Day 1, 3, 7, 15, 30, 60) so what you learn actually sticks instead of fading in a week.',
         },
         {
-          icon: '🤖',
+          icon: '',
           title: '6. AI Mentor',
           description:
             'Stuck on something? Chat with a mentor that explains in a respectful, patient tone and adapts to how you talk.',
         },
         {
-          icon: '🔍',
+          icon: '',
           title: '7. Research',
           description:
             'Go deeper on any topic with an AI-assisted research and deep-dive tool when the roadmap isn\'t enough.',
         },
         {
-          icon: '📊',
+          icon: '',
           title: '8. Progress',
           description:
             'Real numbers from your real activity — completion %, streak, watch time, retention, and a mastery heatmap that shows exactly where you\'re weak.',
         },
         {
-          icon: '🧪',
+          icon: '',
           title: '9. Test',
           description:
             'NTA/JEE-style exam mode with a timer and question palette. Build tests by hand, bulk-paste questions, or import from photos/PDFs of your textbook — AI is used only to read the photos/PDFs.',
         },
         {
-          icon: '📖',
+          icon: '',
           title: '10. Dictionary',
           description:
             'Instant word lookup with pronunciation, built right into the app so you never have to leave to check a meaning.',
@@ -970,7 +970,7 @@ export const translations: Record<Locale, TranslationShape> = {
           subtitleReady: 'Profile ready — full report is in Settings',
           subtitleNotReady: 'Short quiz for better matches',
           detailReady:
-            '✓ 8 learning dimensions set — pace, depth, structure and more. See the full breakdown in Settings → "Learning Profile Report".',
+            '8 learning dimensions set — pace, depth, structure and more. See the full breakdown in Settings → "Learning Profile Report".',
           retakeCta: 'Retake Blueprint Interview',
           startCta: 'Start Blueprint Interview',
           analyzeVideosCta: "Analyze Videos I've Watched",
@@ -1159,16 +1159,16 @@ export const translations: Record<Locale, TranslationShape> = {
       },
     },
     blueprintInterview: {
-      headerTitle: '🧭 AI Blueprint Interview',
+      headerTitle: 'AI Blueprint Interview',
       progress: { complete: 'Complete!', analyzing: 'Analyzing your answers...', questionOf: 'Question {0} / {1}' },
       backCta: '← Previous question',
       analyzingText: 'Deeply analyzing your answers...',
       resultSection: {
-        mindMapTitle: '🔮 Your Mind Map',
+        mindMapTitle: 'Your Mind Map',
         mindScoreLabel: 'Mind Score',
-        reportTitle: '📋 Your Learning Blueprint',
+        reportTitle: 'Your Learning Blueprint',
       },
-      errorRetryCta: '🔄 Try again',
+      errorRetryCta: 'Try again',
       genericError: 'Analysis failed.',
       doneCta: 'Done',
       dimensionLabels: {
@@ -1473,11 +1473,11 @@ export const translations: Record<Locale, TranslationShape> = {
         whyTab: 'Why',
         whatYoullLearn: "What you'll learn",
         bridgeHint: 'This shows how the last topic connects to this one.',
-        deepDiveCta: '🔍 2 quick questions? Get better matched videos (optional)',
+        deepDiveCta: '2 quick questions? Get better matched videos (optional)',
         watchVideosCta: 'Watch videos',
         searchingCta: 'Searching...',
         savedVideoCta: 'Saved video',
-        markCompleteCta: '✓ I already know this — mark as complete',
+        markCompleteCta: 'I already know this — mark as complete',
         challengeTitle: 'Try a small applied challenge first, then mark the topic complete.',
         challengeCta: 'Tried it — mark complete',
         whyItems: {
@@ -1497,7 +1497,7 @@ export const translations: Record<Locale, TranslationShape> = {
         day: 'Day',
         reviewingNow: 'Reviewing now',
         retentionLabel: 'Retention: {0}%',
-        doneLabel: '✓ Done',
+        doneLabel: 'Done',
         doneCta: 'Done',
         reviewNowCta: 'Review Now',
         reviewingCta: 'Reviewing…',
@@ -1790,16 +1790,16 @@ export const translations: Record<Locale, TranslationShape> = {
         insights: 'Key Insights',
       },
       sectionUnavailable: 'This section isn\u2019t available for this note yet — run "Deep Dive" or "From Video" again to generate fresh notes.',
-      sourceVideoLink: '🎥 Watch source video',
-      transcriptSourceNote: '✓ Notes generated from the video transcript',
-      metadataSourceNote: '⚠ Transcript wasn\u2019t available — generated from title/description only',
+      sourceVideoLink: 'Watch source video',
+      transcriptSourceNote: 'Notes generated from the video transcript',
+      metadataSourceNote: 'Transcript wasn\u2019t available — generated from title/description only',
       emptyState: {
         title: 'Enter a topic for comprehensive, deep learning notes',
         subtitle: 'Goes beyond basics - covers WHY, HOW, and WHERE',
       },
     },
     videos: {
-      header: { title: '📺 Videos', subtitle: 'Search • Watch • Personalized recommendations' },
+      header: { title: 'Videos', subtitle: 'Search • Watch • Personalized recommendations' },
       searchPlaceholder: 'Search videos...',
       searchCta: 'Search',
       noResultsYet: 'Start with a search',
@@ -1830,27 +1830,27 @@ export const translations: Record<Locale, TranslationShape> = {
       },
     },
     mentor: {
-      header: { title: '🤖 AI Mentor', subtitle: "Stuck? Ask here — it knows what you're learning right now" },
+      header: { title: 'AI Mentor', subtitle: "Stuck? Ask here — it knows what you're learning right now" },
       welcomeMessage:
-        "Hello! I'm your AI Mentor. 🙏\n\nYou can ask me anything:\n• Explain concepts\n• Real-world analogies\n• Take a quiz\n• Project ideas\n• Common mistakes\n\nTry a suggestion below, or type your own question!",
+        "Hello! I'm your AI Mentor.\n\nYou can ask me anything:\n• Explain concepts\n• Real-world analogies\n• Take a quiz\n• Project ideas\n• Common mistakes\n\nTry a suggestion below, or type your own question!",
       suggestedPrompts: [
-        { icon: '💡', label: 'Explain simply', prompt: 'Explain this concept simply' },
-        { icon: '🧠', label: 'Deep dive', prompt: 'Explain this in depth with examples' },
-        { icon: '🎯', label: 'Real analogy', prompt: 'Give me a real-world analogy' },
-        { icon: '📝', label: 'Quiz me', prompt: 'Generate a quiz on this topic' },
-        { icon: '🛠️', label: 'Project idea', prompt: 'Suggest a mini project' },
-        { icon: '🐛', label: 'Find mistake', prompt: 'What are common mistakes?' },
+        { icon: '', label: 'Explain simply', prompt: 'Explain this concept simply' },
+        { icon: '', label: 'Deep dive', prompt: 'Explain this in depth with examples' },
+        { icon: '', label: 'Real analogy', prompt: 'Give me a real-world analogy' },
+        { icon: '', label: 'Quiz me', prompt: 'Generate a quiz on this topic' },
+        { icon: '', label: 'Project idea', prompt: 'Suggest a mini project' },
+        { icon: '', label: 'Find mistake', prompt: 'What are common mistakes?' },
       ],
-      youLabel: '👤 You',
-      mentorLabel: '🤖 Mentor',
+      youLabel: 'You',
+      mentorLabel: 'Mentor',
       inputPlaceholder: 'Ask anything...',
       sendCta: 'Send',
       errors: {
-        generic: 'Something went wrong ({0}). Please try again in a bit. 🔄',
-        noResponse: "Couldn't get a response, please try again. 🔄",
+        generic: 'Something went wrong ({0}). Please try again in a bit.',
+        noResponse: "Couldn't get a response, please try again.",
         truncatedSuffix:
-          '\n\n_(⚠️ The response was long and got cut off — try asking a shorter question instead of "Deep dive")_',
-        network: 'A network error occurred. Please check your internet and try again. 🔄',
+          '\n\n_( The response was long and got cut off — try asking a shorter question instead of "Deep dive")_',
+        network: 'A network error occurred. Please check your internet and try again.',
       },
     },
     progress: {
@@ -1861,10 +1861,10 @@ export const translations: Record<Locale, TranslationShape> = {
         title: 'Nothing to track yet',
         body: 'Start a topic from your roadmap — progress will start showing up here automatically.',
       },
-      timeTracking: { title: '⏱ Time Tracking', last7Days: 'Last 7 days: {0} min' },
-      masteryHeatmap: { title: '🧠 Mastery Heatmap', legendWeak: 'Weak', legendOk: 'OK', legendStrong: 'Strong' },
-      retentionDetail: { title: '📉 Retention', dueToday: 'Due Today', overdue: 'Overdue', mastered: 'Mastered' },
-      weakAreas: { title: '⚠️ Weak Areas', noneFound: 'No weak topics found — everything is going well.' },
+      timeTracking: { title: 'Time Tracking', last7Days: 'Last 7 days: {0} min' },
+      masteryHeatmap: { title: 'Mastery Heatmap', legendWeak: 'Weak', legendOk: 'OK', legendStrong: 'Strong' },
+      retentionDetail: { title: 'Retention', dueToday: 'Due Today', overdue: 'Overdue', mastered: 'Mastered' },
+      weakAreas: { title: 'Weak Areas', noneFound: 'No weak topics found — everything is going well.' },
     },
     research: {
       header: { title: 'Research', subtitle: 'Search any topic — from the internet, for deeper reading' },
@@ -1939,61 +1939,61 @@ export const translations: Record<Locale, TranslationShape> = {
       dashboardCta: 'डैशबोर्ड →',
       steps: [
         {
-          icon: '🎯',
+          icon: '',
           title: '1. हमें बताएं आप कौन हैं',
           description:
             'एक छोटा ऑनबोर्डिंग आपकी भूमिका, लक्ष्य, पसंदीदा भाषा और नाम पूछता है।',
         },
         {
-          icon: '🗺️',
+          icon: '',
           title: '2. अपने हिसाब से रोडमैप पाएं',
           description:
             'सामान्य कोर्स लिस्ट के बजाय, आपको अपने लक्ष्य के हिसाब से बना टॉपिक क्रम मिलता है — साथ में एक "WHY लेयर" जो बताती है हर टॉपिक क्यों ज़रूरी है, और JEE या बोर्ड जैसी परीक्षा की तैयारी में exam-weightage बैज भी।',
         },
         {
-          icon: '🎬',
+          icon: '',
           title: '3. Video Intel',
           description:
             'हर टॉपिक के लिए चुने हुए वीडियो में से पिक करें या अपना वीडियो लॉक करें। Deep Notes ट्रांसक्रिप्ट को सेक्शन-दर-सेक्शन ब्रेकडाउन में बदल देता है ताकि दोबारा देखने की ज़रूरत न पड़े।',
         },
         {
-          icon: '📝',
+          icon: '',
           title: '4. नोट्स',
           description:
             'आपने जो असल में देखा उससे बने ऑटो-जेनरेटेड नोट्स — इंसान जैसी लेखनी, AI बुलेट पॉइंट्स की दीवार नहीं।',
         },
         {
-          icon: '🔄',
+          icon: '',
           title: '5. Revision Engine',
           description:
             'एक साबित शेड्यूल पर स्पेस्ड रिपिटिशन (दिन 1, 3, 7, 15, 30, 60) ताकि जो सीखा वो असल में याद रहे, एक हफ़्ते में भूले नहीं।',
         },
         {
-          icon: '🤖',
+          icon: '',
           title: '6. AI Mentor',
           description:
             'कहीं अटक गए? एक मेंटर से बात करें जो सम्मान और धैर्य के साथ समझाता है और आपके बात करने के तरीके के हिसाब से ढल जाता है।',
         },
         {
-          icon: '🔍',
+          icon: '',
           title: '7. Research',
           description:
             'जब रोडमैप काफ़ी न लगे, तो किसी भी टॉपिक में AI-सहायता से गहराई में जाकर रिसर्च करें।',
         },
         {
-          icon: '📊',
+          icon: '',
           title: '8. Progress',
           description:
             'आपकी असल एक्टिविटी से असली आंकड़े — completion %, streak, watch time, retention, और एक mastery heatmap जो बिल्कुल दिखाता है कि आप कहां कमज़ोर हैं।',
         },
         {
-          icon: '🧪',
+          icon: '',
           title: '9. Test',
           description:
             'टाइमर और question palette के साथ NTA/JEE-स्टाइल एग्ज़ाम मोड। हाथ से टेस्ट बनाएं, सवाल bulk-paste करें, या अपनी किताब की फ़ोटो/PDF से import करें — AI सिर्फ़ फ़ोटो/PDF पढ़ने के लिए इस्तेमाल होता है।',
         },
         {
-          icon: '📖',
+          icon: '',
           title: '10. Dictionary',
           description:
             'उच्चारण के साथ तुरंत शब्द खोजें, ऐप के अंदर ही — मतलब देखने के लिए कहीं और जाने की ज़रूरत नहीं।',
@@ -2136,7 +2136,7 @@ export const translations: Record<Locale, TranslationShape> = {
           subtitleReady: 'प्रोफ़ाइल तैयार है — पूरी रिपोर्ट Settings में है',
           subtitleNotReady: 'बेहतर मैच के लिए छोटा क्विज़',
           detailReady:
-            '✓ 8 लर्निंग डाइमेंशन सेट हैं — पेस, गहराई, संरचना और बाकी। पूरा ब्रेकडाउन Settings → "Learning Profile Report" में देखें।',
+            '8 लर्निंग डाइमेंशन सेट हैं — पेस, गहराई, संरचना और बाकी। पूरा ब्रेकडाउन Settings → "Learning Profile Report" में देखें।',
           retakeCta: 'ब्लूप्रिंट इंटरव्यू दोबारा लें',
           startCta: 'ब्लूप्रिंट इंटरव्यू शुरू करें',
           analyzeVideosCta: 'देखे गए वीडियो एनालाइज़ करें',
@@ -2325,16 +2325,16 @@ export const translations: Record<Locale, TranslationShape> = {
       },
     },
     blueprintInterview: {
-      headerTitle: '🧭 AI ब्लूप्रिंट इंटरव्यू',
+      headerTitle: 'AI ब्लूप्रिंट इंटरव्यू',
       progress: { complete: 'पूरा हुआ!', analyzing: 'आपके जवाबों को एनालाइज़ किया जा रहा है...', questionOf: 'सवाल {0} / {1}' },
       backCta: '← पिछला सवाल',
       analyzingText: 'आपके जवाबों को गहराई से एनालाइज़ कर रहे हैं...',
       resultSection: {
-        mindMapTitle: '🔮 आपका माइंड मैप',
+        mindMapTitle: 'आपका माइंड मैप',
         mindScoreLabel: 'माइंड स्कोर',
-        reportTitle: '📋 आपका लर्निंग ब्लूप्रिंट',
+        reportTitle: 'आपका लर्निंग ब्लूप्रिंट',
       },
-      errorRetryCta: '🔄 फिर कोशिश करें',
+      errorRetryCta: 'फिर कोशिश करें',
       genericError: 'एनालिसिस फेल हो गया।',
       doneCta: 'पूरा हुआ',
       dimensionLabels: {
@@ -2635,11 +2635,11 @@ export const translations: Record<Locale, TranslationShape> = {
         whyTab: 'क्यों',
         whatYoullLearn: 'आप क्या सीखेंगे',
         bridgeHint: 'यह दिखाता है कि पिछला टॉपिक इससे कैसे जुड़ता है।',
-        deepDiveCta: '🔍 2 छोटे सवाल पूछूं? बेहतर मैच वाले वीडियो मिलेंगे (वैकल्पिक)',
+        deepDiveCta: '2 छोटे सवाल पूछूं? बेहतर मैच वाले वीडियो मिलेंगे (वैकल्पिक)',
         watchVideosCta: 'वीडियो देखें',
         searchingCta: 'ढूंढ रहा हूं...',
         savedVideoCta: 'सेव किया वीडियो',
-        markCompleteCta: '✓ मुझे यह पहले से आता है — पूरा हुआ मार्क करें',
+        markCompleteCta: 'मुझे यह पहले से आता है — पूरा हुआ मार्क करें',
         challengeTitle: 'पहले एक छोटा applied challenge करें, फिर टॉपिक पूरा मार्क करें।',
         challengeCta: 'कोशिश कर ली — पूरा मार्क करें',
         whyItems: {
@@ -2659,7 +2659,7 @@ export const translations: Record<Locale, TranslationShape> = {
         day: 'दिन',
         reviewingNow: 'अभी रिव्यू हो रहा है',
         retentionLabel: 'रिटेंशन: {0}%',
-        doneLabel: '✓ पूरा हुआ',
+        doneLabel: 'पूरा हुआ',
         doneCta: 'पूरा हुआ',
         reviewNowCta: 'अभी रिव्यू करें',
         reviewingCta: 'रिव्यू हो रहा है…',
@@ -2952,16 +2952,16 @@ export const translations: Record<Locale, TranslationShape> = {
         insights: 'मुख्य बातें',
       },
       sectionUnavailable: 'यह सेक्शन अभी इस नोट के लिए उपलब्ध नहीं है — नए नोट्स बनाने के लिए "डीप डाइव" या "वीडियो से" फिर से चलाएं।',
-      sourceVideoLink: '🎥 मूल वीडियो देखें',
-      transcriptSourceNote: '✓ ये नोट्स वीडियो की ट्रांसक्रिप्ट से बनाए गए हैं',
-      metadataSourceNote: '⚠ ट्रांसक्रिप्ट उपलब्ध नहीं थी — सिर्फ टाइटल/डिस्क्रिप्शन से बनाए गए',
+      sourceVideoLink: 'मूल वीडियो देखें',
+      transcriptSourceNote: 'ये नोट्स वीडियो की ट्रांसक्रिप्ट से बनाए गए हैं',
+      metadataSourceNote: 'ट्रांसक्रिप्ट उपलब्ध नहीं थी — सिर्फ टाइटल/डिस्क्रिप्शन से बनाए गए',
       emptyState: {
         title: 'गहराई से सीखने के लिए एक टॉपिक डालें',
         subtitle: 'बेसिक्स से आगे — WHY, HOW और WHERE कवर करता है',
       },
     },
     videos: {
-      header: { title: '📺 वीडियो', subtitle: 'खोजें • देखें • व्यक्तिगत सुझाव' },
+      header: { title: 'वीडियो', subtitle: 'खोजें • देखें • व्यक्तिगत सुझाव' },
       searchPlaceholder: 'वीडियो खोजें...',
       searchCta: 'खोजें',
       noResultsYet: 'खोजकर शुरू करें',
@@ -2992,26 +2992,26 @@ export const translations: Record<Locale, TranslationShape> = {
       },
     },
     mentor: {
-      header: { title: '🤖 AI मेंटर', subtitle: 'अटक गए? यहां पूछें — इसे पता है आप अभी क्या सीख रहे हैं' },
+      header: { title: 'AI मेंटर', subtitle: 'अटक गए? यहां पूछें — इसे पता है आप अभी क्या सीख रहे हैं' },
       welcomeMessage:
-        'नमस्ते! मैं आपका AI मेंटर हूं। 🙏\n\nआप मुझसे कुछ भी पूछ सकते हैं:\n• कॉन्सेप्ट समझाना\n• असल दुनिया की मिसालें\n• क्विज़ लेना\n• प्रोजेक्ट आइडिया\n• आम गलतियां\n\nनीचे दिए सुझाव आज़माएं, या अपना सवाल टाइप करें!',
+        'नमस्ते! मैं आपका AI मेंटर हूं।\n\nआप मुझसे कुछ भी पूछ सकते हैं:\n• कॉन्सेप्ट समझाना\n• असल दुनिया की मिसालें\n• क्विज़ लेना\n• प्रोजेक्ट आइडिया\n• आम गलतियां\n\nनीचे दिए सुझाव आज़माएं, या अपना सवाल टाइप करें!',
       suggestedPrompts: [
-        { icon: '💡', label: 'आसानी से समझाओ', prompt: 'यह कॉन्सेप्ट आसान भाषा में समझाओ' },
-        { icon: '🧠', label: 'गहराई से', prompt: 'इसे उदाहरणों के साथ विस्तार से समझाओ' },
-        { icon: '🎯', label: 'असल मिसाल', prompt: 'मुझे इसकी असल दुनिया की मिसाल दो' },
-        { icon: '📝', label: 'क्विज़ लो', prompt: 'इस टॉपिक पर एक क्विज़ बनाओ' },
-        { icon: '🛠️', label: 'प्रोजेक्ट आइडिया', prompt: 'एक छोटा प्रोजेक्ट सुझाओ' },
-        { icon: '🐛', label: 'गलती पकड़ो', prompt: 'इसमें आम गलतियां क्या होती हैं?' },
+        { icon: '', label: 'आसानी से समझाओ', prompt: 'यह कॉन्सेप्ट आसान भाषा में समझाओ' },
+        { icon: '', label: 'गहराई से', prompt: 'इसे उदाहरणों के साथ विस्तार से समझाओ' },
+        { icon: '', label: 'असल मिसाल', prompt: 'मुझे इसकी असल दुनिया की मिसाल दो' },
+        { icon: '', label: 'क्विज़ लो', prompt: 'इस टॉपिक पर एक क्विज़ बनाओ' },
+        { icon: '', label: 'प्रोजेक्ट आइडिया', prompt: 'एक छोटा प्रोजेक्ट सुझाओ' },
+        { icon: '', label: 'गलती पकड़ो', prompt: 'इसमें आम गलतियां क्या होती हैं?' },
       ],
-      youLabel: '👤 आप',
-      mentorLabel: '🤖 मेंटर',
+      youLabel: 'आप',
+      mentorLabel: 'मेंटर',
       inputPlaceholder: 'कुछ भी पूछें...',
       sendCta: 'भेजें',
       errors: {
-        generic: 'कुछ गड़बड़ हो गई ({0})। थोड़ी देर में फिर कोशिश करें। 🔄',
-        noResponse: 'जवाब नहीं मिल पाया, फिर से कोशिश करें। 🔄',
-        truncatedSuffix: '\n\n_(⚠️ जवाब लंबा था और बीच में कट गया — "गहराई से" की जगह छोटा सवाल पूछें)_',
-        network: 'नेटवर्क में गड़बड़ आई। इंटरनेट जांचें और फिर कोशिश करें। 🔄',
+        generic: 'कुछ गड़बड़ हो गई ({0})। थोड़ी देर में फिर कोशिश करें।',
+        noResponse: 'जवाब नहीं मिल पाया, फिर से कोशिश करें।',
+        truncatedSuffix: '\n\n_( जवाब लंबा था और बीच में कट गया — "गहराई से" की जगह छोटा सवाल पूछें)_',
+        network: 'नेटवर्क में गड़बड़ आई। इंटरनेट जांचें और फिर कोशिश करें।',
       },
     },
     progress: {
@@ -3022,10 +3022,10 @@ export const translations: Record<Locale, TranslationShape> = {
         title: 'अभी ट्रैक करने को कुछ नहीं है',
         body: 'रोडमैप से कोई टॉपिक शुरू करें — प्रगति अपने आप यहां दिखनी शुरू हो जाएगी।',
       },
-      timeTracking: { title: '⏱ टाइम ट्रैकिंग', last7Days: 'पिछले 7 दिन: {0} मिनट' },
-      masteryHeatmap: { title: '🧠 महारत हीटमैप', legendWeak: 'कमजोर', legendOk: 'ठीक', legendStrong: 'मजबूत' },
-      retentionDetail: { title: '📉 रिटेंशन', dueToday: 'आज देय', overdue: 'बकाया', mastered: 'महारत' },
-      weakAreas: { title: '⚠️ कमजोर टॉपिक', noneFound: 'कोई कमजोर टॉपिक नहीं मिला — सब कुछ ठीक चल रहा है।' },
+      timeTracking: { title: 'टाइम ट्रैकिंग', last7Days: 'पिछले 7 दिन: {0} मिनट' },
+      masteryHeatmap: { title: 'महारत हीटमैप', legendWeak: 'कमजोर', legendOk: 'ठीक', legendStrong: 'मजबूत' },
+      retentionDetail: { title: 'रिटेंशन', dueToday: 'आज देय', overdue: 'बकाया', mastered: 'महारत' },
+      weakAreas: { title: 'कमजोर टॉपिक', noneFound: 'कोई कमजोर टॉपिक नहीं मिला — सब कुछ ठीक चल रहा है।' },
     },
     research: {
       header: { title: 'रिसर्च', subtitle: 'कोई भी टॉपिक खोजें — इंटरनेट से, गहराई से पढ़ने के लिए' },
@@ -3099,61 +3099,61 @@ export const translations: Record<Locale, TranslationShape> = {
       dashboardCta: 'Dashboard →',
       steps: [
         {
-          icon: '🎯',
+          icon: '',
           title: '1. Batao tum kaun ho',
           description:
             'Ek chhota onboarding tumhara role, goal, pasandida bhasha aur naam poochta hai.',
         },
         {
-          icon: '🗺️',
+          icon: '',
           title: '2. Apne hisaab se roadmap pao',
           description:
             'Generic course list ke bajaye, tumhe apne goal ke hisaab se bana topic sequence milta hai — ek "WHY layer" ke saath jo batata hai har topic kyun zaroori hai, aur JEE ya board jaisi exam prep ke liye exam-weightage badges bhi.',
         },
         {
-          icon: '🎬',
+          icon: '',
           title: '3. Video Intel',
           description:
             'Har topic ke curated videos mein se pick karo ya apna video lock karo. Deep Notes transcript ko section-by-section breakdown mein badal deta hai taaki dobara dekhne ki zaroorat na pade.',
         },
         {
-          icon: '📝',
+          icon: '',
           title: '4. Notes',
           description:
             'Tumne jo asal mein dekha usse bane auto-generated notes — insaan jaisi likhavat, AI bullet points ki deewar nahi.',
         },
         {
-          icon: '🔄',
+          icon: '',
           title: '5. Revision Engine',
           description:
             'Ek proven schedule pe spaced repetition (Day 1, 3, 7, 15, 30, 60) taaki jo seekha wo asal mein yaad rahe, ek hafte mein bhoole nahi.',
         },
         {
-          icon: '🤖',
+          icon: '',
           title: '6. AI Mentor',
           description:
             'Kahin atak gaye? Ek mentor se baat karo jo respect aur patience ke saath samjhata hai aur tumhare baat karne ke tarike ke hisaab se dhal jata hai.',
         },
         {
-          icon: '🔍',
+          icon: '',
           title: '7. Research',
           description:
             'Jab roadmap kaafi na lage, toh kisi bhi topic mein AI-assisted deep-dive research karo.',
         },
         {
-          icon: '📊',
+          icon: '',
           title: '8. Progress',
           description:
             'Tumhari asal activity se real numbers — completion %, streak, watch time, retention, aur ek mastery heatmap jo bilkul dikhata hai tum kahan weak ho.',
         },
         {
-          icon: '🧪',
+          icon: '',
           title: '9. Test',
           description:
             'Timer aur question palette ke saath NTA/JEE-style exam mode. Haath se test banao, questions bulk-paste karo, ya apni textbook ke photo/PDF se import karo — AI sirf photo/PDF padhne ke liye use hota hai.',
         },
         {
-          icon: '📖',
+          icon: '',
           title: '10. Dictionary',
           description:
             'Pronunciation ke saath instant word lookup, app ke andar hi — matlab dekhne ke liye kahin aur jaane ki zaroorat nahi.',
@@ -3296,7 +3296,7 @@ export const translations: Record<Locale, TranslationShape> = {
           subtitleReady: 'Profile ready — full report Settings me hai',
           subtitleNotReady: 'Short quiz for better matches',
           detailReady:
-            '✓ 8 learning dimensions set — pace, depth, structure aur baaki. Settings → "Learning Profile Report" me poora breakdown dekho.',
+            '8 learning dimensions set — pace, depth, structure aur baaki. Settings → "Learning Profile Report" me poora breakdown dekho.',
           retakeCta: 'Retake Blueprint Interview',
           startCta: 'Start Blueprint Interview',
           analyzeVideosCta: "Analyze Videos I've Watched",
@@ -3485,16 +3485,16 @@ export const translations: Record<Locale, TranslationShape> = {
       },
     },
     blueprintInterview: {
-      headerTitle: '🧭 AI Blueprint Interview',
+      headerTitle: 'AI Blueprint Interview',
       progress: { complete: 'Complete!', analyzing: 'Analyzing your answers...', questionOf: 'Sawaal {0} / {1}' },
       backCta: '← Pichla sawaal',
       analyzingText: 'Aapke jawabon ko deeply analyze kar rahe hain...',
       resultSection: {
-        mindMapTitle: '🔮 Your Mind Map',
+        mindMapTitle: 'Your Mind Map',
         mindScoreLabel: 'Mind Score',
-        reportTitle: '📋 Aapka Learning Blueprint',
+        reportTitle: 'Aapka Learning Blueprint',
       },
-      errorRetryCta: '🔄 Phir try karein',
+      errorRetryCta: 'Phir try karein',
       genericError: 'Analysis fail ho gaya.',
       doneCta: 'Done',
       dimensionLabels: {
@@ -3796,11 +3796,11 @@ export const translations: Record<Locale, TranslationShape> = {
         whyTab: 'Why',
         whatYoullLearn: "What you'll learn",
         bridgeHint: 'This shows how the last topic connects to this one.',
-        deepDiveCta: '🔍 2 quick sawaal poochu? Better matched videos milenge (optional)',
+        deepDiveCta: '2 quick sawaal poochu? Better matched videos milenge (optional)',
         watchVideosCta: 'Watch videos',
         searchingCta: 'Dhundh raha hoon...',
         savedVideoCta: 'Saved video',
-        markCompleteCta: '✓ Maine ye already seekh liya — mark as complete',
+        markCompleteCta: 'Maine ye already seekh liya — mark as complete',
         challengeTitle: 'Pehle ek chhota applied challenge try karo, phir topic complete maaro.',
         challengeCta: 'Try kar liya — complete maaro',
         whyItems: {
@@ -3820,7 +3820,7 @@ export const translations: Record<Locale, TranslationShape> = {
         day: 'Day',
         reviewingNow: 'Reviewing now',
         retentionLabel: 'Retention: {0}%',
-        doneLabel: '✓ Done',
+        doneLabel: 'Done',
         doneCta: 'Done',
         reviewNowCta: 'Review Now',
         reviewingCta: 'Reviewing…',
@@ -4113,16 +4113,16 @@ export const translations: Record<Locale, TranslationShape> = {
         insights: 'Key Insights',
       },
       sectionUnavailable: 'Yeh section is note ke liye available nahi hai — "Deep Dive" ya "From Video" dobara chala ke fresh notes banao.',
-      sourceVideoLink: '🎥 Source video dekho',
-      transcriptSourceNote: '✓ Video transcript se banaye gaye notes',
-      metadataSourceNote: '⚠ Transcript available nahi thi — sirf title/description se banaye gaye',
+      sourceVideoLink: 'Source video dekho',
+      transcriptSourceNote: 'Video transcript se banaye gaye notes',
+      metadataSourceNote: 'Transcript available nahi thi — sirf title/description se banaye gaye',
       emptyState: {
         title: 'Enter a topic for comprehensive, deep learning notes',
         subtitle: 'Goes beyond basics - covers WHY, HOW, and WHERE',
       },
     },
     videos: {
-      header: { title: '📺 Videos', subtitle: 'Search • Watch • Personalized recommendations' },
+      header: { title: 'Videos', subtitle: 'Search • Watch • Personalized recommendations' },
       searchPlaceholder: 'Search videos...',
       searchCta: 'Search',
       noResultsYet: 'Search se start karo',
@@ -4153,27 +4153,27 @@ export const translations: Record<Locale, TranslationShape> = {
       },
     },
     mentor: {
-      header: { title: '🤖 AI Mentor', subtitle: "Stuck? Ask here — it knows what you're learning right now" },
+      header: { title: 'AI Mentor', subtitle: "Stuck? Ask here — it knows what you're learning right now" },
       welcomeMessage:
-        'Namaste! Main aapka AI Mentor hoon. 🙏\n\nAap mujhse kuch bhi poochh sakte hain:\n• Concepts explain karwana\n• Real-world analogies\n• Quiz lena\n• Project ideas\n• Common mistakes\n\nNeeche suggestions try karein, ya apna question type karein!',
+        'Namaste! Main aapka AI Mentor hoon.\n\nAap mujhse kuch bhi poochh sakte hain:\n• Concepts explain karwana\n• Real-world analogies\n• Quiz lena\n• Project ideas\n• Common mistakes\n\nNeeche suggestions try karein, ya apna question type karein!',
       suggestedPrompts: [
-        { icon: '💡', label: 'Explain simply', prompt: 'Explain this concept simply' },
-        { icon: '🧠', label: 'Deep dive', prompt: 'Explain this in depth with examples' },
-        { icon: '🎯', label: 'Real analogy', prompt: 'Give me a real-world analogy' },
-        { icon: '📝', label: 'Quiz me', prompt: 'Generate a quiz on this topic' },
-        { icon: '🛠️', label: 'Project idea', prompt: 'Suggest a mini project' },
-        { icon: '🐛', label: 'Find mistake', prompt: 'What are common mistakes?' },
+        { icon: '', label: 'Explain simply', prompt: 'Explain this concept simply' },
+        { icon: '', label: 'Deep dive', prompt: 'Explain this in depth with examples' },
+        { icon: '', label: 'Real analogy', prompt: 'Give me a real-world analogy' },
+        { icon: '', label: 'Quiz me', prompt: 'Generate a quiz on this topic' },
+        { icon: '', label: 'Project idea', prompt: 'Suggest a mini project' },
+        { icon: '', label: 'Find mistake', prompt: 'What are common mistakes?' },
       ],
-      youLabel: '👤 You',
-      mentorLabel: '🤖 Mentor',
+      youLabel: 'You',
+      mentorLabel: 'Mentor',
       inputPlaceholder: 'Ask anything...',
       sendCta: 'Send',
       errors: {
-        generic: 'Kuch gadbad ho gayi ({0}). Thodi der mein phir try karein. 🔄',
-        noResponse: 'Response nahi mil paaya, phir se try karein. 🔄',
+        generic: 'Kuch gadbad ho gayi ({0}). Thodi der mein phir try karein.',
+        noResponse: 'Response nahi mil paaya, phir se try karein.',
         truncatedSuffix:
-          '\n\n_(⚠️ Response lambi thi aur beech mein kat gayi — "Deep dive" ki jagah chhota sawaal poochhein)_',
-        network: 'Network error aaya. Internet check karein aur phir try karein. 🔄',
+          '\n\n_( Response lambi thi aur beech mein kat gayi — "Deep dive" ki jagah chhota sawaal poochhein)_',
+        network: 'Network error aaya. Internet check karein aur phir try karein.',
       },
     },
     progress: {
@@ -4184,10 +4184,10 @@ export const translations: Record<Locale, TranslationShape> = {
         title: 'Abhi kuch track karne ko nahi hai',
         body: 'Roadmap se koi topic start karo — progress yahin apne aap dikhna shuru ho jayega.',
       },
-      timeTracking: { title: '⏱ Time Tracking', last7Days: 'Last 7 days: {0} min' },
-      masteryHeatmap: { title: '🧠 Mastery Heatmap', legendWeak: 'Weak', legendOk: 'OK', legendStrong: 'Strong' },
-      retentionDetail: { title: '📉 Retention', dueToday: 'Due Today', overdue: 'Overdue', mastered: 'Mastered' },
-      weakAreas: { title: '⚠️ Weak Areas', noneFound: 'Koi weak topic nahi mila — sab theek chal raha hai.' },
+      timeTracking: { title: 'Time Tracking', last7Days: 'Last 7 days: {0} min' },
+      masteryHeatmap: { title: 'Mastery Heatmap', legendWeak: 'Weak', legendOk: 'OK', legendStrong: 'Strong' },
+      retentionDetail: { title: 'Retention', dueToday: 'Due Today', overdue: 'Overdue', mastered: 'Mastered' },
+      weakAreas: { title: 'Weak Areas', noneFound: 'Koi weak topic nahi mila — sab theek chal raha hai.' },
     },
     research: {
       header: { title: 'Research', subtitle: 'Koi bhi topic search karo — internet se, deeper reading ke liye' },

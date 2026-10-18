@@ -22,19 +22,27 @@ export default function NotesHome() {
     }
   };
   const pill = (active: boolean) =>
-    `px-4 py-1.5 rounded-full text-sm font-medium border transition-all ${
+    `h-10 px-4 rounded-full text-sm font-medium transition-all ${
       active
-        ? 'bg-black text-white dark:bg-white dark:text-black border-transparent'
-        : 'border-gray-200 dark:border-white/10 text-gray-600 dark:text-white/70 hover:bg-gray-100 dark:hover:bg-white/10'
+        ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white'
+        : 'card text-gray-600 dark:text-white/70 hover:bg-gray-50 dark:hover:bg-white/10'
     }`;
 
   return (
     <div>
-      <div className="flex gap-2 mb-6">
+      <div className="flex gap-2 mb-4 md:mb-6 px-4 pt-4 md:px-8 md:pt-8">
         <button className={pill(tab === 'notebook')} onClick={() => choose('notebook')}>{t.tabNotebook}</button>
         <button className={pill(tab === 'ai')} onClick={() => choose('ai')}>{t.tabAi}</button>
       </div>
-      <Suspense fallback={null}>{tab === 'notebook' ? <NoteLibrary /> : <Notes />}</Suspense>
+      <Suspense fallback={null}>
+        {tab === 'notebook' ? (
+          <div className="px-4 pb-4 md:px-8 md:pb-8">
+            <NoteLibrary />
+          </div>
+        ) : (
+          <Notes />
+        )}
+      </Suspense>
     </div>
   );
 }

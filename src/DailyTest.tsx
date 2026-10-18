@@ -110,7 +110,7 @@ export default function DailyTest({ onStart, onExit }: { onStart: (paper: TestPa
     refresh();
   };
 
-  const card = 'rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 p-5 mb-5';
+  const card = 'rounded-2xl card p-5 mb-5';
   const inputCls = 'w-24 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-3 py-2 focus:outline-none focus:border-black dark:focus:border-white';
   const btn = 'flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-gray-300 dark:border-white/20 text-sm font-medium hover:bg-gray-100 dark:hover:bg-white/10 transition';
 
@@ -130,7 +130,7 @@ export default function DailyTest({ onStart, onExit }: { onStart: (paper: TestPa
         <div className={card}>
           <p className="font-semibold mb-1">Start by adding your questions</p>
           <p className="text-sm text-gray-500 dark:text-white/60 mb-4">Add photos or PDFs of your question paper (or paste/type the questions). You do this only once.</p>
-          <button onClick={() => setEditingBank(true)} className="px-5 py-2.5 rounded-xl bg-black text-white dark:bg-white dark:text-black font-semibold">
+          <button onClick={() => setEditingBank(true)} className="px-5 py-2.5 rounded-xl bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white font-semibold">
             Add questions
           </button>
         </div>
@@ -150,7 +150,7 @@ export default function DailyTest({ onStart, onExit }: { onStart: (paper: TestPa
                     ? `${state.pending.questions.length} questions${state.pending.durationMinutes > 0 ? ` · ${state.pending.durationMinutes} min` : ' · no timer'}${isMissed ? ' · same questions, not skipped' : ''}`
                     : `${Math.min(sum.perDay, sum.total)} questions${state.minutesPerQuestion > 0 ? ` · ${Math.max(1, Math.round(Math.min(sum.perDay, sum.total) * state.minutesPerQuestion))} min` : ' · no timer'}`}
                 </p>
-                <button onClick={start} className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-black text-white dark:bg-white dark:text-black font-semibold">
+                <button onClick={start} className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white font-semibold">
                   <Play className="w-4 h-4" /> Start today's test
                 </button>
               </>

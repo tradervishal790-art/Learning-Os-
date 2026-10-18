@@ -29,7 +29,7 @@ export function ModeSwitch({ mode, onMode }: { mode: InkMode; onMode: (m: InkMod
           onClick={() => onMode(m)}
           className={`h-9 px-3 rounded-full text-xs font-medium flex items-center gap-1.5 border transition-all ${
             mode === m
-              ? 'bg-black text-white dark:bg-white dark:text-black border-transparent'
+              ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white border-transparent'
               : 'border-gray-200 dark:border-white/10 text-gray-600 dark:text-white/70 hover:bg-gray-100 dark:hover:bg-white/10'
           }`}
         >
@@ -44,7 +44,7 @@ export function ModeSwitch({ mode, onMode }: { mode: InkMode; onMode: (m: InkMod
 const chip = (on: boolean) =>
   `h-8 px-2.5 rounded-lg text-xs border shrink-0 transition-colors ${
     on
-      ? 'bg-black text-white dark:bg-white dark:text-black border-transparent'
+      ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white border-transparent'
       : 'border-gray-200 dark:border-white/10 text-gray-700 dark:text-white/80 hover:bg-gray-100 dark:hover:bg-white/10'
   }`;
 

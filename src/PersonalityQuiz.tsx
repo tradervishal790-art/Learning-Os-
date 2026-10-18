@@ -174,7 +174,7 @@ export default function PersonalityQuiz({
               </p>
               <button
                 onClick={startProbe}
-                className="w-full px-4 py-3 rounded-xl bg-black text-white dark:bg-white dark:text-black text-sm font-semibold transition active:scale-[0.98]"
+                className="w-full px-4 py-3 rounded-xl bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white text-sm font-semibold transition active:scale-[0.98]"
               >
                 Start Part 2
               </button>
@@ -234,7 +234,7 @@ export default function PersonalityQuiz({
           <div className="p-4 border-t border-gray-200 dark:border-white/10">
             <button
               onClick={onClose}
-              className="w-full px-4 py-3 rounded-xl bg-black text-white dark:bg-white dark:text-black text-sm font-semibold transition active:scale-[0.98]"
+              className="w-full px-4 py-3 rounded-xl bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white text-sm font-semibold transition active:scale-[0.98]"
             >
               Done
             </button>

@@ -42,7 +42,7 @@ export default function DailyHabit() {
           <div className="flex gap-2 mt-4">
             <button
               onClick={() => close(true)}
-              className="px-4 py-2 rounded-xl text-sm font-medium bg-black text-white dark:bg-white dark:text-black"
+              className="px-4 py-2 rounded-xl text-sm font-medium bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white"
             >
               Done
             </button>
