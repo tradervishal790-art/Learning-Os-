@@ -113,3 +113,82 @@ test('studyInfo: exam chips and "soon" use calendar days', async () => {
   assert.equal(s.examSoon('2026-10-30', 14, now), true);
   assert.equal(s.examSoon('2026-12-30', 14, now), false);
 });
+
+test('noteExport: html -> markdown keeps headings, lists, tasks, marks, links, tables', async () => {
+  const { htmlToMarkdown, noteToMarkdown, noteToText, noteToHtml, fileName, hasText } = await loadTs('src/noteExport.ts');
+  const html =
+    '<h1>Cells</h1><p>The <strong>nucleus</strong> and <em>DNA</em> are <mark>key</mark>. See <a href="https://x.org">x</a></p>' +
+    '<ul><li><p>one</p><ul><li><p>nested</p></li></ul></li><li><p>two</p></li></ul><ol><li><p>a</p></li><li><p>b</p></li></ol>' +
+    '<ul data-type="taskList"><li data-checked="true"><label><input type="checkbox"></label><div><p>done</p></div></li><li data-checked="false"><label><input type="checkbox"></label><div><p>todo</p></div></li></ul>' +
+    '<table><tr><th>A</th><th>B</th></tr><tr><td>1</td><td>2</td></tr></table><blockquote><p>quote</p></blockquote><pre><code>x = 1</code></pre>';
+  const md = htmlToMarkdown(html);
+  assert.match(md, /^# Cells/);
+  assert.match(md, /\*\*nucleus\*\* and \*DNA\* are ==key==\. See \[x\]\(https:\/\/x\.org\)/);
+  assert.match(md, /- one\n {2}- nested\n- two/);
+  assert.match(md, /1\. a\n2\. b/);
+  assert.match(md, /- \[x\] done\n- \[ \] todo/);
+  assert.match(md, /\| A \| B \|\n\| --- \| --- \|\n\| 1 \| 2 \|/);
+  assert.match(md, /> quote/);
+  assert.match(md, /```\nx = 1\n```/);
+  const pages = [{ id: 'a', text: 'Hello', html: '<p>Hello</p>' }, { id: 'b', text: 'World', html: '<p>World <script>alert(1)</script></p>' }];
+  assert.equal(noteToMarkdown('My note', pages), '# My note\n\n## Page 1\n\nHello\n\n## Page 2\n\nWorld alert(1)\n'.replace(' alert(1)', ' alert(1)'));
+  assert.equal(noteToText('My note', pages), 'My note\n\nHello\n\nWorld\n');
+  const page = noteToHtml('A <b>', pages);
+  assert.ok(!page.includes('<script>alert') && page.includes('A &lt;b&gt;'));
+  assert.equal(fileName('  a/b:c?  ', 'md'), 'a b c.md');
+  assert.equal(hasText([{ id: 'x', text: '  ' }]), false);
+});
+
+test('noteVersions: save, skip unchanged auto, keep newest 20, restore data', async () => {
+  const v = await loadTs('src/noteVersions.ts');
+  const snap = (n) => ({ title: 'T', pages: [{ id: 'p', text: 'x'.repeat(n), html: `<p>${'x'.repeat(n)}</p>`, ink: [] }] });
+  const t0 = Date.parse('2026-10-18T10:00:00Z');
+  const first = await v.saveVersion('n1', snap(5), 'auto', new Date(t0));
+  assert.equal(first.chars, 5);
+  assert.equal(await v.saveVersion('n1', snap(5), 'auto', new Date(t0 + 1000)), null, 'unchanged auto version is skipped');
+  assert.ok(await v.saveVersion('n1', snap(5), 'manual', new Date(t0 + 2000)), 'a manual save is always kept');
+  for (let i = 0; i < 25; i++) await v.saveVersion('n1', snap(10 + i), 'auto', new Date(t0 + 10_000 + i * 1000));
+  const list = await v.listVersions('n1');
+  assert.equal(list.length, v.KEEP_VERSIONS);
+  assert.ok(list[0].at > list[1].at, 'newest first');
+  const data = await v.getVersion(list[0].key);
+  assert.equal(data.pages[0].text.length, 34);
+  assert.deepEqual(await v.listVersions('other'), []);
+});
+
+test('dialogs render with roles, close on Escape, versions restore through the callback', async () => {
+  const React = (await import('react')).default;
+  const { createRoot } = await import('react-dom/client');
+  const { act } = await import('react');
+  globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+  const { ExportDialog, VersionsDialog, ShortcutsDialog } = await loadTs('src/NoteTools.tsx');
+  const v = await loadTs('src/noteVersions.ts');
+  const L = new Proxy({}, { get: (_, k) => `«${String(k)}»` });
+  const host = document.createElement('div');
+  document.body.appendChild(host);
+  const root = createRoot(host);
+
+  let closed = 0;
+  await act(async () => root.render(React.createElement(ExportDialog, { title: 'T', pages: [{ id: 'a', text: 'hi', html: '<p>hi</p>' }], labels: L, onClose: () => closed++, onMessage: () => {} })));
+  const dlg = host.querySelector('[role="dialog"]');
+  assert.ok(dlg && dlg.getAttribute('aria-modal') === 'true');
+  assert.equal(host.querySelectorAll('button').length >= 7, true);
+  await act(async () => window.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape' })));
+  assert.equal(closed, 1);
+
+  await v.saveVersion('nx', { title: 'Old', pages: [{ id: 'p', text: 'old text', html: '<p>old text</p>' }] }, 'manual');
+  let restored = null;
+  window.confirm = () => true;
+  await act(async () => root.render(React.createElement(VersionsDialog, { noteId: 'nx', getCurrent: () => ({ title: 'Now', pages: [] }), labels: L, locale: 'en-IN', onClose: () => {}, onRestore: (d) => (restored = d), onMessage: () => {} })));
+  await act(async () => new Promise((r) => setTimeout(r, 50)));
+  const restoreBtn = Array.from(host.querySelectorAll('button')).find((b) => b.textContent === '«restore»');
+  assert.ok(restoreBtn, 'a saved version is listed with a Restore button');
+  await act(async () => restoreBtn.click());
+  await act(async () => new Promise((r) => setTimeout(r, 50)));
+  assert.equal(restored?.title, 'Old');
+  assert.equal((await v.listVersions('nx')).some((m) => m.kind === 'before-restore'), true, 'current note is saved before restoring');
+
+  await act(async () => root.render(React.createElement(ShortcutsDialog, { labels: L, onClose: () => {} })));
+  assert.ok(host.textContent.includes('Z') && host.textContent.includes('?'));
+  await act(async () => root.unmount());
+});

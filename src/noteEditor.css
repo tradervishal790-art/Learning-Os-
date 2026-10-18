@@ -39,3 +39,8 @@
 /* Recall mode (Part 6): highlights cover their own text; tap one to see it. Same idea as the cover on a highlighted line in Samsung Notes. */
 .recall-on .note-prose mark:not(.revealed) { color: transparent !important; cursor: pointer; }
 .recall-on .note-prose mark.revealed { cursor: pointer; }
+
+/* Accessibility (Part 10): people who ask for less motion get none. */
+@media (prefers-reduced-motion: reduce) {
+  .note-prose *, [class*="transition"], .animate-pulse { transition: none !important; animation: none !important; }
+}

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Editor } from '@tiptap/react';
-import { ArrowLeft, ChevronDown, ChevronUp, Copy, Download, Eye, EyeOff, FilePlus, HelpCircle, LayoutGrid, Maximize2, Minimize2, Plus, RotateCcw, Sparkles, Star, Trash2, Video, VideoOff, X } from 'lucide-react';
-import { useTranslation } from './i18n/LanguageContext';
+import { ArrowLeft, ChevronDown, FileDown, History, Keyboard, ChevronUp, Copy, Download, Eye, EyeOff, FilePlus, HelpCircle, LayoutGrid, Maximize2, Minimize2, Plus, RotateCcw, Sparkles, Star, Trash2, Video, VideoOff, X } from 'lucide-react';
+import { useLanguage, useTranslation } from './i18n/LanguageContext';
 import { format } from './i18n/format';
 import { loadNoteContent, saveNoteContent, getIndex, type InkStroke, type NotePage, type NoteVideo, type PageAttachment } from './notebookStore';
 import { useInkPrefs, type InkMode } from './inkPrefs';
@@ -26,6 +26,8 @@ import PageEditor from './PageEditor';
 import EditorToolbar from './EditorToolbar';
 import NoteAiPanel from './NoteAiPanel';
 import NoteMenu, { type MenuItem } from './NoteMenu';
+import { ExportDialog, ShortcutsDialog, VersionsDialog } from './NoteTools';
+import { listVersions, saveVersion, type VersionData } from './noteVersions';
 import PdfPageSheet from './PdfPageSheet';
 import VideoNotesPane, { type VideoPlayerApi } from './VideoNotesPane';
 import MomentList from './MomentList';
@@ -72,6 +74,10 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
   const videoRef = useRef<NoteVideo | null>(null);
   const playerRef = useRef<VideoPlayerApi | null>(null);
   const [recall, setRecall] = useState(false);
+  const [dialog, setDialog] = useState<'export' | 'versions' | 'shortcuts' | null>(null);
+  const [restoreKey, setRestoreKey] = useState(0); // bumped after a restore so every page editor starts fresh
+  const lastAutoVersion = useRef(0);
+  const { locale } = useLanguage();
   const [linking, setLinking] = useState(false);
   const [linkUrl, setLinkUrl] = useState('');
   const [linkError, setLinkError] = useState(false);
@@ -104,6 +110,18 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
       setTitle(meta.title);
       setPages(content.pages);
       setReady(true);
+      // the note as it was before this editing session
+      void listVersions(id)
+        .then((l) => {
+          const last = l[0] ? Date.parse(l[0].at) : 0;
+          if (Date.now() - last > 10 * 60_000) {
+            lastAutoVersion.current = Date.now();
+            return saveVersion(id, { title: meta.title, pages: content.pages, ...(content.video ? { video: content.video } : {}) }, 'auto');
+          }
+          lastAutoVersion.current = last;
+          return null;
+        })
+        .catch(() => undefined);
     })();
     return () => {
       alive = false;
@@ -115,7 +133,14 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
     if (!dirty.current) return;
     dirty.current = false;
     void saveNoteContent(id, latest.current.title, latest.current.pages, latest.current.video);
+    // Version history: at most one automatic snapshot every 10 minutes (and never when nothing changed).
+    if (Date.now() - lastAutoVersion.current > 10 * 60_000) {
+      lastAutoVersion.current = Date.now();
+      void saveVersion(id, currentSnapshot(), 'auto').catch(() => undefined);
+    }
   };
+
+  const currentSnapshot = (): VersionData => ({ title: latest.current.title, pages: latest.current.pages, ...(latest.current.video ? { video: latest.current.video } : {}) });
 
   // Save whatever is pending when the student leaves the note or hides the tab.
   useEffect(() => {
@@ -339,6 +364,55 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
       } else if (mode === 'select' && k === 'd') {
         e.preventDefault();
         duplicateSel();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  });
+
+  // ---------- version restore, save now, tool shortcuts (Part 10) ----------
+
+  const restoreVersion = (v: VersionData) => {
+    const ink2: Record<string, InkStroke[]> = {};
+    v.pages.forEach((p) => (ink2[p.id] = p.ink ?? []));
+    inkRef.current = ink2;
+    setInk(ink2);
+    hist.current = {};
+    editors.current = {};
+    setSelection(null);
+    latest.current = { title: v.title, pages: v.pages, video: v.video };
+    videoRef.current = v.video ?? null;
+    setVideo(v.video ?? null);
+    setTitle(v.title);
+    setPages(v.pages);
+    setActivePage(v.pages[0]?.id ?? null);
+    setRestoreKey((k) => k + 1);
+    dirty.current = true;
+    flush();
+  };
+
+  // T / P / H / E / S switch tools, Ctrl+S saves now, ? lists the shortcuts. Never while typing in a field or the text.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const el = e.target as HTMLElement | null;
+      if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable)) return;
+      if (dialog) return;
+      const k = e.key.toLowerCase();
+      if ((e.ctrlKey || e.metaKey) && k === 's') {
+        e.preventDefault();
+        dirty.current = true;
+        flush();
+        return flash(t.polish.saved);
+      }
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      if (e.key === '?') {
+        e.preventDefault();
+        return setDialog('shortcuts');
+      }
+      const tool: Record<string, InkMode> = { t: 'type', p: 'pen', h: 'highlighter', e: 'eraser', s: 'select' };
+      if (tool[k]) {
+        e.preventDefault();
+        chooseMode(tool[k]);
       }
     };
     window.addEventListener('keydown', onKey);
@@ -774,7 +848,10 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
           { key: 'zfit', label: t.pageOps.zoomFit, icon: <LayoutGrid size={16} />, onClick: fitWidth },
         ]
       : []),
+    { key: 'export', label: t.polish.menuExport, icon: <FileDown size={16} />, onClick: () => setDialog('export'), divider: true },
+    { key: 'versions', label: t.polish.menuVersions, icon: <History size={16} />, onClick: () => setDialog('versions') },
     { key: 'focus', label: t.editor.focusMode, icon: <Maximize2 size={16} />, onClick: () => setFocusMode(true), divider: true },
+    { key: 'keys', label: t.polish.menuShortcuts, icon: <Keyboard size={16} />, onClick: () => setDialog('shortcuts') },
   ];
 
   const videoLabels = {
@@ -804,7 +881,7 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
           <div className="py-3" style={{ width: Math.max(scroller.w, columnW + 24) }}>
             <div style={{ width: columnW, margin: '0 auto' }}>
               {pages.map((p, i) => (
-                <div key={p.id} data-page-id={p.id} className="mb-4 scroll-mt-2">
+                <div key={`${p.id}:${restoreKey}`} data-page-id={p.id} className="mb-4 scroll-mt-2">
                   <div className="flex items-center justify-between mb-1 text-xs text-gray-400 dark:text-white/40">
                     <span>{format(t.pageOps.pageOf, i + 1, pages.length)}</span>
                     <span className="flex items-center gap-0.5">
@@ -1045,9 +1122,24 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
           onCancel={() => setConfirmDeleteId(null)}
         />
       )}
+      {dialog === 'export' && (
+        <ExportDialog title={latest.current.title} pages={latest.current.pages} video={latest.current.video} labels={t.polish} onClose={() => setDialog(null)} onMessage={flash} />
+      )}
+      {dialog === 'versions' && (
+        <VersionsDialog
+          noteId={id}
+          getCurrent={currentSnapshot}
+          labels={t.polish}
+          locale={locale === 'hi' ? 'hi-IN' : 'en-IN'}
+          onClose={() => setDialog(null)}
+          onRestore={restoreVersion}
+          onMessage={flash}
+        />
+      )}
+      {dialog === 'shortcuts' && <ShortcutsDialog labels={t.polish} onClose={() => setDialog(null)} />}
       {notice && (
         // sits above the Undo toast so both can be visible at once
-        <div className={`fixed left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-xl bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white text-sm shadow-lg ${deletedPage ? 'bottom-20' : 'bottom-6'}`}>
+        <div role="status" aria-live="polite" className={`fixed left-1/2 -translate-x-1/2 z-[60] px-4 py-2.5 rounded-xl bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white text-sm shadow-lg ${deletedPage ? 'bottom-20' : 'bottom-6'}`}>
           {notice}
         </div>
       )}
