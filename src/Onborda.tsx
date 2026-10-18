@@ -38,8 +38,8 @@ const Onborda: React.FC<OnbordaProps> = ({
   interact = false,
   steps,
   shadowRgb = '0, 0, 0',
-  shadowOpacity = '0.65',
-  cardTransition = { ease: 'anticipate', duration: 0.6 },
+  shadowOpacity = '0.45',
+  cardTransition = { ease: 'easeOut', duration: 0.25 },
   cardComponent: CardComponent,
 }) => {
   const { currentTour, currentStep, setCurrentStep, closeOnborda, isOnbordaVisible } = useOnborda();
@@ -187,29 +187,29 @@ const Onborda: React.FC<OnbordaProps> = ({
   const getCardStyle = (side?: CardSide): React.CSSProperties => {
     switch (side) {
       case 'top':
-        return { transform: 'translate(-50%, 0)', left: '50%', bottom: '100%', marginBottom: '25px' };
+        return { transform: 'translate(-50%, 0)', left: '50%', bottom: '100%', marginBottom: '12px' };
       case 'bottom':
-        return { transform: 'translate(-50%, 0)', left: '50%', top: '100%', marginTop: '25px' };
+        return { transform: 'translate(-50%, 0)', left: '50%', top: '100%', marginTop: '12px' };
       case 'left':
-        return { transform: 'translate(0, -50%)', right: '100%', top: '50%', marginRight: '25px' };
+        return { transform: 'translate(0, -50%)', right: '100%', top: '50%', marginRight: '12px' };
       case 'right':
-        return { transform: 'translate(0, -50%)', left: '100%', top: '50%', marginLeft: '25px' };
+        return { transform: 'translate(0, -50%)', left: '100%', top: '50%', marginLeft: '12px' };
       case 'top-left':
-        return { bottom: '100%', marginBottom: '25px' };
+        return { bottom: '100%', marginBottom: '12px' };
       case 'top-right':
-        return { right: 0, bottom: '100%', marginBottom: '25px' };
+        return { right: 0, bottom: '100%', marginBottom: '12px' };
       case 'bottom-left':
-        return { top: '100%', marginTop: '25px' };
+        return { top: '100%', marginTop: '12px' };
       case 'bottom-right':
-        return { right: 0, top: '100%', marginTop: '25px' };
+        return { right: 0, top: '100%', marginTop: '12px' };
       case 'right-bottom':
-        return { left: '100%', bottom: 0, marginLeft: '25px' };
+        return { left: '100%', bottom: 0, marginLeft: '12px' };
       case 'right-top':
-        return { left: '100%', top: 0, marginLeft: '25px' };
+        return { left: '100%', top: 0, marginLeft: '12px' };
       case 'left-bottom':
-        return { right: '100%', bottom: 0, marginRight: '25px' };
+        return { right: '100%', bottom: 0, marginRight: '12px' };
       case 'left-top':
-        return { right: '100%', top: 0, marginRight: '25px' };
+        return { right: '100%', top: 0, marginRight: '12px' };
       default:
         return {};
     }
@@ -278,7 +278,7 @@ const Onborda: React.FC<OnbordaProps> = ({
               initial="hidden"
               animate={isOnbordaVisible ? 'visible' : 'hidden'}
               variants={variants}
-              transition={{ duration: 0.5 }}
+              transition={{ duration: 0.25 }}
             >
               <motion.div
                 className="relative z-[900]"
