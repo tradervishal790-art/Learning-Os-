@@ -14,10 +14,10 @@ import type { CardComponentProps } from './onbordaTypes';
 
 export default function OnbordaCard({ step, currentStep, totalSteps, nextStep, prevStep, skipTour, arrow }: CardComponentProps) {
   return (
-    <div className="relative w-[300px] rounded-2xl border border-black/10 dark:border-white/20 bg-white dark:bg-black text-black dark:text-white shadow-xl p-4">
+    <div className="relative flex w-full max-w-full flex-col rounded-2xl border border-black/10 dark:border-white/20 bg-white dark:bg-black text-black dark:text-white shadow-xl p-3 sm:p-4 max-h-[min(60dvh,28rem)]">
       <div className="flex items-start justify-between gap-2 mb-2">
         <div>
-          <div className="text-sm font-semibold flex items-center gap-1.5">
+          <div className="min-w-0 break-words text-sm font-semibold flex items-center gap-1.5">
             {step.icon}
             {step.title}
           </div>
@@ -30,13 +30,13 @@ export default function OnbordaCard({ step, currentStep, totalSteps, nextStep, p
         </button>
       </div>
 
-      <div className="text-sm text-gray-600 dark:text-white/70 leading-relaxed mb-4">{step.content}</div>
+      <div className="max-h-[min(28dvh,12rem)] overflow-y-auto break-words text-sm text-gray-600 dark:text-white/70 leading-relaxed mb-3 pr-1">{step.content}</div>
 
-      <div className="flex justify-between items-center">
+      <div className="flex shrink-0 justify-between items-center gap-2">
         {currentStep !== 0 ? (
           <button
             onClick={prevStep}
-            className="px-3 py-1.5 rounded-full text-xs font-medium border border-gray-300 dark:border-white/20 hover:bg-gray-100 dark:hover:bg-white/10 transition"
+            className="min-h-10 px-4 py-2 rounded-full text-xs font-medium border border-gray-300 dark:border-white/20 hover:bg-gray-100 dark:hover:bg-white/10 transition"
           >
             Peeche
           </button>
@@ -46,14 +46,14 @@ export default function OnbordaCard({ step, currentStep, totalSteps, nextStep, p
         {currentStep + 1 !== totalSteps ? (
           <button
             onClick={nextStep}
-            className="px-3 py-1.5 rounded-full text-xs font-medium bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white hover:opacity-80 transition"
+            className="min-h-10 px-4 py-2 rounded-full text-xs font-medium bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white hover:opacity-80 transition"
           >
             Aage
           </button>
         ) : (
           <button
             onClick={skipTour}
-            className="px-3 py-1.5 rounded-full text-xs font-medium bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white hover:opacity-80 transition"
+            className="min-h-10 px-4 py-2 rounded-full text-xs font-medium bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white hover:opacity-80 transition"
           >
             Ho gaya
           </button>
