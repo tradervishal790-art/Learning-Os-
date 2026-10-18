@@ -836,10 +836,10 @@ export const translations: Record<Locale, TranslationShape> = {
     },
     onboarding: {
       stepTitles: [
-        { title: 'Who are you?', subtitle: 'Pick one' },
-        { title: 'Your goal?', subtitle: 'Pick one' },
-        { title: 'Language', subtitle: 'Pick one' },
-        { title: 'Your name', subtitle: 'Type it' },
+        { title: 'Who are you?', subtitle: '' },
+        { title: 'Your goal?', subtitle: '' },
+        { title: 'Language', subtitle: '' },
+        { title: 'Your name', subtitle: '' },
       ],
       roles: {
         student: 'Student',
@@ -864,7 +864,7 @@ export const translations: Record<Locale, TranslationShape> = {
         hinglish: 'Hinglish',
         any: 'No Preference',
       },
-      namePlaceholder: 'Type your name',
+      namePlaceholder: '',
       back: '← Back',
       continue: 'Continue →',
       start: 'Start →',
@@ -894,19 +894,19 @@ export const translations: Record<Locale, TranslationShape> = {
         dashboardIntro: [
           {
             title: 'Roadmap',
-            content: 'Your topics are ordered here — foundation-first. Following this order works best.',
+            content: '',
           },
           {
             title: 'Revision',
-            content: 'Topics that are due for revision show up here.',
+            content: '',
           },
           {
             title: 'Progress',
-            content: 'Track your streak and overall progress here.',
+            content: '',
           },
           {
             title: 'Settings',
-            content: 'Change your profile and preferences from here.',
+            content: '',
           },
         ],
         videoPickerIntro: [
@@ -923,7 +923,7 @@ export const translations: Record<Locale, TranslationShape> = {
       },
       checklist: {
         heading: 'Get Started',
-        subheading: 'Follow these 3 steps in order for the best result',
+        subheading: '',
         steps: [
           {
             title: 'Set your learning style',
@@ -932,12 +932,12 @@ export const translations: Record<Locale, TranslationShape> = {
           },
           {
             title: 'Build your roadmap',
-            subtitle: 'The right order for topics — what to learn first',
+            subtitle: '',
             cta: 'Generate',
           },
           {
             title: 'Watch your first video',
-            subtitle: 'Start with the first topic on your roadmap',
+            subtitle: '',
             cta: 'Watch',
           },
         ],
@@ -1526,7 +1526,7 @@ export const translations: Record<Locale, TranslationShape> = {
       sortTitle: "Title A-Z",
       allTags: "All tags",
       emptyTitle: "Your notebook is empty",
-      emptySubtitle: "Tap New note to write your first note. It saves by itself.",
+      emptySubtitle: "",
       emptySearch: "No notes match your search.",
       emptyTrash: "Trash is empty.",
       emptyArchive: "No archived notes.",
@@ -1673,7 +1673,7 @@ export const translations: Record<Locale, TranslationShape> = {
         selLasso: "Lasso",
         selRect: "Rectangle",
         selAll: "Select all",
-        selHint: "Draw around your handwriting to select it, or tap one stroke.",
+        selHint: "",
         selCount: "{0} selected",
         selDelete: "Delete",
         selCopy: "Copy",
@@ -1819,7 +1819,7 @@ export const translations: Record<Locale, TranslationShape> = {
       },
       deepNotesCta: 'Deep Notes',
       researchCta: 'Research',
-      selectVideoPrompt: 'Select a video to watch',
+      selectVideoPrompt: '',
       verifiedBadge: 'verified',
       dismissAria: 'Dismiss',
       errors: {
@@ -1832,7 +1832,7 @@ export const translations: Record<Locale, TranslationShape> = {
     mentor: {
       header: { title: 'AI Mentor', subtitle: "Stuck? Ask here — it knows what you're learning right now" },
       welcomeMessage:
-        "Hello! I'm your AI Mentor.\n\nYou can ask me anything:\n• Explain concepts\n• Real-world analogies\n• Take a quiz\n• Project ideas\n• Common mistakes\n\nTry a suggestion below, or type your own question!",
+        "Hello! I'm your AI Mentor.\n\nYou can ask me anything:\n• Explain concepts\n• Real-world analogies\n• Take a quiz\n• Project ideas\n• Common mistakes\n\n",
       suggestedPrompts: [
         { icon: '', label: 'Explain simply', prompt: 'Explain this concept simply' },
         { icon: '', label: 'Deep dive', prompt: 'Explain this in depth with examples' },
@@ -1873,7 +1873,7 @@ export const translations: Record<Locale, TranslationShape> = {
       notGroundedNote:
         "Couldn't find a live search source this time — the answer below is from general knowledge, double-check it for anything current",
       genericError: 'Research failed',
-      embedded: { title: 'Research (alongside the video)', hint: 'Search for anything — the video keeps playing.' },
+      embedded: { title: 'Research (alongside the video)', hint: '' },
       closeAria: 'Close research panel',
       emptyState: { title: 'Search any topic', subtitle: 'You can also open this alongside a video — from the Videos page' },
     },
@@ -1906,7 +1906,7 @@ export const translations: Record<Locale, TranslationShape> = {
       addButton: 'Add channel',
       adding: 'Adding…',
       limitReached: 'You can add up to {0} channels.',
-      noChannels: "Add a YouTube channel to get a written summary of all its videos from yesterday.",
+      noChannels: "",
       removeAria: 'Remove {0}',
       dayLabel: 'Yesterday ({0}) — every video, 12 AM to 12 AM',
       loading: "Finding yesterday's videos…",
@@ -2060,36 +2060,36 @@ export const translations: Record<Locale, TranslationShape> = {
         dashboardIntro: [
           {
             title: 'रोडमैप',
-            content: 'यहां आपके टॉपिक सही क्रम में हैं — पहले बुनियादी बातें। इसी क्रम में सीखना सबसे बेहतर रहेगा।',
+            content: '',
           },
           {
             title: 'रिवीज़न',
-            content: 'जिन टॉपिक को रिवाइज़ करना है, वे यहां दिखते हैं।',
+            content: '',
           },
           {
             title: 'प्रगति',
-            content: 'अपनी स्ट्रीक और कुल प्रगति यहां देख सकते हैं।',
+            content: '',
           },
           {
             title: 'सेटिंग्स',
-            content: 'यहां से अपनी प्रोफ़ाइल और प्राथमिकताएं बदल सकते हैं।',
+            content: '',
           },
         ],
         videoPickerIntro: [
           {
             title: 'ये 3 वीडियो — एक ही टॉपिक',
             content:
-              'तीनों वीडियो एक ही कॉन्सेप्ट सिखाते हैं, बस अलग तरीके से (गति, उदाहरण, संरचना)। जो आपको सबसे सही लगे, बस वही चुनकर देखें — तीनों देखने की ज़रूरत नहीं।',
+              '',
           },
           {
             title: 'अलग तरीका, वही कॉन्सेप्ट',
-            content: 'यह दूसरा विकल्प है — अगर पहला वाला सही न लगे, तो इसे आज़मा सकते हैं। बात वही है, बस पेश करने का तरीका अलग है।',
+            content: '',
           },
         ],
       },
       checklist: {
         heading: 'शुरू करें',
-        subheading: 'सबसे अच्छे नतीजे के लिए इन 3 चरणों को इसी क्रम में पूरा करें',
+        subheading: '',
         steps: [
           {
             title: 'अपनी लर्निंग स्टाइल सेट करें',
@@ -3220,36 +3220,36 @@ export const translations: Record<Locale, TranslationShape> = {
         dashboardIntro: [
           {
             title: 'Roadmap',
-            content: 'Yahan aapke topics order me hain — foundation-first, isi order me follow karna best rahega.',
+            content: '',
           },
           {
             title: 'Revision',
-            content: 'Jo topics due hain revise karne ke liye, wo yahan dikhte hain.',
+            content: '',
           },
           {
             title: 'Progress',
-            content: 'Apni streak aur overall progress yahan track kar sakte ho.',
+            content: '',
           },
           {
             title: 'Settings',
-            content: 'Yahan se apna profile aur preferences badal sakte ho.',
+            content: '',
           },
         ],
         videoPickerIntro: [
           {
             title: 'Ye 3 videos — same topic hai',
             content:
-              'Teenon video ek hi concept sikhate hain, bas alag teaching style me (pace, examples, structure). Sirf ek chunkar dekhna hai jo aapko sabse suit kare — teeno dekhne ki zaroorat nahi.',
+              '',
           },
           {
             title: 'Alag style, wahi concept',
-            content: 'Ye doosra option hai — agar pehla wala suit na kare, to isse try kar sakte ho. Same cheez, bas presentation different.',
+            content: '',
           },
         ],
       },
       checklist: {
         heading: 'Shuru karo',
-        subheading: 'Ye 3 steps follow karo — is order me best result milega',
+        subheading: '',
         steps: [
           {
             title: 'Apna learning style set karo',
@@ -3849,7 +3849,7 @@ export const translations: Record<Locale, TranslationShape> = {
       sortTitle: "Naam A-Z",
       allTags: "Saare tags",
       emptyTitle: "Tumhari notebook khaali hai",
-      emptySubtitle: "Pehla note likhne ke liye Naya note dabao. Yeh apne aap save hota hai.",
+      emptySubtitle: "",
       emptySearch: "Search se koi note nahi mila.",
       emptyTrash: "Trash khaali hai.",
       emptyArchive: "Koi archived note nahi.",
