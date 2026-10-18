@@ -1797,7 +1797,7 @@ export const translations: Record<Locale, TranslationShape> = {
       },
     },
     videos: {
-      header: { title: 'Videos', subtitle: 'Search • Watch • Personalized recommendations' },
+      header: { title: 'Videos', subtitle: '' },
       searchPlaceholder: 'Search videos...',
       searchCta: 'Search',
       noResultsYet: 'Start with a search',
@@ -1828,7 +1828,7 @@ export const translations: Record<Locale, TranslationShape> = {
       },
     },
     mentor: {
-      header: { title: 'AI Mentor', subtitle: "Stuck? Ask here — it knows what you're learning right now" },
+      header: { title: 'AI Mentor', subtitle: '' },
       welcomeMessage:
         "Hello! I'm your AI Mentor.\n\nYou can ask me anything:\n• Explain concepts\n• Real-world analogies\n• Take a quiz\n• Project ideas\n• Common mistakes\n\n",
       suggestedPrompts: [
@@ -1852,7 +1852,7 @@ export const translations: Record<Locale, TranslationShape> = {
       },
     },
     progress: {
-      header: { title: 'Progress', subtitle: 'Your real stats — streak, watch time, weak spots' },
+      header: { title: 'Progress', subtitle: '' },
       stats: { completion: 'Completion', streak: 'Streak', totalWatchTime: 'Total Watch Time', retention: 'Retention' },
       completionBar: { topicsDone: '{0}/{1} topics done', inProgress: '{0} in progress' },
       emptyState: {
@@ -2002,8 +2002,8 @@ export const translations: Record<Locale, TranslationShape> = {
       stepTitles: [
         { title: 'आप कौन हैं?', subtitle: 'एक चुनें' },
         { title: 'आपका लक्ष्य?', subtitle: 'एक चुनें' },
-        { title: 'भाषा', subtitle: 'एक चुनें' },
-        { title: 'आपका नाम', subtitle: 'टाइप करें' },
+        { title: 'भाषा', subtitle: '' },
+        { title: 'आपका नाम', subtitle: '' },
       ],
       roles: {
         student: 'छात्र',
@@ -2131,8 +2131,8 @@ export const translations: Record<Locale, TranslationShape> = {
         learningStyleCard: {
           titleReady: 'लर्निंग स्टाइल',
           titleNotReady: 'अपनी स्टाइल जानें',
-          subtitleReady: 'प्रोफ़ाइल तैयार है — पूरी रिपोर्ट Settings में है',
-          subtitleNotReady: 'बेहतर मैच के लिए छोटा क्विज़',
+          subtitleReady: '',
+          subtitleNotReady: '',
           detailReady:
             '8 लर्निंग डाइमेंशन सेट हैं — पेस, गहराई, संरचना और बाकी। पूरा ब्रेकडाउन Settings → "Learning Profile Report" में देखें।',
           retakeCta: 'ब्लूप्रिंट इंटरव्यू दोबारा लें',
@@ -2151,7 +2151,7 @@ export const translations: Record<Locale, TranslationShape> = {
       languageLabel: 'भाषा',
       roadmapSection: {
         label: 'रोडमैप',
-        hint: 'रोडमैप सिर्फ एक बार बनता है। अगर टॉपिक बहुत broad लग रहे हैं या लर्निंग स्टाइल बदली है, तो दोबारा बनाएं।',
+        hint: '',
         regenerateCta: 'रोडमैप दोबारा बनाएं',
         regeneratingCta: 'बन रहा है...',
         successMsg: 'नया रोडमैप बन गया।',
@@ -2159,8 +2159,8 @@ export const translations: Record<Locale, TranslationShape> = {
       },
       learningProfileSection: {
         label: 'लर्निंग प्रोफ़ाइल रिपोर्ट',
-        hint: 'यह सिर्फ मांगने पर दिखती है — होम पेज पर सिर्फ छोटा सारांश होता है।',
-        hintBubble: 'आपकी पूरी लर्निंग प्रोफ़ाइल यहां है — देखने के लिए टैप करें।',
+        hint: '',
+        hintBubble: '',
         viewCta: 'पूरी रिपोर्ट देखें',
         hideCta: 'रिपोर्ट छुपाएं',
         dims: {
@@ -2190,7 +2190,7 @@ export const translations: Record<Locale, TranslationShape> = {
       deadlineLabel: 'डेडलाइन',
       quickLabel: 'क्विक:',
       loadingCta: 'वीडियो ढूंढ रहा हूं...',
-      noProfileHint: 'बेहतर मैच के लिए पहले क्विज़ पूरा करें',
+      noProfileHint: '',
       generateCta: 'बनाएं',
       generatingCta: 'बन रहा है...',
     },
@@ -2595,7 +2595,7 @@ export const translations: Record<Locale, TranslationShape> = {
       fallback: 'इस टॉपिक को रिवाइज़ करो',
     },
     roadmap: {
-      header: { title: 'आपका रोडमैप', subtitle: 'पहले बुनियाद — सबसे अच्छे नतीजे के लिए इसी क्रम में चलें' },
+      header: { title: 'आपका रोडमैप', subtitle: '' },
       goalTabs: {
         newGoal: 'नया लक्ष्य',
         addGoal: '+ लक्ष्य जोड़ें',
@@ -2618,9 +2618,9 @@ export const translations: Record<Locale, TranslationShape> = {
         examLabel: 'किसी खास परीक्षा/बोर्ड के लिए?',
         examOptional: '(वैकल्पिक)',
         examPlaceholder: 'जैसे CBSE कक्षा 10, JEE, NEET — सामान्य पढ़ाई के लिए खाली छोड़ें',
-        examHint: 'बताने पर रोडमैप उस परीक्षा के सिलेबस-क्रम और अंक-भार (weightage) के हिसाब से बनेगा।',
+        examHint: '',
         weeklyTimeLabel: 'साप्ताहिक उपलब्ध समय',
-        weeklyTimeHint: 'इससे रोडमैप के टॉपिक और उनकी गहराई आपके उपलब्ध समय के हिसाब से सटीक बनती है।',
+        weeklyTimeHint: '',
         timeLimitLabel: 'समय सीमा',
         deadlineLabel: 'डेडलाइन',
         generateFailed: 'रोडमैप नहीं बन पाया — दोबारा कोशिश करें।',
@@ -2632,13 +2632,13 @@ export const translations: Record<Locale, TranslationShape> = {
         overviewTab: 'ओवरव्यू',
         whyTab: 'क्यों',
         whatYoullLearn: 'आप क्या सीखेंगे',
-        bridgeHint: 'यह दिखाता है कि पिछला टॉपिक इससे कैसे जुड़ता है।',
+        bridgeHint: '',
         deepDiveCta: '2 छोटे सवाल पूछूं? बेहतर मैच वाले वीडियो मिलेंगे (वैकल्पिक)',
         watchVideosCta: 'वीडियो देखें',
         searchingCta: 'ढूंढ रहा हूं...',
         savedVideoCta: 'सेव किया वीडियो',
         markCompleteCta: 'मुझे यह पहले से आता है — पूरा हुआ मार्क करें',
-        challengeTitle: 'पहले एक छोटा applied challenge करें, फिर टॉपिक पूरा मार्क करें।',
+        challengeTitle: '',
         challengeCta: 'कोशिश कर ली — पूरा मार्क करें',
         whyItems: {
           learn: 'यह क्यों सीखें?',
@@ -2686,7 +2686,7 @@ export const translations: Record<Locale, TranslationShape> = {
       sortTitle: "नाम A-Z",
       allTags: "सभी टैग",
       emptyTitle: "तुम्हारी नोटबुक खाली है",
-      emptySubtitle: "पहला नोट लिखने के लिए नया नोट दबाओ। यह अपने आप सेव होता है।",
+      emptySubtitle: "",
       emptySearch: "खोज से कोई नोट नहीं मिला।",
       emptyTrash: "ट्रैश खाली है।",
       emptyArchive: "कोई आर्काइव नोट नहीं।",
@@ -2930,7 +2930,7 @@ export const translations: Record<Locale, TranslationShape> = {
       },
     },
     notes: {
-      header: { title: 'डीप लर्निंग नोट्स', subtitle: 'वीडियो से अपने आप बनते हैं — कुछ भी बदलो, ये तुम्हारे अपने हैं' },
+      header: { title: 'डीप लर्निंग नोट्स', subtitle: '' },
       topicPlaceholder: 'डीप लर्निंग के लिए टॉपिक...',
       deepDiveCta: 'डीप डाइव',
       linkPlaceholder: 'लिंक',
@@ -2959,7 +2959,7 @@ export const translations: Record<Locale, TranslationShape> = {
       },
     },
     videos: {
-      header: { title: 'वीडियो', subtitle: 'खोजें • देखें • व्यक्तिगत सुझाव' },
+      header: { title: 'वीडियो', subtitle: '' },
       searchPlaceholder: 'वीडियो खोजें...',
       searchCta: 'खोजें',
       noResultsYet: 'खोजकर शुरू करें',
@@ -2979,7 +2979,7 @@ export const translations: Record<Locale, TranslationShape> = {
       },
       deepNotesCta: 'डीप नोट्स',
       researchCta: 'रिसर्च',
-      selectVideoPrompt: 'देखने के लिए एक वीडियो चुनें',
+      selectVideoPrompt: '',
       verifiedBadge: 'सत्यापित',
       dismissAria: 'बंद करें',
       errors: {
@@ -2990,7 +2990,7 @@ export const translations: Record<Locale, TranslationShape> = {
       },
     },
     mentor: {
-      header: { title: 'AI मेंटर', subtitle: 'अटक गए? यहां पूछें — इसे पता है आप अभी क्या सीख रहे हैं' },
+      header: { title: 'AI मेंटर', subtitle: '' },
       welcomeMessage:
         'नमस्ते! मैं आपका AI मेंटर हूं।\n\nआप मुझसे कुछ भी पूछ सकते हैं:\n• कॉन्सेप्ट समझाना\n• असल दुनिया की मिसालें\n• क्विज़ लेना\n• प्रोजेक्ट आइडिया\n• आम गलतियां\n\nनीचे दिए सुझाव आज़माएं, या अपना सवाल टाइप करें!',
       suggestedPrompts: [
@@ -3013,7 +3013,7 @@ export const translations: Record<Locale, TranslationShape> = {
       },
     },
     progress: {
-      header: { title: 'प्रगति', subtitle: 'आपके असली आंकड़े — स्ट्रीक, वॉच टाइम, कमजोर टॉपिक' },
+      header: { title: 'प्रगति', subtitle: '' },
       stats: { completion: 'पूर्णता', streak: 'स्ट्रीक', totalWatchTime: 'कुल वॉच टाइम', retention: 'रिटेंशन' },
       completionBar: { topicsDone: '{0}/{1} टॉपिक पूरे', inProgress: '{0} जारी हैं' },
       emptyState: {
@@ -3026,14 +3026,14 @@ export const translations: Record<Locale, TranslationShape> = {
       weakAreas: { title: 'कमजोर टॉपिक', noneFound: 'कोई कमजोर टॉपिक नहीं मिला — सब कुछ ठीक चल रहा है।' },
     },
     research: {
-      header: { title: 'रिसर्च', subtitle: 'कोई भी टॉपिक खोजें — इंटरनेट से, गहराई से पढ़ने के लिए' },
+      header: { title: 'रिसर्च', subtitle: '' },
       searchPlaceholder: 'क्या जानना है?',
       searchCta: 'खोजें',
       notGroundedNote: 'इस बार लाइव सर्च सोर्स नहीं मिला — नीचे दिया जवाब सामान्य जानकारी से है, हाल की किसी बात के लिए दोबारा जांच लें',
       genericError: 'रिसर्च नहीं हो पाई',
-      embedded: { title: 'रिसर्च (वीडियो के साथ-साथ)', hint: 'कुछ भी खोजें — वीडियो चलती रहेगी।' },
+      embedded: { title: 'रिसर्च (वीडियो के साथ-साथ)', hint: '' },
       closeAria: 'रिसर्च पैनल बंद करें',
-      emptyState: { title: 'कोई भी टॉपिक खोजें', subtitle: 'वीडियो देखते हुए भी इसे साथ में खोल सकते हैं — Videos पेज से' },
+      emptyState: { title: 'कोई भी टॉपिक खोजें', subtitle: '' },
     },
     currentAffairs: {
       title: 'करंट अफेयर्स',
@@ -3291,8 +3291,8 @@ export const translations: Record<Locale, TranslationShape> = {
         learningStyleCard: {
           titleReady: 'Learning Style',
           titleNotReady: 'Find Your Style',
-          subtitleReady: 'Profile ready — full report Settings me hai',
-          subtitleNotReady: 'Short quiz for better matches',
+          subtitleReady: '',
+          subtitleNotReady: '',
           detailReady:
             '8 learning dimensions set — pace, depth, structure aur baaki. Settings → "Learning Profile Report" me poora breakdown dekho.',
           retakeCta: 'Retake Blueprint Interview',
@@ -3311,7 +3311,7 @@ export const translations: Record<Locale, TranslationShape> = {
       languageLabel: 'Language',
       roadmapSection: {
         label: 'Roadmap',
-        hint: 'Roadmap sirf ek baar banta hai. Agar topics bahut broad lag rahe hain ya learning style change kiya hai, dobara generate karo.',
+        hint: '',
         regenerateCta: 'Regenerate Roadmap',
         regeneratingCta: 'Regenerating...',
         successMsg: 'Naya roadmap ban gaya.',
@@ -3319,8 +3319,8 @@ export const translations: Record<Locale, TranslationShape> = {
       },
       learningProfileSection: {
         label: 'Learning Profile Report',
-        hint: 'Yeh sirf request karne par dikhta hai — home page pe sirf ek short summary hoti hai.',
-        hintBubble: 'Your full learning profile lives here — tap to view it.',
+        hint: '',
+        hintBubble: '',
         viewCta: 'View Full Report',
         hideCta: 'Hide Report',
         dims: {
@@ -3350,7 +3350,7 @@ export const translations: Record<Locale, TranslationShape> = {
       deadlineLabel: 'Deadline',
       quickLabel: 'Quick:',
       loadingCta: 'Dhundh raha hoon...',
-      noProfileHint: 'Pehle quiz complete karo for better matches',
+      noProfileHint: '',
       generateCta: 'Generate',
       generatingCta: 'Generating...',
     },
@@ -3756,7 +3756,7 @@ export const translations: Record<Locale, TranslationShape> = {
       fallback: 'Is topic ko revise karo',
     },
     roadmap: {
-      header: { title: 'Your Roadmap', subtitle: 'Foundation-first order — follow it for best results' },
+      header: { title: 'Your Roadmap', subtitle: '' },
       goalTabs: {
         newGoal: 'Naya Goal',
         addGoal: '+ Add Goal',
@@ -3779,9 +3779,9 @@ export const translations: Record<Locale, TranslationShape> = {
         examLabel: 'Kisi specific exam/board ke liye?',
         examOptional: '(optional)',
         examPlaceholder: 'jaise CBSE Class 10, JEE, NEET — khaali chhodo agar general learning hai',
-        examHint: 'Bataoge to roadmap us exam ke syllabus-order aur marks-weightage ke hisaab se banega.',
+        examHint: '',
         weeklyTimeLabel: 'Weekly time available',
-        weeklyTimeHint: 'Isse roadmap ke topics aur unki depth aapke available time ke hisaab se accurate banti hai.',
+        weeklyTimeHint: '',
         timeLimitLabel: 'Time limit',
         deadlineLabel: 'Deadline',
         generateFailed: 'Roadmap generate nahi ho paaya — dobara try karo.',
@@ -3793,13 +3793,13 @@ export const translations: Record<Locale, TranslationShape> = {
         overviewTab: 'Overview',
         whyTab: 'Why',
         whatYoullLearn: "What you'll learn",
-        bridgeHint: 'This shows how the last topic connects to this one.',
+        bridgeHint: '',
         deepDiveCta: '2 quick sawaal poochu? Better matched videos milenge (optional)',
         watchVideosCta: 'Watch videos',
         searchingCta: 'Dhundh raha hoon...',
         savedVideoCta: 'Saved video',
         markCompleteCta: 'Maine ye already seekh liya — mark as complete',
-        challengeTitle: 'Pehle ek chhota applied challenge try karo, phir topic complete maaro.',
+        challengeTitle: '',
         challengeCta: 'Try kar liya — complete maaro',
         whyItems: {
           learn: 'Why learn this?',
@@ -4091,7 +4091,7 @@ export const translations: Record<Locale, TranslationShape> = {
       },
     },
     notes: {
-      header: { title: 'Deep Learning Notes', subtitle: "Auto-generated from the video — edit anything, they're yours" },
+      header: { title: 'Deep Learning Notes', subtitle: '' },
       topicPlaceholder: 'Topic for deep learning...',
       deepDiveCta: 'Deep Dive',
       linkPlaceholder: 'Link',
@@ -4140,7 +4140,7 @@ export const translations: Record<Locale, TranslationShape> = {
       },
       deepNotesCta: 'Deep Notes',
       researchCta: 'Research',
-      selectVideoPrompt: 'Video select karo dekhne ke liye',
+      selectVideoPrompt: '',
       verifiedBadge: 'verified',
       dismissAria: 'Dismiss',
       errors: {
@@ -4188,15 +4188,15 @@ export const translations: Record<Locale, TranslationShape> = {
       weakAreas: { title: 'Weak Areas', noneFound: 'Koi weak topic nahi mila — sab theek chal raha hai.' },
     },
     research: {
-      header: { title: 'Research', subtitle: 'Koi bhi topic search karo — internet se, deeper reading ke liye' },
+      header: { title: 'Research', subtitle: '' },
       searchPlaceholder: 'Kya jaanna hai?',
       searchCta: 'Search',
       notGroundedNote:
         'Live search source nahi mila is baar — neeche wala jawab general knowledge se hai, current cheezon ke liye double-check kar lena',
       genericError: 'Research failed',
-      embedded: { title: 'Research (video ke saath saath)', hint: 'Kuch bhi search karo — video chalti rahegi.' },
+      embedded: { title: 'Research (video ke saath saath)', hint: '' },
       closeAria: 'Close research panel',
-      emptyState: { title: 'Koi bhi topic search karo', subtitle: 'Video dekhte hue side mein bhi khol sakte ho — Videos page se' },
+      emptyState: { title: 'Koi bhi topic search karo', subtitle: '' },
     },
     currentAffairs: {
       title: 'Current Affairs',
