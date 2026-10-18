@@ -12,7 +12,6 @@ import { useNavigate } from 'react-router-dom';
 import { MENTOR_PREFILL_KEY } from './mentorPrefill';
 import Notes from './Notes';
 import Research from './Research';
-import HintBubble from './HintBubble';
 import { getCachedConnectorFacts } from './conceptVideoPool';
 import { useOnborda } from './OnbordaContext';
 import { hasSeenTour, markTourSeen } from './tourStore';
@@ -883,9 +882,6 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                 ))}
               </div>
 
-              {videos.length > 1 && (
-                <HintBubble id="video-picker" text="3 styles, same topic — pick the one that clicks, you don't need all 3." />
-              )}
               <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
                 {videos.length === 0 ? (
                   <div className="text-center py-8 md:py-12 text-gray-400 dark:text-white/60">
