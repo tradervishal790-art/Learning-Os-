@@ -393,7 +393,7 @@ export default function Roadmap({
           <Route className="w-6 h-6 md:w-8 md:h-8" strokeWidth={1.75} />
           <h1 className="text-2xl md:text-4xl font-bold">{t.roadmap.header.title}</h1>
         </div>
-        <p className="text-sm text-gray-500 dark:text-white/60">{t.roadmap.header.subtitle}</p>
+        {t.roadmap.header.subtitle && <p className="text-sm text-gray-500 dark:text-white/60">{t.roadmap.header.subtitle}</p>}
       </motion.div>
 
       {/* Goal tabs — up to MAX_ACTIVE_GOALS active goals at once */}
