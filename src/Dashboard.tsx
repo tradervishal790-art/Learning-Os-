@@ -528,7 +528,9 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   }
 
   const displayName = userData?.name?.trim() || t.dashboard.home.learnerFallback;
-  const currentTopic = getCurrentTopic(getRoadmapData(activeGoalId));
+  const currentRoadmap = getRoadmapData(activeGoalId);
+  const currentTopic = getCurrentTopic(currentRoadmap);
+  const hasRoadmap = (currentRoadmap.children?.length ?? 0) > 0;
   const revisionStats = getRevisionStats(getRevisionDataForGoals(t.revisionTasks, goals));
 
   const getGreeting = () => {
@@ -801,6 +803,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                     const StatIcon = STAT_ICONS[card.icon as keyof typeof STAT_ICONS];
                     return (
                       <button key={card.title} onClick={card.onClick} aria-label={card.title} className="px-4 py-3 text-left transition-colors hover:bg-gray-50 dark:hover:bg-white/5">
+                        <StatIcon className="mb-2 h-4 w-4 text-gray-500 dark:text-white/50" strokeWidth={1.75} />
                         <div className="mb-1 text-xs text-gray-500 dark:text-white/50">{card.title}</div>
                         <div className="line-clamp-2 text-sm font-semibold tabular-nums">{card.value}</div>
                         <div className="text-xs text-gray-500 dark:text-white/50">{card.subtitle}</div>
