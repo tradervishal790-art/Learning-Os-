@@ -104,7 +104,7 @@ export default function Progress({ goals = [] }: ProgressProps) {
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-8 md:p-12 text-center rounded-2xl card">
           <Sprout className="w-12 h-12 mx-auto mb-4 text-gray-400 dark:text-white/40" strokeWidth={1.5} />
           <h3 className="text-xl font-semibold mb-2">{t.progress.emptyState.title}</h3>
-          <p className="text-gray-400 dark:text-white/60">{t.progress.emptyState.body}</p>
+          {t.progress.emptyState.body && <p className="text-gray-400 dark:text-white/60">{t.progress.emptyState.body}</p>}
         </motion.div>
       ) : (
         <>
