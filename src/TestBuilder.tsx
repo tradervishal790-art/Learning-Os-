@@ -356,7 +356,7 @@ function QuestionCard({
         <textarea
           value={(question as SubjectiveQuestion).modelAnswer}
           onChange={(e) => onChange({ modelAnswer: e.target.value })}
-          placeholder="Model answer (shown to you after you submit, for self-grading)"
+          placeholder="Model answer (for self-check)"
           rows={3}
           className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-2.5 mb-3 resize-none focus:outline-none focus:border-black dark:focus:border-white"
         />
@@ -365,7 +365,7 @@ function QuestionCard({
       <textarea
         value={question.explanation}
         onChange={(e) => onChange({ explanation: e.target.value })}
-        placeholder="Explanation (optional, shown in results)"
+        placeholder="Explanation (optional)"
         rows={2}
         className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-2.5 mb-3 resize-none focus:outline-none focus:border-black dark:focus:border-white text-sm"
       />
