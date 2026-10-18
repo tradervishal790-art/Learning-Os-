@@ -1024,7 +1024,7 @@ export const translations: Record<Locale, TranslationShape> = {
       deadlineLabel: 'Deadline',
       quickLabel: 'Quick:',
       loadingCta: 'Finding videos...',
-      noProfileHint: 'Complete the quiz first for better matches',
+      noProfileHint: '',
       generateCta: 'Generate',
       generatingCta: 'Generating...',
     },
@@ -1829,8 +1829,7 @@ export const translations: Record<Locale, TranslationShape> = {
     },
     mentor: {
       header: { title: 'AI Mentor', subtitle: '' },
-      welcomeMessage:
-        "Hello! I'm your AI Mentor.\n\nYou can ask me anything:\n• Explain concepts\n• Real-world analogies\n• Take a quiz\n• Project ideas\n• Common mistakes\n\n",
+      welcomeMessage: "Hi! What are we learning today?", 
       suggestedPrompts: [
         { icon: '', label: 'Explain simply', prompt: 'Explain this concept simply' },
         { icon: '', label: 'Deep dive', prompt: 'Explain this in depth with examples' },
@@ -1857,7 +1856,7 @@ export const translations: Record<Locale, TranslationShape> = {
       completionBar: { topicsDone: '{0}/{1} topics done', inProgress: '{0} in progress' },
       emptyState: {
         title: 'Nothing to track yet',
-        body: 'Start a topic from your roadmap — progress will start showing up here automatically.',
+        body: '',
       },
       timeTracking: { title: 'Time Tracking', last7Days: 'Last 7 days: {0} min' },
       masteryHeatmap: { title: 'Mastery Heatmap', legendWeak: 'Weak', legendOk: 'OK', legendStrong: 'Strong' },
@@ -1865,7 +1864,7 @@ export const translations: Record<Locale, TranslationShape> = {
       weakAreas: { title: 'Weak Areas', noneFound: 'No weak topics found — everything is going well.' },
     },
     research: {
-      header: { title: 'Research', subtitle: 'Search any topic — from the internet, for deeper reading' },
+      header: { title: 'Research', subtitle: '' },
       searchPlaceholder: 'What do you want to know?',
       searchCta: 'Search',
       notGroundedNote:
@@ -1873,7 +1872,7 @@ export const translations: Record<Locale, TranslationShape> = {
       genericError: 'Research failed',
       embedded: { title: 'Research (alongside the video)', hint: '' },
       closeAria: 'Close research panel',
-      emptyState: { title: 'Search any topic', subtitle: 'You can also open this alongside a video — from the Videos page' },
+      emptyState: { title: 'Search any topic', subtitle: '' },
     },
     currentAffairs: {
       title: 'Current Affairs',
@@ -2608,7 +2607,7 @@ export const translations: Record<Locale, TranslationShape> = {
         confirm: 'लक्ष्य समाप्त करें',
       },
       stats: { progress: 'प्रगति', done: 'पूरा', inProgress: 'जारी है', estTime: 'अनुमानित समय' },
-      noActiveGoal: 'कोई सक्रिय लक्ष्य नहीं है। नया शुरू करने के लिए ऊपर "+ लक्ष्य जोड़ें" दबाएं।',
+      noActiveGoal: 'कोई सक्रिय लक्ष्य नहीं है।',
       generateForm: {
         label: 'क्या सीखना है?',
         placeholder: 'आप क्या सीखना चाहते हैं?',
@@ -2663,7 +2662,7 @@ export const translations: Record<Locale, TranslationShape> = {
       },
       emptyState: {
         noRevisionTitle: 'अभी कोई रिवीज़न नहीं',
-        noRevisionBody: 'रोडमैप में कोई टॉपिक शुरू करें या कोई वीडियो देखें — रिवीज़न शेड्यूल अपने आप यहां बन जाएगा।',
+        noRevisionBody: '',
         allCaughtUpTitle: 'सब कुछ पूरा हो गया!',
         allCaughtUpBody: 'इस श्रेणी में अभी कोई आइटम नहीं है।',
       },
@@ -2990,8 +2989,7 @@ export const translations: Record<Locale, TranslationShape> = {
     },
     mentor: {
       header: { title: 'AI मेंटर', subtitle: '' },
-      welcomeMessage:
-        'नमस्ते! मैं आपका AI मेंटर हूं।\n\nआप मुझसे कुछ भी पूछ सकते हैं:\n• कॉन्सेप्ट समझाना\n• असल दुनिया की मिसालें\n• क्विज़ लेना\n• प्रोजेक्ट आइडिया\n• आम गलतियां\n\nनीचे दिए सुझाव आज़माएं, या अपना सवाल टाइप करें!',
+      welcomeMessage: 'नमस्ते! आज क्या सीखना है?',
       suggestedPrompts: [
         { icon: '', label: 'आसानी से समझाओ', prompt: 'यह कॉन्सेप्ट आसान भाषा में समझाओ' },
         { icon: '', label: 'गहराई से', prompt: 'इसे उदाहरणों के साथ विस्तार से समझाओ' },
@@ -3017,7 +3015,7 @@ export const translations: Record<Locale, TranslationShape> = {
       completionBar: { topicsDone: '{0}/{1} टॉपिक पूरे', inProgress: '{0} जारी हैं' },
       emptyState: {
         title: 'अभी ट्रैक करने को कुछ नहीं है',
-        body: 'रोडमैप से कोई टॉपिक शुरू करें — प्रगति अपने आप यहां दिखनी शुरू हो जाएगी।',
+        body: '',
       },
       timeTracking: { title: 'टाइम ट्रैकिंग', last7Days: 'पिछले 7 दिन: {0} मिनट' },
       masteryHeatmap: { title: 'महारत हीटमैप', legendWeak: 'कमजोर', legendOk: 'ठीक', legendStrong: 'मजबूत' },
@@ -3159,10 +3157,10 @@ export const translations: Record<Locale, TranslationShape> = {
     },
     onboarding: {
       stepTitles: [
-        { title: 'Tum kaun ho?', subtitle: 'Ek chuno' },
-        { title: 'Tumhara goal?', subtitle: 'Ek chuno' },
-        { title: 'Language', subtitle: 'Ek chuno' },
-        { title: 'Tumhara naam', subtitle: 'Type karo' },
+        { title: 'Tum kaun ho?', subtitle: '' },
+        { title: 'Tumhara goal?', subtitle: '' },
+        { title: 'Language', subtitle: '' },
+        { title: 'Tumhara naam', subtitle: '' },
       ],
       roles: {
         student: 'Student',
@@ -3823,7 +3821,7 @@ export const translations: Record<Locale, TranslationShape> = {
       },
       emptyState: {
         noRevisionTitle: 'Abhi koi revision nahi',
-        noRevisionBody: 'Roadmap mein koi topic start karo ya video dekho — revision schedule yahin apne aap ban jayega.',
+        noRevisionBody: '',
         allCaughtUpTitle: 'All caught up!',
         allCaughtUpBody: 'No items in this category right now.',
       },
@@ -4118,7 +4116,7 @@ export const translations: Record<Locale, TranslationShape> = {
       },
     },
     videos: {
-      header: { title: 'Videos', subtitle: 'Search • Watch • Personalized recommendations' },
+      header: { title: 'Videos', subtitle: '' },
       searchPlaceholder: 'Search videos...',
       searchCta: 'Search',
       noResultsYet: 'Search se start karo',
@@ -4149,9 +4147,8 @@ export const translations: Record<Locale, TranslationShape> = {
       },
     },
     mentor: {
-      header: { title: 'AI Mentor', subtitle: "Stuck? Ask here — it knows what you're learning right now" },
-      welcomeMessage:
-        'Namaste! Main aapka AI Mentor hoon.\n\nAap mujhse kuch bhi poochh sakte hain:\n• Concepts explain karwana\n• Real-world analogies\n• Quiz lena\n• Project ideas\n• Common mistakes\n\nNeeche suggestions try karein, ya apna question type karein!',
+      header: { title: 'AI Mentor', subtitle: '' },
+      welcomeMessage: 'Namaste! Aaj kya seekhna hai?',
       suggestedPrompts: [
         { icon: '', label: 'Explain simply', prompt: 'Explain this concept simply' },
         { icon: '', label: 'Deep dive', prompt: 'Explain this in depth with examples' },
@@ -4173,12 +4170,12 @@ export const translations: Record<Locale, TranslationShape> = {
       },
     },
     progress: {
-      header: { title: 'Progress', subtitle: 'Your real stats — streak, watch time, weak spots' },
+      header: { title: 'Progress', subtitle: '' },
       stats: { completion: 'Completion', streak: 'Streak', totalWatchTime: 'Total Watch Time', retention: 'Retention' },
       completionBar: { topicsDone: '{0}/{1} topics done', inProgress: '{0} in progress' },
       emptyState: {
         title: 'Abhi kuch track karne ko nahi hai',
-        body: 'Roadmap se koi topic start karo — progress yahin apne aap dikhna shuru ho jayega.',
+        body: '',
       },
       timeTracking: { title: 'Time Tracking', last7Days: 'Last 7 days: {0} min' },
       masteryHeatmap: { title: 'Mastery Heatmap', legendWeak: 'Weak', legendOk: 'OK', legendStrong: 'Strong' },
