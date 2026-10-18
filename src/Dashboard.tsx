@@ -29,7 +29,6 @@ import { useTheme } from './ThemeContext';
 import { signOutOfApp, getCurrentUser } from './authStore';
 import { useAuthPrompt, SignInButton, LoginRequired } from './AuthPrompt';
 import type { DashboardPageId, PageConfig, UserOnboardingData, LearningProfile, Video, Topic, Goal, TopicBridge } from './types';
-import HintBubble from './HintBubble';
 import Onborda from './Onborda';
 import { OnbordaProvider, useOnborda } from './OnbordaContext';
 import OnbordaCard from './OnbordaCard';
@@ -609,40 +608,6 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   const currentTopic = getCurrentTopic(getRoadmapData(activeGoalId));
   const revisionStats = getRevisionStats(getRevisionDataForGoals(t.revisionTasks, goals));
 
-  // ---------- "Get Started" checklist (new-user guidance) ----------
-  // New users land on a Dashboard with 8 sidebar sections and no clear
-  // "do this first" signal. This computes the 3 steps that actually
-  // matter in the right order — each check reads real existing state
-  // (no new store needed), so it disappears on its own once genuinely
-  // done, and never lies about progress.
-  const hasLearningProfile = learningProfile !== null;
-  const hasRoadmap = goals.length > 0;
-  const hasWatchedVideo = getEngagementSessions().length > 0;
-  const onboardingSteps = [
-    {
-      done: hasLearningProfile,
-      title: t.dashboard.checklist.steps[0].title,
-      subtitle: t.dashboard.checklist.steps[0].subtitle,
-      action: () => setShowLearningQuiz(true),
-      cta: t.dashboard.checklist.steps[0].cta,
-    },
-    {
-      done: hasRoadmap,
-      title: t.dashboard.checklist.steps[1].title,
-      subtitle: t.dashboard.checklist.steps[1].subtitle,
-      action: () => setActivePage('roadmap'),
-      cta: t.dashboard.checklist.steps[1].cta,
-    },
-    {
-      done: hasWatchedVideo,
-      title: t.dashboard.checklist.steps[2].title,
-      subtitle: t.dashboard.checklist.steps[2].subtitle,
-      action: () => setActivePage('videos'),
-      cta: t.dashboard.checklist.steps[2].cta,
-    },
-  ];
-  const showOnboardingChecklist = onboardingSteps.some((s) => !s.done);
-
   const getGreeting = () => {
     const hour = new Date().getHours();
     if (hour < 5) return t.dashboard.greeting.night;
@@ -838,49 +803,6 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
             />
             <WelcomeBack goals={goals} revisionTasks={t.revisionTasks} onOpen={setActivePage} />
             <DailyHabit />
-            {showOnboardingChecklist && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="p-4 md:p-5 rounded-2xl card"
-              >
-                <h3 className="font-semibold mb-0.5">{t.dashboard.checklist.heading}</h3>
-                <p className="text-xs text-gray-400 dark:text-white/40 mb-2">
-                  {t.dashboard.checklist.subheading}
-                </p>
-                <div className="divide-y divide-gray-100 dark:divide-white/10">
-                  {onboardingSteps.map((step, i) => (
-                    <div
-                      key={step.title}
-                      className={`flex items-center gap-3 py-3 ${step.done ? 'opacity-50' : ''}`}
-                    >
-                      <div
-                        className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0 ${
-                          step.done
-                            ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white'
-                            : 'border border-gray-300 dark:border-white/30 text-gray-400 dark:text-white/40'
-                        }`}
-                      >
-                        {step.done ? <Check className="w-3.5 h-3.5" strokeWidth={2.5} /> : i + 1}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium truncate">{step.title}</div>
-                        <div className="text-xs text-gray-400 dark:text-white/40 truncate">{step.subtitle}</div>
-                      </div>
-                      {!step.done && (
-                        <button
-                          onClick={step.action}
-                          className="px-3 py-1.5 rounded-full bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white text-xs font-medium hover:opacity-80 transition flex-shrink-0"
-                        >
-                          {step.cta}
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </motion.div>
-            )}
-
             <AnimatePresence>
               {revisionAlert && (
                 <motion.div
@@ -1150,13 +1072,9 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                     when the user explicitly taps to view it. */}
                 {learningProfile && (
                   <div className="pt-2 border-t border-gray-200 dark:border-white/10">
-                    <HintBubble id="learning-profile" text={t.settingsModal.learningProfileSection.hintBubble} />
                     <label className="block text-xs uppercase tracking-wider text-gray-400 dark:text-white/40 mb-2 mt-4">
                       {t.settingsModal.learningProfileSection.label}
                     </label>
-                    <p className="text-xs text-gray-400 dark:text-white/40 mb-3">
-                      {t.settingsModal.learningProfileSection.hint}
-                    </p>
                     <button
                       onClick={() => setShowFullProfileReport((v) => !v)}
                       className="w-full py-2.5 rounded-xl border border-gray-300 dark:border-white/10 text-sm font-medium hover:bg-gray-100 dark:hover:bg-white/10 transition"
