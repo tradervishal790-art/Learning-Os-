@@ -739,7 +739,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                         ? format(t.dashboard.home.revisionBanner.overdueTitle, revisionAlert.dueToday + revisionAlert.overdue, revisionAlert.overdue)
                         : format(t.dashboard.home.revisionBanner.dueTitle, revisionAlert.dueToday)}
                     </div>
-                    <div className="text-xs opacity-70">{t.dashboard.home.revisionBanner.subtitle}</div>
+                    {t.dashboard.home.revisionBanner.subtitle && <div className="text-xs opacity-70">{t.dashboard.home.revisionBanner.subtitle}</div>}
                   </div>
                   <button
                     onClick={() => {
@@ -789,12 +789,12 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
 
             <section className="pt-6 border-t border-gray-200 dark:border-white/10">
               <h3 className="font-semibold mb-1">{learningProfile ? t.dashboard.home.learningStyleCard.titleReady : t.dashboard.home.learningStyleCard.titleNotReady}</h3>
-              <p className="text-sm text-gray-500 dark:text-white/50 mb-2">
-                {learningProfile
-                  ? t.dashboard.home.learningStyleCard.subtitleReady
-                  : t.dashboard.home.learningStyleCard.subtitleNotReady}
-              </p>
-              {learningProfile && (
+              {(learningProfile ? t.dashboard.home.learningStyleCard.subtitleReady : t.dashboard.home.learningStyleCard.subtitleNotReady) && (
+                <p className="text-sm text-gray-500 dark:text-white/50 mb-2">
+                  {learningProfile ? t.dashboard.home.learningStyleCard.subtitleReady : t.dashboard.home.learningStyleCard.subtitleNotReady}
+                </p>
+              )}
+              {learningProfile && t.dashboard.home.learningStyleCard.detailReady && (
                 <p className="text-sm text-gray-500 dark:text-white/50 mb-2">
                   {t.dashboard.home.learningStyleCard.detailReady}
                 </p>
@@ -1250,7 +1250,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                   </div>
                 )}
 
-                {!learningProfile && !customLoading && (
+                {!learningProfile && !customLoading && t.customPlaylistModal.noProfileHint && (
                   <p className="text-xs text-yellow-600 dark:text-yellow-300">{t.customPlaylistModal.noProfileHint}</p>
                 )}
               </div>
