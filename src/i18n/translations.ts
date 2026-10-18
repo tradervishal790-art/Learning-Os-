@@ -768,7 +768,7 @@ export const translations: Record<Locale, TranslationShape> = {
     },
     demo: {
       title: 'How It Works',
-      subtitle: 'Everything Learning OS does, in one walkthrough',
+      subtitle: '',
       startCta: 'Start →',
       dashboardCta: 'Dashboard →',
       steps: [
@@ -912,12 +912,11 @@ export const translations: Record<Locale, TranslationShape> = {
         videoPickerIntro: [
           {
             title: 'These 3 videos — same topic',
-            content:
-              'All three videos teach the same concept, just in a different teaching style (pace, examples, structure). Pick whichever one suits you best — you don\u2019t need to watch all three.',
+            content: '',
           },
           {
             title: 'Different style, same concept',
-            content: 'This is the second option — try it if the first one didn\u2019t suit you. Same content, different presentation.',
+            content: '',
           },
         ],
       },
@@ -927,7 +926,7 @@ export const translations: Record<Locale, TranslationShape> = {
         steps: [
           {
             title: 'Set your learning style',
-            subtitle: 'A short AI interview — you\u2019ll get better video matches',
+            subtitle: '',
             cta: 'Start',
           },
           {
@@ -946,7 +945,7 @@ export const translations: Record<Locale, TranslationShape> = {
         revisionBanner: {
           overdueTitle: '{0} topics need revision — {1} overdue!',
           dueTitle: '{0} topics to revise today',
-          subtitle: "Don't forget — do it now",
+          subtitle: '',
         },
         learnerFallback: 'Learner',
         statsCards: {
@@ -967,10 +966,9 @@ export const translations: Record<Locale, TranslationShape> = {
         learningStyleCard: {
           titleReady: 'Learning Style',
           titleNotReady: 'Find Your Style',
-          subtitleReady: 'Profile ready — full report is in Settings',
-          subtitleNotReady: 'Short quiz for better matches',
-          detailReady:
-            '8 learning dimensions set — pace, depth, structure and more. See the full breakdown in Settings → "Learning Profile Report".',
+          subtitleReady: '',
+          subtitleNotReady: '',
+          detailReady: '',
           retakeCta: 'Retake Blueprint Interview',
           startCta: 'Start Blueprint Interview',
           analyzeVideosCta: "Analyze Videos I've Watched",
@@ -987,7 +985,7 @@ export const translations: Record<Locale, TranslationShape> = {
       languageLabel: 'Language',
       roadmapSection: {
         label: 'Roadmap',
-        hint: "The roadmap is generated once. If topics feel too broad or you've changed your learning style, regenerate it.",
+        hint: '',
         regenerateCta: 'Regenerate Roadmap',
         regeneratingCta: 'Regenerating...',
         successMsg: 'New roadmap generated.',
@@ -995,8 +993,8 @@ export const translations: Record<Locale, TranslationShape> = {
       },
       learningProfileSection: {
         label: 'Learning Profile Report',
-        hint: 'This only shows when requested — the home page just has a short summary.',
-        hintBubble: 'Your full learning profile lives here — tap to view it.',
+        hint: '',
+        hintBubble: '',
         viewCta: 'View Full Report',
         hideCta: 'Hide Report',
         dims: {
@@ -1435,7 +1433,7 @@ export const translations: Record<Locale, TranslationShape> = {
       fallback: 'Revise this topic',
     },
     roadmap: {
-      header: { title: 'Your Roadmap', subtitle: 'Foundation-first order — follow it for best results' },
+      header: { title: 'Your Roadmap', subtitle: '' },
       goalTabs: {
         newGoal: 'New Goal',
         addGoal: '+ Add Goal',
@@ -1449,7 +1447,7 @@ export const translations: Record<Locale, TranslationShape> = {
         confirm: 'End Goal',
       },
       stats: { progress: 'Progress', done: 'Done', inProgress: 'In Progress', estTime: 'Est. Time' },
-      noActiveGoal: 'No active goal. Tap "+ Add Goal" above to start a new one.',
+      noActiveGoal: 'No active goal.',
       generateForm: {
         label: 'What do you want to learn?',
         placeholder: 'What do you want to learn?',
@@ -1458,9 +1456,9 @@ export const translations: Record<Locale, TranslationShape> = {
         examLabel: 'For a specific exam/board?',
         examOptional: '(optional)',
         examPlaceholder: 'e.g. CBSE Class 10, JEE, NEET — leave blank for general learning',
-        examHint: "If you tell us, the roadmap will follow that exam's syllabus order and marks-weightage.",
+        examHint: '',
         weeklyTimeLabel: 'Weekly time available',
-        weeklyTimeHint: "This makes the roadmap's topics and depth accurate to your available time.",
+        weeklyTimeHint: '',
         timeLimitLabel: 'Time limit',
         deadlineLabel: 'Deadline',
         generateFailed: "Couldn't generate the roadmap — try again.",
@@ -1472,13 +1470,13 @@ export const translations: Record<Locale, TranslationShape> = {
         overviewTab: 'Overview',
         whyTab: 'Why',
         whatYoullLearn: "What you'll learn",
-        bridgeHint: 'This shows how the last topic connects to this one.',
+        bridgeHint: '',
         deepDiveCta: '2 quick questions? Get better matched videos (optional)',
         watchVideosCta: 'Watch videos',
         searchingCta: 'Searching...',
         savedVideoCta: 'Saved video',
         markCompleteCta: 'I already know this — mark as complete',
-        challengeTitle: 'Try a small applied challenge first, then mark the topic complete.',
+        challengeTitle: '',
         challengeCta: 'Tried it — mark complete',
         whyItems: {
           learn: 'Why learn this?',
@@ -1504,7 +1502,7 @@ export const translations: Record<Locale, TranslationShape> = {
       },
       emptyState: {
         noRevisionTitle: 'No revisions yet',
-        noRevisionBody: 'Start a topic on your roadmap or watch a video — a revision schedule will build itself here.',
+        noRevisionBody: '' ,
         allCaughtUpTitle: 'All caught up!',
         allCaughtUpBody: 'No items in this category right now.',
       },
@@ -1770,7 +1768,7 @@ export const translations: Record<Locale, TranslationShape> = {
       },
     },
     notes: {
-      header: { title: 'Deep Learning Notes', subtitle: "Auto-generated from the video — edit anything, they're yours" },
+      header: { title: 'Deep Learning Notes', subtitle: '' },
       topicPlaceholder: 'Topic for deep learning...',
       deepDiveCta: 'Deep Dive',
       linkPlaceholder: 'Link',
