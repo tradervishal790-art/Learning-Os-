@@ -193,7 +193,7 @@ export default function Research({ embedded = false, onClose }: ResearchProps) {
         {error && <p className="text-red-500 dark:text-red-400 text-sm mt-2">{error}</p>}
         {resultsBlock}
         {!result && !loading && (
-          <p className="text-sm text-gray-400 dark:text-white/40 mt-4">{t.research.embedded.hint}</p>
+          {t.research.embedded.hint && <p className="text-sm text-gray-400 dark:text-white/40 mt-4">{t.research.embedded.hint}</p>}
         )}
       </div>
     );
@@ -205,7 +205,7 @@ export default function Research({ embedded = false, onClose }: ResearchProps) {
         <h1 className="text-2xl md:text-4xl font-bold mb-1 md:mb-2 flex items-center gap-3">
           <Search className="w-6 h-6 md:w-8 md:h-8" /> {t.research.header.title}
         </h1>
-        <p className="text-sm md:text-base text-gray-500 dark:text-white/60">{t.research.header.subtitle}</p>
+        {t.research.header.subtitle && <p className="text-sm md:text-base text-gray-500 dark:text-white/60">{t.research.header.subtitle}</p>}
       </motion.div>
 
       <div className="max-w-3xl mx-auto mb-6">
@@ -236,7 +236,7 @@ export default function Research({ embedded = false, onClose }: ResearchProps) {
         <div className="max-w-2xl mx-auto text-center py-16 text-gray-400 dark:text-white/60">
           <Search className="w-12 h-12 mx-auto mb-3 opacity-30" />
           <p className="text-lg mb-2">{t.research.emptyState.title}</p>
-          <p className="text-sm">{t.research.emptyState.subtitle}</p>
+          {t.research.emptyState.subtitle && <p className="text-sm">{t.research.emptyState.subtitle}</p>}
         </div>
       )}
     </div>

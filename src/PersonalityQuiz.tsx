@@ -136,7 +136,7 @@ export default function PersonalityQuiz({
                   <span className="block text-xs text-gray-400 dark:text-white/40 mt-0.5">{v.hint}</span>
                 </button>
               ))}
-              <p className="text-[11px] text-gray-400 dark:text-white/40 pt-1">If you are exactly 15 or 20, pick whichever feels closer to your life.</p>
+              <p className="text-[11px] text-gray-400 dark:text-white/40 pt-1">At 15 or 20? Choose the closer age group.</p>
             </div>
           )}
 

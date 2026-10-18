@@ -12,10 +12,7 @@ import { useNavigate } from 'react-router-dom';
 import { MENTOR_PREFILL_KEY } from './mentorPrefill';
 import Notes from './Notes';
 import Research from './Research';
-import HintBubble from './HintBubble';
 import { getCachedConnectorFacts } from './conceptVideoPool';
-import { useOnborda } from './OnbordaContext';
-import { hasSeenTour, markTourSeen } from './tourStore';
 import { useTranslation } from './i18n/LanguageContext';
 import { format } from './i18n/format';
 import { authFetch } from './apiFetch';
@@ -253,7 +250,6 @@ interface VideoIntelProps {
 
 export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicId, allGoalIds }: VideoIntelProps = {}) {
   const t = useTranslation();
-  const { startOnborda } = useOnborda();
   // Every active goal, active-tab first (checked first so ties resolve in
   // the learner's favor) — deduped in case activeGoalId is also in the list.
   const goalIdsToCheck = Array.from(
@@ -469,17 +465,6 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
     setSelectedVideo(initialPlaylist.primary);
     void verifyBridgeForVideo(initialPlaylist.primary);
 
-    // First time a learner ever gets a 3-video (primary + fallbacks) picker,
-    // explain that all 3 teach the SAME concept in different styles — pick
-    // one, not all three — before it reads as a bug ("why 3 of the same
-    // thing?"). See personalityEngine.ts for why there are always 3.
-    if (initialPlaylist.fallbacks.length > 0 && !hasSeenTour('video-picker-intro')) {
-      const timer = setTimeout(() => {
-        startOnborda('video-picker-intro');
-        markTourSeen('video-picker-intro');
-      }, 500);
-      return () => clearTimeout(timer);
-    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialPlaylist?.primary.id]);
 
@@ -828,7 +813,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
         <div className="p-4 md:p-8">
           <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-5 md:mb-8">
             <h1 className="text-2xl md:text-4xl font-bold mb-1 md:mb-2">{t.videos.header.title}</h1>
-            <p className="text-sm md:text-base text-gray-500 dark:text-white/60">{t.videos.header.subtitle}</p>
+            {t.videos.header.subtitle && <p className="text-sm md:text-base text-gray-500 dark:text-white/60">{t.videos.header.subtitle}</p>}
           </motion.div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -883,9 +868,6 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                 ))}
               </div>
 
-              {videos.length > 1 && (
-                <HintBubble id="video-picker" text="3 styles, same topic — pick the one that clicks, you don't need all 3." />
-              )}
               <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
                 {videos.length === 0 ? (
                   <div className="text-center py-8 md:py-12 text-gray-400 dark:text-white/60">

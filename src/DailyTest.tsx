@@ -122,14 +122,14 @@ export default function DailyTest({ onStart, onExit }: { onStart: (paper: TestPa
       <h2 className="flex items-center gap-2 text-2xl font-bold mb-1">
         <CalendarCheck className="w-6 h-6" /> Daily Test
       </h2>
-      <p className="text-sm text-gray-500 dark:text-white/60 mb-6">Upload your questions once. A new test is ready for you every day — no daily uploading.</p>
+      <p className="text-sm text-gray-500 dark:text-white/60 mb-6">Add questions once. A new test appears daily.</p>
 
       {message && <p className="mb-4 text-sm text-emerald-600 dark:text-emerald-400">{message}</p>}
 
       {status === 'empty' ? (
         <div className={card}>
-          <p className="font-semibold mb-1">Start by adding your questions</p>
-          <p className="text-sm text-gray-500 dark:text-white/60 mb-4">Add photos or PDFs of your question paper (or paste/type the questions). You do this only once.</p>
+          <p className="font-semibold mb-1">Add questions to begin</p>
+          <p className="text-sm text-gray-500 dark:text-white/60 mb-4">Upload photos/PDFs or type questions.</p>
           <button onClick={() => setEditingBank(true)} className="px-5 py-2.5 rounded-xl bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white font-semibold">
             Add questions
           </button>

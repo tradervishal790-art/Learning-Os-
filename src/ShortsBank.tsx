@@ -62,7 +62,7 @@ export default function ShortsBank({
         <p className="mt-2 text-xs opacity-60">Total skips so far: {skipsTotal}</p>
 
         <h2 className="mb-1 mt-8 font-semibold">Saved Shorts</h2>
-        <p className="mb-3 text-sm opacity-60">Skip a break and a few Shorts get saved here. Watching one costs 1 min from your bank.</p>
+        
 
         {saved.length === 0 && (
           <p className="rounded-2xl border border-dashed border-black/20 p-6 text-center text-sm opacity-60 dark:border-white/25">
@@ -96,7 +96,7 @@ export default function ShortsBank({
             </div>
           ))}
         </div>
-        {!canWatch && saved.length > 0 && <p className="mt-3 text-xs opacity-60">Your bank is empty. Skip a break to earn more.</p>}
+        
       </div>
 
       {watching && (

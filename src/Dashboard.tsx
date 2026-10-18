@@ -20,7 +20,6 @@ import DailyHabit from './DailyHabit';
 import { analyzeAttempt, analyzeHistory } from './testAnalytics';
 import { getTestAttempts } from './testStore';
 import { getLearningProfile, saveLearningProfile, clearLearningProfile } from './learningProfileStore';
-import { getEngagementSessions } from './engagementStore';
 import { pushToCloud, pullFromCloud } from './cloudSync';
 import { buildCandidatePoolForConcept } from './conceptVideoPool';
 import { selectPlaylistForConcept, analyzedVideoToVideo } from './PlaylistBuilder';
@@ -29,12 +28,6 @@ import { useTheme } from './ThemeContext';
 import { signOutOfApp, getCurrentUser } from './authStore';
 import { useAuthPrompt, SignInButton, LoginRequired } from './AuthPrompt';
 import type { DashboardPageId, PageConfig, UserOnboardingData, LearningProfile, Video, Topic, Goal, TopicBridge } from './types';
-import HintBubble from './HintBubble';
-import Onborda from './Onborda';
-import { OnbordaProvider, useOnborda } from './OnbordaContext';
-import OnbordaCard from './OnbordaCard';
-import type { Tour } from './onbordaTypes';
-import { hasSeenTour, markTourSeen } from './tourStore';
 import { useTranslation } from './i18n/LanguageContext';
 import { format } from './i18n/format';
 
@@ -65,65 +58,6 @@ function PageLoading() {
       Loading…
     </div>
   );
-}
-
-// Guided spotlight tour for first-time users — see Onborda.tsx for how this
-// engine works (ported from uixmat/onborda, MIT). Each `selector` below
-// must match an `id` added on the actual sidebar/nav element it targets.
-function getDashboardTour(t: ReturnType<typeof useTranslation>): Tour[] {
-  // Phones have no sidebar — the tour points at the bottom bar there.
-  // Revision lives behind the "More" slot on phones.
-  const phone = typeof window !== 'undefined' && !window.matchMedia('(min-width: 768px)').matches;
-  const navSel = (id: string) => (phone ? `#onborda-bnav-${id === 'revision' ? 'more' : id}` : `#onborda-nav-${id}`);
-  const navSide = phone ? 'top' : 'right';
-  return [
-    {
-      tour: 'dashboard-intro',
-      steps: [
-        {
-          title: t.dashboard.tour.dashboardIntro[0].title,
-          content: t.dashboard.tour.dashboardIntro[0].content,
-          selector: navSel('roadmap'),
-          side: navSide,
-        },
-        {
-          title: t.dashboard.tour.dashboardIntro[1].title,
-          content: t.dashboard.tour.dashboardIntro[1].content,
-          selector: navSel('revision'),
-          side: navSide,
-        },
-        {
-          title: t.dashboard.tour.dashboardIntro[2].title,
-          content: t.dashboard.tour.dashboardIntro[2].content,
-          selector: navSel('progress'),
-          side: navSide,
-        },
-        {
-          title: t.dashboard.tour.dashboardIntro[3].title,
-          content: t.dashboard.tour.dashboardIntro[3].content,
-          selector: '#onborda-settings-button',
-          side: 'left',
-        },
-      ],
-    },
-    {
-      tour: 'video-picker-intro',
-      steps: [
-        {
-          title: t.dashboard.tour.videoPickerIntro[0].title,
-          content: t.dashboard.tour.videoPickerIntro[0].content,
-          selector: '#onborda-video-primary',
-          side: 'right',
-        },
-        {
-          title: t.dashboard.tour.videoPickerIntro[1].title,
-          content: t.dashboard.tour.videoPickerIntro[1].content,
-          selector: '#onborda-video-fallback',
-          side: 'right',
-        },
-      ],
-    },
-  ];
 }
 
 interface DashboardProps {
@@ -295,19 +229,6 @@ function trackAndComputeStreak(): number {
 function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGenerateForSubject, roadmapVersion, lastRoadmapError, goals, activeGoalId, onAddGoal, onEndGoal, onSwitchGoal }: DashboardProps) {
   const t = useTranslation();
   const { isGuest, requireAccount, openSignIn } = useAuthPrompt();
-  const { startOnborda } = useOnborda();
-
-  // Auto-start the guided tour once, for a first-time learner only.
-  useEffect(() => {
-    if (!hasSeenTour('dashboard-intro')) {
-      const timer = setTimeout(() => {
-        startOnborda('dashboard-intro');
-        markTourSeen('dashboard-intro');
-      }, 800);
-      return () => clearTimeout(timer);
-    }
-  }, [startOnborda]);
-
   const { theme, toggleTheme } = useTheme();
   // activePage now mirrors the real URL (/dashboard/:page) instead of being
   // plain React state — this is what gives every page its own shareable,
@@ -609,40 +530,6 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   const currentTopic = getCurrentTopic(getRoadmapData(activeGoalId));
   const revisionStats = getRevisionStats(getRevisionDataForGoals(t.revisionTasks, goals));
 
-  // ---------- "Get Started" checklist (new-user guidance) ----------
-  // New users land on a Dashboard with 8 sidebar sections and no clear
-  // "do this first" signal. This computes the 3 steps that actually
-  // matter in the right order — each check reads real existing state
-  // (no new store needed), so it disappears on its own once genuinely
-  // done, and never lies about progress.
-  const hasLearningProfile = learningProfile !== null;
-  const hasRoadmap = goals.length > 0;
-  const hasWatchedVideo = getEngagementSessions().length > 0;
-  const onboardingSteps = [
-    {
-      done: hasLearningProfile,
-      title: t.dashboard.checklist.steps[0].title,
-      subtitle: t.dashboard.checklist.steps[0].subtitle,
-      action: () => setShowLearningQuiz(true),
-      cta: t.dashboard.checklist.steps[0].cta,
-    },
-    {
-      done: hasRoadmap,
-      title: t.dashboard.checklist.steps[1].title,
-      subtitle: t.dashboard.checklist.steps[1].subtitle,
-      action: () => setActivePage('roadmap'),
-      cta: t.dashboard.checklist.steps[1].cta,
-    },
-    {
-      done: hasWatchedVideo,
-      title: t.dashboard.checklist.steps[2].title,
-      subtitle: t.dashboard.checklist.steps[2].subtitle,
-      action: () => setActivePage('videos'),
-      cta: t.dashboard.checklist.steps[2].cta,
-    },
-  ];
-  const showOnboardingChecklist = onboardingSteps.some((s) => !s.done);
-
   const getGreeting = () => {
     const hour = new Date().getHours();
     if (hour < 5) return t.dashboard.greeting.night;
@@ -753,7 +640,6 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   );
 
   return (
-    <Onborda steps={getDashboardTour(t)} cardComponent={OnbordaCard}>
     <div className="min-h-dvh bg-[#f4f6ff] dark:bg-black flex text-black dark:text-white">
       <aside className="hidden md:flex w-64 border-r border-gray-200 dark:border-white/10 p-6 flex-col flex-shrink-0">
         {SidebarContent}
@@ -838,49 +724,6 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
             />
             <WelcomeBack goals={goals} revisionTasks={t.revisionTasks} onOpen={setActivePage} />
             <DailyHabit />
-            {showOnboardingChecklist && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="p-4 md:p-5 rounded-2xl card"
-              >
-                <h3 className="font-semibold mb-0.5">{t.dashboard.checklist.heading}</h3>
-                <p className="text-xs text-gray-400 dark:text-white/40 mb-2">
-                  {t.dashboard.checklist.subheading}
-                </p>
-                <div className="divide-y divide-gray-100 dark:divide-white/10">
-                  {onboardingSteps.map((step, i) => (
-                    <div
-                      key={step.title}
-                      className={`flex items-center gap-3 py-3 ${step.done ? 'opacity-50' : ''}`}
-                    >
-                      <div
-                        className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0 ${
-                          step.done
-                            ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white'
-                            : 'border border-gray-300 dark:border-white/30 text-gray-400 dark:text-white/40'
-                        }`}
-                      >
-                        {step.done ? <Check className="w-3.5 h-3.5" strokeWidth={2.5} /> : i + 1}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium truncate">{step.title}</div>
-                        <div className="text-xs text-gray-400 dark:text-white/40 truncate">{step.subtitle}</div>
-                      </div>
-                      {!step.done && (
-                        <button
-                          onClick={step.action}
-                          className="px-3 py-1.5 rounded-full bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white text-xs font-medium hover:opacity-80 transition flex-shrink-0"
-                        >
-                          {step.cta}
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </motion.div>
-            )}
-
             <AnimatePresence>
               {revisionAlert && (
                 <motion.div
@@ -896,7 +739,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                         ? format(t.dashboard.home.revisionBanner.overdueTitle, revisionAlert.dueToday + revisionAlert.overdue, revisionAlert.overdue)
                         : format(t.dashboard.home.revisionBanner.dueTitle, revisionAlert.dueToday)}
                     </div>
-                    <div className="text-xs opacity-70">{t.dashboard.home.revisionBanner.subtitle}</div>
+                    {t.dashboard.home.revisionBanner.subtitle && <div className="text-xs opacity-70">{t.dashboard.home.revisionBanner.subtitle}</div>}
                   </div>
                   <button
                     onClick={() => {
@@ -946,12 +789,12 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
 
             <section className="pt-6 border-t border-gray-200 dark:border-white/10">
               <h3 className="font-semibold mb-1">{learningProfile ? t.dashboard.home.learningStyleCard.titleReady : t.dashboard.home.learningStyleCard.titleNotReady}</h3>
-              <p className="text-sm text-gray-500 dark:text-white/50 mb-2">
-                {learningProfile
-                  ? t.dashboard.home.learningStyleCard.subtitleReady
-                  : t.dashboard.home.learningStyleCard.subtitleNotReady}
-              </p>
-              {learningProfile && (
+              {(learningProfile ? t.dashboard.home.learningStyleCard.subtitleReady : t.dashboard.home.learningStyleCard.subtitleNotReady) && (
+                <p className="text-sm text-gray-500 dark:text-white/50 mb-2">
+                  {learningProfile ? t.dashboard.home.learningStyleCard.subtitleReady : t.dashboard.home.learningStyleCard.subtitleNotReady}
+                </p>
+              )}
+              {learningProfile && t.dashboard.home.learningStyleCard.detailReady && (
                 <p className="text-sm text-gray-500 dark:text-white/50 mb-2">
                   {t.dashboard.home.learningStyleCard.detailReady}
                 </p>
@@ -1150,13 +993,9 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                     when the user explicitly taps to view it. */}
                 {learningProfile && (
                   <div className="pt-2 border-t border-gray-200 dark:border-white/10">
-                    <HintBubble id="learning-profile" text={t.settingsModal.learningProfileSection.hintBubble} />
                     <label className="block text-xs uppercase tracking-wider text-gray-400 dark:text-white/40 mb-2 mt-4">
                       {t.settingsModal.learningProfileSection.label}
                     </label>
-                    <p className="text-xs text-gray-400 dark:text-white/40 mb-3">
-                      {t.settingsModal.learningProfileSection.hint}
-                    </p>
                     <button
                       onClick={() => setShowFullProfileReport((v) => !v)}
                       className="w-full py-2.5 rounded-xl border border-gray-300 dark:border-white/10 text-sm font-medium hover:bg-gray-100 dark:hover:bg-white/10 transition"
@@ -1411,7 +1250,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                   </div>
                 )}
 
-                {!learningProfile && !customLoading && (
+                {!learningProfile && !customLoading && t.customPlaylistModal.noProfileHint && (
                   <p className="text-xs text-yellow-600 dark:text-yellow-300">{t.customPlaylistModal.noProfileHint}</p>
                 )}
               </div>
@@ -1439,14 +1278,9 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
         }}
       />
     </div>
-    </Onborda>
   );
 }
 
 export default function Dashboard(props: DashboardProps) {
-  return (
-    <OnbordaProvider>
-      <DashboardInner {...props} />
-    </OnbordaProvider>
-  );
+  return <DashboardInner {...props} />;
 }

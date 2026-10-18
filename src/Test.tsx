@@ -419,7 +419,7 @@ function TestList({
       </button>
 
       {papers.length === 0 ? (
-        <p className="text-center text-gray-400 dark:text-white/40 mb-10">You haven't created any tests yet — add your own questions above.</p>
+        <p className="text-center text-gray-400 dark:text-white/40 mb-10">No tests yet.</p>
       ) : (
         <div className="space-y-3 mb-10">
           {papers.map((p) => (

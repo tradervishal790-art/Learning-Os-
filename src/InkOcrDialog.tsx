@@ -34,7 +34,7 @@ export default function InkOcrDialog({
         {state.status === 'ready' && !empty && (
           <>
             {state.confidence !== 'high' && <p className="text-xs text-amber-600 dark:text-amber-400 mb-2">{t.ocrLowConf}</p>}
-            <p className="text-xs text-gray-400 dark:text-white/40 mb-1">{t.ocrEdit}</p>
+            {t.ocrEdit && <p className="text-xs text-gray-400 dark:text-white/40 mb-1">{t.ocrEdit}</p>}
             <textarea
               value={state.text}
               onChange={(e) => onText(e.target.value)}

@@ -277,7 +277,7 @@ export default function BreakFeed({
                 Spend 2 min from your bank 💰
               </button>
             ) : (
-              <p className="text-xs opacity-60">Skip a break to earn more Shorts time 💰</p>
+              
             )}
           </div>
         )}

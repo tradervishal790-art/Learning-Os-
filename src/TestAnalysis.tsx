@@ -104,7 +104,7 @@ export default function TestAnalysis({
           )}
         </div>
         {h.attempts < 2 ? (
-          <p className="text-sm text-gray-500 dark:text-white/50">Take a few more tests — patterns (weak topics, repeated mistakes, habits) show up once there are 2 or more.</p>
+          <p className="text-sm text-gray-500 dark:text-white/50">Take more tests to reveal patterns.</p>
         ) : (
           <>
             <div className="grid grid-cols-3 gap-2 mb-4">
@@ -156,7 +156,7 @@ export default function TestAnalysis({
         {attempt.insight ? (
           <p className="text-sm text-gray-700 dark:text-white/80 leading-relaxed">{attempt.insight}</p>
         ) : (
-          <p className="text-sm text-gray-500 dark:text-white/50 mb-3">One clear thing to work on, based on this test and your earlier ones.</p>
+          <p className="text-sm text-gray-500 dark:text-white/50 mb-3">One focus area from your results.</p>
         )}
         <button
           onClick={getSuggestion}

@@ -11,7 +11,6 @@ import { selectPlaylistForConceptV2, analyzedVideoToVideo, getLastTeacherForConc
 import { getLearningProfile } from './learningProfileStore';
 import { expandSearchQuery } from './queryExpander';
 import DeepDiveChat from './DeepDiveChat';
-import HintBubble from './HintBubble';
 import { useTranslation } from './i18n/LanguageContext';
 import { format } from './i18n/format';
 
@@ -394,7 +393,7 @@ export default function Roadmap({
           <Route className="w-6 h-6 md:w-8 md:h-8" strokeWidth={1.75} />
           <h1 className="text-2xl md:text-4xl font-bold">{t.roadmap.header.title}</h1>
         </div>
-        <p className="text-sm text-gray-500 dark:text-white/60">{t.roadmap.header.subtitle}</p>
+        {t.roadmap.header.subtitle && <p className="text-sm text-gray-500 dark:text-white/60">{t.roadmap.header.subtitle}</p>}
       </motion.div>
 
       {/* Goal tabs — up to MAX_ACTIVE_GOALS active goals at once */}
@@ -803,7 +802,6 @@ export default function Roadmap({
                       if (!bridge) return null;
                       return (
                         <>
-                        <HintBubble id="bridge" text={t.roadmap.topicModal.bridgeHint} />
                         <div className="p-4 rounded-xl border border-gray-300 dark:border-white/20 card">
                           <div className="flex items-center gap-2 mb-2 text-xs text-gray-400 dark:text-white/40">
                             <span>{bridge.fromTopicTitle}</span>

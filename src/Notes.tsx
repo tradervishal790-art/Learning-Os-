@@ -341,7 +341,7 @@ export default function Notes({ videoTitle, videoDescription, videoId }: { video
     <div className="min-h-dvh text-black dark:text-white p-4 md:p-8">
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-5 md:mb-8">
         <h1 className="text-2xl md:text-4xl font-bold mb-1 md:mb-2">{t.notes.header.title}</h1>
-        <p className="text-sm md:text-base text-gray-500 dark:text-white/60">{t.notes.header.subtitle}</p>
+        {t.notes.header.subtitle && <p className="text-sm md:text-base text-gray-500 dark:text-white/60">{t.notes.header.subtitle}</p>}
       </motion.div>
 
       <div className="max-w-4xl mx-auto mb-6">
@@ -448,7 +448,7 @@ export default function Notes({ videoTitle, videoDescription, videoId }: { video
       {!notes && !loading && (
         <div className="max-w-2xl mx-auto text-center py-16 text-gray-400 dark:text-white/60">
           <p className="text-lg mb-2">{t.notes.emptyState.title}</p>
-          <p className="text-sm">{t.notes.emptyState.subtitle}</p>
+          {t.notes.emptyState.subtitle && <p className="text-sm">{t.notes.emptyState.subtitle}</p>}
         </div>
       )}
     </div>
