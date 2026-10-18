@@ -32,32 +32,38 @@ export default function OnbordaCard({ step, currentStep, totalSteps, nextStep, p
 
       <div className="max-h-[min(28dvh,12rem)] overflow-y-auto break-words text-sm text-gray-600 dark:text-white/70 leading-relaxed mb-3 pr-1">{step.content}</div>
 
-      <div className="flex shrink-0 justify-between items-center gap-2">
-        {currentStep !== 0 ? (
-          <button
-            onClick={prevStep}
-            className="min-h-10 px-4 py-2 rounded-full text-xs font-medium border border-gray-300 dark:border-white/20 hover:bg-gray-100 dark:hover:bg-white/10 transition"
-          >
-            Peeche
-          </button>
-        ) : (
-          <span />
-        )}
-        {currentStep + 1 !== totalSteps ? (
-          <button
-            onClick={nextStep}
-            className="min-h-10 px-4 py-2 rounded-full text-xs font-medium bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white hover:opacity-80 transition"
-          >
-            Aage
-          </button>
-        ) : (
-          <button
-            onClick={skipTour}
-            className="min-h-10 px-4 py-2 rounded-full text-xs font-medium bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white hover:opacity-80 transition"
-          >
-            Ho gaya
-          </button>
-        )}
+      <div className="flex shrink-0 flex-wrap justify-between items-center gap-2">
+        <button
+          onClick={skipTour}
+          className="min-h-10 px-2 py-2 rounded-full text-xs font-medium text-gray-500 dark:text-white/60 hover:text-black dark:hover:text-white transition"
+        >
+          Skip tour
+        </button>
+        <div className="flex items-center gap-2">
+          {currentStep !== 0 && (
+            <button
+              onClick={prevStep}
+              className="min-h-10 px-3 py-2 rounded-full text-xs font-medium border border-gray-300 dark:border-white/20 hover:bg-gray-100 dark:hover:bg-white/10 transition"
+            >
+              Back
+            </button>
+          )}
+          {currentStep + 1 !== totalSteps ? (
+            <button
+              onClick={nextStep}
+              className="min-h-10 px-4 py-2 rounded-full text-xs font-medium bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white hover:opacity-80 transition"
+            >
+              Next
+            </button>
+          ) : (
+            <button
+              onClick={skipTour}
+              className="min-h-10 px-4 py-2 rounded-full text-xs font-medium bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white hover:opacity-80 transition"
+            >
+              Finish
+            </button>
+          )}
+        </div>
       </div>
 
       <span className="text-white dark:text-black">{arrow}</span>
