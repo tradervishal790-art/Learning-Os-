@@ -1793,7 +1793,7 @@ export const translations: Record<Locale, TranslationShape> = {
       metadataSourceNote: 'Transcript wasn\u2019t available — generated from title/description only',
       emptyState: {
         title: 'Enter a topic for comprehensive, deep learning notes',
-        subtitle: 'Goes beyond basics - covers WHY, HOW, and WHERE',
+        subtitle: '',
       },
     },
     videos: {
@@ -2000,8 +2000,8 @@ export const translations: Record<Locale, TranslationShape> = {
     },
     onboarding: {
       stepTitles: [
-        { title: 'आप कौन हैं?', subtitle: 'एक चुनें' },
-        { title: 'आपका लक्ष्य?', subtitle: 'एक चुनें' },
+        { title: 'आप कौन हैं?', subtitle: '' },
+        { title: 'आपका लक्ष्य?', subtitle: '' },
         { title: 'भाषा', subtitle: '' },
         { title: 'आपका नाम', subtitle: '' },
       ],
@@ -2096,12 +2096,12 @@ export const translations: Record<Locale, TranslationShape> = {
           },
           {
             title: 'अपना रोडमैप बनाएं',
-            subtitle: 'टॉपिक का सही क्रम — पहले क्या सीखना है',
+            subtitle: '',
             cta: 'बनाएं',
           },
           {
             title: 'पहला वीडियो देखें',
-            subtitle: 'रोडमैप के पहले टॉपिक से शुरू करें',
+            subtitle: '',
             cta: 'देखें',
           },
         ],
@@ -2110,7 +2110,7 @@ export const translations: Record<Locale, TranslationShape> = {
         revisionBanner: {
           overdueTitle: '{0} टॉपिक का रिवीजन बाकी है — {1} ओवरड्यू!',
           dueTitle: 'आज {0} टॉपिक रिवाइज करने हैं',
-          subtitle: 'भूलिए मत — अभी कर लीजिए',
+          subtitle: '',
         },
         learnerFallback: 'लर्नर',
         statsCards: {
@@ -2133,8 +2133,7 @@ export const translations: Record<Locale, TranslationShape> = {
           titleNotReady: 'अपनी स्टाइल जानें',
           subtitleReady: '',
           subtitleNotReady: '',
-          detailReady:
-            '8 लर्निंग डाइमेंशन सेट हैं — पेस, गहराई, संरचना और बाकी। पूरा ब्रेकडाउन Settings → "Learning Profile Report" में देखें।',
+          detailReady: '',
           retakeCta: 'ब्लूप्रिंट इंटरव्यू दोबारा लें',
           startCta: 'ब्लूप्रिंट इंटरव्यू शुरू करें',
           analyzeVideosCta: 'देखे गए वीडियो एनालाइज़ करें',
@@ -2955,7 +2954,7 @@ export const translations: Record<Locale, TranslationShape> = {
       metadataSourceNote: 'ट्रांसक्रिप्ट उपलब्ध नहीं थी — सिर्फ टाइटल/डिस्क्रिप्शन से बनाए गए',
       emptyState: {
         title: 'गहराई से सीखने के लिए एक टॉपिक डालें',
-        subtitle: 'बेसिक्स से आगे — WHY, HOW और WHERE कवर करता है',
+        subtitle: '',
       },
     },
     videos: {
@@ -3037,7 +3036,7 @@ export const translations: Record<Locale, TranslationShape> = {
     },
     currentAffairs: {
       title: 'करंट अफेयर्स',
-      subtitle: 'प्रतियोगी परीक्षाओं के लिए आज की मुख्य खबरें, छोटे पॉइंट्स में',
+      subtitle: '',
       streak: '{0} दिन की स्ट्रीक',
       previousDays: 'पिछले दिन',
       today: 'आज',
@@ -3059,7 +3058,7 @@ export const translations: Record<Locale, TranslationShape> = {
     channelDigest: {
       switchNews: 'अखबार',
       switchChannels: 'YouTube चैनल',
-      subtitle: 'आपके चैनलों ने कल क्या बताया, वीडियो-दर-वीडियो और टॉपिक के हिसाब से',
+      subtitle: '',
       addPlaceholder: 'चैनल का लिंक, @handle या नाम',
       addButton: 'चैनल जोड़ें',
       adding: 'जोड़ रहे हैं…',
@@ -3251,17 +3250,17 @@ export const translations: Record<Locale, TranslationShape> = {
         steps: [
           {
             title: 'Apna learning style set karo',
-            subtitle: 'Short AI interview — better video matches milenge',
+            subtitle: '',
             cta: 'Start',
           },
           {
             title: 'Apna roadmap banao',
-            subtitle: 'Topics ka sahi order — kya pehle seekhna hai',
+            subtitle: '',
             cta: 'Generate',
           },
           {
             title: 'Pehla video dekho',
-            subtitle: 'Roadmap ke pehle topic se shuru karo',
+            subtitle: '',
             cta: 'Watch',
           },
         ],
@@ -3270,7 +3269,7 @@ export const translations: Record<Locale, TranslationShape> = {
         revisionBanner: {
           overdueTitle: '{0} topics ka revision baaki hai — {1} overdue!',
           dueTitle: 'Aaj {0} topics revise karne hain',
-          subtitle: 'Bhooliye mat — abhi kar lijiye',
+          subtitle: '',
         },
         learnerFallback: 'Learner',
         statsCards: {
@@ -3293,8 +3292,7 @@ export const translations: Record<Locale, TranslationShape> = {
           titleNotReady: 'Find Your Style',
           subtitleReady: '',
           subtitleNotReady: '',
-          detailReady:
-            '8 learning dimensions set — pace, depth, structure aur baaki. Settings → "Learning Profile Report" me poora breakdown dekho.',
+          detailReady: '',
           retakeCta: 'Retake Blueprint Interview',
           startCta: 'Start Blueprint Interview',
           analyzeVideosCta: "Analyze Videos I've Watched",
@@ -3770,7 +3768,7 @@ export const translations: Record<Locale, TranslationShape> = {
         confirm: 'End Goal',
       },
       stats: { progress: 'Progress', done: 'Done', inProgress: 'In Progress', estTime: 'Est. Time' },
-      noActiveGoal: 'Koi active goal nahi hai. Upar "+ Add Goal" dabao naya goal shuru karne ke liye.',
+      noActiveGoal: 'Koi active goal nahi hai.' ,
       generateForm: {
         label: 'Kya seekhna hai?',
         placeholder: 'Aap kya seekhna chahte ho?',
@@ -4200,7 +4198,7 @@ export const translations: Record<Locale, TranslationShape> = {
     },
     currentAffairs: {
       title: 'Current Affairs',
-      subtitle: 'Competitive exams ke liye aaj ki main khabrein, chhote points mein',
+      subtitle: '',
       streak: '{0} din ki streak',
       previousDays: 'Pichhle din',
       today: 'Aaj',
@@ -4222,7 +4220,7 @@ export const translations: Record<Locale, TranslationShape> = {
     channelDigest: {
       switchNews: 'Newspapers',
       switchChannels: 'YouTube channels',
-      subtitle: 'Tumhare channels ne kal kya bataya, video-by-video aur topic-wise',
+      subtitle: '',
       addPlaceholder: 'Channel link, @handle ya naam',
       addButton: 'Channel add karo',
       adding: 'Add ho raha hai…',
