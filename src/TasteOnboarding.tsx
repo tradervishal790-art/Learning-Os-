@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { getLearningProfile, saveLearningProfile, mergeLearningProfile } from './learningProfileStore';
 import { averageTasteSignals, buildFreshProfileFromTaste } from './tasteProfileScoring';
 import type { LearningProfile, TasteVideoResult } from './types';
-import HintBubble from './HintBubble';
 import { useTranslation } from './i18n/LanguageContext';
 import { format } from './i18n/format';
 import { authFetch } from './apiFetch';
@@ -166,13 +165,14 @@ export default function TasteOnboarding({ onComplete, onClose }: TasteOnboarding
         <AnimatePresence mode="wait">
           {phase === 'form' && (
             <motion.div key="form" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              <HintBubble id="video-providing" text="Share a video you've fully watched (45+ min) — we'll learn your style from it." />
               <h3 className="text-base md:text-lg font-semibold mb-1 leading-snug">
                 {t.tasteOnboarding.formTitle}
               </h3>
-              <p className="text-xs text-gray-400 dark:text-white/40 mb-4">
-                {format(t.tasteOnboarding.formSubtitle, MIN_VIDEOS, MIN_DURATION_MINUTES)}
-              </p>
+              {t.tasteOnboarding.formSubtitle && (
+                <p className="text-xs text-gray-400 dark:text-white/40 mb-4">
+                  {format(t.tasteOnboarding.formSubtitle, MIN_VIDEOS, MIN_DURATION_MINUTES)}
+                </p>
+              )}
 
               <div className="space-y-3 mb-4">
                 {entries.map((entry, i) => (
@@ -227,7 +227,7 @@ export default function TasteOnboarding({ onComplete, onClose }: TasteOnboarding
               >
                 {format(t.tasteOnboarding.analyzeCta, filledEntries.length >= MIN_VIDEOS ? filledEntries.length : MIN_VIDEOS)}
               </button>
-              {!canSubmit && filledEntries.length > 0 && (
+              {!canSubmit && filledEntries.length > 0 && t.tasteOnboarding.validationHint && (
                 <p className="text-xs text-gray-400 dark:text-white/40 mt-2 text-center">
                   {t.tasteOnboarding.validationHint}
                 </p>
