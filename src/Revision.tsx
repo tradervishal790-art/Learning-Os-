@@ -291,7 +291,7 @@ export default function Revision({ goals = [] }: RevisionProps) {
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-8 md:p-12 text-center">
           <Sprout className="w-12 h-12 mx-auto mb-4 text-gray-400 dark:text-white/40" strokeWidth={1.5} />
           <h3 className="text-xl font-semibold mb-2">{t.revision.emptyState.noRevisionTitle}</h3>
-          <p className="text-gray-400 dark:text-white/60">{t.revision.emptyState.noRevisionBody}</p>
+          {t.revision.emptyState.noRevisionBody && <p className="text-gray-400 dark:text-white/60">{t.revision.emptyState.noRevisionBody}</p>}
         </motion.div>
       )}
       {filteredItems.length === 0 && items.length > 0 && (
