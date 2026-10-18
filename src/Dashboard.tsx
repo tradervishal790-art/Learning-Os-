@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState, lazy, Suspense } from 'react';
 import type { ComponentType } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Film, BookOpen, ClipboardCheck, Newspaper, Lock, Settings as SettingsIcon, Bell, X as CloseIcon, Target, RotateCcw, Flame, Check, ChevronRight } from 'lucide-react';
+import { Search, Film, BookOpen, ClipboardCheck, MessageCircle, Newspaper, Lock, Settings as SettingsIcon, Bell, X as CloseIcon, Target, RotateCcw, Flame, Check, ChevronRight } from 'lucide-react';
 import PagePlaceholder from './PagePlaceholder';
 import BottomNav from './BottomNav';
 import QuickGrid from './QuickGrid';
@@ -273,6 +273,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   const [viewingTopicId, setViewingTopicId] = useState<string | null>(null);
 
   const [showSettings, setShowSettings] = useState(false);
+  const [showMoreTools, setShowMoreTools] = useState(false);
   // Deep-settings: the full learning-profile report is hidden by default,
   // only rendered when the user explicitly expands it here — see the
   // "Learning Profile Report" section inside the Settings modal below.
@@ -672,158 +673,178 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
         <Suspense fallback={<PageLoading />}>
         {showLoginRequired && <LoginRequired feature={loginRequiredLabel} />}
         {activePage === 'dashboard' && (
-          <div className="p-4 md:p-8 flex flex-col gap-4 md:gap-6">
-            {/* Phones: today's goal hero, two quick numbers, then the Quick Access grid */}
-            <div className="md:hidden space-y-3">
-              <button
-                onClick={() => setActivePage('videos')}
-                className="w-full text-left rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white p-4 flex items-center gap-3 shadow-card active:scale-[0.99] transition-transform"
-              >
-                <span className="w-11 h-11 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
-                  <Target className="w-6 h-6" strokeWidth={1.75} />
-                </span>
-                <span className="flex-1 min-w-0">
-                  <span className="block text-xs text-white/70">{statsCards[0].title}</span>
-                  <span className="block font-semibold leading-snug line-clamp-2">{statsCards[0].value}</span>
-                </span>
-                <span className="w-9 h-9 rounded-full bg-white text-indigo-600 flex items-center justify-center flex-shrink-0">
-                  <ChevronRight className="w-5 h-5" strokeWidth={2.2} />
-                </span>
-              </button>
-              <div className="grid grid-cols-2 gap-3">
-                {statsCards.slice(1).map((card, i) => {
-                  const StatIcon = STAT_ICONS[card.icon as keyof typeof STAT_ICONS];
-                  const tone = i === 0 ? 'bg-violet-100 text-violet-600 dark:bg-violet-500/15 dark:text-violet-300' : 'bg-orange-100 text-orange-600 dark:bg-orange-500/15 dark:text-orange-300';
-                  return (
-                    <button key={card.title} onClick={card.onClick} className="card rounded-2xl p-3 flex items-center gap-3 text-left active:scale-[0.98] transition-transform">
-                      <span className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${tone}`}>
-                        <StatIcon className="w-5 h-5" strokeWidth={1.75} />
-                      </span>
-                      <span className="min-w-0">
-                        <span className="block font-semibold tabular-nums truncate">{card.value}</span>
-                        <span className="block text-[11px] text-gray-500 dark:text-white/50 truncate">{card.title}</span>
-                      </span>
-                    </button>
-                  );
-                })}
+          <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-3 py-4 sm:px-5 md:gap-5 md:px-8 md:py-6">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-gray-500 dark:text-white/50">{getGreeting()}</p>
+                <h2 className="truncate text-lg font-semibold tracking-tight sm:text-xl">{displayName}</h2>
               </div>
             </div>
-            <QuickGrid
-              items={sidebarItems
-                .filter((i) => !['dashboard', 'roadmap', 'mentor', 'progress'].includes(i.id))
-                .map((i) => ({
-                  id: i.id,
-                  label: i.label,
-                  locked: navState(i.id).isLocked,
-                  highlight: i.id === 'revision' && revisionStats.dueToday + revisionStats.overdue > 0,
-                }))}
-              onSelect={(id) => {
-                const item = sidebarItems.find((i) => i.id === id);
-                if (item) selectNav(item.id, item.label);
-              }}
-            />
-            <WelcomeBack goals={goals} revisionTasks={t.revisionTasks} onOpen={setActivePage} />
-            <DailyHabit />
+
+            <button
+              onClick={() => hasRoadmap ? setActivePage('videos') : selectNav('roadmap', t.dashboard.sidebar.roadmap)}
+              className="group flex w-full min-w-0 items-center gap-3 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 p-4 text-left text-white shadow-sm transition hover:brightness-105 active:scale-[0.995] sm:gap-4 sm:p-5"
+            >
+              <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-white/15 sm:h-11 sm:w-11">
+                <BookOpen className="h-5 w-5 sm:h-6 sm:w-6" strokeWidth={1.8} />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-semibold sm:text-base">Continue Learning</span>
+                <span className="mt-0.5 block truncate text-xs text-white/75 sm:text-sm">
+                  {currentTopic ? currentTopic.title : 'Choose your learning path'}
+                  {currentTopic?.estimatedTime ? ` · ${currentTopic.estimatedTime}` : ''}
+                </span>
+              </span>
+              <ChevronRight className="h-5 w-5 flex-shrink-0 transition-transform group-hover:translate-x-0.5" />
+            </button>
+
+            <div className="grid grid-cols-3 gap-2 sm:gap-3">
+              <button
+                onClick={() => selectNav('roadmap', t.dashboard.sidebar.roadmap)}
+                className="card flex min-w-0 flex-col items-start gap-2 rounded-xl p-3 text-left transition hover:bg-gray-50 active:scale-[0.98] dark:hover:bg-white/[0.08] sm:flex-row sm:items-center sm:gap-3 sm:p-3.5"
+              >
+                <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-300">
+                  <Target className="h-5 w-5" strokeWidth={1.8} />
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-xs font-semibold leading-tight sm:text-sm">Next topic</span>
+                  <span className="mt-0.5 hidden truncate text-xs text-gray-500 dark:text-white/50 sm:block">Your roadmap</span>
+                </span>
+              </button>
+              <button
+                onClick={() => selectNav('mentor', t.dashboard.sidebar.mentor)}
+                className="card flex min-w-0 flex-col items-start gap-2 rounded-xl p-3 text-left transition hover:bg-gray-50 active:scale-[0.98] dark:hover:bg-white/[0.08] sm:flex-row sm:items-center sm:gap-3 sm:p-3.5"
+              >
+                <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-violet-500/10 text-violet-600 dark:text-violet-300">
+                  <MessageCircle className="h-5 w-5" strokeWidth={1.8} />
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-xs font-semibold leading-tight sm:text-sm">AI Mentor</span>
+                  <span className="mt-0.5 hidden truncate text-xs text-gray-500 dark:text-white/50 sm:block">Ask a question</span>
+                </span>
+              </button>
+              <button
+                onClick={() => selectNav('test', t.dashboard.sidebar.test)}
+                className="card flex min-w-0 flex-col items-start gap-2 rounded-xl p-3 text-left transition hover:bg-gray-50 active:scale-[0.98] dark:hover:bg-white/[0.08] sm:flex-row sm:items-center sm:gap-3 sm:p-3.5"
+              >
+                <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-300">
+                  <ClipboardCheck className="h-5 w-5" strokeWidth={1.8} />
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-xs font-semibold leading-tight sm:text-sm">Tests</span>
+                  <span className="mt-0.5 hidden truncate text-xs text-gray-500 dark:text-white/50 sm:block">Practice & review</span>
+                </span>
+              </button>
+            </div>
+
             <AnimatePresence>
               {revisionAlert && (
                 <motion.div
-                  initial={{ opacity: 0, y: -10 }}
+                  initial={{ opacity: 0, y: -6 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="p-4 rounded-2xl border border-black/10 dark:border-white/20 bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white flex items-center gap-3 flex-wrap"
+                  exit={{ opacity: 0, y: -6 }}
+                  className="flex min-w-0 flex-wrap items-center gap-3 rounded-xl border border-indigo-500/20 bg-indigo-500/10 p-3 dark:border-indigo-400/20"
                 >
-                  <Bell className="w-5 h-5 flex-shrink-0" strokeWidth={1.75} />
-                  <div className="flex-1 min-w-[200px]">
-                    <div className="font-semibold text-sm">
+                  <Bell className="h-5 w-5 flex-shrink-0 text-indigo-600 dark:text-indigo-300" strokeWidth={1.75} />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-medium">
                       {revisionAlert.overdue > 0
                         ? format(t.dashboard.home.revisionBanner.overdueTitle, revisionAlert.dueToday + revisionAlert.overdue, revisionAlert.overdue)
                         : format(t.dashboard.home.revisionBanner.dueTitle, revisionAlert.dueToday)}
                     </div>
-                    {t.dashboard.home.revisionBanner.subtitle && <div className="text-xs opacity-70">{t.dashboard.home.revisionBanner.subtitle}</div>}
                   </div>
                   <button
-                    onClick={() => {
-                      setRevisionAlert(null);
-                      setActivePage('revision');
-                    }}
-                    className="px-4 py-2 rounded-full bg-white text-black dark:bg-black dark:text-white text-sm font-medium hover:opacity-80 transition whitespace-nowrap"
+                    onClick={() => { setRevisionAlert(null); setActivePage('revision'); }}
+                    className="whitespace-nowrap rounded-lg bg-indigo-600 px-3 py-2 text-xs font-medium text-white transition hover:opacity-90"
                   >
                     View Revision
                   </button>
-                  <button
-                    onClick={() => setRevisionAlert(null)}
-                    aria-label="Dismiss"
-                    className="px-3 py-2 rounded-full text-sm opacity-70 hover:opacity-100 transition"
-                  >
-                    <CloseIcon className="w-4 h-4" />
+                  <button onClick={() => setRevisionAlert(null)} aria-label="Dismiss" className="rounded-lg p-2 text-gray-500 hover:bg-black/5 dark:text-white/50 dark:hover:bg-white/10">
+                    <CloseIcon className="h-4 w-4" />
                   </button>
                 </motion.div>
               )}
             </AnimatePresence>
 
-            <div className="hidden md:grid rounded-2xl card overflow-hidden grid-cols-3 divide-x divide-gray-100 dark:divide-white/10">
-              {statsCards.map((card) => {
-                const StatIcon = STAT_ICONS[card.icon as keyof typeof STAT_ICONS];
-                return (
-                <button
-                  key={card.title}
-                  onClick={card.onClick}
-                  aria-label={card.title}
-                  className="text-center md:text-left px-2 md:px-5 py-4 md:py-5 hover:bg-gray-50 dark:hover:bg-white/5 active:bg-gray-100 dark:active:bg-white/10 transition-colors"
-                >
-                  <StatIcon className="md:hidden w-5 h-5 mx-auto mb-1.5 text-gray-500 dark:text-white/50" strokeWidth={1.75} />
-                  <div className="hidden md:block text-xs text-gray-500 dark:text-white/50 mb-1">{card.title}</div>
-                  <div className="text-sm md:text-xl font-semibold tabular-nums line-clamp-2 md:line-clamp-1">{card.value}</div>
-                  <div className="hidden md:block text-sm text-gray-500 dark:text-white/50">{card.subtitle}</div>
-                </button>
-                );
-              })}
+            <div className="border-t border-gray-200 pt-3 dark:border-white/10">
+              <button
+                onClick={() => setShowMoreTools((open) => !open)}
+                aria-expanded={showMoreTools}
+                className="flex w-full items-center justify-between gap-3 rounded-lg py-2 text-left text-sm font-medium text-gray-600 transition hover:text-gray-950 dark:text-white/65 dark:hover:text-white"
+              >
+                <span>{showMoreTools ? 'Hide other tools' : 'More tools'}</span>
+                <ChevronRight className={`h-4 w-4 transition-transform ${showMoreTools ? 'rotate-90' : ''}`} />
+              </button>
             </div>
 
-            <button
-              onClick={() => setActivePage('videos')}
-              className="hidden md:block px-5 py-2.5 rounded-full bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white text-sm font-medium hover:opacity-85 active:opacity-70 transition-opacity"
-            >
-              {t.dashboard.home.suggestion.watchCta}
-            </button>
+            {showMoreTools && (
+              <div className="flex min-w-0 flex-col gap-4 md:gap-5">
+                <QuickGrid
+                  items={sidebarItems
+                    .filter((i) => !['dashboard', 'roadmap', 'mentor', 'progress'].includes(i.id))
+                    .map((i) => ({
+                      id: i.id,
+                      label: i.label,
+                      locked: navState(i.id).isLocked,
+                      highlight: i.id === 'revision' && revisionStats.dueToday + revisionStats.overdue > 0,
+                    }))}
+                  onSelect={(id) => {
+                    const item = sidebarItems.find((i) => i.id === id);
+                    if (item) selectNav(item.id, item.label);
+                  }}
+                />
+                <WelcomeBack goals={goals} revisionTasks={t.revisionTasks} onOpen={setActivePage} />
+                <DailyHabit />
 
-            <section className="pt-6 border-t border-gray-200 dark:border-white/10">
-              <h3 className="font-semibold mb-1">{learningProfile ? t.dashboard.home.learningStyleCard.titleReady : t.dashboard.home.learningStyleCard.titleNotReady}</h3>
-              {(learningProfile ? t.dashboard.home.learningStyleCard.subtitleReady : t.dashboard.home.learningStyleCard.subtitleNotReady) && (
-                <p className="text-sm text-gray-500 dark:text-white/50 mb-2">
-                  {learningProfile ? t.dashboard.home.learningStyleCard.subtitleReady : t.dashboard.home.learningStyleCard.subtitleNotReady}
-                </p>
-              )}
-              {learningProfile && t.dashboard.home.learningStyleCard.detailReady && (
-                <p className="text-sm text-gray-500 dark:text-white/50 mb-2">
-                  {t.dashboard.home.learningStyleCard.detailReady}
-                </p>
-              )}
-              <div className="flex flex-wrap items-center gap-x-5 gap-y-2 mt-4">
+                <div className="hidden rounded-xl card md:grid md:grid-cols-3 md:divide-x md:divide-gray-100 md:overflow-hidden md:dark:divide-white/10">
+                  {statsCards.map((card) => {
+                    const StatIcon = STAT_ICONS[card.icon as keyof typeof STAT_ICONS];
+                    return (
+                      <button key={card.title} onClick={card.onClick} aria-label={card.title} className="px-4 py-3 text-left transition-colors hover:bg-gray-50 dark:hover:bg-white/5">
+                        <div className="mb-1 text-xs text-gray-500 dark:text-white/50">{card.title}</div>
+                        <div className="line-clamp-2 text-sm font-semibold tabular-nums">{card.value}</div>
+                        <div className="text-xs text-gray-500 dark:text-white/50">{card.subtitle}</div>
+                      </button>
+                    );
+                  })}
+                </div>
+
                 <button
-                  onClick={() => setShowLearningQuiz(true)}
-                  className="px-4 py-2 rounded-full border border-gray-300 dark:border-white/20 text-sm font-medium hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
+                  onClick={() => setActivePage('videos')}
+                  className="hidden self-start rounded-full bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:opacity-85 md:block dark:bg-indigo-500"
                 >
-                  {learningProfile ? t.dashboard.home.learningStyleCard.retakeCta : t.dashboard.home.learningStyleCard.startCta}
+                  {t.dashboard.home.suggestion.watchCta}
                 </button>
-                <button
-                  onClick={() => setShowTasteOnboarding(true)}
-                  className="flex items-center gap-2 text-sm font-medium underline-offset-4 hover:underline"
-                >
-                  <Film className="w-4 h-4" strokeWidth={1.75} />
-                  {t.dashboard.home.learningStyleCard.analyzeVideosCta}
-                </button>
-                {learningProfile && (
-                  <button
-                    onClick={handleClearProfile}
-                    className="text-sm text-gray-400 dark:text-white/40 hover:text-red-500 dark:hover:text-red-400 transition-colors"
-                  >
-                    Clear my profile
-                  </button>
-                )}
+
+                <section className="border-t border-gray-200 pt-4 dark:border-white/10">
+                  <h3 className="text-sm font-semibold">{learningProfile ? t.dashboard.home.learningStyleCard.titleReady : t.dashboard.home.learningStyleCard.titleNotReady}</h3>
+                  {(learningProfile ? t.dashboard.home.learningStyleCard.subtitleReady : t.dashboard.home.learningStyleCard.subtitleNotReady) && (
+                    <p className="mb-2 mt-1 text-sm text-gray-500 dark:text-white/50">
+                      {learningProfile ? t.dashboard.home.learningStyleCard.subtitleReady : t.dashboard.home.learningStyleCard.subtitleNotReady}
+                    </p>
+                  )}
+                  {learningProfile && t.dashboard.home.learningStyleCard.detailReady && (
+                    <p className="mb-2 text-sm text-gray-500 dark:text-white/50">{t.dashboard.home.learningStyleCard.detailReady}</p>
+                  )}
+                  <div className="mt-3 flex flex-wrap items-center gap-3">
+                    <button onClick={() => setShowLearningQuiz(true)} className="rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium transition-colors hover:bg-gray-100 dark:border-white/20 dark:hover:bg-white/10">
+                      {learningProfile ? t.dashboard.home.learningStyleCard.retakeCta : t.dashboard.home.learningStyleCard.startCta}
+                    </button>
+                    <button onClick={() => setShowTasteOnboarding(true)} className="flex items-center gap-2 text-sm font-medium underline-offset-4 hover:underline">
+                      <Film className="h-4 w-4" strokeWidth={1.75} />
+                      {t.dashboard.home.learningStyleCard.analyzeVideosCta}
+                    </button>
+                    {learningProfile && (
+                      <button onClick={handleClearProfile} className="text-sm text-gray-400 transition-colors hover:text-red-500 dark:text-white/40 dark:hover:text-red-400">
+                        Clear my profile
+                      </button>
+                    )}
+                  </div>
+                </section>
               </div>
-            </section>
+            )}
           </div>
+
         )}
 
         {activePage === 'roadmap' && !showLoginRequired && (
