@@ -49,7 +49,7 @@ export default function DailyTest({ onStart, onExit }: { onStart: (paper: TestPa
     return (
       <div>
         <p className="max-w-3xl mx-auto mb-4 text-sm text-gray-500 dark:text-white/60">
-          Add your photos/PDFs here (or paste / type questions). Every question needs its answer — then press <b>Save Question Bank</b>. You only do this once; the daily tests are made from it automatically.
+          Queue photos/PDFs without AI analysis, or paste/type questions. Questions need answers before they can appear in a test. Press <b>Save Question Bank</b> when finished.
         </p>
         <TestBuilder
           variant="daily"
@@ -62,7 +62,7 @@ export default function DailyTest({ onStart, onExit }: { onStart: (paper: TestPa
             }
             setEditingBank(false);
             void getQueuedPhotoCount().then(setQueuedPhotos);
-            setMessage(`Question bank saved: ${p.questions.length} questions.`);
+            setMessage(p.questions.length ? `Question bank saved: ${p.questions.length} question(s).` : 'Question bank saved. Queued photos will be analyzed only when a test needs more questions.');
             refresh();
           }}
         />
