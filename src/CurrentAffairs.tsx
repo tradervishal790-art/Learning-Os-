@@ -245,28 +245,18 @@ function NewspaperCurrentAffairs() {
               </div>
               <button type="button" onClick={() => setSelectedArticle(null)} aria-label="Close reader" className="ca-reader-close"><X className="w-5 h-5" /></button>
             </header>
-            <p className="px-4 pt-3 text-sm leading-relaxed text-slate-700">{selectedArticle.text}</p>
-            {selectedArticle.link && /^https?:\/\//i.test(selectedArticle.link) ? (
-              <>
-                <div className="ca-reader-frame-wrap">
-                  <iframe
-                    key={selectedArticle.link}
-                    src={selectedArticle.link}
-                    title={`Article from ${selectedArticle.source}`}
-                    loading="lazy"
-                    referrerPolicy="strict-origin-when-cross-origin"
-                    sandbox="allow-forms allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
-                    className="ca-reader-frame"
-                  />
-                </div>
-                <footer className="ca-reader-footer">
-                  <p className="text-xs leading-relaxed text-slate-500">If the publisher blocks in-app reading, open the original article in your browser.</p>
-                  <a href={selectedArticle.link} target="_blank" rel="noopener noreferrer" className="ca-reader-open"><ExternalLink className="w-4 h-4" /> Open in browser</a>
-                </footer>
-              </>
-            ) : (
-              <div className="m-4 rounded-xl bg-sky-50 p-4 text-sm text-slate-600">The original article link is not available for this news item.</div>
-            )}
+            <div className="ca-reader-summary">
+              <p className="text-xs font-semibold uppercase tracking-wider text-blue-700">Quick read · News summary</p>
+              <p className="mt-2 text-base leading-relaxed text-slate-800">{selectedArticle.text}</p>
+              <p className="mt-3 text-xs leading-relaxed text-slate-500">This is the news brief available in Learning OS, not the publisher's full article. Some publishers block their pages from being displayed inside other apps.</p>
+            </div>
+            <footer className="ca-reader-footer">
+              {selectedArticle.link && /^https?:\/\//i.test(selectedArticle.link) ? (
+                <a href={selectedArticle.link} target="_blank" rel="noopener noreferrer" className="ca-reader-open"><ExternalLink className="w-4 h-4" /> Read full article on {selectedArticle.source}</a>
+              ) : (
+                <p className="text-sm text-slate-500">The original article link is not available for this news item.</p>
+              )}
+            </footer>
           </section>
         </div>
       )}
