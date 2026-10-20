@@ -1,17 +1,13 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
-import { Newspaper, Flame, RotateCw, Check, X, CirclePlay, Bookmark, ExternalLink, ListChecks, Landmark, Globe, TrendingUp, Trophy, FlaskConical, LayoutGrid } from 'lucide-react';
+import { Newspaper, X, RotateCw, CirclePlay, Bookmark, ExternalLink, Landmark, Globe, TrendingUp, Trophy, FlaskConical, LayoutGrid } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useTranslation, useLanguage } from './i18n/LanguageContext';
-import { format } from './i18n/format';
 import {
   istDateKey,
   loadCurrentAffairsDay,
-  loadProgress,
-  recordQuizResult,
-  computeStreak,
   hydrateCurrentAffairsFromCloud,
 } from './currentAffairsStore';
-import type { CACategory, CADay, CAPoint, CAProgress, CAQuizQuestion } from './currentAffairsStore';
+import type { CACategory, CADay, CAPoint } from './currentAffairsStore';
 import { loadSaved, toggleSaved, savedKey } from './caSavedStore';
 import type { SavedPoint } from './caSavedStore';
 
@@ -91,16 +87,10 @@ function NewspaperCurrentAffairs() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [tab, setTab] = useState<Tab>('all');
-  const [progress, setProgress] = useState<CAProgress>(() => loadProgress());
   const [saved, setSaved] = useState<SavedPoint[]>(() => loadSaved());
   const [showSaved, setShowSaved] = useState(false);
   const [selectedArticle, setSelectedArticle] = useState<CAPoint | null>(null);
   const savedKeys = useMemo(() => new Set(saved.map((x) => savedKey(x.date, x))), [saved]);
-  const goToQuiz = () => document.getElementById('ca-quiz')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-
-  useEffect(() => {
-    void hydrateCurrentAffairsFromCloud().then(() => setProgress(loadProgress()));
-  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -128,9 +118,6 @@ function NewspaperCurrentAffairs() {
     return TAB_ORDER.filter((x) => x === 'all' || set.has(x));
   }, [day]);
 
-  const streak = computeStreak(progress);
-  const doneToday = !!progress.quizzes[today];
-
   return (
     <div className="mt-6">
       <div className="flex items-center justify-between gap-3">
@@ -142,19 +129,6 @@ function NewspaperCurrentAffairs() {
           <p className="hidden md:block text-sm text-gray-500 dark:text-white/50 mt-1">{c.subtitle}</p>
         </div>
         <div className="flex items-center gap-2 text-sm flex-shrink-0">
-          {streak > 0 && (
-            <span className="inline-flex items-center gap-1 h-9 px-3 rounded-full card" title={format(c.streak, streak)}>
-              <Flame className="w-4 h-4" />
-              <span className="md:hidden">{streak}</span>
-              <span className="hidden md:inline">{format(c.streak, streak)}</span>
-            </span>
-          )}
-          {doneToday && (
-            <span className="inline-flex items-center gap-1 h-9 px-3 rounded-full bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white" title={c.streakDone} aria-label={c.streakDone}>
-              <Check className="w-4 h-4" />
-              <span className="hidden md:inline">{c.streakDone}</span>
-            </span>
-          )}
           <button
             onClick={() => setShowSaved((v) => !v)}
             aria-label="Saved"
@@ -252,7 +226,6 @@ function NewspaperCurrentAffairs() {
                 saved={savedKeys.has(savedKey(date, p))}
                 onToggleSave={() => setSaved(toggleSaved(date, p))}
                 onRead={setSelectedArticle}
-                onQuiz={day.quiz.length > 0 ? goToQuiz : undefined}
                 sourceLabel={c.sourceLabel}
               />
             ))}
@@ -260,35 +233,7 @@ function NewspaperCurrentAffairs() {
 
           <p className="mt-4 text-xs text-gray-400 dark:text-white/30">{c.aiNote}</p>
 
-          {day.quiz.length > 0 && (
-            <Quiz
-              key={`${day.date}_${day.locale}`}
-              day={day}
-              isToday={date === today}
-              onFinished={(score, total, wrong) => {
-                if (date === today) setProgress(recordQuizResult(date, score, total, wrong));
-              }}
-            />
-          )}
         </>
-      )}
-
-      {!showSaved && progress.mistakes.length > 0 && (
-        <div className="mt-10">
-          <h2 className="text-lg font-semibold">{c.mistakesTitle}</h2>
-          <ul className="mt-3 space-y-3">
-            {progress.mistakes.slice(0, 5).map((m, i) => (
-              <li key={`${m.date}-${i}`} className="card rounded-xl p-4 text-sm">
-                <p>{m.question}</p>
-                <p className="mt-2">
-                  <span className="text-gray-500 dark:text-white/40">{c.correctAnswerLabel}: </span>
-                  {m.correctAnswer}
-                </p>
-                {m.explanation && <p className="mt-1 text-gray-500 dark:text-white/50">{m.explanation}</p>}
-              </li>
-            ))}
-          </ul>
-        </div>
       )}
 
       {selectedArticle && (
@@ -330,103 +275,20 @@ function NewspaperCurrentAffairs() {
   );
 }
 
-function Quiz({
-  day,
-  isToday,
-  onFinished,
-}: {
-  day: CADay;
-  isToday: boolean;
-  onFinished: (score: number, total: number, wrong: { date: string; question: string; correctAnswer: string; explanation: string }[]) => void;
-}) {
-  const t = useTranslation();
-  const c = t.currentAffairs;
-  const [picked, setPicked] = useState<Record<number, number>>({});
-  const total = day.quiz.length;
-  const answered = Object.keys(picked).length;
-  const finished = answered === total;
-  const score = day.quiz.reduce((n, q: CAQuizQuestion, i) => n + (picked[i] === q.correctIndex ? 1 : 0), 0);
-
-  useEffect(() => {
-    if (!finished || !isToday) return;
-    const wrong = day.quiz
-      .map((q, i) => ({ q, i }))
-      .filter(({ q, i }) => picked[i] !== q.correctIndex)
-      .map(({ q }) => ({ date: day.date, question: q.question, correctAnswer: q.options[q.correctIndex], explanation: q.explanation }));
-    onFinished(score, total, wrong);
-    // Runs once when the last question is answered.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [finished]);
-
-  return (
-    <div id="ca-quiz" className="mt-10 scroll-mt-4">
-      <h2 className="text-lg font-semibold">{c.quizTitle}</h2>
-      <p className="text-sm text-gray-500 dark:text-white/50">{c.quizSubtitle}</p>
-
-      <div className="mt-4 space-y-5">
-        {day.quiz.map((q, qi) => {
-          const sel = picked[qi];
-          const revealed = sel !== undefined;
-          return (
-            <div key={qi} className="card rounded-xl p-4">
-              <p className="font-medium">
-                {qi + 1}. {q.question}
-              </p>
-              <div className="mt-3 space-y-2">
-                {q.options.map((opt, oi) => {
-                  const isCorrect = oi === q.correctIndex;
-                  const isPicked = sel === oi;
-                  let style = 'border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10';
-                  if (revealed && isCorrect) style = 'border-green-500 bg-green-500/10';
-                  else if (revealed && isPicked) style = 'border-red-500 bg-red-500/10';
-                  return (
-                    <button
-                      key={oi}
-                      disabled={revealed}
-                      onClick={() => setPicked((prev) => ({ ...prev, [qi]: oi }))}
-                      className={`w-full text-left px-3 py-3 min-h-11 text-sm rounded-lg border transition flex items-center gap-2 ${style} ${revealed ? 'cursor-default' : ''}`}
-                    >
-                      <span className="flex-1">{opt}</span>
-                      {revealed && isCorrect && <Check className="w-4 h-4 text-green-500" />}
-                      {revealed && isPicked && !isCorrect && <X className="w-4 h-4 text-red-500" />}
-                    </button>
-                  );
-                })}
-              </div>
-              {revealed && (
-                <p className="mt-3 text-sm text-gray-500 dark:text-white/50">
-                  <span className="font-medium text-gray-700 dark:text-white/70">{sel === q.correctIndex ? c.correct : c.wrong}</span>{' '}
-                  {q.explanation}
-                </p>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      {finished && (
-        <p className="mt-5 text-lg font-semibold">{format(c.scoreLine, score, total)}</p>
-      )}
-    </div>
-  );
-}
-
 const CATEGORY_ICON = TAB_ICONS;
 
-/** One news point with compact mobile actions (in-app read / save / quiz). */
+/** One news point with compact mobile actions (in-app read and save). */
 function PointCard({
   point,
   saved,
   onToggleSave,
   onRead,
-  onQuiz,
   sourceLabel,
 }: {
   point: CAPoint;
   saved: boolean;
   onToggleSave: () => void;
   onRead: (point: CAPoint) => void;
-  onQuiz?: () => void;
   sourceLabel: string;
 }) {
   const Icon = CATEGORY_ICON[point.category];
@@ -461,12 +323,6 @@ function PointCard({
             <Bookmark className="w-4 h-4" strokeWidth={1.75} fill={saved ? 'currentColor' : 'none'} />
             <span>{saved ? 'Saved' : 'Save'}</span>
           </button>
-          {onQuiz && (
-            <button onClick={onQuiz} aria-label="Quiz" title="Quiz" className={action}>
-              <ListChecks className="w-4 h-4" strokeWidth={1.75} />
-              <span>Quiz</span>
-            </button>
-          )}
         </div>
       </div>
     </li>
