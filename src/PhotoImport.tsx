@@ -16,8 +16,8 @@ import {
 // ============================================================
 // PhotoImport.tsx
 // Optional helpers inside the test builder ("My tests" only):
-//   1. Add questions from up to 4 photos — every question found is added, no count limit.
-//   2. Add answers from up to 4 photos of an answer sheet — a SEPARATE
+//   1. Add questions from up to 20 photos/PDFs per batch — every question found is added, no count limit.
+//   2. Add answers from up to 20 photos/PDFs of an answer sheet — a SEPARATE
 //      section; answers are matched to questions strictly by sequence.
 // The instruction panel language (हिन्दी / English) is the user's choice
 // and only affects this panel's own text — never the test content.
