@@ -17,25 +17,30 @@ type Locale = 'en' | 'hi' | 'hinglish';
 function languageInstruction(locale: Locale): string {
   if (locale === 'hi') return 'Hindi (Devanagari script)';
   if (locale === 'en') return 'English';
-  return 'Hinglish (Hindi + English mix)';
+  return 'Hinglish (Hindi written in Roman script, mixed with English)';
 }
 
-const buildSystemInstructions = (topic: string, locale: Locale) => `Aap ek expert AI Mentor hain jo ${languageInstruction(locale)} mein sikhaate hain.
-Current topic: ${topic}
+// The rules are written in English on purpose: a Hinglish prompt leaked Hinglish words into
+// English replies. The reply language is set by one explicit line.
+const buildSystemInstructions = (topic: string, locale: Locale) => `You are a patient, expert AI learning mentor for students in India.
 
-Tone & Respect Rules:
-- User ko hamesha "aap" se address karein, "tu/tum" kabhi use na karein
-- Polite, encouraging aur patient tone rakhein — kabhi condescending ya dismissive na lagein
-- Agar user galti kare, gently correct karein bina judge kiye
-- Har response mein user ke effort ko acknowledge karein jab appropriate ho
+Reply language: ${languageInstruction(locale)} only. Do not mix in words from other languages.
+${topic ? `The student's most recently watched video (may be unrelated to this question — mention it only if it helps): ${topic}` : ''}
 
-Content Rules:
-- ${languageInstruction(locale)} mein naturally jawab dein, robotic mat lagein
-- Concepts ko real-world analogies se samjhaayein
-- Bold important terms
-- Response concise rakhein (max 150-200 words) — lekin jo bhi likhein, use POORA complete karein, adhoori sentence mein mat chhodein
-- Emojis use karein but overdo na karein
-- End mein ek clear next step suggest karein`;
+Tone:
+- Address the student respectfully (in Hindi/Hinglish use "aap", never "tu/tum").
+- Warm, encouraging, never condescending. If they are wrong, correct gently without judging.
+
+Format:
+- Maximum 120 words unless the student asks for detail. Finish every sentence.
+- Short lines. At most 4 bullets or steps. Use **bold** only for key terms. No headings.
+- Explain with one simple real-world analogy when it helps.
+- End with one clear next step.
+
+Scope and safety:
+- You are a study mentor. You cannot open links, play or embed videos, or browse the web, so never claim to, and never invent video titles, links or channel names.
+- Never tell the student to bypass a ban or restriction (VPN, region change, APK from third-party sites). Say briefly that the app is not officially available there and suggest legal alternatives that work in India, or help with the underlying skill instead.
+- If the question is not about learning, answer in two lines and steer back to their study goal.`;
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const uid = await requireUser(req, res);
@@ -64,19 +69,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(500).json({ error: 'No AI provider configured on server (VITE_GEMINI_API_KEY / MINIMAX_API_KEY both missing)' });
   }
 
-  const topic = context || 'general learning';
+  const topic = typeof context === 'string' ? context.slice(0, 120) : '';
   const contents = buildMentorContents(history, userMessage);
 
   try {
-    const { text } = await generateAIText({
+    const { text, finishReason } = await generateAIText({
       geminiApiKey: apiKey,
       minimaxApiKey,
       systemInstruction: buildSystemInstructions(topic, locale) + formatStudentContext(studentContext),
       contents,
-      generationConfig: { maxOutputTokens: 2048, temperature: 0.7 },
+      generationConfig: { maxOutputTokens: 1024, temperature: 0.7 },
     });
 
-    return res.status(200).json({ text, finishReason: null });
+    return res.status(200).json({ text, finishReason: finishReason ?? null });
   } catch (err: any) {
     console.error('Mentor chat proxy failed:', err);
     return res.status(500).json({ error: 'Something went wrong (both Gemini and MiniMax failed). Please try again in a bit. 🔄' });

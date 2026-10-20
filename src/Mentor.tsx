@@ -10,6 +10,7 @@ import type { TranslationShape } from './i18n/translations';
 import { buildMentorStudentContext } from './mentorContext';
 import { authFetch } from './apiFetch';
 import { loadMentorChat, saveMentorChat } from './mentorChatStore';
+import MentorText from './MentorText';
 
 const WELCOME_ID = 'welcome';
 
@@ -189,7 +190,11 @@ export default function Mentor() {
                   <div className="hidden md:block text-xs opacity-60 mb-1">
                     {stripEmoji(msg.role === 'user' ? t.mentor.youLabel : t.mentor.mentorLabel)}
                   </div>
-                  <div className="whitespace-pre-wrap text-sm leading-relaxed">{msg.content}</div>
+                  {msg.role === 'mentor' ? (
+                    <MentorText text={msg.content} />
+                  ) : (
+                    <div className="whitespace-pre-wrap text-sm leading-relaxed">{msg.content}</div>
+                  )}
                 </div>
               </motion.div>
             ))}
