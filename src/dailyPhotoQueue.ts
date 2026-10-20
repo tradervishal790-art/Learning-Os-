@@ -1,5 +1,5 @@
 import { dedupeQuestions } from './questionDedup';
-import { loadDaily, saveBank } from './dailyTestStore';
+import { getReadyDailyQuestionCount, loadDaily, saveBank } from './dailyTestStore';
 import { prepareUpload, extractQuestionsFromPhoto, toBuilderQuestions } from './testImport';
 import type { TestQuestion } from './types';
 
@@ -118,7 +118,7 @@ export async function processQueuedPhotosForDailyTest(targetCount: number, onPro
   let processedFiles = 0;
   const errors: string[] = [];
   const queued = await getQueuedPhotos();
-  for (let i = 0; i < queued.length && bank.length < targetCount; i++) {
+  for (let i = 0; i < queued.length && getReadyDailyQuestionCount(bank) < targetCount; i++) {
     const item = queued[i];
     onProgress?.(`Reading queued file ${i + 1} of ${queued.length}: ${item.name}`);
     try {
