@@ -215,3 +215,21 @@ test('notes translations: English button names everywhere, Hinglish = English, H
   }
   assert.equal(en['polish.saveNow'], 'Save');
 });
+
+test('noteTabs: every tool has one home (undo/redo on two tabs), nothing duplicated, ⋯ menu kept separate', async () => {
+  const { NOTE_TABS, FILE_MENU_TOOLS, SHARED_TOOLS, tabsForTool } = await loadTs('src/noteTabs.ts');
+  assert.deepEqual(NOTE_TABS.map((t) => t.id), ['home', 'insert', 'draw', 'view', 'ai']);
+  const all = NOTE_TABS.flatMap((t) => t.groups.flatMap((g) => g.tools));
+  for (const id of new Set(all)) {
+    const n = tabsForTool(id).length;
+    assert.equal(n, SHARED_TOOLS.includes(id) ? 2 : 1, `${id} appears on ${n} tabs`);
+  }
+  for (const t of NOTE_TABS) {
+    const own = t.groups.flatMap((g) => g.tools);
+    assert.equal(new Set(own).size, own.length, `${t.id} lists a tool twice`);
+  }
+  assert.equal(tabsForTool('find')[0], 'view');
+  assert.equal(tabsForTool('readAloud')[0], 'view');
+  assert.deepEqual(tabsForTool('aiPanel'), ['ai']);
+  for (const id of FILE_MENU_TOOLS) assert.equal(tabsForTool(id).length, 0);
+});
