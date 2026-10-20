@@ -166,21 +166,27 @@ export default function PhotoImport({ questions, onAppendQuestions, onReplaceQue
     try {
       const all: ExtractedQuestion[] = [];
       const allKey: ExtractedAnswer[] = [];
+      const failedFiles: string[] = [];
       for (let i = 0; i < qFiles.length; i++) {
         setProgress(t.reading(i + 1, qFiles.length));
-        for (const part of await prepareUpload(qFiles[i])) {
-          const r = await extractQuestionsFromPhoto(part);
-          all.push(...r.questions);
-          allKey.push(...r.answerKey);
+        try {
+          for (const part of await prepareUpload(qFiles[i])) {
+            const r = await extractQuestionsFromPhoto(part);
+            all.push(...r.questions);
+            allKey.push(...r.answerKey);
+          }
+        } catch (fileError) {
+          failedFiles.push(qFiles[i].name);
+          console.error('Question import failed for file:', qFiles[i].name, fileError);
         }
       }
       if (all.length === 0) {
-        setError(t.none);
+        setError(failedFiles.length ? `Could not read any selected files. Failed: ${failedFiles.join(', ')}. Try smaller/clearer files or import fewer at once.` : t.none);
       } else {
         const { questions: qs, warnings: w } = toBuilderQuestions(all, allKey);
         onAppendQuestions(qs);
         setWarnings(w);
-        setInfo(t.addedQ(qs.length));
+        setInfo(`${t.addedQ(qs.length)}${failedFiles.length ? ` Failed files: ${failedFiles.join(', ')}. You can retry those separately.` : ''}`);
         setQFiles([]);
       }
     } catch (err) {
@@ -199,19 +205,25 @@ export default function PhotoImport({ questions, onAppendQuestions, onReplaceQue
     setWarnings([]);
     try {
       const all: ExtractedAnswer[] = [];
+      const failedFiles: string[] = [];
       for (let i = 0; i < aFiles.length; i++) {
         setProgress(t.reading(i + 1, aFiles.length));
-        for (const part of await prepareUpload(aFiles[i])) {
-          all.push(...(await extractAnswersFromPhoto(part)));
+        try {
+          for (const part of await prepareUpload(aFiles[i])) {
+            all.push(...(await extractAnswersFromPhoto(part)));
+          }
+        } catch (fileError) {
+          failedFiles.push(aFiles[i].name);
+          console.error('Answer import failed for file:', aFiles[i].name, fileError);
         }
       }
       if (all.length === 0) {
-        setError(t.noneA);
+        setError(failedFiles.length ? `Could not read any selected answer files. Failed: ${failedFiles.join(', ')}. Try smaller/clearer files or import fewer at once.` : t.noneA);
       } else {
         const { questions: qs, warnings: w, applied } = applyAnswersInSequence(questions, all);
         onReplaceQuestions(qs);
         setWarnings(w);
-        setInfo(t.addedA(applied, questions.length));
+        setInfo(`${t.addedA(applied, questions.length)}${failedFiles.length ? ` Failed files: ${failedFiles.join(', ')}. Retry those separately; answer order may need review.` : ''}`);
         setAFiles([]);
       }
     } catch (err) {
