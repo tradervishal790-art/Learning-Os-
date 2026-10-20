@@ -8,9 +8,9 @@ import type { TestQuestion, MCQQuestion, SubjectiveQuestion } from './types';
 import { normalizeAnswer } from './testGrading';
 import { MAX_OPTIONS } from './testConfig';
 
-export const MAX_IMPORT_PHOTOS = 4; // max files per import (photos and/or PDFs)
+export const MAX_IMPORT_PHOTOS = 20; // files per batch; users can import additional batches without losing earlier questions
 export const MAX_PDF_PAGES = 30; // per PDF, to keep AI cost bounded
-const MAX_PDF_BYTES = 2_400_000; // raw bytes per request (≈3.2 MB base64, under the server's limit)
+const MAX_PDF_BYTES = 2_800_000; // raw bytes per chunk (≈3.74 MB base64, under the Vercel request-body limit)
 
 export interface PhotoPayload {
   mimeType: string;
@@ -116,7 +116,7 @@ export async function compressPhoto(file: File): Promise<PhotoPayload> {
 
   let quality = 0.85;
   let dataUrl = canvas.toDataURL('image/jpeg', quality);
-  while (dataUrl.length > 3_000_000 && quality > 0.4) {
+  while (dataUrl.length > 3_800_000 && quality > 0.4) {
     quality -= 0.15;
     dataUrl = canvas.toDataURL('image/jpeg', quality);
   }
