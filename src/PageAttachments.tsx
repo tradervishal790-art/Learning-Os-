@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Camera, Image as ImageIcon, Mic, RotateCw, Trash2 } from 'lucide-react';
+import { RotateCw, Trash2 } from 'lucide-react';
 import type { PageAttachment } from './notebookStore';
 import { deleteImage, getImage, newAttachId, putImage } from './attachStore';
 import { deleteAudio, getAudio, putAudio, updateBookmarks, type AudioMeta } from './audioStore';
@@ -104,7 +104,7 @@ export default function PageAttachments({
   };
 
   return (
-    <div className="relative z-10 mt-3 border-t border-dashed border-gray-200 dark:border-white/10 pt-2">
+    <div className={`relative z-10 ${attachments.length > 0 || recording || busy || error ? 'mt-3 border-t border-dashed border-gray-200 dark:border-white/10 pt-2' : ''}`}>
       {attachments.length > 0 && (
         <div className="mb-2 space-y-3">
           {attachments.map((a) =>
@@ -121,22 +121,16 @@ export default function PageAttachments({
           <AudioRecorder onDone={(r) => void saveRecording(r)} onCancel={() => setRecording(false)} labels={labels} />
         </div>
       )}
-      <div className="flex flex-wrap items-center gap-1.5">
-        <button type="button" className={BTN} disabled={busy} onClick={() => fileRef.current?.click()}>
-          <ImageIcon size={14} /> {t('addPhoto')}
-        </button>
-        <button type="button" className={BTN} disabled={busy} onClick={() => camRef.current?.click()}>
-          <Camera size={14} /> {t('takePhoto')}
-        </button>
-        <button type="button" className={BTN} disabled={recording} onClick={() => setRecording(true)}>
-          <Mic size={14} /> {t('record')}
-        </button>
-        {error && (
-          <span role="alert" className="text-xs text-red-600 dark:text-red-400">
-            {error}
-          </span>
-        )}
-      </div>
+      {(busy || error) && (
+        <div className="flex flex-wrap items-center gap-1.5">
+          {busy && <span className="text-xs text-gray-400 dark:text-white/40">…</span>}
+          {error && (
+            <span role="alert" className="text-xs text-red-600 dark:text-red-400">
+              {error}
+            </span>
+          )}
+        </div>
+      )}
       <input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => { void addImage(e.target.files?.[0]); e.target.value = ''; }} />
       <input ref={camRef} type="file" accept="image/*" capture="environment" hidden onChange={(e) => { void addImage(e.target.files?.[0]); e.target.value = ''; }} />
     </div>

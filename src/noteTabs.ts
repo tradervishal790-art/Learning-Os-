@@ -43,6 +43,7 @@ export const NOTE_TABS: NoteTab[] = [
       { id: 'history', label: 'Undo', tools: ['undo', 'redo'] },
       { id: 'font', label: 'Font', tools: ['heading', 'font', 'size', 'bold', 'italic', 'underline', 'strike', 'superscript', 'subscript', 'textColor', 'highlight', 'clearFormat'] },
       { id: 'paragraph', label: 'Paragraph', tools: ['bulletList', 'numberedList', 'checklist', 'alignLeft', 'alignCenter', 'alignRight'] },
+      { id: 'media', label: 'Media', tools: ['addPhoto', 'takePhoto', 'recordAudio'] },
     ],
   },
   {
@@ -83,8 +84,8 @@ export const NOTE_TABS: NoteTab[] = [
 /** Rarely used — stays in the ⋯ menu. */
 export const FILE_MENU_TOOLS: NoteToolId[] = ['export', 'exportPdfs', 'versions', 'shortcuts'];
 
-/** Undo / redo are shown on both Home and Draw (one tap away in either). */
-export const SHARED_TOOLS: NoteToolId[] = ['undo', 'redo'];
+/** Undo / redo are on Home and Draw; photo / camera / audio are on Home and Insert. */
+export const SHARED_TOOLS: NoteToolId[] = ['undo', 'redo', 'addPhoto', 'takePhoto', 'recordAudio'];
 
 export function tabsForTool(id: NoteToolId): NoteTabId[] {
   return NOTE_TABS.filter((t) => t.groups.some((g) => g.tools.includes(id))).map((t) => t.id);

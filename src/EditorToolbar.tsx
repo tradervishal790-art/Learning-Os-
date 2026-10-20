@@ -288,7 +288,7 @@ export default function EditorToolbar({
   // Desktop shows everything in one row; the phone ribbon shows one tab's worth at a time.
   const row =
     section === 'home' ? (
-      <>{history}<Sep />{selects}<Sep />{marks}<Sep />{lists}<Sep />{align}</>
+      <>{history}<Sep />{selects}<Sep />{marks}<Sep />{lists}<Sep />{align}<Sep />{mediaBtns}</>
     ) : section === 'insert' ? (
       <>{blocks}<Sep />{tableBtn}{mediaBtns}</>
     ) : section === 'view' ? (
