@@ -4,7 +4,6 @@ import type { TestQuestion } from './types';
 import { dedupeQuestions } from './questionDedup';
 import { enqueueDailyPhotos, getQueuedPhotoCount } from './dailyPhotoQueue';
 import {
-  MAX_IMPORT_PHOTOS,
   MAX_PDF_PAGES,
   prepareUpload,
   extractQuestionsFromPhoto,
