@@ -29,7 +29,7 @@ import { handleInkOcr } from './_lib/inkOcr.js';
 import { handleNoteAi } from './_lib/noteAi.js';
 
 const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp', 'application/pdf']);
-const MAX_BASE64_CHARS = 3_400_000; // ~2.5 MB file; keeps the request under Vercel's 4.5 MB limit (client splits bigger PDFs)
+const MAX_BASE64_CHARS = 4_000_000; // ~3 MB file; JSON request stays under Vercel's ~4.5 MB body limit
 const RATE_LIMIT = 40; // requests per window per user (a big PDF is split into several requests)
 const RATE_WINDOW_MS = 10 * 60 * 1000;
 
