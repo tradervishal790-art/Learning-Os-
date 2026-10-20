@@ -25,3 +25,24 @@ export function useImmersive(): boolean {
     () => false,
   );
 }
+
+/** True while a note is open in the editor: the greeting header and Notebook/AI-notes tabs step aside for more writing room. */
+let noteOpen = false;
+const noteListeners = new Set<() => void>();
+
+export function setNoteOpen(value: boolean) {
+  if (noteOpen === value) return;
+  noteOpen = value;
+  noteListeners.forEach((l) => l());
+}
+
+export function useNoteOpen(): boolean {
+  return useSyncExternalStore(
+    (cb) => {
+      noteListeners.add(cb);
+      return () => noteListeners.delete(cb);
+    },
+    () => noteOpen,
+    () => false,
+  );
+}

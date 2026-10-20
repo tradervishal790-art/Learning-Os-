@@ -14,6 +14,7 @@ import { isTemplateId } from './pageTemplates';
 import { useZoom } from './useZoom';
 import { useAppDark } from './useAppDark';
 import { useElementSize, useFillHeight } from './useLayoutSize';
+import { setImmersive, setNoteOpen } from './immersive';
 import { useMediaQuery } from './useMediaQuery';
 import { addPageAfter, blankPage, deletePage, duplicatePage, inkOf, movePage, newPageId, patchPage, restorePage } from './pageOps';
 import { recognizeHandwriting } from './inkOcrApi';
@@ -752,7 +753,23 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
   }, []);
   const { zoom, fitWidth, zoomIn, zoomOut } = useZoom(scrollerRef);
   const scroller = useElementSize(scrollerEl);
-  useFillHeight(scrollerEl, 64);
+  useFillHeight(scrollerEl, focusMode ? 8 : 64);
+
+  // While a note is open the greeting + notes tabs hide; fullscreen also hides the bottom bar. Esc exits fullscreen.
+  useEffect(() => {
+    setNoteOpen(true);
+    return () => setNoteOpen(false);
+  }, []);
+  useEffect(() => {
+    setImmersive(focusMode);
+    if (!focusMode) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setFocusMode(false);
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      setImmersive(false);
+    };
+  }, [focusMode]);
   const [viewPage, setViewPage] = useState<string | null>(null);
 
   // Which page is on screen (for the thumbnail highlight). Separate from `activePage`, which is where
@@ -1002,6 +1019,14 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
               labels={{ zoomIn: t.pageOps.zoomIn, zoomOut: t.pageOps.zoomOut, fit: t.pageOps.zoomFit }}
             />
           )}
+          <button
+            onClick={() => setFocusMode(true)}
+            aria-label={t.editor.focusMode}
+            title={t.editor.focusMode}
+            className="h-10 w-10 sm:h-9 sm:w-9 shrink-0 rounded-lg flex items-center justify-center text-gray-700 dark:text-white/80 hover:bg-gray-100 dark:hover:bg-white/10"
+          >
+            <Maximize2 size={18} />
+          </button>
           <NoteMenu label={t.polish.menuTitle} items={menuItems} />
           <SaveChip />
         </div>

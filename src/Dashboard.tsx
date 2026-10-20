@@ -6,7 +6,7 @@ import { Search, Film, BookOpen, ClipboardCheck, Newspaper, Lock, Settings as Se
 import PagePlaceholder from './PagePlaceholder';
 import BottomNav from './BottomNav';
 import QuickGrid from './QuickGrid';
-import { useImmersive } from './immersive';
+import { useImmersive, useNoteOpen } from './immersive';
 import { getRoadmapData, getCurrentTopic } from './roadmapData';
 import { getRevisionStats, getRevisionDataForGoals } from './revisionData';
 import { getPersonalityProfile, savePersonalityProfile, clearPersonalityProfile } from './personalityProfileStore';
@@ -330,6 +330,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   );
 
   const [streak, setStreak] = useState(0);
+  const noteOpen = useNoteOpen();
   const immersive = useImmersive(); // true while a full-attention flow (e.g. a timed test) hides the bottom bar
   // Bell + sound reminder — computed once when the app/home page opens (not
   // only on navigating into the Revision tab), so nothing due gets missed.
@@ -760,19 +761,22 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
       </aside>
 
       <div className={`flex-1 overflow-auto min-w-0 md:pb-0 ${immersive ? '' : 'pb-[calc(3.5rem+env(safe-area-inset-bottom))]'}`}>
+        {!(activePage === 'notes' && noteOpen) && (
         <motion.div
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.6 }}
-          className="border-b border-gray-200 dark:border-white/10 px-4 md:px-8 py-4 md:py-6 flex justify-between items-center gap-3"
+          className="border-b border-gray-200 dark:border-white/10 px-4 md:px-8 py-2 md:py-6 flex justify-between items-center gap-3"
         >
           <div className="flex items-center gap-3 min-w-0">
+            {activePage === 'dashboard' && (
             <h2 className="text-lg md:text-2xl font-bold truncate">
               {getGreeting()},{' '}
               <span className="bg-gradient-to-r from-purple-500 via-pink-500 to-orange-400 bg-clip-text text-transparent">
                 {displayName}
               </span>
             </h2>
+            )}
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
             <SignInButton className="px-3 md:px-4 py-2 rounded-full bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white text-sm font-semibold hover:opacity-90 transition" />
@@ -782,6 +786,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
           </button>
           </div>
         </motion.div>
+        )}
 
         <Suspense fallback={<PageLoading />}>
         {showLoginRequired && <LoginRequired feature={loginRequiredLabel} />}
