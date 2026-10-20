@@ -92,7 +92,7 @@ export default function TestBuilder({ initialPaper, onSave, onCancel, variant }:
   const handleSave = () => {
     if (!title.trim()) return setError('Give the test a title.');
     if (!topic.trim()) return setError('Give the test a topic/subject.');
-    if (questions.length === 0) return setError('Add at least one question.');
+    if (questions.length === 0 && !isDaily) return setError('Add at least one question.');
     for (const [i, q] of questions.entries()) {
       if (!q.question.trim()) return setError(`Question ${i + 1} is empty.`);
       if (q.type === 'mcq' && filledOptionCount(q.options) < MIN_OPTIONS) return setError(`Question ${i + 1}: fill at least ${MIN_OPTIONS} options.`);
