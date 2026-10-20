@@ -150,6 +150,7 @@ export default function TestBuilder({ initialPaper, onSave, onCancel, variant }:
       )}
 
       <PhotoImport
+        dailyQueueOnly={isDaily}
         questions={questions}
         onAppendQuestions={(qs) => setQuestions((prev) => [...prev, ...qs])}
         onReplaceQuestions={setQuestions}
