@@ -1,6 +1,7 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { ArrowLeft, CalendarCheck, Download, Upload, Pencil, Trash2, Play } from 'lucide-react';
 import type { TestPaper } from './types';
+import { getQueuedPhotoCount, processQueuedPhotosForDailyTest } from './dailyPhotoQueue';
 import TestBuilder from './TestBuilder';
 import {
   loadDaily,
@@ -27,11 +28,14 @@ export default function DailyTest({ onStart, onExit }: { onStart: (paper: TestPa
   const [state, setState] = useState(() => loadDaily());
   const [editingBank, setEditingBank] = useState(false);
   const [message, setMessage] = useState('');
+  const [queuedPhotos, setQueuedPhotos] = useState(0);
+  const [preparing, setPreparing] = useState(false);
   const [perDayInput, setPerDayInput] = useState(String(state.perDay));
   const [minInput, setMinInput] = useState(String(state.minutesPerQuestion));
   const fileRef = useRef<HTMLInputElement>(null);
 
   const refresh = () => setState(loadDaily());
+  useEffect(() => { void getQueuedPhotoCount().then(setQueuedPhotos); }, []);
   const status = getDailyStatus(state);
   const sum = getDailySummary(state);
 
@@ -77,10 +81,33 @@ export default function DailyTest({ onStart, onExit }: { onStart: (paper: TestPa
     refresh();
   };
 
-  const start = () => {
-    const paper = getOrCreateTodayTest();
-    if (!paper) return refresh();
-    onStart(paper);
+  const start = async () => {
+    if (preparing) return;
+    setPreparing(true);
+    setMessage('');
+    try {
+      let current = loadDaily();
+      if (!current.pending && current.bank.length < current.perDay && queuedPhotos > 0) {
+        const result = await processQueuedPhotosForDailyTest(current.perDay, setMessage);
+        setQueuedPhotos(result.remainingFiles);
+        current = loadDaily();
+        if (result.errors.length) setMessage(`Imported ${result.processedFiles} file(s). ${result.errors[0]} Remaining files are saved for retry.`);
+        else if (result.processedFiles > 0) setMessage(`Imported ${result.processedFiles} file(s) only when needed. ${result.remainingFiles} file(s) remain queued for later tests.`);
+      }
+      const paper = getOrCreateTodayTest();
+      if (!paper) {
+        refresh();
+        if (queuedPhotos === 0 && current.bank.length === 0) setMessage('No questions are ready. Add photos/PDFs or type questions first.');
+        return;
+      }
+      refresh();
+      onStart(paper);
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : 'Could not prepare the Daily Test. Your queued files have been kept.');
+      refresh();
+    } finally {
+      setPreparing(false);
+    }
   };
 
   // A waiting test whose date is before today = a missed day: the same questions come back.
@@ -122,11 +149,11 @@ export default function DailyTest({ onStart, onExit }: { onStart: (paper: TestPa
       <h2 className="flex items-center gap-2 text-2xl font-bold mb-1">
         <CalendarCheck className="w-6 h-6" /> Daily Test
       </h2>
-      <p className="text-sm text-gray-500 dark:text-white/60 mb-6">Upload your questions once. A new test is ready for you every day — no daily uploading.</p>
+      <p className="text-sm text-gray-500 dark:text-white/60 mb-6">Queue photos once. AI reads only as many files as needed when you request a test; unused files stay saved for later.</p>
 
       {message && <p className="mb-4 text-sm text-emerald-600 dark:text-emerald-400">{message}</p>}
 
-      {status === 'empty' ? (
+      {status === 'empty' && queuedPhotos === 0 ? (
         <div className={card}>
           <p className="font-semibold mb-1">Start by adding your questions</p>
           <p className="text-sm text-gray-500 dark:text-white/60 mb-4">Add photos or PDFs of your question paper (or paste/type the questions). You do this only once.</p>
@@ -144,14 +171,14 @@ export default function DailyTest({ onStart, onExit }: { onStart: (paper: TestPa
               </>
             ) : (
               <>
-                <p className="font-semibold">{status === 'pending' ? (isMissed ? 'Your missed test is waiting' : "Today's test is ready") : "Today's test"}</p>
+                <p className="font-semibold">{status === 'pending' ? (isMissed ? 'Your missed test is waiting' : "Today's test is ready") : state.bank.length === 0 ? 'Prepare a test from queued files' : "Today's test"}</p>
                 <p className="text-sm text-gray-500 dark:text-white/60 mb-4">
                   {state.pending
                     ? `${state.pending.questions.length} questions${state.pending.durationMinutes > 0 ? ` · ${state.pending.durationMinutes} min` : ' · no timer'}${isMissed ? ' · same questions, not skipped' : ''}`
-                    : `${Math.min(sum.perDay, sum.total)} questions${state.minutesPerQuestion > 0 ? ` · ${Math.max(1, Math.round(Math.min(sum.perDay, sum.total) * state.minutesPerQuestion))} min` : ' · no timer'}`}
+                    : `${Math.min(sum.perDay, sum.total)} ready question(s) · ${queuedPhotos} file(s) waiting${state.minutesPerQuestion > 0 ? ` · up to ${Math.max(1, Math.round(Math.min(sum.perDay, Math.max(1, sum.total)) * state.minutesPerQuestion))} min` : ' · no timer'}`}
                 </p>
-                <button onClick={start} className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white font-semibold">
-                  <Play className="w-4 h-4" /> Start today's test
+                <button onClick={start} disabled={preparing} className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white font-semibold disabled:opacity-50">
+                  <Play className="w-4 h-4" /> {preparing ? 'Preparing questions…' : 'Start today\'s test'}
                 </button>
               </>
             )}
@@ -175,7 +202,7 @@ export default function DailyTest({ onStart, onExit }: { onStart: (paper: TestPa
           <div className={card}>
             <p className="font-semibold mb-2">Your progress</p>
             <p className="text-sm text-gray-600 dark:text-white/70">
-              {sum.total} questions in your bank · {sum.daysCompleted} daily test{sum.daysCompleted !== 1 ? 's' : ''} finished · round {sum.round}
+              {sum.total} questions in your bank · {queuedPhotos} photo/PDF file(s) waiting · {sum.daysCompleted} daily test{sum.daysCompleted !== 1 ? 's' : ''} finished · round {sum.round}
             </p>
             <p className="text-sm text-gray-600 dark:text-white/70">
               {sum.left} questions not used yet in this round · about {sum.daysPerRound} days for the whole bank
