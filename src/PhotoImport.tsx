@@ -185,7 +185,8 @@ export default function PhotoImport({ questions, onAppendQuestions, onReplaceQue
         setError(failedFiles.length ? `Could not read any selected files. Failed: ${failedFiles.join(', ')}. Try smaller/clearer files or import fewer at once.` : t.none);
       } else {
         const { questions: qs, warnings: w } = toBuilderQuestions(all, allKey);
-        const { questions: uniqueQs, duplicates } = dedupeQuestions([...questions, ...qs]);
+        const { questions: existingUnique } = dedupeQuestions(questions);
+        const { questions: uniqueQs, duplicates } = dedupeQuestions([...existingUnique, ...qs]);
         const existingIds = new Set(questions.map((q) => q.id));
         const newQuestions = uniqueQs.filter((q) => !existingIds.has(q.id));
         if (newQuestions.length > 0) onAppendQuestions(newQuestions);
