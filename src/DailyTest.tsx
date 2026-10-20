@@ -89,7 +89,8 @@ export default function DailyTest({ onStart, onExit }: { onStart: (paper: TestPa
     try {
       let current = loadDaily();
       if (!current.pending && (current.bank.length < current.perDay || current.queue.length < current.perDay) && queuedPhotos > 0) {
-        const result = await processQueuedPhotosForDailyTest(current.perDay, setMessage);
+        const neededBankSize = current.bank.length + Math.max(0, current.perDay - current.queue.length);
+        const result = await processQueuedPhotosForDailyTest(neededBankSize, setMessage);
         setQueuedPhotos(result.remainingFiles);
         current = loadDaily();
         if (result.errors.length) setMessage(`Imported ${result.processedFiles} file(s). ${result.errors[0]} Remaining files are saved for retry.`);
