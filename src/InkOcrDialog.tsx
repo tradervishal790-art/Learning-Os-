@@ -1,4 +1,5 @@
 import { useTranslation } from './i18n/LanguageContext';
+import { solveMathText } from './mathSolve';
 
 export interface OcrState {
   status: 'loading' | 'ready' | 'error';
@@ -19,6 +20,7 @@ export default function InkOcrDialog({
   const btn = 'px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-200 dark:border-white/10 text-gray-700 dark:text-white/80 hover:bg-gray-100 dark:hover:bg-white/10';
   const primary = 'px-3 py-1.5 rounded-lg text-xs font-medium bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white hover:opacity-80 disabled:opacity-30';
   const empty = state.status === 'ready' && !state.text.trim();
+  const math = state.status === 'ready' ? solveMathText(state.text) : { text: state.text, solved: 0 };
   return (
     <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
       <div
@@ -44,6 +46,7 @@ export default function InkOcrDialog({
         )}
         <div className="flex flex-wrap justify-end gap-2 mt-4">
           <button className={btn} onClick={onClose}>{t.ocrCancel}</button>
+          {math.solved > 0 && <button className={btn} onClick={() => onText(math.text)}>{t.ocrSolve.replace('{0}', String(math.solved))}</button>}
           {state.status === 'ready' && !empty && (
             <>
               <button className={btn} onClick={() => onInsert(true)}>{t.ocrInsertDelete}</button>

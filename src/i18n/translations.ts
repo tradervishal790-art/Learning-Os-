@@ -489,6 +489,7 @@ export interface TranslationShape {
       modePen: string;
       modeHighlighter: string;
       modeLaser: string;
+      ocrSolve: string;
       laserHint: string;
       modeEraser: string;
       penBallpoint: string;
@@ -1931,6 +1932,7 @@ export const translations: Record<Locale, TranslationShape> = {
         modeType: "Type",
         modePen: "Pen",
         modeHighlighter: "Highlighter",
+        ocrSolve: "Solve maths ({0})",
         modeLaser: "Laser",
         laserHint: "Drag to point. The red trail fades away, nothing is saved.",
         modeEraser: "Eraser",
@@ -3385,6 +3387,7 @@ export const translations: Record<Locale, TranslationShape> = {
         modeType: "Type",
         modePen: "Pen",
         modeHighlighter: "Highlighter",
+        ocrSolve: "गणित हल करें ({0})",
         modeLaser: "लेज़र",
         laserHint: "इशारा करने के लिए खींचें। लाल निशान अपने आप मिट जाता है, कुछ सेव नहीं होता।",
         modeEraser: "Eraser",
@@ -4838,6 +4841,7 @@ export const translations: Record<Locale, TranslationShape> = {
         modeType: "Type",
         modePen: "Pen",
         modeHighlighter: "Highlighter",
+        ocrSolve: "Maths solve karein ({0})",
         modeLaser: "Laser",
         laserHint: "Point karne ke liye drag karein. Laal nishaan apne aap mit jaata hai, kuch save nahi hota.",
         modeEraser: "Eraser",
