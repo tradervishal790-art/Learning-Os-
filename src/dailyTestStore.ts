@@ -119,8 +119,8 @@ export function saveBank(questions: TestQuestion[]): boolean {
   // the same paper is imported again, so ID-only checks do not prevent repeats.
   const { questions: uniqueQuestions } = dedupeQuestions(questions);
   const ids = new Set(uniqueQuestions.filter(isReadyQuestion).map((q) => q.id));
-  const known = new Set(s.bank.map((q) => q.id));
-  const fresh = uniqueQuestions.filter((q) => isReadyQuestion(q) && !known.has(q.id)).map((q) => q.id);
+  const knownReady = new Set(s.bank.filter(isReadyQuestion).map((q) => q.id));
+  const fresh = uniqueQuestions.filter((q) => isReadyQuestion(q) && !knownReady.has(q.id)).map((q) => q.id);
   s.bank = uniqueQuestions;
   // Incomplete imported questions stay saved for manual answer completion, but cannot appear in a test.
   s.queue = [...s.queue.filter((id) => ids.has(id)), ...shuffle(fresh)];
