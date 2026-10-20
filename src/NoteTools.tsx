@@ -218,7 +218,7 @@ export function ShortcutsDialog({ labels: t, onClose }: { labels: L; onClose: ()
   const mac = typeof navigator !== 'undefined' && /mac|iphone|ipad/i.test(navigator.platform || navigator.userAgent);
   const mod = mac ? '⌘' : 'Ctrl';
   const rows: [string, string][] = [
-    ['T', t.scType], ['P', t.scPen], ['H', t.scHl], ['E', t.scEraser], ['S', t.scSelect],
+    ['T', t.scType], ['P', t.scPen], ['H', t.scHl], ['E', t.scEraser], ['S', t.scSelect], ['L', t.scLaser],
     [`${mod}+Z`, t.scUndo], [`${mod}+Shift+Z`, t.scRedo], [`${mod}+S`, t.scSave],
     [`${mod}+C / X / V`, t.scCopy], ['Delete', t.scDelete], ['?', t.scHelp],
   ];

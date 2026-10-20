@@ -488,6 +488,8 @@ export interface TranslationShape {
       modeType: string;
       modePen: string;
       modeHighlighter: string;
+      modeLaser: string;
+      laserHint: string;
       modeEraser: string;
       penBallpoint: string;
       penFountain: string;
@@ -1798,6 +1800,7 @@ export const translations: Record<Locale, TranslationShape> = {
         scHl: "Highlighter",
         scEraser: "Eraser",
         scSelect: "Select",
+        scLaser: "Laser pointer",
         scUndo: "Undo",
         scRedo: "Redo",
         scSave: "Save",
@@ -1928,6 +1931,8 @@ export const translations: Record<Locale, TranslationShape> = {
         modeType: "Type",
         modePen: "Pen",
         modeHighlighter: "Highlighter",
+        modeLaser: "Laser",
+        laserHint: "Drag to point. The red trail fades away, nothing is saved.",
         modeEraser: "Eraser",
         penBallpoint: "Ballpoint",
         penFountain: "Fountain pen",
@@ -3249,6 +3254,7 @@ export const translations: Record<Locale, TranslationShape> = {
         scHl: "Highlighter",
         scEraser: "Eraser",
         scSelect: "Select",
+        scLaser: "लेज़र पॉइंटर",
         scUndo: "Undo",
         scRedo: "Redo",
         scSave: "Save",
@@ -3379,6 +3385,8 @@ export const translations: Record<Locale, TranslationShape> = {
         modeType: "Type",
         modePen: "Pen",
         modeHighlighter: "Highlighter",
+        modeLaser: "लेज़र",
+        laserHint: "इशारा करने के लिए खींचें। लाल निशान अपने आप मिट जाता है, कुछ सेव नहीं होता।",
         modeEraser: "Eraser",
         penBallpoint: "Ballpoint",
         penFountain: "Fountain pen",
@@ -4699,6 +4707,7 @@ export const translations: Record<Locale, TranslationShape> = {
         scHl: "Highlighter",
         scEraser: "Eraser",
         scSelect: "Select",
+        scLaser: "Laser pointer",
         scUndo: "Undo",
         scRedo: "Redo",
         scSave: "Save",
@@ -4829,6 +4838,8 @@ export const translations: Record<Locale, TranslationShape> = {
         modeType: "Type",
         modePen: "Pen",
         modeHighlighter: "Highlighter",
+        modeLaser: "Laser",
+        laserHint: "Point karne ke liye drag karein. Laal nishaan apne aap mit jaata hai, kuch save nahi hota.",
         modeEraser: "Eraser",
         penBallpoint: "Ballpoint",
         penFountain: "Fountain pen",

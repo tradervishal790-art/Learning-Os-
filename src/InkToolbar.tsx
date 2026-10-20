@@ -1,5 +1,5 @@
 import {
-  BringToFront, ClipboardPaste, Copy, CopyPlus, Eraser, Hand, Highlighter, Keyboard as TypeIcon, LassoSelect, PenLine,
+  BringToFront, ClipboardPaste, Copy, CopyPlus, Eraser, Hand, Highlighter, Keyboard as TypeIcon, LassoSelect, PenLine, Pointer,
   Plus, Redo2, RotateCcw, Scissors, ScanText, SendToBack, Shapes, SquareDashed, Trash2, Undo2, X,
 } from 'lucide-react';
 import { useTranslation } from './i18n/LanguageContext';
@@ -18,6 +18,7 @@ export function ModeSwitch({ mode, onMode }: { mode: InkMode; onMode: (m: InkMod
     ['highlighter', t.modeHighlighter, <Highlighter size={15} key="h" />],
     ['eraser', t.modeEraser, <Eraser size={15} key="e" />],
     ['select', t.modeSelect, <LassoSelect size={15} key="s" />],
+    ['laser', t.modeLaser, <Pointer size={15} key="l" />],
   ];
   return (
     <div className="flex gap-1 mb-1.5 overflow-x-auto" role="tablist">
@@ -170,6 +171,26 @@ export default function InkToolbar({
           )}
         </div>
         <p className="text-xs text-gray-400 dark:text-white/40 pt-1">{a.notice || (a.count === 0 ? t.selHint : '')}</p>
+      </div>
+    );
+  }
+
+  if (mode === 'laser') {
+    return (
+      <div>
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+          {['#ef4444', '#22c55e', '#3b82f6', '#f59e0b'].map((c) => (
+            <button
+              key={c}
+              type="button"
+              aria-label={c}
+              onClick={() => setPrefs({ laserColor: c })}
+              className={`h-8 w-8 rounded-full border-2 shrink-0 ${prefs.laserColor === c ? 'border-indigo-500' : 'border-transparent'}`}
+              style={{ background: c }}
+            />
+          ))}
+        </div>
+        <p className="text-xs text-gray-400 dark:text-white/40 pt-1">{t.laserHint}</p>
       </div>
     );
   }

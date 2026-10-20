@@ -414,7 +414,7 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
         e.preventDefault();
         return setDialog('shortcuts');
       }
-      const tool: Record<string, InkMode> = { t: 'type', p: 'pen', h: 'highlighter', e: 'eraser', s: 'select' };
+      const tool: Record<string, InkMode> = { t: 'type', p: 'pen', h: 'highlighter', e: 'eraser', s: 'select', l: 'laser' };
       if (tool[k]) {
         e.preventDefault();
         chooseMode(tool[k]);
