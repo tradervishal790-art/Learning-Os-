@@ -22,11 +22,19 @@ function errorKey(e: unknown): string {
   return 'errStorage';
 }
 
+/** The editor toolbar asks a page to add a photo / take a photo / record audio. */
+export type AttachAction = 'photo' | 'camera' | 'audio';
+export function requestAttach(pageId: string, action: AttachAction) {
+  window.dispatchEvent(new CustomEvent('note-attach', { detail: { pageId, action } }));
+}
+
 export default function PageAttachments({
+  pageId,
   attachments,
   onChange,
   labels,
 }: {
+  pageId: string;
   attachments: PageAttachment[];
   onChange: (next: PageAttachment[]) => void;
   labels: Record<string, string>;
@@ -42,6 +50,18 @@ export default function PageAttachments({
   useEffect(() => {
     listRef.current = attachments;
   }, [attachments]);
+
+  useEffect(() => {
+    const onAsk = (e: Event) => {
+      const d = (e as CustomEvent<{ pageId: string; action: AttachAction }>).detail;
+      if (d.pageId !== pageId) return;
+      if (d.action === 'photo') fileRef.current?.click();
+      else if (d.action === 'camera') camRef.current?.click();
+      else setRecording(true);
+    };
+    window.addEventListener('note-attach', onAsk);
+    return () => window.removeEventListener('note-attach', onAsk);
+  }, [pageId]);
 
   const push = (a: PageAttachment) => {
     listRef.current = [...listRef.current, a];

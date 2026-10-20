@@ -115,7 +115,7 @@ export default function PageEditor({
       <div className="relative z-10">
         <EditorContent editor={editor} />
       </div>
-      <PageAttachments attachments={page.attachments ?? []} onChange={(next) => onAttachments(page.id, next)} labels={attachLabels} />
+      <PageAttachments pageId={page.id} attachments={page.attachments ?? []} onChange={(next) => onAttachments(page.id, next)} labels={attachLabels} />
       {size.w > 0 && (
         <InkLayer
           strokes={strokes}

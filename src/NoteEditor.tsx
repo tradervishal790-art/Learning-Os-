@@ -26,6 +26,7 @@ import { SaveChip } from './SaveChip';
 import PageEditor from './PageEditor';
 import EditorToolbar from './EditorToolbar';
 import PhoneRibbon from './PhoneRibbon';
+import { requestAttach, type AttachAction } from './PageAttachments';
 import type { NoteTabId } from './noteTabs';
 import { Btn } from './toolbarParts';
 import NoteAiPanel from './NoteAiPanel';
@@ -1009,6 +1010,12 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
     />
   );
 
+  // Photo / camera / audio from the toolbar go to the page the student is writing on (else the first page).
+  const attach = (a: AttachAction) => {
+    const id = activePage && pages.some((p) => p.id === activePage) ? activePage : pages[0]?.id;
+    if (id) requestAttach(id, a);
+  };
+
   const pickTab = (id: NoteTabId) => {
     if (id === 'ai') {
       setAiOpen(true);
@@ -1114,7 +1121,7 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
         <div className="pb-1.5 border-b border-gray-200 dark:border-white/10 mb-2">
           <ModeSwitch mode={mode} onMode={chooseMode} />
           {mode === 'type' ? (
-            <EditorToolbar editor={active} onFocusMode={() => setFocusMode((f) => !f)} />
+            <EditorToolbar editor={active} onAttach={attach} onFocusMode={() => setFocusMode((f) => !f)} />
           ) : (
             inkBar
           )}
@@ -1227,9 +1234,9 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
       )}
       {!isDesktop && (
         <PhoneRibbon tab={phoneTab} open={ribbonOpen} aiOpen={aiOpen} onTab={pickTab} onHeight={setRibbonH}>
-          {phoneTab === 'home' && <EditorToolbar editor={active} section="home" onFocusMode={() => setFocusMode((f) => !f)} />}
-          {phoneTab === 'insert' && <EditorToolbar editor={active} section="insert" extra={insertTools} onFocusMode={() => setFocusMode((f) => !f)} />}
-          {phoneTab === 'view' && <EditorToolbar editor={active} section="view" lead={viewTools} onFocusMode={() => setFocusMode((f) => !f)} />}
+          {phoneTab === 'home' && <EditorToolbar editor={active} onAttach={attach} section="home" onFocusMode={() => setFocusMode((f) => !f)} />}
+          {phoneTab === 'insert' && <EditorToolbar editor={active} onAttach={attach} section="insert" extra={insertTools} onFocusMode={() => setFocusMode((f) => !f)} />}
+          {phoneTab === 'view' && <EditorToolbar editor={active} onAttach={attach} section="view" lead={viewTools} onFocusMode={() => setFocusMode((f) => !f)} />}
           {phoneTab === 'draw' && (
             <>
               <ModeSwitch mode={mode} onMode={chooseMode} />
