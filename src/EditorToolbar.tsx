@@ -99,6 +99,7 @@ export default function EditorToolbar({
   extra?: ReactNode;
 }) {
   const t = useTranslation().notebook.editor;
+  const at = useTranslation().notebook.attach as Record<string, string>;
   const [finding, setFinding] = useState(false);
   const [speaking, setSpeaking] = useState(false);
   const speakingRef = useRef(false);
@@ -276,7 +277,6 @@ export default function EditorToolbar({
     </>
   );
 
-  const at = useTranslation().notebook.attach as Record<string, string>;
   const mediaBtns = onAttach ? (
     <>
       <Btn label={at.addPhoto} onClick={() => onAttach('photo')}><ImageIcon size={16} /></Btn>
