@@ -1020,12 +1020,6 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
         {activePage === 'revision' && !showLoginRequired && <Revision goals={goals} />}
         {activePage === 'videos' && (
           <div className="relative">
-            <button
-              onClick={() => setShowCustomPlaylist(true)}
-              className="absolute top-4 right-4 md:top-0 md:right-0 z-10 h-9 px-3.5 rounded-full card text-xs font-medium text-indigo-600 dark:text-indigo-300 hover:bg-gray-50 dark:hover:bg-white/10 transition"
-            >
-              {t.dashboard.home.suggestion.customCta}
-            </button>
             <VideoIntel
               initialPlaylist={preloadedPlaylist}
               activeGoalId={activeGoalId}
