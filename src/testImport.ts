@@ -34,6 +34,8 @@ export interface ExtractedAnswer {
   explanation: string;
 }
 
+export { dedupeQuestions } from './questionDedup';
+
 
 /** Normalize question wording for duplicate detection across scans/import batches. */
 export function normalizeQuestionText(value: string): string {
