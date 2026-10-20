@@ -778,10 +778,19 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
     };
   }, [focusMode, isDesktop]);
   useEffect(() => () => setImmersive(false), []);
-  // fullscreen on a phone folds the tool row away (tap a tab to bring it back)
+  // Desktop: also use the browser's real full screen (Esc leaves it).
   useEffect(() => {
-    if (focusMode) setRibbonOpen(false);
-  }, [focusMode]);
+    if (!isDesktop || !focusMode) return;
+    void document.documentElement.requestFullscreen?.().catch(() => {});
+    const onChange = () => {
+      if (!document.fullscreenElement) setFocusMode(false);
+    };
+    document.addEventListener('fullscreenchange', onChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', onChange);
+      if (document.fullscreenElement) void document.exitFullscreen().catch(() => {});
+    };
+  }, [focusMode, isDesktop]);
   const [viewPage, setViewPage] = useState<string | null>(null);
 
   // Which page is on screen (for the thumbnail highlight). Separate from `activePage`, which is where
@@ -1037,7 +1046,7 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
   const phoneTab: NoteTabId = !isDesktop && mode !== 'type' && ribbonTab !== 'view' ? 'draw' : !isDesktop && mode === 'type' && ribbonTab === 'draw' ? 'home' : ribbonTab;
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className={focusMode ? 'fixed inset-0 z-40 overflow-y-auto bg-[#f4f6ff] dark:bg-black p-2 sm:p-3' : 'max-w-6xl mx-auto'}>
       {focusMode ? (
         <div className="flex items-center gap-2 mb-2">
           <input
@@ -1101,11 +1110,11 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
         </div>
       )}
 
-      {!focusMode && isDesktop && (
+      {isDesktop && (
         <div className="pb-1.5 border-b border-gray-200 dark:border-white/10 mb-2">
           <ModeSwitch mode={mode} onMode={chooseMode} />
           {mode === 'type' ? (
-            <EditorToolbar editor={active} onFocusMode={() => setFocusMode(true)} />
+            <EditorToolbar editor={active} onFocusMode={() => setFocusMode((f) => !f)} />
           ) : (
             inkBar
           )}
@@ -1218,9 +1227,9 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
       )}
       {!isDesktop && (
         <PhoneRibbon tab={phoneTab} open={ribbonOpen} aiOpen={aiOpen} onTab={pickTab} onHeight={setRibbonH}>
-          {phoneTab === 'home' && <EditorToolbar editor={active} section="home" onFocusMode={() => setFocusMode(true)} />}
-          {phoneTab === 'insert' && <EditorToolbar editor={active} section="insert" extra={insertTools} onFocusMode={() => setFocusMode(true)} />}
-          {phoneTab === 'view' && <EditorToolbar editor={active} section="view" lead={viewTools} onFocusMode={() => setFocusMode(true)} />}
+          {phoneTab === 'home' && <EditorToolbar editor={active} section="home" onFocusMode={() => setFocusMode((f) => !f)} />}
+          {phoneTab === 'insert' && <EditorToolbar editor={active} section="insert" extra={insertTools} onFocusMode={() => setFocusMode((f) => !f)} />}
+          {phoneTab === 'view' && <EditorToolbar editor={active} section="view" lead={viewTools} onFocusMode={() => setFocusMode((f) => !f)} />}
           {phoneTab === 'draw' && (
             <>
               <ModeSwitch mode={mode} onMode={chooseMode} />
