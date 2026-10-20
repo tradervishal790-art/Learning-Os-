@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Camera, FileCheck2, Loader2, X } from 'lucide-react';
 import type { TestQuestion } from './types';
+import { dedupeQuestions } from './questionDedup';
 import {
   MAX_IMPORT_PHOTOS,
   MAX_PDF_PAGES,
@@ -8,7 +9,6 @@ import {
   extractQuestionsFromPhoto,
   extractAnswersFromPhoto,
   toBuilderQuestions,
-  dedupeQuestions,
   applyAnswersInSequence,
   type ExtractedAnswer,
   type ExtractedQuestion,
@@ -186,7 +186,8 @@ export default function PhotoImport({ questions, onAppendQuestions, onReplaceQue
       } else {
         const { questions: qs, warnings: w } = toBuilderQuestions(all, allKey);
         const { questions: uniqueQs, duplicates } = dedupeQuestions([...questions, ...qs]);
-        const newQuestions = uniqueQs.slice(questions.length);
+        const existingIds = new Set(questions.map((q) => q.id));
+        const newQuestions = uniqueQs.filter((q) => !existingIds.has(q.id));
         if (newQuestions.length > 0) onAppendQuestions(newQuestions);
         setWarnings(w);
         setInfo(`${newQuestions.length} new question(s) added; ${duplicates} duplicate(s) skipped. Please review them before saving.${failedFiles.length ? ` Failed files: ${failedFiles.join(', ')}. You can retry those separately.` : ''}`);
