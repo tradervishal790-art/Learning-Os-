@@ -89,6 +89,15 @@ export async function enqueueDailyPhotos(files: File[]): Promise<number> {
   return existing.length + selected.length;
 }
 
+export async function clearQueuedDailyPhotos(): Promise<void> {
+  await transact<void>('readwrite', (store, resolve, reject) => {
+    const request = store.clear();
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+  });
+  updateCount(0);
+}
+
 export async function removeQueuedPhoto(id: string): Promise<void> {
   await transact<void>('readwrite', (store, resolve) => { store.delete(id); resolve(); });
   updateCount(await getQueuedPhotoCount());
