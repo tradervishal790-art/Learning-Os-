@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { ArrowLeft, CalendarCheck, Download, Upload, Pencil, Trash2, Play } from 'lucide-react';
 import type { TestPaper } from './types';
 import { clearQueuedDailyPhotos, getQueuedPhotoCount, processQueuedPhotosForDailyTest } from './dailyPhotoQueue';
+import { getReadyDailyQuestionCount } from './dailyTestStore';
 import TestBuilder from './TestBuilder';
 import {
   loadDaily,
@@ -88,9 +89,9 @@ export default function DailyTest({ onStart, onExit }: { onStart: (paper: TestPa
     setMessage('');
     try {
       let current = loadDaily();
-      if (!current.pending && (current.bank.length < current.perDay || current.queue.length < current.perDay) && queuedPhotos > 0) {
-        const neededBankSize = current.bank.length + Math.max(0, current.perDay - current.queue.length);
-        const result = await processQueuedPhotosForDailyTest(neededBankSize, setMessage);
+      if (!current.pending && (getReadyDailyQuestionCount(current.bank) < current.perDay || current.queue.length < current.perDay) && queuedPhotos > 0) {
+        const neededReadyQuestions = getReadyDailyQuestionCount(current.bank) + Math.max(0, current.perDay - current.queue.length);
+        const result = await processQueuedPhotosForDailyTest(neededReadyQuestions, setMessage);
         setQueuedPhotos(result.remainingFiles);
         current = loadDaily();
         if (result.errors.length) setMessage(`Imported ${result.processedFiles} file(s). ${result.errors[0]} Remaining files are saved for retry.`);
@@ -99,7 +100,7 @@ export default function DailyTest({ onStart, onExit }: { onStart: (paper: TestPa
       const paper = getOrCreateTodayTest();
       if (!paper) {
         refresh();
-        if (queuedPhotos === 0 && current.bank.length === 0) setMessage('No questions are ready. Add photos/PDFs or type questions first.');
+        if (getReadyDailyQuestionCount(current.bank) === 0) setMessage(current.bank.length > 0 ? 'Questions were saved, but some need answers first. Open Edit question bank and complete their answers before starting a test.' : 'No questions are ready. Add photos/PDFs or type questions first.');
         return;
       }
       refresh();
