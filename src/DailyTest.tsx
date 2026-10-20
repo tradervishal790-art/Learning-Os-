@@ -88,7 +88,7 @@ export default function DailyTest({ onStart, onExit }: { onStart: (paper: TestPa
     setMessage('');
     try {
       let current = loadDaily();
-      if (!current.pending && current.bank.length < current.perDay && queuedPhotos > 0) {
+      if (!current.pending && (current.bank.length < current.perDay || current.queue.length < current.perDay) && queuedPhotos > 0) {
         const result = await processQueuedPhotosForDailyTest(current.perDay, setMessage);
         setQueuedPhotos(result.remainingFiles);
         current = loadDaily();
