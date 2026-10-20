@@ -8,6 +8,7 @@ import {
   extractQuestionsFromPhoto,
   extractAnswersFromPhoto,
   toBuilderQuestions,
+  dedupeQuestions,
   applyAnswersInSequence,
   type ExtractedAnswer,
   type ExtractedQuestion,
@@ -184,9 +185,11 @@ export default function PhotoImport({ questions, onAppendQuestions, onReplaceQue
         setError(failedFiles.length ? `Could not read any selected files. Failed: ${failedFiles.join(', ')}. Try smaller/clearer files or import fewer at once.` : t.none);
       } else {
         const { questions: qs, warnings: w } = toBuilderQuestions(all, allKey);
-        onAppendQuestions(qs);
+        const { questions: uniqueQs, duplicates } = dedupeQuestions([...questions, ...qs]);
+        const newQuestions = uniqueQs.slice(questions.length);
+        if (newQuestions.length > 0) onAppendQuestions(newQuestions);
         setWarnings(w);
-        setInfo(`${t.addedQ(qs.length)}${failedFiles.length ? ` Failed files: ${failedFiles.join(', ')}. You can retry those separately.` : ''}`);
+        setInfo(`${newQuestions.length} new question(s) added; ${duplicates} duplicate(s) skipped. Please review them before saving.${failedFiles.length ? ` Failed files: ${failedFiles.join(', ')}. You can retry those separately.` : ''}`);
         setQFiles([]);
       }
     } catch (err) {
