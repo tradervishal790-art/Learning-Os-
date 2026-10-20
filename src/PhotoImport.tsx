@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Camera, FileCheck2, Loader2, X } from 'lucide-react';
 import type { TestQuestion } from './types';
 import { dedupeQuestions } from './questionDedup';
+import { enqueueDailyPhotos, getQueuedPhotoCount } from './dailyPhotoQueue';
 import {
   MAX_IMPORT_PHOTOS,
   MAX_PDF_PAGES,
@@ -130,9 +131,10 @@ interface PhotoImportProps {
   questions: TestQuestion[];
   onAppendQuestions: (qs: TestQuestion[]) => void;
   onReplaceQuestions: (qs: TestQuestion[]) => void;
+  dailyQueueOnly?: boolean;
 }
 
-export default function PhotoImport({ questions, onAppendQuestions, onReplaceQuestions }: PhotoImportProps) {
+export default function PhotoImport({ questions, onAppendQuestions, onReplaceQuestions, dailyQueueOnly = false }: PhotoImportProps) {
   const [lang, setLang] = useState<Lang>(loadLang);
   const t = TEXT[lang];
   const [qFiles, setQFiles] = useState<File[]>([]);
@@ -142,6 +144,11 @@ export default function PhotoImport({ questions, onAppendQuestions, onReplaceQue
   const [info, setInfo] = useState('');
   const [error, setError] = useState('');
   const [warnings, setWarnings] = useState<string[]>([]);
+  const [queuedCount, setQueuedCount] = useState(0);
+
+  useEffect(() => {
+    if (dailyQueueOnly) void getQueuedPhotoCount().then(setQueuedCount);
+  }, [dailyQueueOnly]);
 
   const changeLang = (l: Lang) => {
     setLang(l);
@@ -160,6 +167,22 @@ export default function PhotoImport({ questions, onAppendQuestions, onReplaceQue
 
   const readQuestions = async () => {
     if (qFiles.length === 0) return;
+    if (dailyQueueOnly) {
+      setBusy('q');
+      setError('');
+      setInfo('');
+      try {
+        const count = await enqueueDailyPhotos(qFiles);
+        setQueuedCount(count);
+        setInfo(`${qFiles.length} file(s) saved for later. No AI was called. ${count} file(s) are waiting for future Daily Tests.`);
+        setQFiles([]);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Could not save these files for later.');
+      } finally {
+        setBusy(null);
+      }
+      return;
+    }
     setBusy('q');
     setError('');
     setInfo('');
@@ -266,18 +289,19 @@ export default function PhotoImport({ questions, onAppendQuestions, onReplaceQue
         <h3 className="flex items-center gap-2 text-sm font-semibold mb-1.5">
           <Camera className="w-4 h-4" /> {t.qTitle}
         </h3>
-        <p className="text-xs text-gray-500 dark:text-white/60 mb-3">{t.qHelp}</p>
+        <p className="text-xs text-gray-500 dark:text-white/60 mb-3">{dailyQueueOnly ? 'Choose photos/PDFs to save on this device. They will not be sent to AI now; Daily Test will read files one at a time only when it needs more questions.' : t.qHelp}</p>
+        {dailyQueueOnly && <p className="text-xs text-indigo-600 dark:text-indigo-300 mb-3">{queuedCount} file(s) queued locally · up to 200 files · stored in this browser</p>}
         <input type="file" accept="image/*,application/pdf,.pdf" multiple onChange={(e) => pick(e.target.files, setQFiles)} disabled={busy !== null} className={`${fileInput} mb-3`} />
         {qFiles.length > 0 && (
           <FileThumbList files={qFiles} disabled={busy !== null} onRemove={(i) => setQFiles((prev) => prev.filter((_, idx) => idx !== i))} />
         )}
         <button onClick={readQuestions} disabled={busy !== null || qFiles.length === 0} className={btn}>
           {busy === 'q' && <Loader2 className="w-4 h-4 animate-spin" />}
-          {busy === 'q' ? progress : qFiles.length > 0 ? `${t.qButton} (${t.filesChosen(qFiles.length)})` : t.qButton}
+          {busy === 'q' ? progress : dailyQueueOnly ? `Queue photos without AI (${t.filesChosen(qFiles.length)})` : qFiles.length > 0 ? `${t.qButton} (${t.filesChosen(qFiles.length)})` : t.qButton}
         </button>
       </div>
 
-      {/* 2 — answers (separate section) */}
+      {!dailyQueueOnly && <>{/* 2 — answers (separate section) */}
       <div className="border-t border-gray-200 dark:border-white/10 pt-5">
         <h3 className="flex items-center gap-2 text-sm font-semibold mb-2">
           <FileCheck2 className="w-4 h-4" /> {t.aTitle}
@@ -306,7 +330,7 @@ export default function PhotoImport({ questions, onAppendQuestions, onReplaceQue
           {busy === 'a' && <Loader2 className="w-4 h-4 animate-spin" />}
           {busy === 'a' ? progress : aFiles.length > 0 ? `${t.aButton} (${t.filesChosen(aFiles.length)})` : t.aButton}
         </button>
-      </div>
+      </div></>}
 
       {error && <p className="text-red-500 text-sm mt-4">{error}</p>}
       {info && <p className="text-emerald-600 dark:text-emerald-400 text-sm mt-4">{info}</p>}
