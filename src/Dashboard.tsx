@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState, lazy, Suspense } from 'react';
 import type { ComponentType } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Film, BookOpen, ClipboardCheck, Newspaper, Lock, Settings as SettingsIcon, Bell, X as CloseIcon, Target, RotateCcw, Flame, Check, ChevronRight } from 'lucide-react';
+import { Search, Film, BookOpen, ClipboardCheck, Newspaper, Lock, Settings as SettingsIcon, Bell, X as CloseIcon, Target, RotateCcw, Flame, Check, ChevronRight, ArrowLeft } from 'lucide-react';
 import PagePlaceholder from './PagePlaceholder';
 import BottomNav from './BottomNav';
 import QuickGrid from './QuickGrid';
@@ -769,6 +769,20 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
           className="border-b border-gray-200 dark:border-white/10 px-4 md:px-8 py-2 md:py-6 flex justify-between items-center gap-3"
         >
           <div className="flex items-center gap-3 min-w-0">
+            {activePage !== 'dashboard' && (
+              <>
+                <button
+                  onClick={() => (window.history.length > 1 ? navigate(-1) : setActivePage('dashboard'))}
+                  aria-label="Back"
+                  className="w-10 h-10 -ml-2 rounded-full flex items-center justify-center flex-shrink-0 hover:bg-gray-100 dark:hover:bg-white/10 active:bg-gray-200 dark:active:bg-white/15 transition-colors"
+                >
+                  <ArrowLeft className="w-5 h-5" strokeWidth={1.9} />
+                </button>
+                <h2 className="text-lg md:text-2xl font-bold truncate">
+                  {sidebarItems.find((i) => i.id === activePage)?.label ?? ''}
+                </h2>
+              </>
+            )}
             {activePage === 'dashboard' && (
             <h2 className="text-lg md:text-2xl font-bold truncate">
               {getGreeting()},{' '}
