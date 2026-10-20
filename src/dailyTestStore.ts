@@ -13,6 +13,7 @@
 //  - Everything is stored in this browser's localStorage only (no cloud sync) — use
 //    exportDailyBackup / importDailyBackup to move it between devices.
 import type { GradedResult, TestPaper, TestQuestion } from './types';
+import { dedupeQuestions } from './testImport';
 
 const KEY = 'learning_os_daily_test';
 export const DAILY_PAPER_PREFIX = 'daily_';
@@ -104,13 +105,18 @@ function newRoundOrder(bank: TestQuestion[], wrongIds: string[]): string[] {
 /** Replaces the bank with the builder's question list. New questions join the queue; removed ones leave it. */
 export function saveBank(questions: TestQuestion[]): boolean {
   const s = loadDaily();
-  const ids = new Set(questions.map((q) => q.id));
+  // Deduplicate by normalized question wording as well as ID. IDs change when
+  // the same paper is imported again, so ID-only checks do not prevent repeats.
+  const { questions: uniqueQuestions } = dedupeQuestions(questions);
+  const ids = new Set(uniqueQuestions.map((q) => q.id));
   const known = new Set(s.bank.map((q) => q.id));
-  const fresh = questions.filter((q) => !known.has(q.id)).map((q) => q.id);
-  s.bank = questions;
+  const fresh = uniqueQuestions.filter((q) => !known.has(q.id)).map((q) => q.id);
+  s.bank = uniqueQuestions;
   s.queue = [...s.queue.filter((id) => ids.has(id)), ...shuffle(fresh)];
   s.wrongIds = s.wrongIds.filter((id) => ids.has(id));
-  if (questions.length === 0) {
+  // If a pending test contains questions removed by deduplication, preserve it:
+  // a started/ready test must not silently change under the learner.
+  if (uniqueQuestions.length === 0) {
     s.queue = [];
     s.pending = null;
   }
