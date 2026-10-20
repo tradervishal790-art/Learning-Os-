@@ -1,17 +1,12 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
-import { Newspaper, Flame, RotateCw, Check, X, CirclePlay, Bookmark, ExternalLink, ListChecks, Landmark, Globe, TrendingUp, Trophy, FlaskConical, LayoutGrid } from 'lucide-react';
+import { Newspaper, X, RotateCw, CirclePlay, Bookmark, ExternalLink, Landmark, Globe, TrendingUp, Trophy, FlaskConical, LayoutGrid } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useTranslation, useLanguage } from './i18n/LanguageContext';
-import { format } from './i18n/format';
 import {
   istDateKey,
   loadCurrentAffairsDay,
-  loadProgress,
-  recordQuizResult,
-  computeStreak,
-  hydrateCurrentAffairsFromCloud,
 } from './currentAffairsStore';
-import type { CACategory, CADay, CAPoint, CAProgress, CAQuizQuestion } from './currentAffairsStore';
+import type { CACategory, CADay, CAPoint } from './currentAffairsStore';
 import { loadSaved, toggleSaved, savedKey } from './caSavedStore';
 import type { SavedPoint } from './caSavedStore';
 
@@ -49,7 +44,7 @@ export default function CurrentAffairs() {
   const c = t.channelDigest;
 
   return (
-    <div className="max-w-3xl mx-auto p-4 md:p-8">
+    <div className="ca-theme max-w-3xl mx-auto px-4 py-5 md:px-8 md:py-8">
       <div className="flex border-b border-gray-200 dark:border-white/10">
         {([['news', Newspaper, c.switchNews], ['channels', CirclePlay, c.switchChannels]] as const).map(([v, Icon, label]) => (
           <button
@@ -91,15 +86,10 @@ function NewspaperCurrentAffairs() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [tab, setTab] = useState<Tab>('all');
-  const [progress, setProgress] = useState<CAProgress>(() => loadProgress());
   const [saved, setSaved] = useState<SavedPoint[]>(() => loadSaved());
   const [showSaved, setShowSaved] = useState(false);
+  const [selectedArticle, setSelectedArticle] = useState<CAPoint | null>(null);
   const savedKeys = useMemo(() => new Set(saved.map((x) => savedKey(x.date, x))), [saved]);
-  const goToQuiz = () => document.getElementById('ca-quiz')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-
-  useEffect(() => {
-    void hydrateCurrentAffairsFromCloud().then(() => setProgress(loadProgress()));
-  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -127,9 +117,6 @@ function NewspaperCurrentAffairs() {
     return TAB_ORDER.filter((x) => x === 'all' || set.has(x));
   }, [day]);
 
-  const streak = computeStreak(progress);
-  const doneToday = !!progress.quizzes[today];
-
   return (
     <div className="mt-6">
       <div className="flex items-center justify-between gap-3">
@@ -141,19 +128,6 @@ function NewspaperCurrentAffairs() {
           <p className="hidden md:block text-sm text-gray-500 dark:text-white/50 mt-1">{c.subtitle}</p>
         </div>
         <div className="flex items-center gap-2 text-sm flex-shrink-0">
-          {streak > 0 && (
-            <span className="inline-flex items-center gap-1 h-9 px-3 rounded-full card" title={format(c.streak, streak)}>
-              <Flame className="w-4 h-4" />
-              <span className="md:hidden">{streak}</span>
-              <span className="hidden md:inline">{format(c.streak, streak)}</span>
-            </span>
-          )}
-          {doneToday && (
-            <span className="inline-flex items-center gap-1 h-9 px-3 rounded-full bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white" title={c.streakDone} aria-label={c.streakDone}>
-              <Check className="w-4 h-4" />
-              <span className="hidden md:inline">{c.streakDone}</span>
-            </span>
-          )}
           <button
             onClick={() => setShowSaved((v) => !v)}
             aria-label="Saved"
@@ -205,7 +179,7 @@ function NewspaperCurrentAffairs() {
       )}
 
       {showSaved && (
-        <div className="mt-6">
+        <div className="mt-6 rounded-2xl bg-white/80 p-3 md:p-4">
           {saved.length === 0 ? (
             <div className="py-16 flex justify-center text-gray-300 dark:text-white/20" aria-label="No saved points yet">
               <Bookmark className="w-12 h-12" strokeWidth={1.25} />
@@ -213,7 +187,7 @@ function NewspaperCurrentAffairs() {
           ) : (
             <ul className="space-y-3">
               {saved.map((p) => (
-                <PointCard key={savedKey(p.date, p)} point={p} saved onToggleSave={() => setSaved(toggleSaved(p.date, p))} sourceLabel={c.sourceLabel} />
+                <PointCard key={savedKey(p.date, p)} point={p} saved onToggleSave={() => setSaved(toggleSaved(p.date, p))} onRead={setSelectedArticle} sourceLabel={c.sourceLabel} />
               ))}
             </ul>
           )}
@@ -250,7 +224,7 @@ function NewspaperCurrentAffairs() {
                 point={p}
                 saved={savedKeys.has(savedKey(date, p))}
                 onToggleSave={() => setSaved(toggleSaved(date, p))}
-                onQuiz={day.quiz.length > 0 ? goToQuiz : undefined}
+                onRead={setSelectedArticle}
                 sourceLabel={c.sourceLabel}
               />
             ))}
@@ -258,116 +232,43 @@ function NewspaperCurrentAffairs() {
 
           <p className="mt-4 text-xs text-gray-400 dark:text-white/30">{c.aiNote}</p>
 
-          {day.quiz.length > 0 && (
-            <Quiz
-              key={`${day.date}_${day.locale}`}
-              day={day}
-              isToday={date === today}
-              onFinished={(score, total, wrong) => {
-                if (date === today) setProgress(recordQuizResult(date, score, total, wrong));
-              }}
-            />
-          )}
         </>
       )}
 
-      {!showSaved && progress.mistakes.length > 0 && (
-        <div className="mt-10">
-          <h2 className="text-lg font-semibold">{c.mistakesTitle}</h2>
-          <ul className="mt-3 space-y-3">
-            {progress.mistakes.slice(0, 5).map((m, i) => (
-              <li key={`${m.date}-${i}`} className="card rounded-xl p-4 text-sm">
-                <p>{m.question}</p>
-                <p className="mt-2">
-                  <span className="text-gray-500 dark:text-white/40">{c.correctAnswerLabel}: </span>
-                  {m.correctAnswer}
-                </p>
-                {m.explanation && <p className="mt-1 text-gray-500 dark:text-white/50">{m.explanation}</p>}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function Quiz({
-  day,
-  isToday,
-  onFinished,
-}: {
-  day: CADay;
-  isToday: boolean;
-  onFinished: (score: number, total: number, wrong: { date: string; question: string; correctAnswer: string; explanation: string }[]) => void;
-}) {
-  const t = useTranslation();
-  const c = t.currentAffairs;
-  const [picked, setPicked] = useState<Record<number, number>>({});
-  const total = day.quiz.length;
-  const answered = Object.keys(picked).length;
-  const finished = answered === total;
-  const score = day.quiz.reduce((n, q: CAQuizQuestion, i) => n + (picked[i] === q.correctIndex ? 1 : 0), 0);
-
-  useEffect(() => {
-    if (!finished || !isToday) return;
-    const wrong = day.quiz
-      .map((q, i) => ({ q, i }))
-      .filter(({ q, i }) => picked[i] !== q.correctIndex)
-      .map(({ q }) => ({ date: day.date, question: q.question, correctAnswer: q.options[q.correctIndex], explanation: q.explanation }));
-    onFinished(score, total, wrong);
-    // Runs once when the last question is answered.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [finished]);
-
-  return (
-    <div id="ca-quiz" className="mt-10 scroll-mt-4">
-      <h2 className="text-lg font-semibold">{c.quizTitle}</h2>
-      <p className="text-sm text-gray-500 dark:text-white/50">{c.quizSubtitle}</p>
-
-      <div className="mt-4 space-y-5">
-        {day.quiz.map((q, qi) => {
-          const sel = picked[qi];
-          const revealed = sel !== undefined;
-          return (
-            <div key={qi} className="card rounded-xl p-4">
-              <p className="font-medium">
-                {qi + 1}. {q.question}
-              </p>
-              <div className="mt-3 space-y-2">
-                {q.options.map((opt, oi) => {
-                  const isCorrect = oi === q.correctIndex;
-                  const isPicked = sel === oi;
-                  let style = 'border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10';
-                  if (revealed && isCorrect) style = 'border-green-500 bg-green-500/10';
-                  else if (revealed && isPicked) style = 'border-red-500 bg-red-500/10';
-                  return (
-                    <button
-                      key={oi}
-                      disabled={revealed}
-                      onClick={() => setPicked((prev) => ({ ...prev, [qi]: oi }))}
-                      className={`w-full text-left px-3 py-3 min-h-11 text-sm rounded-lg border transition flex items-center gap-2 ${style} ${revealed ? 'cursor-default' : ''}`}
-                    >
-                      <span className="flex-1">{opt}</span>
-                      {revealed && isCorrect && <Check className="w-4 h-4 text-green-500" />}
-                      {revealed && isPicked && !isCorrect && <X className="w-4 h-4 text-red-500" />}
-                    </button>
-                  );
-                })}
+      {selectedArticle && (
+        <div className="ca-reader-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelectedArticle(null); }}>
+          <section className="ca-reader-panel" role="dialog" aria-modal="true" aria-labelledby="ca-reader-title">
+            <header className="ca-reader-header">
+              <div className="min-w-0">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-700">Learning OS · News reader</p>
+                <h2 id="ca-reader-title" className="mt-1 text-lg font-bold leading-snug">{selectedArticle.source}</h2>
               </div>
-              {revealed && (
-                <p className="mt-3 text-sm text-gray-500 dark:text-white/50">
-                  <span className="font-medium text-gray-700 dark:text-white/70">{sel === q.correctIndex ? c.correct : c.wrong}</span>{' '}
-                  {q.explanation}
-                </p>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      {finished && (
-        <p className="mt-5 text-lg font-semibold">{format(c.scoreLine, score, total)}</p>
+              <button type="button" onClick={() => setSelectedArticle(null)} aria-label="Close reader" className="ca-reader-close"><X className="w-5 h-5" /></button>
+            </header>
+            <p className="px-4 pt-3 text-sm leading-relaxed text-slate-700">{selectedArticle.text}</p>
+            {selectedArticle.link && /^https?:\/\//i.test(selectedArticle.link) ? (
+              <>
+                <div className="ca-reader-frame-wrap">
+                  <iframe
+                    key={selectedArticle.link}
+                    src={selectedArticle.link}
+                    title={`Article from ${selectedArticle.source}`}
+                    loading="lazy"
+                    referrerPolicy="strict-origin-when-cross-origin"
+                    sandbox="allow-forms allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+                    className="ca-reader-frame"
+                  />
+                </div>
+                <footer className="ca-reader-footer">
+                  <p className="text-xs leading-relaxed text-slate-500">If the publisher blocks in-app reading, open the original article in your browser.</p>
+                  <a href={selectedArticle.link} target="_blank" rel="noopener noreferrer" className="ca-reader-open"><ExternalLink className="w-4 h-4" /> Open in browser</a>
+                </footer>
+              </>
+            ) : (
+              <div className="m-4 rounded-xl bg-sky-50 p-4 text-sm text-slate-600">The original article link is not available for this news item.</div>
+            )}
+          </section>
+        </div>
       )}
     </div>
   );
@@ -375,23 +276,23 @@ function Quiz({
 
 const CATEGORY_ICON = TAB_ICONS;
 
-/** One news point: category icon, text, source, and icon-only actions (read / save / quiz). */
+/** One news point with compact mobile actions (in-app read and save). */
 function PointCard({
   point,
   saved,
   onToggleSave,
-  onQuiz,
+  onRead,
   sourceLabel,
 }: {
   point: CAPoint;
   saved: boolean;
   onToggleSave: () => void;
-  onQuiz?: () => void;
+  onRead: (point: CAPoint) => void;
   sourceLabel: string;
 }) {
   const Icon = CATEGORY_ICON[point.category];
   const hasLink = !!point.link && /^https?:\/\//i.test(point.link);
-  const action = 'w-11 h-11 rounded-full flex items-center justify-center text-gray-500 dark:text-white/50 hover:bg-gray-100 dark:hover:bg-white/10 active:bg-gray-200 dark:active:bg-white/15 transition-colors';
+  const action = 'min-h-9 px-2.5 gap-1.5 rounded-full inline-flex items-center justify-center text-xs font-medium text-slate-600 hover:bg-sky-50 active:bg-sky-100 transition-colors';
   return (
     <li className="card rounded-2xl p-4">
       <div className="flex gap-3">
@@ -406,9 +307,10 @@ function PointCard({
         </p>
         <div className="flex items-center flex-shrink-0 -mr-2">
           {hasLink && (
-            <a href={point.link} target="_blank" rel="noopener noreferrer" aria-label="Read" title="Read" className={action}>
-              <ExternalLink className="w-5 h-5" strokeWidth={1.75} />
-            </a>
+            <button type="button" onClick={() => onRead(point)} aria-label="Read in Learning OS" title="Read in Learning OS" className={action}>
+              <Newspaper className="w-4 h-4" strokeWidth={1.75} />
+              <span>Read</span>
+            </button>
           )}
           <button
             onClick={onToggleSave}
@@ -417,13 +319,9 @@ function PointCard({
             aria-pressed={saved}
             className={`${action} ${saved ? 'text-black dark:text-white' : ''}`}
           >
-            <Bookmark className="w-5 h-5" strokeWidth={1.75} fill={saved ? 'currentColor' : 'none'} />
+            <Bookmark className="w-4 h-4" strokeWidth={1.75} fill={saved ? 'currentColor' : 'none'} />
+            <span>{saved ? 'Saved' : 'Save'}</span>
           </button>
-          {onQuiz && (
-            <button onClick={onQuiz} aria-label="Quiz" title="Quiz" className={action}>
-              <ListChecks className="w-5 h-5" strokeWidth={1.75} />
-            </button>
-          )}
         </div>
       </div>
     </li>
