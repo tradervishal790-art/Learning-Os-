@@ -3,6 +3,7 @@ import { RotateCw, Trash2 } from 'lucide-react';
 import type { PageAttachment } from './notebookStore';
 import { deleteImage, getImage, newAttachId, putImage } from './attachStore';
 import { deleteAudio, getAudio, putAudio, updateBookmarks, type AudioMeta } from './audioStore';
+import ScreenCrop from './ScreenCrop';
 import { ImageError, compressImage, cropRotateFlip, scanFilter } from './imageTools';
 import AudioRecorder from './AudioRecorder';
 import AudioPlayer from './AudioPlayer';
@@ -23,7 +24,7 @@ function errorKey(e: unknown): string {
 }
 
 /** The editor toolbar asks a page to add a photo / take a photo / record audio. */
-export type AttachAction = 'photo' | 'camera' | 'audio';
+export type AttachAction = 'photo' | 'camera' | 'audio' | 'screen';
 export function requestAttach(pageId: string, action: AttachAction) {
   window.dispatchEvent(new CustomEvent('note-attach', { detail: { pageId, action } }));
 }
@@ -42,6 +43,7 @@ export default function PageAttachments({
   const t = (k: string) => labels[k] ?? k;
   const [busy, setBusy] = useState(false);
   const [recording, setRecording] = useState(false);
+  const [cropping, setCropping] = useState(false);
   const [error, setError] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
   const camRef = useRef<HTMLInputElement>(null);
@@ -57,6 +59,7 @@ export default function PageAttachments({
       if (d.pageId !== pageId) return;
       if (d.action === 'photo') fileRef.current?.click();
       else if (d.action === 'camera') camRef.current?.click();
+      else if (d.action === 'screen') setCropping(true);
       else setRecording(true);
     };
     window.addEventListener('note-attach', onAsk);
@@ -130,6 +133,16 @@ export default function PageAttachments({
             </span>
           )}
         </div>
+      )}
+      {cropping && (
+        <ScreenCrop
+          labels={labels}
+          onCancel={() => setCropping(false)}
+          onDone={(blob) => {
+            setCropping(false);
+            void addImage(new File([blob], 'screen-crop.png', { type: 'image/png' }));
+          }}
+        />
       )}
       <input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => { void addImage(e.target.files?.[0]); e.target.value = ''; }} />
       <input ref={camRef} type="file" accept="image/*" capture="environment" hidden onChange={(e) => { void addImage(e.target.files?.[0]); e.target.value = ''; }} />

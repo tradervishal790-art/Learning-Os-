@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { Editor } from '@tiptap/react';
 import { useEditorState } from '@tiptap/react';
 import {
-  AlignCenter, AlignLeft, AlignRight, Bold, Camera, Code, Code2, Eraser, Highlighter, Image as ImageIcon, Italic, Link2, List, Mic,
+  AlignCenter, AlignLeft, AlignRight, Bold, Camera, Code, Code2, Crop, Eraser, Highlighter, Image as ImageIcon, Italic, Link2, List, Mic,
   ListChecks, ListOrdered, Maximize2, Minus, Palette, Quote, Redo2, Search, Strikethrough, Subscript as SubIcon,
   Superscript as SupIcon, Table as TableIcon, Underline as UnderlineIcon, Undo2, Volume2, VolumeX, X, Keyboard,
 } from 'lucide-react';
@@ -10,6 +10,7 @@ import { useTranslation } from './i18n/LanguageContext';
 import { format } from './i18n/format';
 import { FONT_SIZES, HIGHLIGHT_COLORS, TEXT_COLORS } from './editorExtensions';
 import { Btn, Pop, Swatches, Sep, selectCls } from './toolbarParts';
+import { canCaptureScreen } from './ScreenCrop';
 
 // ---------- find & replace (inside the active page) ----------
 
@@ -92,7 +93,7 @@ export default function EditorToolbar({
   editor: Editor | null;
   onFocusMode: () => void;
   /** Photo / camera / audio buttons: asks the page being written on to add one. */
-  onAttach?: (a: 'photo' | 'camera' | 'audio') => void;
+  onAttach?: (a: 'photo' | 'camera' | 'audio' | 'screen') => void;
   /** 'all' = the single desktop row; the others are the phone ribbon tabs. */
   section?: 'all' | 'home' | 'insert' | 'view';
   lead?: ReactNode;
@@ -282,6 +283,7 @@ export default function EditorToolbar({
       <Btn label={at.addPhoto} onClick={() => onAttach('photo')}><ImageIcon size={16} /></Btn>
       <Btn label={at.takePhoto} onClick={() => onAttach('camera')}><Camera size={16} /></Btn>
       <Btn label={at.record} onClick={() => onAttach('audio')}><Mic size={16} /></Btn>
+      {canCaptureScreen() && <Btn label={at.screenCrop} onClick={() => onAttach('screen')}><Crop size={16} /></Btn>}
     </>
   ) : null;
 
