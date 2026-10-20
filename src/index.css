@@ -137,4 +137,4 @@ html, body, #root {
 /* The app may be in global dark mode; keep this scoped reading surface legible. */
 .ca-theme [class*="dark:text-white"] { color: #64748b !important; }
 .ca-theme [class*="dark:hover:text-white"]:hover { color: #0b132b !important; }
-.ca-theme .dark\\:text-indigo-400 { color: #315bff !important; }
+.ca-theme [class*="dark:text-indigo-400"] { color: #315bff !important; }
