@@ -1,6 +1,6 @@
 import { dedupeQuestions } from './questionDedup';
 import { loadDaily, saveBank } from './dailyTestStore';
-import { MAX_IMPORT_PHOTOS, prepareUpload, extractQuestionsFromPhoto, toBuilderQuestions } from './testImport';
+import { prepareUpload, extractQuestionsFromPhoto, toBuilderQuestions } from './testImport';
 import type { TestQuestion } from './types';
 
 const DB_NAME = 'learning-os-daily-photo-queue';
@@ -32,8 +32,13 @@ async function transact<T>(mode: IDBTransactionMode, run: (store: IDBObjectStore
   const db = await openDb();
   return new Promise<T>((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, mode);
-    run(tx.objectStore(STORE_NAME), resolve, reject);
-    tx.oncomplete = () => db.close();
+    let result: T;
+    let hasResult = false;
+    run(tx.objectStore(STORE_NAME), (value) => { result = value; hasResult = true; }, reject);
+    tx.oncomplete = () => {
+      db.close();
+      resolve(hasResult ? result! : undefined as T);
+    };
     tx.onerror = () => { db.close(); reject(tx.error ?? new Error('Photo storage failed.')); };
     tx.onabort = () => { db.close(); reject(tx.error ?? new Error('Photo storage was interrupted.')); };
   });
