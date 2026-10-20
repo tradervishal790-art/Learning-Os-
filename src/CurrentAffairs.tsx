@@ -5,7 +5,6 @@ import { useTranslation, useLanguage } from './i18n/LanguageContext';
 import {
   istDateKey,
   loadCurrentAffairsDay,
-  hydrateCurrentAffairsFromCloud,
 } from './currentAffairsStore';
 import type { CACategory, CADay, CAPoint } from './currentAffairsStore';
 import { loadSaved, toggleSaved, savedKey } from './caSavedStore';
