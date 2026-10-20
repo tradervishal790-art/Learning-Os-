@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { Editor } from '@tiptap/react';
 import { useEditorState } from '@tiptap/react';
 import {
@@ -86,7 +86,16 @@ function FindBar({ editor, onClose }: { editor: Editor; onClose: () => void }) {
 
 // ---------- toolbar ----------
 
-export default function EditorToolbar({ editor, onFocusMode }: { editor: Editor | null; onFocusMode: () => void }) {
+export default function EditorToolbar({
+  editor, onFocusMode, section = 'all', lead, extra,
+}: {
+  editor: Editor | null;
+  onFocusMode: () => void;
+  /** 'all' = the single desktop row; the others are the phone ribbon tabs. */
+  section?: 'all' | 'home' | 'insert' | 'view';
+  lead?: ReactNode;
+  extra?: ReactNode;
+}) {
   const t = useTranslation().notebook.editor;
   const [finding, setFinding] = useState(false);
   const [speaking, setSpeaking] = useState(false);
@@ -167,12 +176,14 @@ export default function EditorToolbar({ editor, onFocusMode }: { editor: Editor 
     ['Ctrl+Alt+1/2/3', t.heading1 + ' / 2 / 3'], ['Ctrl+Shift+L/E/R', `${t.alignLeft} / ${t.alignCenter} / ${t.alignRight}`],
   ];
 
-  return (
-    <div>
-      <div className="flex items-center gap-0.5 overflow-x-auto pb-1">
+  const history = (
+    <>
         <Btn label={t.undo} disabled={!s.canUndo} onClick={() => c().undo().run()}><Undo2 size={16} /></Btn>
         <Btn label={t.redo} disabled={!s.canRedo} onClick={() => c().redo().run()}><Redo2 size={16} /></Btn>
-        <Sep />
+    </>
+  );
+  const selects = (
+    <>
         <select aria-label={t.normalText} className={selectCls} value={s.heading} onChange={(e) => setHeading(e.target.value)}>
           <option value="p">{t.normalText}</option>
           <option value="1">{t.heading1}</option>
@@ -191,7 +202,10 @@ export default function EditorToolbar({ editor, onFocusMode }: { editor: Editor 
           <option value={FONT_SIZES[2]}>{t.sizeLarge}</option>
           <option value={FONT_SIZES[3]}>{t.sizeHuge}</option>
         </select>
-        <Sep />
+    </>
+  );
+  const marks = (
+    <>
         <Btn label={t.bold} active={s.bold} onClick={() => c().toggleBold().run()}><Bold size={16} /></Btn>
         <Btn label={t.italic} active={s.italic} onClick={() => c().toggleItalic().run()}><Italic size={16} /></Btn>
         <Btn label={t.underline} active={s.underline} onClick={() => c().toggleUnderline().run()}><UnderlineIcon size={16} /></Btn>
@@ -207,25 +221,45 @@ export default function EditorToolbar({ editor, onFocusMode }: { editor: Editor 
           <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => c().unsetHighlight().run()} className="mt-2 text-xs underline text-gray-600 dark:text-white/70">{t.removeHighlight}</button>
         </Pop>
         <Btn label={t.clearFormat} onClick={() => c().unsetAllMarks().clearNodes().run()}><Eraser size={16} /></Btn>
-        <Sep />
+    </>
+  );
+  const lists = (
+    <>
         <Btn label={t.bulletList} active={s.bullet} onClick={() => c().toggleBulletList().run()}><List size={16} /></Btn>
         <Btn label={t.numberedList} active={s.ordered} onClick={() => c().toggleOrderedList().run()}><ListOrdered size={16} /></Btn>
         <Btn label={t.checklist} active={s.task} onClick={() => c().toggleTaskList().run()}><ListChecks size={16} /></Btn>
+    </>
+  );
+  const blocks = (
+    <>
         <Btn label={t.quote} active={s.quote} onClick={() => c().toggleBlockquote().run()}><Quote size={16} /></Btn>
         <Btn label={t.inlineCode} active={s.code} onClick={() => c().toggleCode().run()}><Code size={16} /></Btn>
         <Btn label={t.codeBlock} active={s.codeBlock} onClick={() => c().toggleCodeBlock().run()}><Code2 size={16} /></Btn>
         <Btn label={t.link} active={s.link} onClick={addLink}><Link2 size={16} /></Btn>
         <Btn label={t.divider} onClick={() => c().setHorizontalRule().run()}><Minus size={16} /></Btn>
-        <Sep />
+    </>
+  );
+  const align = (
+    <>
         <Btn label={t.alignLeft} active={s.left} onClick={() => c().setTextAlign('left').run()}><AlignLeft size={16} /></Btn>
         <Btn label={t.alignCenter} active={s.center} onClick={() => c().setTextAlign('center').run()}><AlignCenter size={16} /></Btn>
         <Btn label={t.alignRight} active={s.right} onClick={() => c().setTextAlign('right').run()}><AlignRight size={16} /></Btn>
-        <Sep />
+    </>
+  );
+  const tableBtn = (
+    <>
         <Btn label={t.table} active={s.table} onClick={() => c().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}><TableIcon size={16} /></Btn>
-        <Sep />
+    </>
+  );
+  const tools = (
+    <>
         <Btn label={t.find} active={finding} onClick={() => setFinding((f) => !f)}><Search size={16} /></Btn>
         <Btn label={speaking ? t.stopReading : t.readAloud} active={speaking} onClick={readAloud}>{speaking ? <VolumeX size={16} /> : <Volume2 size={16} />}</Btn>
         <Btn label={t.focusMode} onClick={onFocusMode}><Maximize2 size={16} /></Btn>
+    </>
+  );
+  const shortcutsBtn = (
+    <>
         <Pop trigger={(toggle) => <Btn label={t.shortcuts} onClick={toggle}><Keyboard size={16} /></Btn>}>
           <div className="text-xs space-y-1 py-1 pr-2">
             <div className="font-medium mb-1">{t.shortcutsTitle}</div>
@@ -237,6 +271,27 @@ export default function EditorToolbar({ editor, onFocusMode }: { editor: Editor 
             ))}
           </div>
         </Pop>
+    </>
+  );
+
+  // Desktop shows everything in one row; the phone ribbon shows one tab's worth at a time.
+  const row =
+    section === 'home' ? (
+      <>{history}<Sep />{selects}<Sep />{marks}<Sep />{lists}<Sep />{align}</>
+    ) : section === 'insert' ? (
+      <>{blocks}<Sep />{tableBtn}</>
+    ) : section === 'view' ? (
+      <>{tools}</>
+    ) : (
+      <>{history}<Sep />{selects}<Sep />{marks}<Sep />{lists}{blocks}<Sep />{align}<Sep />{tableBtn}<Sep />{tools}{shortcutsBtn}</>
+    );
+
+  return (
+    <div>
+      <div className="flex items-center gap-0.5 overflow-x-auto pb-1">
+        {lead}
+        {row}
+        {extra}
       </div>
 
       {s.table && (

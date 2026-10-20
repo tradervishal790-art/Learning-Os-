@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Editor } from '@tiptap/react';
-import { ArrowLeft, ChevronDown, FileDown, History, Keyboard, ChevronUp, Copy, Download, Eye, EyeOff, FilePlus, HelpCircle, LayoutGrid, Maximize2, Minimize2, Plus, RotateCcw, Sparkles, Star, Trash2, Video, VideoOff, X } from 'lucide-react';
+import { ArrowLeft, ChevronDown, FileDown, History, Keyboard, ChevronUp, Copy, Download, Eye, EyeOff, FilePlus, HelpCircle, LayoutGrid, Maximize2, MoveHorizontal, Minimize2, Plus, RotateCcw, Sparkles, Star, Trash2, Video, VideoOff, X, ZoomIn, ZoomOut } from 'lucide-react';
 import { useLanguage, useTranslation } from './i18n/LanguageContext';
 import { format } from './i18n/format';
 import { loadNoteContent, saveNoteContent, getIndex, type InkStroke, type NotePage, type NoteVideo, type PageAttachment } from './notebookStore';
@@ -25,6 +25,9 @@ import {
 import { SaveChip } from './SaveChip';
 import PageEditor from './PageEditor';
 import EditorToolbar from './EditorToolbar';
+import PhoneRibbon from './PhoneRibbon';
+import type { NoteTabId } from './noteTabs';
+import { Btn } from './toolbarParts';
 import NoteAiPanel from './NoteAiPanel';
 import NoteMenu, { type MenuItem } from './NoteMenu';
 import { ExportDialog, ShortcutsDialog, VersionsDialog } from './NoteTools';
@@ -753,7 +756,11 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
   }, []);
   const { zoom, fitWidth, zoomIn, zoomOut } = useZoom(scrollerRef);
   const scroller = useElementSize(scrollerEl);
-  useFillHeight(scrollerEl, focusMode ? 8 : 64);
+  const [ribbonTab, setRibbonTab] = useState<NoteTabId>('home');
+  const [ribbonOpen, setRibbonOpen] = useState(true);
+  const [ribbonH, setRibbonH] = useState(0);
+  // desktop: page fills the screen above the app's bottom edge; phone: above the ribbon
+  useFillHeight(scrollerEl, isDesktop ? (focusMode ? 8 : 64) : ribbonH + 6);
 
   // While a note is open the greeting + notes tabs hide; fullscreen also hides the bottom bar. Esc exits fullscreen.
   useEffect(() => {
@@ -761,7 +768,7 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
     return () => setNoteOpen(false);
   }, []);
   useEffect(() => {
-    setImmersive(focusMode);
+    setImmersive(focusMode || !isDesktop);
     if (!focusMode) return;
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setFocusMode(false);
     window.addEventListener('keydown', onKey);
@@ -769,6 +776,11 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
       window.removeEventListener('keydown', onKey);
       setImmersive(false);
     };
+  }, [focusMode, isDesktop]);
+  useEffect(() => () => setImmersive(false), []);
+  // fullscreen on a phone folds the tool row away (tap a tab to bring it back)
+  useEffect(() => {
+    if (focusMode) setRibbonOpen(false);
   }, [focusMode]);
   const [viewPage, setViewPage] = useState<string | null>(null);
 
@@ -957,6 +969,73 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
       </div>
   );
 
+  const inkBar = (
+    <InkToolbar
+      mode={mode === 'type' ? 'pen' : mode}
+      prefs={prefs}
+      setPrefs={setPrefs}
+      resetPrefs={resetPrefs}
+      canUndo={(hist.current[activePage ?? '']?.undo.length ?? 0) > 0}
+      canRedo={(hist.current[activePage ?? '']?.redo.length ?? 0) > 0}
+      onUndo={undoInk}
+      onRedo={redoInk}
+      onEraseAll={eraseWholePage}
+      select={{
+        count: currentSelection()?.ids.size ?? 0,
+        canPaste: clipCount > 0,
+        notice: '',
+        onAll: selectAll,
+        onDelete: deleteSel,
+        onCopy: copySel,
+        onCut: cutSel,
+        onPaste: pasteSel,
+        onDuplicate: duplicateSel,
+        onColor: recolorSel,
+        onWidth: rewidthSel,
+        onFront: () => reorderSel('front'),
+        onBack: () => reorderSel('back'),
+        onNeaten: neatenSel,
+        onToText: () => void startOcr(),
+      }}
+    />
+  );
+
+  const pickTab = (id: NoteTabId) => {
+    if (id === 'ai') {
+      setAiOpen(true);
+      return;
+    }
+    if (id === phoneTab) {
+      setRibbonOpen((o) => !o);
+      return;
+    }
+    setRibbonTab(id);
+    setRibbonOpen(true);
+    if (id === 'draw' && mode === 'type') chooseMode('pen');
+    if ((id === 'home' || id === 'insert') && mode !== 'type') chooseMode('type');
+  };
+
+  const viewTools = (
+    <>
+      <Btn label={t.pageOps.zoomOut} onClick={zoomOut}><ZoomOut size={16} /></Btn>
+      <Btn label={t.pageOps.zoomIn} onClick={zoomIn}><ZoomIn size={16} /></Btn>
+      <Btn label={t.pageOps.zoomFit} onClick={fitWidth}><MoveHorizontal size={16} /></Btn>
+      <Btn label={t.pageOps.pagesButton} onClick={() => setDrawerOpen(true)}><LayoutGrid size={16} /></Btn>
+      <Btn label={recall ? t.rsheet.recallOn : t.rsheet.recall} active={recall} onClick={toggleRecall}>{recall ? <EyeOff size={16} /> : <Eye size={16} />}</Btn>
+    </>
+  );
+  const insertTools = (
+    <>
+      <Btn label={t.attach.addPdf} disabled={pdfBusy} onClick={() => pdfInput.current?.click()}><FilePlus size={16} /></Btn>
+      <Btn label={video ? t.video.unlinkVideo : t.video.linkVideo} active={!!video} onClick={() => (video ? unlinkVideo() : setLinking((v) => !v))}>
+        {video ? <VideoOff size={16} /> : <Video size={16} />}
+      </Btn>
+    </>
+  );
+
+  // Phone: leaving/entering a pen mode (shortcut, finger, ModeSwitch) keeps the ribbon tab in step.
+  const phoneTab: NoteTabId = !isDesktop && mode !== 'type' && ribbonTab !== 'view' ? 'draw' : !isDesktop && mode === 'type' && ribbonTab === 'draw' ? 'home' : ribbonTab;
+
   return (
     <div className="max-w-6xl mx-auto">
       {focusMode ? (
@@ -992,24 +1071,14 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
             aria-label={t.editor.titlePlaceholder}
             className="min-w-0 flex-1 bg-transparent text-lg sm:text-xl font-bold outline-none placeholder:text-gray-300 dark:placeholder:text-white/30"
           />
-          {!isDesktop && (
-            <button
-              onClick={() => setDrawerOpen(true)}
-              aria-label={t.pageOps.pagesButton}
-              title={t.pageOps.pagesButton}
-              className="h-10 w-10 shrink-0 rounded-lg flex items-center justify-center text-gray-700 dark:text-white/80 hover:bg-gray-100 dark:hover:bg-white/10"
-            >
-              <LayoutGrid size={18} />
-            </button>
-          )}
-          <button
+          {isDesktop && <button
             onClick={() => setAiOpen(true)}
             aria-label={t.ai.panelTitle}
             title={t.ai.panelTitle}
             className="h-10 w-10 sm:h-9 sm:w-auto sm:px-3 shrink-0 rounded-lg flex items-center justify-center gap-1.5 text-xs font-medium text-indigo-600 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-500/15 hover:bg-indigo-100 dark:hover:bg-indigo-500/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-500"
           >
             <Sparkles size={16} /> <span className="hidden sm:inline">{t.ai.openButton}</span>
-          </button>
+          </button>}
           {isDesktop && (
             <ZoomControls
               zoom={zoom}
@@ -1019,53 +1088,26 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
               labels={{ zoomIn: t.pageOps.zoomIn, zoomOut: t.pageOps.zoomOut, fit: t.pageOps.zoomFit }}
             />
           )}
-          <button
+          {isDesktop && <button
             onClick={() => setFocusMode(true)}
             aria-label={t.editor.focusMode}
             title={t.editor.focusMode}
             className="h-10 w-10 sm:h-9 sm:w-9 shrink-0 rounded-lg flex items-center justify-center text-gray-700 dark:text-white/80 hover:bg-gray-100 dark:hover:bg-white/10"
           >
             <Maximize2 size={18} />
-          </button>
+          </button>}
           <NoteMenu label={t.polish.menuTitle} items={menuItems} />
           <SaveChip />
         </div>
       )}
 
-      {!focusMode && (
+      {!focusMode && isDesktop && (
         <div className="pb-1.5 border-b border-gray-200 dark:border-white/10 mb-2">
           <ModeSwitch mode={mode} onMode={chooseMode} />
           {mode === 'type' ? (
             <EditorToolbar editor={active} onFocusMode={() => setFocusMode(true)} />
           ) : (
-            <InkToolbar
-              mode={mode}
-              prefs={prefs}
-              setPrefs={setPrefs}
-              resetPrefs={resetPrefs}
-              canUndo={(hist.current[activePage ?? '']?.undo.length ?? 0) > 0}
-              canRedo={(hist.current[activePage ?? '']?.redo.length ?? 0) > 0}
-              onUndo={undoInk}
-              onRedo={redoInk}
-              onEraseAll={eraseWholePage}
-              select={{
-                count: currentSelection()?.ids.size ?? 0,
-                canPaste: clipCount > 0,
-                notice: '',
-                onAll: selectAll,
-                onDelete: deleteSel,
-                onCopy: copySel,
-                onCut: cutSel,
-                onPaste: pasteSel,
-                onDuplicate: duplicateSel,
-                onColor: recolorSel,
-                onWidth: rewidthSel,
-                onFront: () => reorderSel('front'),
-                onBack: () => reorderSel('back'),
-                onNeaten: neatenSel,
-                onToText: () => void startOcr(),
-              }}
-            />
+            inkBar
           )}
         </div>
       )}
@@ -1173,6 +1215,19 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
           <span>{t.pageOps.toastDeleted}</span>
           <button onClick={undoDeletePage} className="font-semibold underline">{t.undo}</button>
         </div>
+      )}
+      {!isDesktop && (
+        <PhoneRibbon tab={phoneTab} open={ribbonOpen} aiOpen={aiOpen} onTab={pickTab} onHeight={setRibbonH}>
+          {phoneTab === 'home' && <EditorToolbar editor={active} section="home" onFocusMode={() => setFocusMode(true)} />}
+          {phoneTab === 'insert' && <EditorToolbar editor={active} section="insert" extra={insertTools} onFocusMode={() => setFocusMode(true)} />}
+          {phoneTab === 'view' && <EditorToolbar editor={active} section="view" lead={viewTools} onFocusMode={() => setFocusMode(true)} />}
+          {phoneTab === 'draw' && (
+            <>
+              <ModeSwitch mode={mode} onMode={chooseMode} />
+              {inkBar}
+            </>
+          )}
+        </PhoneRibbon>
       )}
       <input ref={pdfInput} type="file" accept="application/pdf" hidden onChange={(e) => { void importPdf(e.target.files?.[0]); e.target.value = ''; }} />
       {aiOpen && (
