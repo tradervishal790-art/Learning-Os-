@@ -13,7 +13,7 @@
 //  - Everything is stored in this browser's localStorage only (no cloud sync) — use
 //    exportDailyBackup / importDailyBackup to move it between devices.
 import type { GradedResult, TestPaper, TestQuestion } from './types';
-import { dedupeQuestions } from './testImport';
+import { dedupeQuestions } from './questionDedup';
 
 const KEY = 'learning_os_daily_test';
 export const DAILY_PAPER_PREFIX = 'daily_';
