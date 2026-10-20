@@ -49,7 +49,7 @@ export default function CurrentAffairs() {
   const c = t.channelDigest;
 
   return (
-    <div className="max-w-3xl mx-auto p-4 md:p-8">
+    <div className="ca-theme max-w-3xl mx-auto px-4 py-5 md:px-8 md:py-8">
       <div className="flex border-b border-gray-200 dark:border-white/10">
         {([['news', Newspaper, c.switchNews], ['channels', CirclePlay, c.switchChannels]] as const).map(([v, Icon, label]) => (
           <button
@@ -206,7 +206,7 @@ function NewspaperCurrentAffairs() {
       )}
 
       {showSaved && (
-        <div className="mt-6">
+        <div className="mt-6 rounded-2xl bg-white/80 p-3 md:p-4">
           {saved.length === 0 ? (
             <div className="py-16 flex justify-center text-gray-300 dark:text-white/20" aria-label="No saved points yet">
               <Bookmark className="w-12 h-12" strokeWidth={1.25} />
@@ -431,7 +431,7 @@ function PointCard({
 }) {
   const Icon = CATEGORY_ICON[point.category];
   const hasLink = !!point.link && /^https?:\/\//i.test(point.link);
-  const action = 'w-11 h-11 rounded-full flex items-center justify-center text-gray-500 dark:text-white/50 hover:bg-gray-100 dark:hover:bg-white/10 active:bg-gray-200 dark:active:bg-white/15 transition-colors';
+  const action = 'min-h-9 px-2.5 gap-1.5 rounded-full inline-flex items-center justify-center text-xs font-medium text-slate-600 hover:bg-sky-50 active:bg-sky-100 transition-colors';
   return (
     <li className="card rounded-2xl p-4">
       <div className="flex gap-3">
@@ -447,7 +447,8 @@ function PointCard({
         <div className="flex items-center flex-shrink-0 -mr-2">
           {hasLink && (
             <button type="button" onClick={() => onRead(point)} aria-label="Read in Learning OS" title="Read in Learning OS" className={action}>
-              <Newspaper className="w-5 h-5" strokeWidth={1.75} />
+              <Newspaper className="w-4 h-4" strokeWidth={1.75} />
+              <span>Read</span>
             </button>
           )}
           <button
@@ -457,11 +458,13 @@ function PointCard({
             aria-pressed={saved}
             className={`${action} ${saved ? 'text-black dark:text-white' : ''}`}
           >
-            <Bookmark className="w-5 h-5" strokeWidth={1.75} fill={saved ? 'currentColor' : 'none'} />
+            <Bookmark className="w-4 h-4" strokeWidth={1.75} fill={saved ? 'currentColor' : 'none'} />
+            <span>{saved ? 'Saved' : 'Save'}</span>
           </button>
           {onQuiz && (
             <button onClick={onQuiz} aria-label="Quiz" title="Quiz" className={action}>
-              <ListChecks className="w-5 h-5" strokeWidth={1.75} />
+              <ListChecks className="w-4 h-4" strokeWidth={1.75} />
+              <span>Quiz</span>
             </button>
           )}
         </div>
