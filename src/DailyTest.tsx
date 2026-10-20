@@ -60,6 +60,7 @@ export default function DailyTest({ onStart, onExit }: { onStart: (paper: TestPa
               return;
             }
             setEditingBank(false);
+            void getQueuedPhotoCount().then(setQueuedPhotos);
             setMessage(`Question bank saved: ${p.questions.length} questions.`);
             refresh();
           }}
