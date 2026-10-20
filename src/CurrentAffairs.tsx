@@ -94,6 +94,7 @@ function NewspaperCurrentAffairs() {
   const [progress, setProgress] = useState<CAProgress>(() => loadProgress());
   const [saved, setSaved] = useState<SavedPoint[]>(() => loadSaved());
   const [showSaved, setShowSaved] = useState(false);
+  const [selectedArticle, setSelectedArticle] = useState<CAPoint | null>(null);
   const savedKeys = useMemo(() => new Set(saved.map((x) => savedKey(x.date, x))), [saved]);
   const goToQuiz = () => document.getElementById('ca-quiz')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
@@ -213,7 +214,7 @@ function NewspaperCurrentAffairs() {
           ) : (
             <ul className="space-y-3">
               {saved.map((p) => (
-                <PointCard key={savedKey(p.date, p)} point={p} saved onToggleSave={() => setSaved(toggleSaved(p.date, p))} sourceLabel={c.sourceLabel} />
+                <PointCard key={savedKey(p.date, p)} point={p} saved onToggleSave={() => setSaved(toggleSaved(p.date, p))} onRead={setSelectedArticle} sourceLabel={c.sourceLabel} />
               ))}
             </ul>
           )}
@@ -250,6 +251,7 @@ function NewspaperCurrentAffairs() {
                 point={p}
                 saved={savedKeys.has(savedKey(date, p))}
                 onToggleSave={() => setSaved(toggleSaved(date, p))}
+                onRead={setSelectedArticle}
                 onQuiz={day.quiz.length > 0 ? goToQuiz : undefined}
                 sourceLabel={c.sourceLabel}
               />
@@ -286,6 +288,42 @@ function NewspaperCurrentAffairs() {
               </li>
             ))}
           </ul>
+        </div>
+      )}
+
+      {selectedArticle && (
+        <div className="ca-reader-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelectedArticle(null); }}>
+          <section className="ca-reader-panel" role="dialog" aria-modal="true" aria-labelledby="ca-reader-title">
+            <header className="ca-reader-header">
+              <div className="min-w-0">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-700">Learning OS · News reader</p>
+                <h2 id="ca-reader-title" className="mt-1 text-lg font-bold leading-snug">{selectedArticle.source}</h2>
+              </div>
+              <button type="button" onClick={() => setSelectedArticle(null)} aria-label="Close reader" className="ca-reader-close"><X className="w-5 h-5" /></button>
+            </header>
+            <p className="px-4 pt-3 text-sm leading-relaxed text-slate-700">{selectedArticle.text}</p>
+            {selectedArticle.link && /^https?:\/\//i.test(selectedArticle.link) ? (
+              <>
+                <div className="ca-reader-frame-wrap">
+                  <iframe
+                    key={selectedArticle.link}
+                    src={selectedArticle.link}
+                    title={`Article from ${selectedArticle.source}`}
+                    loading="lazy"
+                    referrerPolicy="strict-origin-when-cross-origin"
+                    sandbox="allow-forms allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+                    className="ca-reader-frame"
+                  />
+                </div>
+                <footer className="ca-reader-footer">
+                  <p className="text-xs leading-relaxed text-slate-500">If the publisher blocks in-app reading, open the original article in your browser.</p>
+                  <a href={selectedArticle.link} target="_blank" rel="noopener noreferrer" className="ca-reader-open"><ExternalLink className="w-4 h-4" /> Open in browser</a>
+                </footer>
+              </>
+            ) : (
+              <div className="m-4 rounded-xl bg-sky-50 p-4 text-sm text-slate-600">The original article link is not available for this news item.</div>
+            )}
+          </section>
         </div>
       )}
     </div>
@@ -375,17 +413,19 @@ function Quiz({
 
 const CATEGORY_ICON = TAB_ICONS;
 
-/** One news point: category icon, text, source, and icon-only actions (read / save / quiz). */
+/** One news point with compact mobile actions (in-app read / save / quiz). */
 function PointCard({
   point,
   saved,
   onToggleSave,
+  onRead,
   onQuiz,
   sourceLabel,
 }: {
   point: CAPoint;
   saved: boolean;
   onToggleSave: () => void;
+  onRead: (point: CAPoint) => void;
   onQuiz?: () => void;
   sourceLabel: string;
 }) {
@@ -406,9 +446,9 @@ function PointCard({
         </p>
         <div className="flex items-center flex-shrink-0 -mr-2">
           {hasLink && (
-            <a href={point.link} target="_blank" rel="noopener noreferrer" aria-label="Read" title="Read" className={action}>
-              <ExternalLink className="w-5 h-5" strokeWidth={1.75} />
-            </a>
+            <button type="button" onClick={() => onRead(point)} aria-label="Read in Learning OS" title="Read in Learning OS" className={action}>
+              <Newspaper className="w-5 h-5" strokeWidth={1.75} />
+            </button>
           )}
           <button
             onClick={onToggleSave}
