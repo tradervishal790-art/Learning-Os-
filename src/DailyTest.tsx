@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { ArrowLeft, CalendarCheck, Download, Upload, Pencil, Trash2, Play } from 'lucide-react';
 import type { TestPaper } from './types';
-import { getQueuedPhotoCount, processQueuedPhotosForDailyTest } from './dailyPhotoQueue';
+import { clearQueuedDailyPhotos, getQueuedPhotoCount, processQueuedPhotosForDailyTest } from './dailyPhotoQueue';
 import TestBuilder from './TestBuilder';
 import {
   loadDaily,
@@ -134,6 +134,7 @@ export default function DailyTest({ onStart, onExit }: { onStart: (paper: TestPa
   const reset = () => {
     if (!confirm('Delete the whole question bank and all Daily Test progress? Your finished results stay in Past attempts.')) return;
     resetDaily();
+    void clearQueuedDailyPhotos().then(() => setQueuedPhotos(0));
     setMessage('');
     refresh();
   };
