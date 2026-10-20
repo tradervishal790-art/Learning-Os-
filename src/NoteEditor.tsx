@@ -900,6 +900,10 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
     expand: t.video.expand,
     retry: t.video.retry,
     resizeHandle: t.video.resizeHandle,
+    float: t.video.float,
+    dock: t.video.dock,
+    opacity: t.video.opacity,
+    moveWindow: t.video.moveWindow,
     errors: { 'not-embeddable': t.video.errNotEmbeddable, 'not-found': t.video.errNotFound, network: t.video.errNetwork, unknown: t.video.errUnknown },
   };
 
