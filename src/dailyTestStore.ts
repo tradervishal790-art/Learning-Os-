@@ -166,8 +166,8 @@ export type DailyStatus = 'empty' | 'pending' | 'ready' | 'done';
  * done    – today's test is already submitted; the next one comes tomorrow
  */
 export function getDailyStatus(s: DailyTestState = loadDaily()): DailyStatus {
-  if (getReadyDailyQuestionCount(s.bank) === 0) return 'empty';
   if (s.pending) return 'pending';
+  if (getReadyDailyQuestionCount(s.bank) === 0) return 'empty';
   return s.lastCompletedDate === todayKey() ? 'done' : 'ready';
 }
 
