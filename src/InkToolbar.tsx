@@ -53,6 +53,18 @@ const chip = (on: boolean) =>
       : 'border-gray-200 dark:border-white/10 text-gray-700 dark:text-white/80 hover:bg-gray-100 dark:hover:bg-white/10'
   }`;
 
+/** The pen thickness drawn as it really looks: a round dot (a flat bar for the highlighter). */
+function ThicknessDot({ width, color, hl = false }: { width: number; color: string; hl?: boolean }) {
+  const dark = document.documentElement.classList.contains('dark');
+  const d = Math.min(22, Math.max(2, width * 2));
+  return (
+    <span
+      className="inline-block shrink-0"
+      style={{ width: hl ? 22 : d, height: hl ? Math.min(20, Math.max(4, width * 2.4)) : d, borderRadius: hl ? 3 : 999, background: resolveColor(color, dark), opacity: hl ? 0.7 : 1 }}
+    />
+  );
+}
+
 function Dot({ color, size = 18 }: { color: string; size?: number }) {
   const dark = document.documentElement.classList.contains('dark');
   return (
@@ -296,14 +308,30 @@ export default function InkToolbar({
           <ColorPicker value={color === 'auto' ? '#000000' : color} onChange={setColor} eyedropperLabel={t.eyedropper} />
         </div>
       </Pop>
+      {/* thickness is shown as the real stroke (a dot as wide as the pen), not as a number */}
       {presets.map((w) => (
-        <button key={w} className={chip(width === w)} onClick={() => setWidth(w)} aria-label={`${t.thickness} ${w}`}>{w}</button>
+        <button
+          key={w}
+          type="button"
+          onClick={() => setWidth(w)}
+          title={`${t.thickness} ${w}`}
+          aria-label={`${t.thickness} ${w}`}
+          aria-pressed={width === w}
+          className={`h-9 w-9 sm:h-8 sm:w-8 rounded-lg border shrink-0 flex items-center justify-center transition-colors ${
+            width === w ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-500/20' : 'border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10'
+          }`}
+        >
+          <ThicknessDot width={w} color={color} hl={isHl} />
+        </button>
       ))}
       <input
         type="range" min={0.5} max={20} step={0.5} value={width}
         onChange={(e) => setWidth(Number(e.target.value))}
         aria-label={t.thickness} title={t.thickness} className="w-20 shrink-0"
       />
+      <span className="h-9 w-9 sm:h-8 sm:w-8 shrink-0 flex items-center justify-center rounded-lg bg-gray-50 dark:bg-white/5" aria-hidden>
+        <ThicknessDot width={width} color={color} hl={isHl} />
+      </span>
       {!isHl && (
         <>
           <Sep />
@@ -314,7 +342,7 @@ export default function InkToolbar({
                 onClick={() => setPrefs({ kind: f.kind, color: f.color, width: f.width })}
                 className="h-8 pl-2 pr-1 flex items-center gap-1 text-[11px] text-gray-600 dark:text-white/70"
               >
-                <Dot color={f.color} size={14} /> {f.width}
+                <Dot color={f.color} size={14} /> <ThicknessDot width={f.width} color={f.color} />
               </button>
               <button
                 aria-label={t.removeFavorite}
