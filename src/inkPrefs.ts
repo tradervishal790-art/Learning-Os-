@@ -54,7 +54,7 @@ export const DEFAULT_PREFS: InkPrefs = {
   shapeSnap: false,
   laserColor: '#ef4444',
   laserStyle: 'dot',
-  laserDelay: 5,
+  laserDelay: 3,
   favorites: [],
   recentColors: [],
 };

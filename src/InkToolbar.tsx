@@ -202,6 +202,11 @@ export default function InkToolbar({
           <button className={chip(!ink)} onClick={() => setPrefs({ laserStyle: 'dot' })}>{t.laserPointer}</button>
           <button className={chip(ink)} onClick={() => setPrefs({ laserStyle: 'ink' })}>{t.laserInk}</button>
           <Sep />
+          <span className="text-xs text-gray-500 dark:text-white/60 shrink-0">{t.laserDelay}</span>
+          {[1, 3, 5, 10].map((n) => (
+            <button key={n} className={chip(prefs.laserDelay === n)} onClick={() => setPrefs({ laserDelay: n })}>{n}s</button>
+          ))}
+          <Sep />
           {!ink &&
             ['#ef4444', '#22c55e', '#3b82f6', '#f59e0b'].map((c) => (
               <button
@@ -215,11 +220,6 @@ export default function InkToolbar({
             ))}
           {ink && (
             <>
-              <span className="text-xs text-gray-500 dark:text-white/60 shrink-0">{t.laserDelay}</span>
-              {[2, 5, 10, 20].map((n) => (
-                <button key={n} className={chip(prefs.laserDelay === n)} onClick={() => setPrefs({ laserDelay: n })}>{n}s</button>
-              ))}
-              <Sep />
               {INK_COLORS.slice(0, 6).map((c) => (
                 <button
                   key={c}
