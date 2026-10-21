@@ -75,7 +75,7 @@ export async function enqueueDailyPhotos(files: File[]): Promise<number> {
   const available = Math.max(0, MAX_FILES - existing.length);
   const selected = files.slice(0, available);
   if (!selected.length) return existing.length;
-  await transact<void>('readwrite', (store, resolve, reject) => {
+  await transact<void>('readwrite', (store, resolve) => {
     selected.forEach((file) => store.put({
       id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `photo_${Date.now()}_${Math.random()}`,
       name: file.name,
