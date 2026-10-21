@@ -30,6 +30,13 @@ const INK_STYLE: Record<InkKind, { thinning: number; widthMul: number; opacity: 
   marker: { thinning: 0.05, widthMul: 2, opacity: 0.9 },
   dotted: { thinning: 0, widthMul: 1, opacity: 1 },
   highlighter: { thinning: 0, widthMul: 1, opacity: 0.4 },
+  // textured brushes: print / Word export keeps their colour, width and see-through feel as a solid line
+  calligraphyBrush: { thinning: 0.8, widthMul: 1.6, opacity: 1 },
+  airbrush: { thinning: 0, widthMul: 3, opacity: 0.35 },
+  oil: { thinning: 0.1, widthMul: 3.5, opacity: 0.9 },
+  crayon: { thinning: 0, widthMul: 2, opacity: 0.8 },
+  natural: { thinning: 0.3, widthMul: 1.2, opacity: 0.75 },
+  watercolor: { thinning: 0, widthMul: 3.6, opacity: 0.3 },
 };
 
 function fmt(v: number): string {
