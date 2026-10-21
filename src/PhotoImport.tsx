@@ -1,6 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Camera, FileCheck2, Loader2, X } from 'lucide-react';
 import type { TestQuestion } from './types';
+import { dedupeQuestions } from './questionDedup';
+import { enqueueDailyPhotos, getQueuedPhotoCount } from './dailyPhotoQueue';
 import {
   MAX_IMPORT_PHOTOS,
   MAX_PDF_PAGES,
@@ -16,8 +18,8 @@ import {
 // ============================================================
 // PhotoImport.tsx
 // Optional helpers inside the test builder ("My tests" only):
-//   1. Add questions from up to 4 photos — every question found is added, no count limit.
-//   2. Add answers from up to 4 photos of an answer sheet — a SEPARATE
+//   1. Add questions from up to 20 photos/PDFs per batch — every question found is added, no count limit.
+//   2. Add answers from up to 20 photos/PDFs of an answer sheet — a SEPARATE
 //      section; answers are matched to questions strictly by sequence.
 // The instruction panel language (हिन्दी / English) is the user's choice
 // and only affects this panel's own text — never the test content.
@@ -129,9 +131,10 @@ interface PhotoImportProps {
   questions: TestQuestion[];
   onAppendQuestions: (qs: TestQuestion[]) => void;
   onReplaceQuestions: (qs: TestQuestion[]) => void;
+  dailyQueueOnly?: boolean;
 }
 
-export default function PhotoImport({ questions, onAppendQuestions, onReplaceQuestions }: PhotoImportProps) {
+export default function PhotoImport({ questions, onAppendQuestions, onReplaceQuestions, dailyQueueOnly = false }: PhotoImportProps) {
   const [lang, setLang] = useState<Lang>(loadLang);
   const t = TEXT[lang];
   const [qFiles, setQFiles] = useState<File[]>([]);
@@ -141,6 +144,11 @@ export default function PhotoImport({ questions, onAppendQuestions, onReplaceQue
   const [info, setInfo] = useState('');
   const [error, setError] = useState('');
   const [warnings, setWarnings] = useState<string[]>([]);
+  const [queuedCount, setQueuedCount] = useState(0);
+
+  useEffect(() => {
+    if (dailyQueueOnly) void getQueuedPhotoCount().then(setQueuedCount);
+  }, [dailyQueueOnly]);
 
   const changeLang = (l: Lang) => {
     setLang(l);
@@ -159,6 +167,22 @@ export default function PhotoImport({ questions, onAppendQuestions, onReplaceQue
 
   const readQuestions = async () => {
     if (qFiles.length === 0) return;
+    if (dailyQueueOnly) {
+      setBusy('q');
+      setError('');
+      setInfo('');
+      try {
+        const count = await enqueueDailyPhotos(qFiles);
+        setQueuedCount(count);
+        setInfo(`${qFiles.length} file(s) saved for later. No AI was called. ${count} file(s) are waiting for future Daily Tests.`);
+        setQFiles([]);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Could not save these files for later.');
+      } finally {
+        setBusy(null);
+      }
+      return;
+    }
     setBusy('q');
     setError('');
     setInfo('');
@@ -166,21 +190,31 @@ export default function PhotoImport({ questions, onAppendQuestions, onReplaceQue
     try {
       const all: ExtractedQuestion[] = [];
       const allKey: ExtractedAnswer[] = [];
+      const failedFiles: string[] = [];
       for (let i = 0; i < qFiles.length; i++) {
         setProgress(t.reading(i + 1, qFiles.length));
-        for (const part of await prepareUpload(qFiles[i])) {
-          const r = await extractQuestionsFromPhoto(part);
-          all.push(...r.questions);
-          allKey.push(...r.answerKey);
+        try {
+          for (const part of await prepareUpload(qFiles[i])) {
+            const r = await extractQuestionsFromPhoto(part);
+            all.push(...r.questions);
+            allKey.push(...r.answerKey);
+          }
+        } catch (fileError) {
+          failedFiles.push(qFiles[i].name);
+          console.error('Question import failed for file:', qFiles[i].name, fileError);
         }
       }
       if (all.length === 0) {
-        setError(t.none);
+        setError(failedFiles.length ? `Could not read any selected files. Failed: ${failedFiles.join(', ')}. Try smaller/clearer files or import fewer at once.` : t.none);
       } else {
         const { questions: qs, warnings: w } = toBuilderQuestions(all, allKey);
-        onAppendQuestions(qs);
+        const { questions: existingUnique } = dedupeQuestions(questions);
+        const { questions: uniqueQs, duplicates } = dedupeQuestions([...existingUnique, ...qs]);
+        const existingIds = new Set(questions.map((q) => q.id));
+        const newQuestions = uniqueQs.filter((q) => !existingIds.has(q.id));
+        if (newQuestions.length > 0) onAppendQuestions(newQuestions);
         setWarnings(w);
-        setInfo(t.addedQ(qs.length));
+        setInfo(`${newQuestions.length} new question(s) added; ${duplicates} duplicate(s) skipped. Please review them before saving.${failedFiles.length ? ` Failed files: ${failedFiles.join(', ')}. You can retry those separately.` : ''}`);
         setQFiles([]);
       }
     } catch (err) {
@@ -199,19 +233,25 @@ export default function PhotoImport({ questions, onAppendQuestions, onReplaceQue
     setWarnings([]);
     try {
       const all: ExtractedAnswer[] = [];
+      const failedFiles: string[] = [];
       for (let i = 0; i < aFiles.length; i++) {
         setProgress(t.reading(i + 1, aFiles.length));
-        for (const part of await prepareUpload(aFiles[i])) {
-          all.push(...(await extractAnswersFromPhoto(part)));
+        try {
+          for (const part of await prepareUpload(aFiles[i])) {
+            all.push(...(await extractAnswersFromPhoto(part)));
+          }
+        } catch (fileError) {
+          failedFiles.push(aFiles[i].name);
+          console.error('Answer import failed for file:', aFiles[i].name, fileError);
         }
       }
       if (all.length === 0) {
-        setError(t.noneA);
+        setError(failedFiles.length ? `Could not read any selected answer files. Failed: ${failedFiles.join(', ')}. Try smaller/clearer files or import fewer at once.` : t.noneA);
       } else {
         const { questions: qs, warnings: w, applied } = applyAnswersInSequence(questions, all);
         onReplaceQuestions(qs);
         setWarnings(w);
-        setInfo(t.addedA(applied, questions.length));
+        setInfo(`${t.addedA(applied, questions.length)}${failedFiles.length ? ` Failed files: ${failedFiles.join(', ')}. Retry those separately; answer order may need review.` : ''}`);
         setAFiles([]);
       }
     } catch (err) {
@@ -249,18 +289,19 @@ export default function PhotoImport({ questions, onAppendQuestions, onReplaceQue
         <h3 className="flex items-center gap-2 text-sm font-semibold mb-1.5">
           <Camera className="w-4 h-4" /> {t.qTitle}
         </h3>
-        <p className="text-xs text-gray-500 dark:text-white/60 mb-3">{t.qHelp}</p>
+        <p className="text-xs text-gray-500 dark:text-white/60 mb-3">{dailyQueueOnly ? 'Choose photos/PDFs to save on this device. They will not be sent to AI now; Daily Test will read files one at a time only when it needs more questions.' : t.qHelp}</p>
+        {dailyQueueOnly && <p className="text-xs text-indigo-600 dark:text-indigo-300 mb-3">{queuedCount} file(s) queued locally · up to 200 files · stored in this browser</p>}
         <input type="file" accept="image/*,application/pdf,.pdf" multiple onChange={(e) => pick(e.target.files, setQFiles)} disabled={busy !== null} className={`${fileInput} mb-3`} />
         {qFiles.length > 0 && (
           <FileThumbList files={qFiles} disabled={busy !== null} onRemove={(i) => setQFiles((prev) => prev.filter((_, idx) => idx !== i))} />
         )}
         <button onClick={readQuestions} disabled={busy !== null || qFiles.length === 0} className={btn}>
           {busy === 'q' && <Loader2 className="w-4 h-4 animate-spin" />}
-          {busy === 'q' ? progress : qFiles.length > 0 ? `${t.qButton} (${t.filesChosen(qFiles.length)})` : t.qButton}
+          {busy === 'q' ? progress : dailyQueueOnly ? `Queue photos without AI (${t.filesChosen(qFiles.length)})` : qFiles.length > 0 ? `${t.qButton} (${t.filesChosen(qFiles.length)})` : t.qButton}
         </button>
       </div>
 
-      {/* 2 — answers (separate section) */}
+      {!dailyQueueOnly && <>{/* 2 — answers (separate section) */}
       <div className="border-t border-gray-200 dark:border-white/10 pt-5">
         <h3 className="flex items-center gap-2 text-sm font-semibold mb-2">
           <FileCheck2 className="w-4 h-4" /> {t.aTitle}
@@ -289,7 +330,7 @@ export default function PhotoImport({ questions, onAppendQuestions, onReplaceQue
           {busy === 'a' && <Loader2 className="w-4 h-4 animate-spin" />}
           {busy === 'a' ? progress : aFiles.length > 0 ? `${t.aButton} (${t.filesChosen(aFiles.length)})` : t.aButton}
         </button>
-      </div>
+      </div></>}
 
       {error && <p className="text-red-500 text-sm mt-4">{error}</p>}
       {info && <p className="text-emerald-600 dark:text-emerald-400 text-sm mt-4">{info}</p>}

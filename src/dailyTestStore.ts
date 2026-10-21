@@ -13,6 +13,7 @@
 //  - Everything is stored in this browser's localStorage only (no cloud sync) — use
 //    exportDailyBackup / importDailyBackup to move it between devices.
 import type { GradedResult, TestPaper, TestQuestion } from './types';
+import { dedupeQuestions } from './questionDedup';
 
 const KEY = 'learning_os_daily_test';
 export const DAILY_PAPER_PREFIX = 'daily_';
@@ -95,8 +96,18 @@ function shuffle<T>(arr: T[]): T[] {
 /** Order for a new round: previously-wrong questions first, then the rest shuffled. */
 function newRoundOrder(bank: TestQuestion[], wrongIds: string[]): string[] {
   const wrong = new Set(wrongIds);
-  const ids = bank.map((q) => q.id);
+  const ids = bank.filter(isReadyQuestion).map((q) => q.id);
   return [...shuffle(ids.filter((id) => wrong.has(id))), ...shuffle(ids.filter((id) => !wrong.has(id)))];
+}
+
+function isReadyQuestion(q: TestQuestion): boolean {
+  if (!q.question.trim()) return false;
+  if (q.type === 'mcq') return q.correctIndex >= 0 && q.options.filter((o) => o.trim()).length >= 2;
+  return !!q.modelAnswer.trim();
+}
+
+export function getReadyDailyQuestionCount(questions: TestQuestion[] = loadDaily().bank): number {
+  return questions.filter(isReadyQuestion).length;
 }
 
 // ── bank ─────────────────────────────────────────────────────────────
@@ -104,13 +115,19 @@ function newRoundOrder(bank: TestQuestion[], wrongIds: string[]): string[] {
 /** Replaces the bank with the builder's question list. New questions join the queue; removed ones leave it. */
 export function saveBank(questions: TestQuestion[]): boolean {
   const s = loadDaily();
-  const ids = new Set(questions.map((q) => q.id));
-  const known = new Set(s.bank.map((q) => q.id));
-  const fresh = questions.filter((q) => !known.has(q.id)).map((q) => q.id);
-  s.bank = questions;
+  // Deduplicate by normalized question wording as well as ID. IDs change when
+  // the same paper is imported again, so ID-only checks do not prevent repeats.
+  const { questions: uniqueQuestions } = dedupeQuestions(questions);
+  const ids = new Set(uniqueQuestions.filter(isReadyQuestion).map((q) => q.id));
+  const knownReady = new Set(s.bank.filter(isReadyQuestion).map((q) => q.id));
+  const fresh = uniqueQuestions.filter((q) => isReadyQuestion(q) && !knownReady.has(q.id)).map((q) => q.id);
+  s.bank = uniqueQuestions;
+  // Incomplete imported questions stay saved for manual answer completion, but cannot appear in a test.
   s.queue = [...s.queue.filter((id) => ids.has(id)), ...shuffle(fresh)];
   s.wrongIds = s.wrongIds.filter((id) => ids.has(id));
-  if (questions.length === 0) {
+  // If a pending test contains questions removed by deduplication, preserve it:
+  // a started/ready test must not silently change under the learner.
+  if (uniqueQuestions.length === 0) {
     s.queue = [];
     s.pending = null;
   }
@@ -149,19 +166,20 @@ export type DailyStatus = 'empty' | 'pending' | 'ready' | 'done';
  * done    – today's test is already submitted; the next one comes tomorrow
  */
 export function getDailyStatus(s: DailyTestState = loadDaily()): DailyStatus {
-  if (s.bank.length === 0) return 'empty';
   if (s.pending) return 'pending';
+  if (getReadyDailyQuestionCount(s.bank) === 0) return 'empty';
   return s.lastCompletedDate === todayKey() ? 'done' : 'ready';
 }
 
 /** Pops the next `count` ids from the queue, starting a new round when it runs out. */
 function takeIds(s: DailyTestState, count: number): string[] {
-  const take = Math.min(count, s.bank.length);
+  const readyBank = s.bank.filter(isReadyQuestion);
+  const take = Math.min(count, readyBank.length);
   const picked: string[] = [];
   while (picked.length < take) {
     if (s.queue.length === 0) {
       s.round += 1;
-      s.queue = newRoundOrder(s.bank, s.wrongIds).filter((id) => !picked.includes(id));
+      s.queue = newRoundOrder(readyBank, s.wrongIds).filter((id) => !picked.includes(id));
       if (s.queue.length === 0) break; // bank is smaller than `take` and fully used
     }
     picked.push(s.queue.shift() as string);
@@ -222,13 +240,13 @@ export function completeDailyTest(paperId: string, results: GradedResult[]): voi
 /** For the card/setup screens. */
 export function getDailySummary(s: DailyTestState = loadDaily()) {
   return {
-    total: s.bank.length,
+    total: getReadyDailyQuestionCount(s.bank),
     perDay: s.perDay,
     left: s.queue.length, // not yet used in this round
     round: s.round,
     daysCompleted: s.daysCompleted,
     wrongCount: s.wrongIds.length,
-    daysPerRound: s.bank.length > 0 ? Math.ceil(s.bank.length / Math.max(1, s.perDay)) : 0,
+    daysPerRound: getReadyDailyQuestionCount(s.bank) > 0 ? Math.ceil(getReadyDailyQuestionCount(s.bank) / Math.max(1, s.perDay)) : 0,
   };
 }
 
