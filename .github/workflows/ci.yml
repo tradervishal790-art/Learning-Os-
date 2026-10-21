@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Same gate as docs/RULES.md ("Before every commit"), plus tests and lint.
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22 # Vite 8 needs Node ^20.19 or >=22.12
+          cache: npm
+      - run: npm ci
+      - name: Lint (oxlint — fails on errors, warnings are allowed)
+        run: npm run lint
+      - name: Typecheck + build (tsc -b && vite build)
+        run: npm run build
+      - name: Tests
+        run: npm test
