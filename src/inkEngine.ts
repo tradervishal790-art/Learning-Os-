@@ -32,9 +32,19 @@ export const KINDS: Record<InkKind, KindCfg> = {
   marker: { size: 3.2, thinning: 0, opacity: 0.9, layer: 'ink' },
   dotted: { size: 1, thinning: 0, opacity: 1, layer: 'ink' },
   highlighter: { size: 6, thinning: 0, opacity: 0.4, layer: 'hl' },
+  calligraphyBrush: { size: 1.6, thinning: 0, opacity: 1, layer: 'ink' },
+  airbrush: { size: 4, thinning: 0, opacity: 1, layer: 'ink' },
+  oil: { size: 4.2, thinning: 0, opacity: 1, layer: 'ink' },
+  crayon: { size: 2.2, thinning: 0, opacity: 1, layer: 'ink' },
+  natural: { size: 1.8, thinning: 0, opacity: 1, layer: 'ink' },
+  watercolor: { size: 3.6, thinning: 0, opacity: 1, layer: 'ink' },
 };
 
-export const PEN_KINDS: InkKind[] = ['ballpoint', 'fountain', 'felt', 'pencil', 'brush', 'calligraphy', 'fineliner', 'marker', 'dotted'];
+/** Brush list in the same order as Paint's, then the everyday pens. */
+export const PEN_KINDS: InkKind[] = [
+  'brush', 'calligraphyBrush', 'calligraphy', 'airbrush', 'oil', 'crayon', 'marker', 'natural', 'watercolor',
+  'ballpoint', 'fountain', 'felt', 'pencil', 'fineliner', 'dotted',
+];
 
 /** 12 colours that stay readable on light and dark pages. 'auto' = black / near-white by theme. */
 export const INK_COLORS = [
@@ -88,6 +98,219 @@ function outlinePath(outline: number[][]): Path2D {
   return path;
 }
 
+// ---------- textured brushes (airbrush, oil, crayon, natural pencil, watercolour, calligraphy brush) ----------
+// Everything is deterministic: the same stroke always draws the same grain (random numbers come from the stroke id).
+
+function seeded(id: string): () => number {
+  let h = 2166136261;
+  for (let i = 0; i < id.length; i++) h = Math.imul(h ^ id.charCodeAt(i), 16777619);
+  let a = h >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/** 0..1 pressure per point; a mouse / finger has none, so speed stands in (slow = heavy). */
+function pressures(pts: number[][], sim: boolean): number[] {
+  if (!sim) return pts.map((p) => (p[2] > 0 ? p[2] : 0.5));
+  const out: number[] = [];
+  let f = 0.7;
+  for (let i = 0; i < pts.length; i++) {
+    const d = i ? Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]) : 0;
+    f += (Math.min(1, Math.max(0.4, 1.1 - d / 10)) - f) * 0.25;
+    out.push(f);
+  }
+  return out;
+}
+
+function tracePath(ctx: CanvasRenderingContext2D, pts: number[][], dx = 0, dy = 0): void {
+  ctx.beginPath();
+  ctx.moveTo(pts[0][0] + dx, pts[0][1] + dy);
+  if (pts.length === 1) ctx.lineTo(pts[0][0] + dx + 0.01, pts[0][1] + dy);
+  for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0] + dx, pts[i][1] + dy);
+}
+
+/** Points every `gap` units along the path (for sprinkling grain evenly). */
+function along(pts: number[][], gap: number): [number, number][] {
+  const out: [number, number][] = [[pts[0][0], pts[0][1]]];
+  let carry = 0;
+  for (let i = 1; i < pts.length; i++) {
+    const [ax, ay] = pts[i - 1];
+    const [bx, by] = pts[i];
+    const len = Math.hypot(bx - ax, by - ay);
+    let at = gap - carry;
+    while (at <= len) {
+      out.push([ax + ((bx - ax) * at) / len, ay + ((by - ay) * at) / len]);
+      at += gap;
+    }
+    carry = len - (at - gap);
+  }
+  return out;
+}
+
+/** Returns true when it drew the stroke itself. */
+function drawBrush(ctx: CanvasRenderingContext2D, s: InkStroke, pts: number[][], complete: boolean): boolean {
+  const k = s.kind;
+  if (k !== 'calligraphyBrush' && k !== 'airbrush' && k !== 'oil' && k !== 'crayon' && k !== 'natural' && k !== 'watercolor') return false;
+  const size = s.width * KINDS[k].size; // overall brush width
+  const rnd = seeded(s.id);
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  if (pts.length === 1) {
+    ctx.beginPath();
+    ctx.arc(pts[0][0], pts[0][1], Math.max(0.6, size / 2), 0, Math.PI * 2);
+    ctx.globalAlpha = k === 'watercolor' || k === 'airbrush' ? 0.35 : 1;
+    ctx.fill();
+    return true;
+  }
+
+  if (k === 'calligraphyBrush') {
+    // flat nib at 45° whose width follows pressure and tapers at both ends
+    const pr = pressures(pts, s.sim);
+    const n = pts.length;
+    const nib = new Path2D();
+    for (let i = 1; i < n; i++) {
+      const t = i / (n - 1);
+      const taper = Math.max(0.15, Math.min(1, t / 0.12, complete ? (1 - t) / 0.2 : 1));
+      const half = (size * 1.9 * taper * (0.35 + 0.65 * pr[i])) / 2;
+      const dx = Math.cos(-Math.PI / 4) * half;
+      const dy = Math.sin(-Math.PI / 4) * half;
+      const [ax, ay] = pts[i - 1];
+      const [bx, by] = pts[i];
+      nib.moveTo(ax + dx, ay + dy);
+      nib.lineTo(bx + dx, by + dy);
+      nib.lineTo(bx - dx, by - dy);
+      nib.lineTo(ax - dx, ay - dy);
+      nib.closePath();
+    }
+    ctx.fill(nib, 'nonzero');
+    return true;
+  }
+
+  if (k === 'airbrush') {
+    // a soft cloud (wide + faint passes build up to a dense core) and fine spray dots around it
+    for (const f of [1, 0.78, 0.58, 0.4, 0.24, 0.12]) {
+      ctx.globalAlpha = 0.11;
+      ctx.lineWidth = size * f;
+      tracePath(ctx, pts);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 0.6;
+    for (const [x, y] of along(pts, Math.max(1, size * 0.12))) {
+      for (let j = 0; j < 4; j++) {
+        const a = rnd() * Math.PI * 2;
+        const r = size * 0.62 * Math.sqrt(rnd());
+        ctx.fillRect(x + Math.cos(a) * r, y + Math.sin(a) * r, 0.8, 0.8);
+      }
+    }
+    return true;
+  }
+
+  if (k === 'watercolor') {
+    // see-through washes that overlap, with a slightly darker edge where the paint pooled
+    const wash = (w: number, jitter: number) => {
+      const out = getStroke(pts, { size: w, thinning: 0, smoothing: 0.6, streamline: 0.5, simulatePressure: false, last: complete });
+      ctx.save();
+      ctx.translate(jitter, jitter * 0.6);
+      ctx.fill(outlinePath(out));
+      ctx.restore();
+      return out;
+    };
+    ctx.globalAlpha = 0.2;
+    const outer = wash(size, 0);
+    ctx.globalAlpha = 0.17;
+    wash(size * 0.72, size * 0.06);
+    ctx.globalAlpha = 0.14;
+    wash(size * 0.45, -size * 0.05);
+    ctx.globalAlpha = 0.3;
+    ctx.lineWidth = Math.max(0.6, size * 0.05);
+    ctx.stroke(outlinePath(outer));
+    return true;
+  }
+
+  // the bristle / grain brushes need the direction of travel
+  const norm: [number, number][] = pts.map((_, i) => {
+    const a = pts[Math.max(0, i - 2)];
+    const b = pts[Math.min(pts.length - 1, i + 2)];
+    const l = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
+    return [-(b[1] - a[1]) / l, (b[0] - a[0]) / l];
+  });
+
+  if (k === 'oil') {
+    // a thick body of paint, then dense bristle streaks of different strength on top (with the odd dry gap)
+    ctx.globalAlpha = 0.8;
+    ctx.lineWidth = size * 0.92;
+    tracePath(ctx, pts);
+    ctx.stroke();
+    const n = Math.max(8, Math.min(18, Math.round(size / 0.8)));
+    const bw = (size / n) * 1.5;
+    for (let b = 0; b < n; b++) {
+      const off = (b / (n - 1) - 0.5) * (size - bw);
+      ctx.lineWidth = bw;
+      let run: [number, number][] = [];
+      const flush = () => {
+        if (run.length > 1) {
+          ctx.globalAlpha = 0.3 + rnd() * 0.7;
+          ctx.beginPath();
+          ctx.moveTo(run[0][0], run[0][1]);
+          for (let i = 1; i < run.length; i++) ctx.lineTo(run[i][0], run[i][1]);
+          ctx.stroke();
+        }
+        run = [];
+      };
+      for (let i = 0; i < pts.length; i++) {
+        run.push([pts[i][0] + norm[i][0] * off, pts[i][1] + norm[i][1] * off]);
+        if (run.length > 5 && rnd() < 0.07) flush();
+      }
+      flush();
+    }
+    return true;
+  }
+
+  if (k === 'crayon') {
+    // a faint waxy body, then rough grain dots all through it
+    ctx.globalAlpha = 0.28;
+    ctx.lineWidth = size * 0.8;
+    tracePath(ctx, pts);
+    ctx.stroke();
+    const R = size / 2;
+    for (const [x, y] of along(pts, 1.1)) {
+      for (let j = 0; j < 5; j++) {
+        const a = rnd() * Math.PI * 2;
+        const r = R * Math.sqrt(rnd());
+        ctx.globalAlpha = 0.55 + rnd() * 0.45;
+        const d = 0.8 + rnd() * 1.1;
+        ctx.fillRect(x + Math.cos(a) * r, y + Math.sin(a) * r, d, d);
+      }
+    }
+    return true;
+  }
+
+  // natural pencil: a light graphite line plus fine grain and a wobbling thin core
+  const R = size / 2;
+  ctx.globalAlpha = 0.32;
+  ctx.lineWidth = Math.max(0.8, size * 0.7);
+  tracePath(ctx, pts);
+  ctx.stroke();
+  for (const [x, y] of along(pts, 0.8)) {
+    for (let j = 0; j < 4; j++) {
+      const a = rnd() * Math.PI * 2;
+      const r = R * 0.9 * Math.sqrt(rnd());
+      ctx.globalAlpha = 0.45 + rnd() * 0.5;
+      ctx.fillRect(x + Math.cos(a) * r, y + Math.sin(a) * r, 0.7, 0.7);
+    }
+  }
+  ctx.globalAlpha = 0.3;
+  ctx.lineWidth = Math.max(0.5, size * 0.28);
+  tracePath(ctx, pts, (rnd() - 0.5) * size * 0.3, (rnd() - 0.5) * size * 0.3);
+  ctx.stroke();
+  return true;
+}
+
 /** Draw one stroke. `complete=false` while the pen is still down. */
 export function drawStroke(ctx: CanvasRenderingContext2D, s: InkStroke, dark: boolean, complete = true): void {
   const cfg = KINDS[s.kind];
@@ -98,6 +321,11 @@ export function drawStroke(ctx: CanvasRenderingContext2D, s: InkStroke, dark: bo
   ctx.globalAlpha = cfg.opacity;
   ctx.fillStyle = color;
   ctx.strokeStyle = color;
+
+  if (drawBrush(ctx, s, pts, complete)) {
+    ctx.restore();
+    return;
+  }
 
   if (s.kind === 'dotted') {
     const w = s.width * 1.4;

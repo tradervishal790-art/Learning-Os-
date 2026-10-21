@@ -517,6 +517,12 @@ export interface TranslationShape {
       penPencil: string;
       penBrush: string;
       penCalligraphy: string;
+      penCalligraphyBrush: string;
+      penAirbrush: string;
+      penOil: string;
+      penCrayon: string;
+      penNatural: string;
+      penWatercolor: string;
       penFineliner: string;
       penMarker: string;
       penDotted: string;
@@ -1992,7 +1998,13 @@ export const translations: Record<Locale, TranslationShape> = {
         penFelt: "Felt tip",
         penPencil: "Pencil",
         penBrush: "Brush",
-        penCalligraphy: "Calligraphy",
+        penCalligraphy: "Calligraphy pen",
+        penCalligraphyBrush: "Calligraphy brush",
+        penAirbrush: "Airbrush",
+        penOil: "Oil brush",
+        penCrayon: "Crayon",
+        penNatural: "Natural pencil",
+        penWatercolor: "Watercolor brush",
         penFineliner: "Fine liner",
         penMarker: "Marker",
         penDotted: "Dotted line",
@@ -3479,7 +3491,13 @@ export const translations: Record<Locale, TranslationShape> = {
         penFelt: "Felt tip",
         penPencil: "Pencil",
         penBrush: "Brush",
-        penCalligraphy: "Calligraphy",
+        penCalligraphy: "Calligraphy pen",
+        penCalligraphyBrush: "Calligraphy brush",
+        penAirbrush: "Airbrush",
+        penOil: "Oil brush",
+        penCrayon: "Crayon",
+        penNatural: "Natural pencil",
+        penWatercolor: "Watercolor brush",
         penFineliner: "Fine liner",
         penMarker: "Marker",
         penDotted: "Dotted line",
@@ -4965,7 +4983,13 @@ export const translations: Record<Locale, TranslationShape> = {
         penFelt: "Felt tip",
         penPencil: "Pencil",
         penBrush: "Brush",
-        penCalligraphy: "Calligraphy",
+        penCalligraphy: "Calligraphy pen",
+        penCalligraphyBrush: "Calligraphy brush",
+        penAirbrush: "Airbrush",
+        penOil: "Oil brush",
+        penCrayon: "Crayon",
+        penNatural: "Natural pencil",
+        penWatercolor: "Watercolor brush",
         penFineliner: "Fine liner",
         penMarker: "Marker",
         penDotted: "Dotted line",

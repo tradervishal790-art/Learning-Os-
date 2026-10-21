@@ -60,7 +60,8 @@ export type StudyStatus = 'not-started' | 'learning' | 'needs-revision' | 'maste
 
 export type InkKind =
   | 'ballpoint' | 'fountain' | 'felt' | 'pencil' | 'brush' | 'calligraphy'
-  | 'fineliner' | 'marker' | 'dotted' | 'highlighter';
+  | 'fineliner' | 'marker' | 'dotted' | 'highlighter'
+  | 'calligraphyBrush' | 'airbrush' | 'oil' | 'crayon' | 'natural' | 'watercolor';
 
 /** One handwritten stroke. Coordinates are in PAGE UNITS (page width = 1000),
  *  so ink keeps its place on every screen size. */

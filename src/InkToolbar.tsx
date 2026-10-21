@@ -5,10 +5,11 @@ import {
 } from 'lucide-react';
 import { useTranslation } from './i18n/LanguageContext';
 import type { InkMode, InkPrefs } from './inkPrefs';
-import { HL_COLORS, INK_COLORS, PEN_KINDS, WIDTH_PRESETS, resolveColor } from './inkEngine';
+import { HL_COLORS, INK_COLORS, WIDTH_PRESETS, resolveColor } from './inkEngine';
 import type { InkKind } from './notebookStore';
-import { Btn, Pop, Swatches, Sep, selectCls } from './toolbarParts';
+import { Btn, Pop, Swatches, Sep } from './toolbarParts';
 import ColorDialog from './ColorPicker';
+import PenPicker from './PenPicker';
 
 // Type | Pen | Highlighter | Eraser — plus the matching tool options.
 
@@ -114,6 +115,7 @@ export default function InkToolbar({
   const kindLabel: Record<InkKind, string> = {
     ballpoint: t.penBallpoint, fountain: t.penFountain, felt: t.penFelt, pencil: t.penPencil, brush: t.penBrush,
     calligraphy: t.penCalligraphy, fineliner: t.penFineliner, marker: t.penMarker, dotted: t.penDotted, highlighter: t.modeHighlighter,
+    calligraphyBrush: t.penCalligraphyBrush, airbrush: t.penAirbrush, oil: t.penOil, crayon: t.penCrayon, natural: t.penNatural, watercolor: t.penWatercolor,
   };
 
   const isHl = mode === 'highlighter';
@@ -267,11 +269,7 @@ export default function InkToolbar({
       {undoRedo}
       <Sep />
       {!isHl && (
-        <select aria-label={t.penType} title={t.penType} className={selectCls} value={prefs.kind} onChange={(e) => setPrefs({ kind: e.target.value as InkKind })}>
-          {PEN_KINDS.map((k) => (
-            <option key={k} value={k}>{kindLabel[k]}</option>
-          ))}
-        </select>
+        <PenPicker kind={prefs.kind} color={color} labels={kindLabel} title={t.penType} onPick={(k) => setPrefs({ kind: k })} />
       )}
       {/* the first colours sit right on the toolbar; the rest (and "recent" + custom) are one tap away */}
       {quick.map((c) => (
