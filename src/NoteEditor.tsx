@@ -345,6 +345,20 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
   useEffect(() => {
     if (!focusMode) setPresent(false);
   }, [focusMode]);
+  // Ctrl+V a copied picture or screenshot: it lands on the page you are working on.
+  useEffect(() => {
+    const onPaste = (e: ClipboardEvent) => {
+      const el = e.target as HTMLElement | null;
+      if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT')) return;
+      const photos = Array.from(e.clipboardData?.files ?? []).filter((f) => f.type.startsWith('image/'));
+      if (photos.length === 0 || !activePage) return;
+      e.preventDefault();
+      requestAttach(activePage, 'photo', photos);
+    };
+    window.addEventListener('paste', onPaste);
+    return () => window.removeEventListener('paste', onPaste);
+  }, [activePage]);
+
   const startPresent = () => {
     setPresent(true);
     setFocusMode(true);

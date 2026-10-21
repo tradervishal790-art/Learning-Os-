@@ -25,8 +25,8 @@ function errorKey(e: unknown): string {
 
 /** The editor toolbar asks a page to add a photo / take a photo / record audio. */
 export type AttachAction = 'photo' | 'camera' | 'audio' | 'screen';
-export function requestAttach(pageId: string, action: AttachAction) {
-  window.dispatchEvent(new CustomEvent('note-attach', { detail: { pageId, action } }));
+export function requestAttach(pageId: string, action: AttachAction, files?: File[]) {
+  window.dispatchEvent(new CustomEvent('note-attach', { detail: { pageId, action, files } }));
 }
 
 export default function PageAttachments({
@@ -55,9 +55,14 @@ export default function PageAttachments({
 
   useEffect(() => {
     const onAsk = (e: Event) => {
-      const d = (e as CustomEvent<{ pageId: string; action: AttachAction }>).detail;
+      const d = (e as CustomEvent<{ pageId: string; action: AttachAction; files?: File[] }>).detail;
       if (d.pageId !== pageId) return;
-      if (d.action === 'photo') fileRef.current?.click();
+      if (d.files && d.files.length > 0) {
+        // photos dropped or pasted onto the page: add them one after the other
+        void (async () => {
+          for (const f of d.files!) await addImageRef.current(f);
+        })();
+      } else if (d.action === 'photo') fileRef.current?.click();
       else if (d.action === 'camera') camRef.current?.click();
       else if (d.action === 'screen') setCropping(true);
       else setRecording(true);
@@ -86,6 +91,9 @@ export default function PageAttachments({
       setBusy(false);
     }
   };
+
+  const addImageRef = useRef(addImage);
+  addImageRef.current = addImage;
 
   const remove = (a: PageAttachment) => {
     if (!window.confirm(t('removeConfirm'))) return;

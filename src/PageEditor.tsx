@@ -6,7 +6,7 @@ import type { InkMode, InkPrefs } from './inkPrefs';
 import { PAGE_RATIO, PAGE_UNITS, inkExtentY } from './inkEngine';
 import InkLayer from './InkLayer';
 import PageBackground from './PageBackground';
-import PageAttachments from './PageAttachments';
+import PageAttachments, { requestAttach } from './PageAttachments';
 import { isTemplateId, paperIsDark } from './pageTemplates';
 import { useAppDark } from './useAppDark';
 import './noteEditor.css';
@@ -83,6 +83,9 @@ export default function PageEditor({
 
   // The sheet's size drives the ink canvases; ink and text share one coordinate space.
   const sheet = useRef<HTMLDivElement>(null);
+  // Drag photos from the computer onto the page: it shows a drop frame, then adds them.
+  const [dropping, setDropping] = useState(false);
+  const hasFiles = (e: React.DragEvent) => Array.from(e.dataTransfer.types).includes('Files');
   const [size, setSize] = useState({ w: 0, h: 0 });
   useEffect(() => {
     const el = sheet.current;
@@ -107,10 +110,31 @@ export default function PageEditor({
     <div
       ref={sheet}
       style={{ minHeight, fontSize: `${16 * zoom}px` }}
-      className={`relative isolate p-4 rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 focus-within:border-gray-400 dark:focus-within:border-white/30 ${
-        darkPaper ? 'note-paper-dark' : ''
-      }`}
+      onDragOver={(e) => {
+        if (!hasFiles(e)) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'copy';
+        setDropping(true);
+      }}
+      onDragLeave={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDropping(false);
+      }}
+      onDrop={(e) => {
+        if (!hasFiles(e)) return;
+        e.preventDefault(); // never let the browser open the file instead
+        setDropping(false);
+        const photos = Array.from(e.dataTransfer.files).filter((f) => f.type.startsWith('image/'));
+        if (photos.length > 0) requestAttach(page.id, 'photo', photos);
+      }}
+      className={`relative isolate p-4 rounded-2xl border bg-white dark:bg-white/5 focus-within:border-gray-400 dark:focus-within:border-white/30 ${
+        dropping ? 'border-indigo-500 ring-2 ring-indigo-500/40' : 'border-gray-200 dark:border-white/10'
+      } ${darkPaper ? 'note-paper-dark' : ''}`}
     >
+      {dropping && (
+        <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center rounded-2xl bg-indigo-500/10 text-sm font-medium text-indigo-700 dark:text-indigo-200">
+          {attachLabels.dropHere ?? 'Drop photos here'}
+        </div>
+      )}
       {size.w > 0 && <PageBackground template={template} paper={page.paper} width={size.w} height={size.h} dark={appDark} />}
       <div className="relative z-10">
         <EditorContent editor={editor} />
