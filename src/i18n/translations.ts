@@ -490,6 +490,18 @@ export interface TranslationShape {
       modeHighlighter: string;
       modeLaser: string;
       eyedropper: string;
+      editColors: string;
+      basicColors: string;
+      customColors: string;
+      addCustom: string;
+      colorOk: string;
+      colorCancel: string;
+      chRed: string;
+      chGreen: string;
+      chBlue: string;
+      chHue: string;
+      chSat: string;
+      chVal: string;
       savedColors: string;
       saveColor: string;
       laserPointer: string;
@@ -1955,6 +1967,18 @@ export const translations: Record<Locale, TranslationShape> = {
         ocrSolve: "Solve maths ({0})",
         savedColors: "Saved colours",
         saveColor: "Save this colour",
+        editColors: "Edit colors",
+        basicColors: "Basic colors",
+        customColors: "Custom colors",
+        addCustom: "Add to custom colors",
+        colorOk: "OK",
+        colorCancel: "Cancel",
+        chRed: "Red",
+        chGreen: "Green",
+        chBlue: "Blue",
+        chHue: "Hue",
+        chSat: "Saturation",
+        chVal: "Brightness",
         eyedropper: "Eyedropper",
         laserPointer: "Pointer",
         laserInk: "Fading ink",
@@ -3430,6 +3454,18 @@ export const translations: Record<Locale, TranslationShape> = {
         ocrSolve: "गणित हल करें ({0})",
         savedColors: "सहेजे हुए रंग",
         saveColor: "यह रंग सहेजें",
+        editColors: "Edit colors",
+        basicColors: "Basic colors",
+        customColors: "Custom colors",
+        addCustom: "Add to custom colors",
+        colorOk: "OK",
+        colorCancel: "Cancel",
+        chRed: "Red",
+        chGreen: "Green",
+        chBlue: "Blue",
+        chHue: "Hue",
+        chSat: "Saturation",
+        chVal: "Brightness",
         eyedropper: "आईड्रॉपर",
         laserPointer: "पॉइंटर",
         laserInk: "मिटने वाली स्याही",
@@ -4904,6 +4940,18 @@ export const translations: Record<Locale, TranslationShape> = {
         ocrSolve: "Solve maths ({0})",
         savedColors: "Saved colours",
         saveColor: "Save this colour",
+        editColors: "Edit colors",
+        basicColors: "Basic colors",
+        customColors: "Custom colors",
+        addCustom: "Add to custom colors",
+        colorOk: "OK",
+        colorCancel: "Cancel",
+        chRed: "Red",
+        chGreen: "Green",
+        chBlue: "Blue",
+        chHue: "Hue",
+        chSat: "Saturation",
+        chVal: "Brightness",
         eyedropper: "Eyedropper",
         laserPointer: "Pointer",
         laserInk: "Fading ink",

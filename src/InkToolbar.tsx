@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   BringToFront, ClipboardPaste, Copy, CopyPlus, Eraser, Hand, Highlighter, Keyboard as TypeIcon, LassoSelect, PenLine, Pointer,
   Plus, Redo2, RotateCcw, Scissors, ScanText, SendToBack, Shapes, SquareDashed, Trash2, Undo2, X,
@@ -7,7 +8,7 @@ import type { InkMode, InkPrefs } from './inkPrefs';
 import { HL_COLORS, INK_COLORS, PEN_KINDS, WIDTH_PRESETS, resolveColor } from './inkEngine';
 import type { InkKind } from './notebookStore';
 import { Btn, Pop, Swatches, Sep, selectCls } from './toolbarParts';
-import ColorPicker from './ColorPicker';
+import ColorDialog from './ColorPicker';
 
 // Type | Pen | Highlighter | Eraser — plus the matching tool options.
 
@@ -109,6 +110,7 @@ export default function InkToolbar({
   select: SelectApi;
 }) {
   const t = useTranslation().notebook.ink;
+  const [colorOpen, setColorOpen] = useState(false);
   const kindLabel: Record<InkKind, string> = {
     ballpoint: t.penBallpoint, fountain: t.penFountain, felt: t.penFelt, pencil: t.penPencil, brush: t.penBrush,
     calligraphy: t.penCalligraphy, fineliner: t.penFineliner, marker: t.penMarker, dotted: t.penDotted, highlighter: t.modeHighlighter,
@@ -127,10 +129,7 @@ export default function InkToolbar({
   // Colours are the student's own saved ones (starting from a few suggestions); the colour in use always shows first.
   const saved = prefs.recentColors.length > 0 ? prefs.recentColors : palette.slice(isHl ? 0 : 1, isHl ? 4 : 6);
   const quick = [...new Set([color, ...(isHl ? [] : ['auto']), ...saved])].slice(0, isHl ? 5 : 7);
-  const saveColor = (c: string) => {
-    if (c === 'auto') return;
-    setPrefs({ recentColors: [c, ...saved.filter((x) => x !== c)].slice(0, 10) });
-  };
+
 
   const addFavorite = () =>
     setPrefs({ favorites: [...prefs.favorites, { kind: prefs.kind, color: prefs.color, width: prefs.width }].slice(0, 5) });
@@ -291,41 +290,28 @@ export default function InkToolbar({
           </span>
         </button>
       ))}
-      <Pop trigger={(toggle) => (
-        <button type="button" onClick={toggle} title={t.color} aria-label={t.color} className="h-10 sm:h-9 px-2 rounded-lg flex items-center gap-1.5 border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-500">
-          <span className="grid grid-cols-2 gap-0.5" aria-hidden>
-            {palette.slice(quick.length, quick.length + 4).map((c) => (
-              <span key={c} className="w-2.5 h-2.5 rounded-full" style={{ background: resolveColor(c, document.documentElement.classList.contains('dark')) }} />
-            ))}
-          </span>
-        </button>
-      )}>
-        <div onClick={(e) => e.stopPropagation()} className="space-y-2">
-          {!isHl && (
-            <button
-              type="button"
-              onClick={() => setColor('auto')}
-              aria-pressed={color === 'auto'}
-              className={`w-full flex items-center gap-2 px-2 h-9 rounded-lg border text-xs ${color === 'auto' ? 'border-indigo-500' : 'border-gray-200 dark:border-white/10'}`}
-            >
-              <Dot color="auto" size={16} /> {t.colorAuto}
-            </button>
-          )}
-          <ColorPicker value={color === 'auto' ? '#000000' : color} onChange={setColor} eyedropperLabel={t.eyedropper} />
-          <div className="flex items-center justify-between text-[11px] text-gray-500 dark:text-white/50">
-            <span>{t.savedColors}</span>
-            <button
-              type="button"
-              disabled={color === 'auto'}
-              onClick={() => saveColor(color)}
-              className="px-2 h-7 rounded-lg border border-gray-200 dark:border-white/10 text-xs text-gray-700 dark:text-white/80 disabled:opacity-30 hover:bg-gray-100 dark:hover:bg-white/10"
-            >
-              + {t.saveColor}
-            </button>
-          </div>
-          <Swatches colors={saved} onPick={setColor} />
-        </div>
-      </Pop>
+      {/* the "Edit colors" window: any colour, plus the student's own custom colours */}
+      <button
+        type="button"
+        onClick={() => setColorOpen(true)}
+        title={t.color}
+        aria-label={t.color}
+        className="h-9 w-9 sm:h-8 sm:w-8 shrink-0 rounded-full border border-black/15 dark:border-white/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-500"
+        style={{ background: 'conic-gradient(#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)' }}
+      />
+      {colorOpen && (
+        <ColorDialog
+          value={color === 'auto' ? '#000000' : color}
+          custom={prefs.recentColors}
+          onAddCustom={(c) => setPrefs({ recentColors: [c, ...prefs.recentColors.filter((x) => x !== c)].slice(0, 24) })}
+          onOk={(c) => {
+            setColor(c);
+            setColorOpen(false);
+          }}
+          onCancel={() => setColorOpen(false)}
+          labels={t as unknown as Record<string, string>}
+        />
+      )}
       {/* thickness is shown as the real stroke (a dot as wide as the pen), not as a number */}
       {presets.map((w) => (
         <button
