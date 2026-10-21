@@ -119,3 +119,19 @@ export async function getVersion(key: string): Promise<VersionData | null> {
     return null;
   }
 }
+
+/** Remove every version of a note (used when the note is deleted forever). */
+export async function deleteVersions(noteId: string): Promise<void> {
+  const db = await open();
+  const keys = (await listVersions(noteId)).map((v) => v.key);
+  if (keys.length === 0) return;
+  await new Promise<void>((resolve, reject) => {
+    const tx = db.transaction(['meta', 'data'], 'readwrite');
+    for (const k of keys) {
+      tx.objectStore('meta').delete(k);
+      tx.objectStore('data').delete(k);
+    }
+    tx.oncomplete = () => resolve();
+    tx.onabort = () => reject(tx.error ?? new Error('delete-failed'));
+  });
+}

@@ -1,22 +1,26 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Archive, ArchiveRestore, Check, ChevronRight, Copy, FileText, GraduationCap, Folder as FolderIcon, FolderInput,
-  FolderPlus, ListChecks, MoreVertical, Pencil, Pin, PinOff, Plus, RotateCcw, Search, Star, Tag, Trash2, X,
+  Download, FolderPlus, ListChecks, MoreVertical, Pencil, Pin, PinOff, Plus, RotateCcw, Search, Star, Tag, Trash2, TriangleAlert, Upload, X,
 } from 'lucide-react';
-import { useTranslation } from './i18n/LanguageContext';
+import { useLanguage, useTranslation } from './i18n/LanguageContext';
 import { format } from './i18n/format';
 import {
   FOLDER_COLORS, createFolder, createNote, deleteFolder, deleteNotesForever, duplicateNote,
-  hydrateNotebook, moveNotes, recolorFolder, renameFolder, renameNote, restoreNotes, restoreSnapshot,
+  getAllSnapshots, hydrateNotebook, importSnapshots, loadConflict, moveNotes, recolorFolder, renameFolder, renameNote, resolveConflict, restoreNotes, restoreSnapshot,
   searchNoteIds, setArchived, setConfidence, setExamDate, setNoteTags, setStudyStatus, snapshotIndex, toggleFavorite, togglePin, trashNotes,
-  useNotebookIndex, type NoteFolder, type NoteMeta, type NotebookIndex, type StudyStatus,
+  useNoteConflicts, useNotebookIndex, type NoteFolder, type NoteMeta, type NotebookIndex, type StudyStatus,
 } from './notebookStore';
 import { SaveChip } from './SaveChip';
+import { buildBackupJson, parseBackup } from './backup';
+import type { ConflictInfo } from './conflict';
+import { downloadBlob } from './noteExport';
 import StudyDialog from './StudyDialog';
 import { STUDY_STATUSES, examChip, examSoon, examSortKey } from './studyInfo';
 // The rich-text editor (TipTap) is the heaviest part of the notebook — load it only when a note opens.
 const NoteEditor = lazy(() => import('./NoteEditor'));
 const RevisionSheet = lazy(() => import('./RevisionSheet'));
+const ConflictDialog = lazy(() => import('./ConflictDialog'));
 
 // ============================================================
 // NoteLibrary.tsx — Notebook Part 1: the library (folders, tags, search,
@@ -102,7 +106,13 @@ function shortDate(iso: string): string {
 
 export default function NoteLibrary() {
   const t = useTranslation().notebook;
+  const { locale } = useLanguage();
   const idx = useNotebookIndex();
+  const safety = t.safety;
+  const conflictIds = useNoteConflicts();
+  const [conflictInfo, setConflictInfo] = useState<ConflictInfo | null>(null);
+  const [safetyBusy, setSafetyBusy] = useState(false);
+  const importInput = useRef<HTMLInputElement>(null);
 
   const [openId, setOpenId] = useState<string | null>(null);
   const [sheetId, setSheetId] = useState<string | null>(null);
@@ -289,6 +299,63 @@ export default function NoteLibrary() {
         ];
 
   // Message-only toast (nothing to undo).
+  // ---------- backup, import, sync conflicts (Part 10) ----------
+
+  const backupAll = async () => {
+    if (safetyBusy) return;
+    setSafetyBusy(true);
+    try {
+      const { notes, missing } = await getAllSnapshots();
+      if (notes.length === 0) {
+        flashToast(safety.backupEmpty);
+        return;
+      }
+      const day = new Date().toISOString().slice(0, 10);
+      downloadBlob(`learning-os-notes-${day}.json`, new Blob([buildBackupJson(notes)], { type: 'application/json' }));
+      flashToast(
+        format(safety.backupDone, notes.length) + (missing > 0 ? ` ${format(safety.backupSkipped, missing)}` : '') + ` ${safety.backupFiles}`
+      );
+    } catch (e) {
+      flashToast(format(safety.importFailed, e instanceof Error ? e.message : String(e)));
+    } finally {
+      setSafetyBusy(false);
+    }
+  };
+
+  const importFile = async (file: File) => {
+    setSafetyBusy(true);
+    try {
+      const parsed = parseBackup(await file.text());
+      if (!parsed.ok) {
+        flashToast(parsed.error === 'too-new' ? safety.importNew : safety.importBad);
+        return;
+      }
+      const r = await importSnapshots(parsed.notes);
+      const bad = parsed.warnings.length + r.failed;
+      flashToast(
+        format(safety.importDone, r.created, r.replaced, r.skipped) +
+          (bad > 0 ? ` ${format(safety.importWarn, bad)}` : '') +
+          (parsed.files > 0 ? ` ${safety.importFiles}` : '')
+      );
+    } catch (e) {
+      flashToast(format(safety.importFailed, e instanceof Error ? e.message : String(e)));
+    } finally {
+      setSafetyBusy(false);
+      if (importInput.current) importInput.current.value = '';
+    }
+  };
+
+  const openConflict = async (id: string) => {
+    setSafetyBusy(true);
+    try {
+      const info = await loadConflict(id);
+      if (info) setConflictInfo(info);
+      else flashToast(safety.loadError);
+    } finally {
+      setSafetyBusy(false);
+    }
+  };
+
   const flashToast = (message: string) => {
     clearTimeout(toastTimer.current);
     setToast({ message, snap: snapshotIndex() });
@@ -368,6 +435,15 @@ export default function NoteLibrary() {
 
   return (
     <div className="max-w-6xl mx-auto">
+      {conflictIds.length > 0 && (
+        <div role="alert" className="mb-3 flex flex-wrap items-center gap-3 rounded-xl border border-amber-400 bg-amber-50 p-3 text-sm text-amber-950 dark:border-amber-600 dark:bg-amber-950 dark:text-amber-50">
+          <TriangleAlert size={16} className="shrink-0" aria-hidden="true" />
+          <span className="min-w-0 flex-1">{format(safety.banner, conflictIds.length)}</span>
+          <button className={`${btnPrimary} min-h-9`} disabled={safetyBusy} onClick={() => void openConflict(conflictIds[0])}>
+            {safety.resolve}
+          </button>
+        </div>
+      )}
       {/* top bar */}
       <div className="flex flex-wrap items-center gap-2 mb-4">
         <div className="relative flex-1 min-w-0">
@@ -393,6 +469,34 @@ export default function NoteLibrary() {
           <FolderPlus size={16} className="md:mr-1" />
           <span className="hidden md:inline">{currentFolder ? t.newSubfolder : t.newFolder}</span>
         </button>
+        <button
+          className={`${btnGhost} !px-0 w-10 h-10 inline-flex items-center justify-center`}
+          onClick={() => void backupAll()}
+          disabled={safetyBusy}
+          aria-label={safety.backupTitle}
+          title={safety.backupTitle}
+        >
+          <Download size={16} />
+        </button>
+        <button
+          className={`${btnGhost} !px-0 w-10 h-10 inline-flex items-center justify-center`}
+          onClick={() => importInput.current?.click()}
+          disabled={safetyBusy}
+          aria-label={safety.importTitle}
+          title={safety.importTitle}
+        >
+          <Upload size={16} />
+        </button>
+        <input
+          ref={importInput}
+          type="file"
+          accept="application/json,.json"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) void importFile(f);
+          }}
+        />
         <button className={`${btnPrimary} hidden md:inline-block`} onClick={() => void newNote()}>
           <Plus size={14} className="inline mr-1 -mt-0.5" />
           {t.newNote}
@@ -673,6 +777,22 @@ export default function NoteLibrary() {
             </div>
           </div>
         </div>
+      )}
+
+      {conflictInfo && (
+        <Suspense fallback={null}>
+          <ConflictDialog
+            info={conflictInfo}
+            labels={safety}
+            locale={locale === 'hi' ? 'hi-IN' : 'en-IN'}
+            onCancel={() => setConflictInfo(null)}
+            onResolve={(choice) => {
+              const info = conflictInfo;
+              setConflictInfo(null);
+              void resolveConflict(info, choice).then((ok) => flashToast(ok ? safety.resolved : safety.resolveFailed));
+            }}
+          />
+        </Suspense>
       )}
 
       {/* undo toast */}

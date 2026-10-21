@@ -12,8 +12,9 @@
 //       users/{uid}/data/note_{id}       -> one document per note
 //     One document per note keeps each well under Firestore's 1 MB limit.
 //
-// Sync rule for now: newest `updatedAt` wins, per note / per folder.
-// Real conflict handling (keep both copies) is Part 10.
+// Sync rule: newest `updatedAt` wins, per note / per folder — EXCEPT when a note was edited on this
+// device AND on another device since its last successful sync (Part 10). Then neither side overwrites
+// the other: the note is "held" (kept across reloads) until the student resolves it in ConflictDialog.
 // ============================================================
 
 import { useSyncExternalStore } from 'react';
@@ -21,6 +22,10 @@ import { pullFromCloud, pushToCloudChecked, deleteFromCloud } from './cloudSync'
 import { parseLocalDate } from './studyInfo';
 import type { VideoMoment } from './videoTime';
 import { cloneAttachment } from './attachClone';
+import { planImport, type BackupNote } from './backup';
+import { hasConflict, keepBothCopy, pagesEqual, videoEqual, type ConflictChoice, type ConflictInfo } from './conflict';
+import type { NoteSnapshot } from './noteTypes';
+import { getVersion, listVersions, saveVersion, deleteVersions, type VersionData } from './noteVersions';
 
 // ---------- types ----------
 
@@ -306,6 +311,8 @@ function purgeOldTrash(idx: NotebookIndex): void {
         void idbDelete(n.id);
       });
     void deleteFromCloud(cloudNoteKey(n.id));
+    void deleteVersions(n.id).catch(() => undefined);
+    forgetSyncState(n.id);
   }
   idx.notes = idx.notes.filter((n) => !stale.includes(n));
   try {
@@ -358,6 +365,7 @@ function hashStr(str: string): string {
 
 /** Push one note to the cloud. Returns true only if EVERYTHING landed. */
 async function pushContent(content: NoteContent): Promise<boolean> {
+  if (isConflicted(content.id)) return false; // held back until the student resolves the conflict
   let ok = true;
   const main: NoteContent = {
     ...content,
@@ -388,6 +396,7 @@ async function pushContent(content: NoteContent): Promise<boolean> {
   }
   // Main doc last: anyone who sees `hasInk` can already fetch the ink doc.
   if (!(await pushToCloudChecked(cloudNoteKey(content.id), main))) ok = false;
+  if (ok) markSynced(content.id, content.updatedAt);
   return ok;
 }
 
@@ -415,7 +424,11 @@ async function pullContent(id: string): Promise<NoteContent | null> {
 
 async function pushIndex(): Promise<void> {
   indexPushTimer = undefined;
-  const ok = await pushToCloudChecked(CLOUD_INDEX_KEY, getIndex());
+  const idx = getIndex();
+  const held = readConflicts();
+  // A held note keeps its CLOUD row, so this device's row cannot make the other device's copy look outdated.
+  const out: NotebookIndex = Object.keys(held).length > 0 ? { ...idx, notes: idx.notes.map((n) => held[n.id]?.remoteMeta ?? n) } : idx;
+  const ok = await pushToCloudChecked(CLOUD_INDEX_KEY, out);
   settleStatus(ok);
 }
 
@@ -639,6 +652,8 @@ export async function deleteNotesForever(ids: string[]): Promise<void> {
     c?.pages.forEach((p) => void deleteFromCloud(cloudInkKey(id, p.id)));
     await idbDelete(id);
     void deleteFromCloud(cloudNoteKey(id));
+    await deleteVersions(id).catch(() => undefined);
+    forgetSyncState(id);
   }
 }
 
@@ -742,6 +757,306 @@ export async function searchNoteIds(query: string): Promise<Set<string>> {
   return out;
 }
 
+// ---------- whole-note snapshots, backup and import (Part 10) ----------
+
+/** The whole note (title from the index + pages with ink + linked video) as one value. null = unknown note or content unreachable. */
+export async function getNoteSnapshot(id: string): Promise<NoteSnapshot | null> {
+  const meta = getIndex().notes.find((n) => n.id === id);
+  const content = await loadNoteContent(id);
+  if (!meta || !content) return null;
+  return { id, title: meta.title, pages: content.pages, ...(content.video ? { video: content.video } : {}), updatedAt: content.updatedAt };
+}
+
+/** Every note that is not permanently deleted (trash included), with its library fields, for "Backup all notes". */
+export async function getAllSnapshots(): Promise<{ notes: BackupNote[]; missing: number }> {
+  const notes: BackupNote[] = [];
+  let missing = 0;
+  for (const m of getIndex().notes) {
+    const s = await getNoteSnapshot(m.id).catch(() => null);
+    if (!s) {
+      missing += 1;
+      continue;
+    }
+    const note: BackupNote = { ...s, tags: m.tags, pinned: m.pinned, favorite: m.favorite, archived: m.archived };
+    if (m.status) note.status = m.status;
+    if (m.confidence) note.confidence = m.confidence;
+    if (m.examDate) note.examDate = m.examDate;
+    notes.push(note);
+  }
+  return { notes, missing };
+}
+
+/**
+ * Create a note from a snapshot (import / keep-both). Photos and recordings whose files are on this device are
+ * copied, so deleting one in the new note never deletes the other's file (same rule as duplicateNote).
+ * A leftover "permanently deleted" mark for the same id is cleared so the note is not removed again by sync.
+ */
+export async function createNoteFromSnapshot(snap: BackupNote, folderId: string | null = null): Promise<NoteMeta> {
+  const t = nowIso();
+  const source: NotePage[] = snap.pages.length > 0 ? snap.pages : [{ id: newId('pg'), text: '' }];
+  const pages = await Promise.all(
+    source.map(async (p): Promise<NotePage> => {
+      if (!p.attachments?.length) return p;
+      const cloned = await Promise.all(p.attachments.map((a) => cloneAttachment(a)));
+      return { ...p, attachments: cloned.filter((a): a is NonNullable<typeof a> => a !== null) };
+    })
+  );
+  const meta: NoteMeta = {
+    id: snap.id,
+    title: snap.title,
+    folderId,
+    tags: snap.tags ?? [],
+    pinned: snap.pinned ?? false,
+    favorite: snap.favorite ?? false,
+    archived: snap.archived ?? false,
+    trashedAt: null,
+    createdAt: t,
+    updatedAt: t,
+    pageCount: pages.length,
+    preview: makePreview(pages),
+    ...(snap.status ? { status: snap.status } : {}),
+    ...(snap.confidence ? { confidence: snap.confidence } : {}),
+    ...(snap.examDate ? { examDate: snap.examDate } : {}),
+  };
+  const content: NoteContent = { id: snap.id, schemaVersion: 1, pages, updatedAt: t };
+  if (snap.video) content.video = snap.video;
+  await idbPut(snap.id, content);
+  const idx = getIndex();
+  const deleted = { ...idx.deleted };
+  delete deleted[snap.id];
+  commitIndex({ ...idx, notes: [meta, ...idx.notes.filter((n) => n.id !== snap.id)], deleted });
+  scheduleContentPush(snap.id, content);
+  return meta;
+}
+
+/** Overwrite an existing note's title, pages and video from a snapshot. The previous state is saved to history first; if that fails nothing changes. */
+export async function replaceNoteFromSnapshot(snap: NoteSnapshot): Promise<boolean> {
+  const before = await getNoteSnapshot(snap.id);
+  if (before) await saveVersion(before.id, versionData(before), 'before-restore');
+  const pages = snap.pages.length > 0 ? snap.pages : [{ id: newId('pg'), text: '' }];
+  return saveNoteContent(snap.id, snap.title, pages, snap.video ?? null);
+}
+
+function versionData(s: NoteSnapshot): VersionData {
+  return { title: s.title, pages: s.pages, ...(s.video ? { video: s.video } : {}) };
+}
+
+/**
+ * Apply a parsed backup: unknown ids are created, newer copies replace (the old state goes to history first),
+ * older or equal copies are skipped. One bad note never stops the rest.
+ */
+export async function importSnapshots(incoming: BackupNote[]): Promise<{ created: number; replaced: number; skipped: number; failed: number }> {
+  const plan = planImport(
+    getIndex().notes.map((n) => ({ id: n.id, updatedAt: n.updatedAt })),
+    incoming,
+    () => newId('note')
+  );
+  let created = 0;
+  let replaced = 0;
+  let failed = 0;
+  for (const s of plan.toCreate) {
+    try {
+      await createNoteFromSnapshot(s);
+      created += 1;
+    } catch {
+      failed += 1;
+    }
+  }
+  for (const s of plan.toReplace) {
+    try {
+      if (await replaceNoteFromSnapshot(s)) replaced += 1;
+      else failed += 1;
+    } catch {
+      failed += 1;
+    }
+  }
+  return { created, replaced, skipped: plan.skipped, failed };
+}
+
+// ---------- sync state + held conflicts (Part 10) ----------
+
+const SYNCED_KEY = 'learning_os_notebook_synced_v1';
+const CONFLICT_KEY = 'learning_os_notebook_conflicts_v1';
+
+/** A note held back from sync. `remoteMeta` = the cloud's index row, kept so our own pushes never overwrite it. */
+interface HeldConflict {
+  remoteMeta: NoteMeta;
+}
+
+function readJson<T extends object>(key: string, fallback: T): T {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return fallback;
+    const p: unknown = JSON.parse(raw);
+    return p && typeof p === 'object' && !Array.isArray(p) ? (p as T) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+/** note id -> the content `updatedAt` known to be identical on this device and in the cloud. */
+function readSynced(): Record<string, string> {
+  return readJson<Record<string, string>>(SYNCED_KEY, {});
+}
+
+function markSynced(id: string, updatedAt: string): void {
+  const m = readSynced();
+  if (m[id] === updatedAt) return;
+  m[id] = updatedAt;
+  try {
+    localStorage.setItem(SYNCED_KEY, JSON.stringify(m));
+  } catch {
+    // not critical: without a sync mark the note simply keeps the old newest-wins rule
+  }
+}
+
+function forgetSyncState(id: string): void {
+  const m = readSynced();
+  if (id in m) {
+    delete m[id];
+    try {
+      localStorage.setItem(SYNCED_KEY, JSON.stringify(m));
+    } catch {
+      // ignore
+    }
+  }
+  if (id in readConflicts()) removeConflict(id);
+}
+
+const conflictListeners = new Set<() => void>();
+let conflictIdsCache: string[] | null = null;
+
+function readConflicts(): Record<string, HeldConflict> {
+  return readJson<Record<string, HeldConflict>>(CONFLICT_KEY, {});
+}
+
+function writeConflicts(next: Record<string, HeldConflict>): void {
+  try {
+    localStorage.setItem(CONFLICT_KEY, JSON.stringify(next));
+  } catch {
+    // ignore
+  }
+  conflictIdsCache = Object.keys(next);
+  conflictListeners.forEach((l) => l());
+}
+
+function addConflict(id: string, remoteMeta: NoteMeta): void {
+  writeConflicts({ ...readConflicts(), [id]: { remoteMeta } });
+}
+
+function removeConflict(id: string): void {
+  const next = readConflicts();
+  delete next[id];
+  writeConflicts(next);
+}
+
+function isConflicted(id: string): boolean {
+  return id in readConflicts();
+}
+
+function getConflictIds(): string[] {
+  if (!conflictIdsCache) conflictIdsCache = Object.keys(readConflicts());
+  return conflictIdsCache;
+}
+
+/** Same list without React (used by tests and non-UI code). */
+export const getNoteConflictIds = getConflictIds;
+
+/** Ids of notes waiting for the student's decision (the library shows a banner while this is not empty). */
+export function useNoteConflicts(): string[] {
+  return useSyncExternalStore(
+    (cb) => {
+      conflictListeners.add(cb);
+      return () => conflictListeners.delete(cb);
+    },
+    getConflictIds,
+    getConflictIds
+  );
+}
+
+/**
+ * A note is held when, since the last sync, its content changed on this device AND in the cloud, and the two
+ * versions really differ. Already-held notes stay held. A note with no sync mark yet (first run after this update)
+ * keeps the old newest-wins rule until its first successful sync.
+ */
+async function detectConflicts(
+  localById: Map<string, NoteMeta>,
+  cloudById: Map<string, NoteMeta>,
+  deleted: Record<string, string>
+): Promise<Set<string>> {
+  const held = new Set(Object.keys(readConflicts()));
+  const synced = readSynced();
+  const candidates: string[] = [];
+  for (const [id] of localById) {
+    const c = cloudById.get(id);
+    const s = synced[id];
+    if (c && s && !deleted[id] && !held.has(id) && newer(c, { updatedAt: s })) candidates.push(id);
+  }
+  await runPool(candidates, 4, async (id) => {
+    const s = synced[id];
+    const c = cloudById.get(id);
+    const l = localById.get(id);
+    if (!c || !l) return;
+    const [localC, remoteC] = await Promise.all([idbGet(id).catch(() => null), pullContent(id)]);
+    if (!localC || !remoteC) return; // cannot compare right now: keep the old rule, try again at the next sync
+    if (!hasConflict(newer(localC, { updatedAt: s }), remoteC.updatedAt, s)) return;
+    if (l.title === c.title && pagesEqual(localC.pages, remoteC.pages) && videoEqual(localC.video, remoteC.video)) return; // same note, only timestamps differ
+    addConflict(id, c);
+    held.add(id);
+  });
+  return held;
+}
+
+/** Everything ConflictDialog needs: both versions plus (when history has one) the version from before the two devices split. */
+export async function loadConflict(id: string): Promise<ConflictInfo | null> {
+  const held = readConflicts()[id];
+  const local = await getNoteSnapshot(id);
+  const remoteC = await pullContent(id);
+  if (!held || !local || !remoteC) return null;
+  const remote: NoteSnapshot = {
+    id,
+    title: held.remoteMeta.title,
+    pages: remoteC.pages,
+    ...(remoteC.video ? { video: remoteC.video } : {}),
+    updatedAt: remoteC.updatedAt,
+  };
+  let base: NoteSnapshot | undefined;
+  const s = readSynced()[id];
+  if (s) {
+    const syncedMs = Date.parse(s);
+    const metas = await listVersions(id).catch(() => []);
+    const m = metas.find((v) => Date.parse(v.at) <= syncedMs); // newest first
+    const data = m ? await getVersion(m.key).catch(() => null) : null;
+    if (m && data) base = { id, title: data.title, pages: data.pages, ...(data.video ? { video: data.video } : {}), updatedAt: m.at };
+  }
+  return { local, remote, ...(base ? { base } : {}) };
+}
+
+/**
+ * Apply the student's decision. The hold is lifted first so the result can sync; if saving fails the hold is put back.
+ * mine -> this device's note; theirs -> the other device's note; merged -> the merged pages; both -> mine here
+ * plus the other device's version as a new note "<title> (other device)".
+ */
+export async function resolveConflict(info: ConflictInfo, choice: ConflictChoice): Promise<boolean> {
+  const id = info.local.id;
+  const held = readConflicts()[id];
+  removeConflict(id);
+  let ok: boolean;
+  try {
+    if (choice.type === 'theirs') ok = await saveNoteContent(id, info.remote.title, info.remote.pages, info.remote.video ?? null);
+    else if (choice.type === 'merged') ok = await saveNoteContent(id, info.local.title, choice.pages, choice.video ?? null);
+    else ok = await saveNoteContent(id, info.local.title, info.local.pages, info.local.video ?? null);
+    if (ok && choice.type === 'both') {
+      const copy = keepBothCopy(info.remote, () => newId('pg'));
+      await createNoteFromSnapshot({ ...copy, id: newId('note') }, getIndex().notes.find((n) => n.id === id)?.folderId ?? null);
+    }
+  } catch {
+    ok = false;
+  }
+  if (!ok && held) addConflict(id, held.remoteMeta);
+  return ok;
+}
+
 // ---------- cloud hydration + merge ----------
 
 function newer(a: { updatedAt: string }, b: { updatedAt: string }): boolean {
@@ -780,20 +1095,23 @@ export function hydrateNotebook(): Promise<void> {
         return;
       }
       const deleted = { ...(cloud.deleted ?? {}), ...local.deleted };
+      const cloudById = new Map((cloud.notes ?? []).map((n) => [n.id, n]));
+      const localById = new Map(local.notes.map((n) => [n.id, n]));
+      // Notes edited on BOTH devices since the last sync are held back: neither side overwrites the other.
+      const held = await detectConflicts(localById, cloudById, deleted);
       const merged: NotebookIndex = {
         deleted,
         folders: mergeById(local.folders, cloud.folders ?? [], deleted),
-        notes: mergeById(local.notes, cloud.notes ?? [], deleted),
+        notes: mergeById(local.notes, cloud.notes ?? [], deleted).map((n) => (held.has(n.id) ? (localById.get(n.id) ?? n) : n)),
       };
       // Anything another device permanently deleted must also leave this device.
       local.notes.filter((n) => deleted[n.id]).forEach((n) => void idbDelete(n.id));
       commitIndex(merged, { push: false });
 
-      const cloudById = new Map((cloud.notes ?? []).map((n) => [n.id, n]));
-      const localById = new Map(local.notes.map((n) => [n.id, n]));
       const toPull: string[] = [];
       const toPush: string[] = [];
       for (const n of merged.notes) {
+        if (held.has(n.id)) continue;
         const c = cloudById.get(n.id);
         const l = localById.get(n.id);
         if (c && (!l || newer(c, l))) toPull.push(n.id); // cloud is newer / new to this device
@@ -801,7 +1119,7 @@ export function hydrateNotebook(): Promise<void> {
       }
       await runPool(toPull, 4, async (id) => {
         const remote = await pullContent(id);
-        if (remote) await idbPut(id, remote).catch(() => undefined);
+        if (remote && (await idbPut(id, remote).then(() => true, () => false))) markSynced(id, remote.updatedAt);
       });
       if (toPush.length > 0 || merged.notes.length !== cloudById.size) await pushIndex();
       await pushAllContents(toPush);

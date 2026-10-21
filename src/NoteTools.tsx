@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { Copy, FileCode2, FileText, History, Printer, Share2, X } from 'lucide-react';
+import { Copy, FileCode2, FileText, FileType2, History, LoaderCircle, Printer, Share2, X } from 'lucide-react';
 import { format } from './i18n/format';
 import type { NotePage, NoteVideo } from './notebookStore';
 import { downloadBlob, fileName, hasText, noteToBackupJson, noteToHtml, noteToMarkdown, noteToText } from './noteExport';
@@ -67,6 +67,11 @@ export function ExportDialog({
 }: { title: string; pages: NotePage[]; video?: NoteVideo | null; labels: L; onClose: () => void; onMessage: (m: string) => void }) {
   const text = hasText(pages);
   const md = () => noteToMarkdown(title, pages);
+  // Handwriting can go into the printable page and the Word file (text files never carry it).
+  const hasInk = pages.some((p) => (p.ink?.length ?? 0) > 0);
+  const [withInk, setWithInk] = useState(true);
+  const inkOn = hasInk && withInk;
+  const [working, setWorking] = useState(false);
 
   const save = (ext: string, body: string, type: string) => {
     try {
@@ -81,11 +86,29 @@ export function ExportDialog({
     const w = window.open('', '_blank');
     if (!w) return onMessage(t.popupBlocked);
     w.document.open();
-    w.document.write(noteToHtml(title, pages));
+    w.document.write(noteToHtml(title, pages, { ink: inkOn }));
     w.document.close();
     w.focus();
     setTimeout(() => w.print(), 300);
     onClose();
+  };
+  const word = async () => {
+    if (working) return;
+    setWorking(true);
+    try {
+      // Loaded only now: the Word library is large and most students never use it.
+      const { exportDocx } = await import('./noteExportWord');
+      const blob = await exportDocx(title, pages, {
+        includeInk: inkOn,
+        labels: { pdfPage: t.docxPdfPage, photo: t.docxPhoto, recording: t.docxRecording },
+      });
+      downloadBlob(fileName(title, 'docx'), blob);
+      onMessage(t.exportDone);
+      onClose();
+    } catch {
+      onMessage(t.exportFail);
+      setWorking(false);
+    }
   };
   const share = async () => {
     try {
@@ -127,11 +150,27 @@ export function ExportDialog({
       <div className="space-y-2">
         <Item icon={<FileText size={18} />} name={t.expMd} hint={t.expMdHint} disabled={!text} onClick={() => save('md', md(), 'text/markdown')} />
         <Item icon={<FileText size={18} />} name={t.expTxt} hint={t.expTxtHint} disabled={!text} onClick={() => save('txt', noteToText(title, pages), 'text/plain')} />
-        <Item icon={<Printer size={18} />} name={t.expHtml} hint={t.expHtmlHint} disabled={!text} onClick={print} />
+        <Item icon={<FileType2 size={18} />} name={t.expDocx} hint={working ? t.exportWorking : t.expDocxHint} disabled={working || (!text && !inkOn)} onClick={() => void word()} />
+        <Item icon={<Printer size={18} />} name={t.expHtml} hint={t.expHtmlHint} disabled={!text && !inkOn} onClick={print} />
         <Item icon={<FileCode2 size={18} />} name={t.expJson} hint={t.expJsonHint} onClick={() => save('json', noteToBackupJson(title, pages, video), 'application/json')} />
         <Item icon={<Share2 size={18} />} name={t.share} hint={t.shareHint} disabled={!text} onClick={() => void share()} />
         <Item icon={<Copy size={18} />} name={t.copyText} hint="" disabled={!text} onClick={() => void copy()} />
       </div>
+      {hasInk && (
+        <label className="mt-3 flex min-h-11 cursor-pointer items-start gap-3 rounded-xl border border-gray-200 dark:border-white/10 px-3 py-2">
+          <input type="checkbox" checked={withInk} onChange={(e) => setWithInk(e.target.checked)} className="mt-0.5 h-5 w-5 shrink-0 accent-indigo-600" />
+          <span className="min-w-0">
+            <span className="block text-sm font-medium">{t.exportIncludeInk}</span>
+            <span className="block text-xs text-gray-500 dark:text-white/60">{t.exportIncludeInkHint}</span>
+          </span>
+        </label>
+      )}
+      {working && (
+        <p role="status" className="mt-2 flex items-center gap-2 text-xs text-gray-500 dark:text-white/60">
+          <LoaderCircle size={14} className="animate-spin" aria-hidden="true" />
+          {t.exportWorking}
+        </p>
+      )}
       <p className="mt-3 text-xs text-gray-500 dark:text-white/60">{t.exportInkNote}</p>
     </Dialog>
   );
