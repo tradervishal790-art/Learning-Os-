@@ -489,6 +489,11 @@ export interface TranslationShape {
       modePen: string;
       modeHighlighter: string;
       modeLaser: string;
+      eyedropper: string;
+      laserPointer: string;
+      laserInk: string;
+      laserDelay: string;
+      laserInkHint: string;
       ocrSolve: string;
       laserHint: string;
       modeEraser: string;
@@ -619,6 +624,8 @@ export interface TranslationShape {
       readTime: string;
       focusMode: string;
       exitFocus: string;
+      presentMode: string;
+      exitPresent: string;
       readAloud: string;
       stopReading: string;
       shortcuts: string;
@@ -1944,6 +1951,11 @@ export const translations: Record<Locale, TranslationShape> = {
         modePen: "Pen",
         modeHighlighter: "Highlighter",
         ocrSolve: "Solve maths ({0})",
+        eyedropper: "Eyedropper",
+        laserPointer: "Pointer",
+        laserInk: "Fading ink",
+        laserDelay: "Fades after",
+        laserInkHint: "Write on the page; your marks disappear by themselves. Nothing is saved.",
         modeLaser: "Laser",
         laserHint: "Drag to point. The red trail fades away, nothing is saved.",
         modeEraser: "Eraser",
@@ -2074,6 +2086,8 @@ export const translations: Record<Locale, TranslationShape> = {
         readTime: "{0} min read",
         focusMode: "Focus mode",
         exitFocus: "Exit focus mode",
+        presentMode: "Presentation mode",
+        exitPresent: "Exit presentation",
         readAloud: "Read aloud",
         stopReading: "Stop reading",
         shortcuts: "Keyboard shortcuts",
@@ -3410,6 +3424,11 @@ export const translations: Record<Locale, TranslationShape> = {
         modePen: "Pen",
         modeHighlighter: "Highlighter",
         ocrSolve: "गणित हल करें ({0})",
+        eyedropper: "आईड्रॉपर",
+        laserPointer: "पॉइंटर",
+        laserInk: "मिटने वाली स्याही",
+        laserDelay: "इतनी देर बाद मिटे",
+        laserInkHint: "पन्ने पर लिखें; निशान अपने आप मिट जाते हैं। कुछ सेव नहीं होता।",
         modeLaser: "लेज़र",
         laserHint: "इशारा करने के लिए खींचें। लाल निशान अपने आप मिट जाता है, कुछ सेव नहीं होता।",
         modeEraser: "Eraser",
@@ -3540,6 +3559,8 @@ export const translations: Record<Locale, TranslationShape> = {
         readTime: "{0} मिनट में पढ़ें",
         focusMode: "Focus mode",
         exitFocus: "Exit focus mode",
+        presentMode: "प्रस्तुति मोड",
+        exitPresent: "प्रस्तुति बंद करें",
         readAloud: "Read aloud",
         stopReading: "Stop reading",
         shortcuts: "Keyboard shortcuts",
@@ -4875,6 +4896,11 @@ export const translations: Record<Locale, TranslationShape> = {
         modePen: "Pen",
         modeHighlighter: "Highlighter",
         ocrSolve: "Solve maths ({0})",
+        eyedropper: "Eyedropper",
+        laserPointer: "Pointer",
+        laserInk: "Fading ink",
+        laserDelay: "Fades after",
+        laserInkHint: "Write on the page; your marks disappear by themselves. Nothing is saved.",
         modeLaser: "Laser",
         laserHint: "Drag to point. The red trail fades away, nothing is saved.",
         modeEraser: "Eraser",
@@ -5005,6 +5031,8 @@ export const translations: Record<Locale, TranslationShape> = {
         readTime: "{0} min read",
         focusMode: "Focus mode",
         exitFocus: "Exit focus mode",
+        presentMode: "Presentation mode",
+        exitPresent: "Exit presentation",
         readAloud: "Read aloud",
         stopReading: "Stop reading",
         shortcuts: "Keyboard shortcuts",

@@ -32,6 +32,9 @@ export interface InkPrefs {
   shapeSnap: boolean;
   /** Laser pointer dot / trail colour. */
   laserColor: string;
+  /** 'dot' = glowing pointer; 'ink' = your pen colour, vanishes after laserDelay seconds. */
+  laserStyle: 'dot' | 'ink';
+  laserDelay: number;
   favorites: PenFavorite[];
   recentColors: string[];
 }
@@ -50,6 +53,8 @@ export const DEFAULT_PREFS: InkPrefs = {
   selectShape: 'lasso',
   shapeSnap: false,
   laserColor: '#ef4444',
+  laserStyle: 'dot',
+  laserDelay: 5,
   favorites: [],
   recentColors: [],
 };

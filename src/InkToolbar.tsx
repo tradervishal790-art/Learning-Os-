@@ -7,6 +7,7 @@ import { rememberColor, type InkMode, type InkPrefs } from './inkPrefs';
 import { HL_COLORS, INK_COLORS, PEN_KINDS, WIDTH_PRESETS, resolveColor } from './inkEngine';
 import type { InkKind } from './notebookStore';
 import { Btn, Pop, Swatches, Sep, selectCls } from './toolbarParts';
+import ColorPicker from './ColorPicker';
 
 // Type | Pen | Highlighter | Eraser — plus the matching tool options.
 
@@ -176,21 +177,48 @@ export default function InkToolbar({
   }
 
   if (mode === 'laser') {
+    const ink = prefs.laserStyle === 'ink';
     return (
       <div>
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-          {['#ef4444', '#22c55e', '#3b82f6', '#f59e0b'].map((c) => (
-            <button
-              key={c}
-              type="button"
-              aria-label={c}
-              onClick={() => setPrefs({ laserColor: c })}
-              className={`h-8 w-8 rounded-full border-2 shrink-0 ${prefs.laserColor === c ? 'border-indigo-500' : 'border-transparent'}`}
-              style={{ background: c }}
-            />
-          ))}
+          <button className={chip(!ink)} onClick={() => setPrefs({ laserStyle: 'dot' })}>{t.laserPointer}</button>
+          <button className={chip(ink)} onClick={() => setPrefs({ laserStyle: 'ink' })}>{t.laserInk}</button>
+          <Sep />
+          {!ink &&
+            ['#ef4444', '#22c55e', '#3b82f6', '#f59e0b'].map((c) => (
+              <button
+                key={c}
+                type="button"
+                aria-label={c}
+                onClick={() => setPrefs({ laserColor: c })}
+                className={`h-8 w-8 rounded-full border-2 shrink-0 ${prefs.laserColor === c ? 'border-indigo-500' : 'border-transparent'}`}
+                style={{ background: c }}
+              />
+            ))}
+          {ink && (
+            <>
+              <span className="text-xs text-gray-500 dark:text-white/60 shrink-0">{t.laserDelay}</span>
+              {[2, 5, 10, 20].map((n) => (
+                <button key={n} className={chip(prefs.laserDelay === n)} onClick={() => setPrefs({ laserDelay: n })}>{n}s</button>
+              ))}
+              <Sep />
+              {INK_COLORS.slice(0, 6).map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  aria-label={c}
+                  onClick={() => setPrefs({ color: c })}
+                  className={`h-8 w-8 rounded-full border-2 shrink-0 ${prefs.color === c ? 'border-indigo-500' : 'border-black/10 dark:border-white/20'}`}
+                  style={{ background: resolveColor(c, document.documentElement.classList.contains('dark')) }}
+                />
+              ))}
+              {WIDTH_PRESETS.slice(0, 4).map((w) => (
+                <button key={w} className={chip(prefs.width === w)} onClick={() => setPrefs({ width: w })} aria-label={`${t.thickness} ${w}`}>{w}</button>
+              ))}
+            </>
+          )}
         </div>
-        <p className="text-xs text-gray-400 dark:text-white/40 pt-1">{t.laserHint}</p>
+        <p className="text-xs text-gray-400 dark:text-white/40 pt-1">{ink ? t.laserInkHint : t.laserHint}</p>
       </div>
     );
   }
@@ -264,10 +292,8 @@ export default function InkToolbar({
               <Swatches colors={prefs.recentColors} onPick={setColor} />
             </>
           )}
-          <label className="flex items-center gap-2 text-xs text-gray-600 dark:text-white/70">
-            {t.customColor}
-            <input type="color" value={color === 'auto' ? '#000000' : color} onChange={(e) => setColor(e.target.value)} className="w-8 h-8 rounded" />
-          </label>
+          <div className="text-[11px] text-gray-500 dark:text-white/50">{t.customColor}</div>
+          <ColorPicker value={color === 'auto' ? '#000000' : color} onChange={setColor} eyedropperLabel={t.eyedropper} />
         </div>
       </Pop>
       {presets.map((w) => (
