@@ -1,12 +1,15 @@
+import { useState } from 'react';
 import {
-  BringToFront, ClipboardPaste, Copy, CopyPlus, Eraser, Hand, Highlighter, Keyboard as TypeIcon, LassoSelect, PenLine,
+  BringToFront, ClipboardPaste, Copy, CopyPlus, Eraser, Hand, Highlighter, Keyboard as TypeIcon, LassoSelect, PenLine, Pointer,
   Plus, Redo2, RotateCcw, Scissors, ScanText, SendToBack, Shapes, SquareDashed, Trash2, Undo2, X,
 } from 'lucide-react';
 import { useTranslation } from './i18n/LanguageContext';
-import { rememberColor, type InkMode, type InkPrefs } from './inkPrefs';
-import { HL_COLORS, INK_COLORS, PEN_KINDS, WIDTH_PRESETS, resolveColor } from './inkEngine';
+import type { InkMode, InkPrefs } from './inkPrefs';
+import { HL_COLORS, INK_COLORS, WIDTH_PRESETS, resolveColor } from './inkEngine';
 import type { InkKind } from './notebookStore';
-import { Btn, Pop, Swatches, Sep, selectCls } from './toolbarParts';
+import { Btn, Pop, Swatches, Sep } from './toolbarParts';
+import ColorDialog from './ColorPicker';
+import PenPicker from './PenPicker';
 
 // Type | Pen | Highlighter | Eraser — plus the matching tool options.
 
@@ -18,6 +21,7 @@ export function ModeSwitch({ mode, onMode }: { mode: InkMode; onMode: (m: InkMod
     ['highlighter', t.modeHighlighter, <Highlighter size={15} key="h" />],
     ['eraser', t.modeEraser, <Eraser size={15} key="e" />],
     ['select', t.modeSelect, <LassoSelect size={15} key="s" />],
+    ['laser', t.modeLaser, <Pointer size={15} key="l" />],
   ];
   return (
     <div className="flex gap-1 mb-1.5 overflow-x-auto" role="tablist">
@@ -50,6 +54,18 @@ const chip = (on: boolean) =>
       ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white border-transparent'
       : 'border-gray-200 dark:border-white/10 text-gray-700 dark:text-white/80 hover:bg-gray-100 dark:hover:bg-white/10'
   }`;
+
+/** The pen thickness drawn as it really looks: a round dot (a flat bar for the highlighter). */
+function ThicknessDot({ width, color, hl = false }: { width: number; color: string; hl?: boolean }) {
+  const dark = document.documentElement.classList.contains('dark');
+  const d = Math.min(22, Math.max(2, width * 2));
+  return (
+    <span
+      className="inline-block shrink-0"
+      style={{ width: hl ? 22 : d, height: hl ? Math.min(20, Math.max(4, width * 2.4)) : d, borderRadius: hl ? 3 : 999, background: resolveColor(color, dark), opacity: hl ? 0.7 : 1 }}
+    />
+  );
+}
 
 function Dot({ color, size = 18 }: { color: string; size?: number }) {
   const dark = document.documentElement.classList.contains('dark');
@@ -95,23 +111,27 @@ export default function InkToolbar({
   select: SelectApi;
 }) {
   const t = useTranslation().notebook.ink;
+  const [colorOpen, setColorOpen] = useState(false);
   const kindLabel: Record<InkKind, string> = {
     ballpoint: t.penBallpoint, fountain: t.penFountain, felt: t.penFelt, pencil: t.penPencil, brush: t.penBrush,
     calligraphy: t.penCalligraphy, fineliner: t.penFineliner, marker: t.penMarker, dotted: t.penDotted, highlighter: t.modeHighlighter,
+    calligraphyBrush: t.penCalligraphyBrush, airbrush: t.penAirbrush, oil: t.penOil, crayon: t.penCrayon, natural: t.penNatural, watercolor: t.penWatercolor,
   };
 
   const isHl = mode === 'highlighter';
   const color = isHl ? prefs.hlColor : prefs.color;
   const width = isHl ? prefs.hlWidth : prefs.width;
   const setColor = (c: string) => {
-    rememberColor(c);
     setPrefs(isHl ? { hlColor: c } : { color: c });
   };
   const setWidth = (w: number) => setPrefs(isHl ? { hlWidth: w } : { width: w });
 
   const palette = isHl ? HL_COLORS : INK_COLORS;
   const presets = isHl ? [2, 3, 5, 8] : WIDTH_PRESETS;
-  const quick = palette.slice(0, isHl ? 4 : 7);
+  // Colours are the student's own saved ones (starting from a few suggestions); the colour in use always shows first.
+  const saved = prefs.recentColors.length > 0 ? prefs.recentColors : palette.slice(isHl ? 0 : 1, isHl ? 4 : 6);
+  const quick = [...new Set([color, ...(isHl ? [] : ['auto']), ...saved])].slice(0, isHl ? 5 : 7);
+
 
   const addFavorite = () =>
     setPrefs({ favorites: [...prefs.favorites, { kind: prefs.kind, color: prefs.color, width: prefs.width }].slice(0, 5) });
@@ -174,6 +194,53 @@ export default function InkToolbar({
     );
   }
 
+  if (mode === 'laser') {
+    const ink = prefs.laserStyle === 'ink';
+    return (
+      <div>
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+          <button className={chip(!ink)} onClick={() => setPrefs({ laserStyle: 'dot' })}>{t.laserPointer}</button>
+          <button className={chip(ink)} onClick={() => setPrefs({ laserStyle: 'ink' })}>{t.laserInk}</button>
+          <Sep />
+          {!ink &&
+            ['#ef4444', '#22c55e', '#3b82f6', '#f59e0b'].map((c) => (
+              <button
+                key={c}
+                type="button"
+                aria-label={c}
+                onClick={() => setPrefs({ laserColor: c })}
+                className={`h-8 w-8 rounded-full border-2 shrink-0 ${prefs.laserColor === c ? 'border-indigo-500' : 'border-transparent'}`}
+                style={{ background: c }}
+              />
+            ))}
+          {ink && (
+            <>
+              <span className="text-xs text-gray-500 dark:text-white/60 shrink-0">{t.laserDelay}</span>
+              {[2, 5, 10, 20].map((n) => (
+                <button key={n} className={chip(prefs.laserDelay === n)} onClick={() => setPrefs({ laserDelay: n })}>{n}s</button>
+              ))}
+              <Sep />
+              {INK_COLORS.slice(0, 6).map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  aria-label={c}
+                  onClick={() => setPrefs({ color: c })}
+                  className={`h-8 w-8 rounded-full border-2 shrink-0 ${prefs.color === c ? 'border-indigo-500' : 'border-black/10 dark:border-white/20'}`}
+                  style={{ background: resolveColor(c, document.documentElement.classList.contains('dark')) }}
+                />
+              ))}
+              {WIDTH_PRESETS.slice(0, 4).map((w) => (
+                <button key={w} className={chip(prefs.width === w)} onClick={() => setPrefs({ width: w })} aria-label={`${t.thickness} ${w}`}>{w}</button>
+              ))}
+            </>
+          )}
+        </div>
+        <p className="text-xs text-gray-400 dark:text-white/40 pt-1">{ink ? t.laserInkHint : t.laserHint}</p>
+      </div>
+    );
+  }
+
   if (mode === 'eraser') {
     return (
       <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
@@ -202,11 +269,7 @@ export default function InkToolbar({
       {undoRedo}
       <Sep />
       {!isHl && (
-        <select aria-label={t.penType} title={t.penType} className={selectCls} value={prefs.kind} onChange={(e) => setPrefs({ kind: e.target.value as InkKind })}>
-          {PEN_KINDS.map((k) => (
-            <option key={k} value={k}>{kindLabel[k]}</option>
-          ))}
-        </select>
+        <PenPicker kind={prefs.kind} color={color} labels={kindLabel} title={t.penType} onPick={(k) => setPrefs({ kind: k })} />
       )}
       {/* the first colours sit right on the toolbar; the rest (and "recent" + custom) are one tap away */}
       {quick.map((c) => (
@@ -225,38 +288,52 @@ export default function InkToolbar({
           </span>
         </button>
       ))}
-      <Pop trigger={(toggle) => (
-        <button type="button" onClick={toggle} title={t.color} aria-label={t.color} className="h-10 sm:h-9 px-2 rounded-lg flex items-center gap-1.5 border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-500">
-          <span className="grid grid-cols-2 gap-0.5" aria-hidden>
-            {palette.slice(quick.length, quick.length + 4).map((c) => (
-              <span key={c} className="w-2.5 h-2.5 rounded-full" style={{ background: resolveColor(c, document.documentElement.classList.contains('dark')) }} />
-            ))}
-          </span>
-        </button>
-      )}>
-        <div onClick={(e) => e.stopPropagation()} className="space-y-2">
-          <Swatches colors={palette} onPick={setColor} />
-          {!isHl && <div className="text-[11px] text-gray-400 dark:text-white/40">{t.colorAuto}</div>}
-          {prefs.recentColors.length > 0 && (
-            <>
-              <div className="text-[11px] text-gray-500 dark:text-white/50">{t.recentColors}</div>
-              <Swatches colors={prefs.recentColors} onPick={setColor} />
-            </>
-          )}
-          <label className="flex items-center gap-2 text-xs text-gray-600 dark:text-white/70">
-            {t.customColor}
-            <input type="color" value={color === 'auto' ? '#000000' : color} onChange={(e) => setColor(e.target.value)} className="w-8 h-8 rounded" />
-          </label>
-        </div>
-      </Pop>
+      {/* the "Edit colors" window: any colour, plus the student's own custom colours */}
+      <button
+        type="button"
+        onClick={() => setColorOpen(true)}
+        title={t.color}
+        aria-label={t.color}
+        className="h-9 w-9 sm:h-8 sm:w-8 shrink-0 rounded-full border border-black/15 dark:border-white/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-500"
+        style={{ background: 'conic-gradient(#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)' }}
+      />
+      {colorOpen && (
+        <ColorDialog
+          value={color === 'auto' ? '#000000' : color}
+          custom={prefs.recentColors}
+          onAddCustom={(c) => setPrefs({ recentColors: [c, ...prefs.recentColors.filter((x) => x !== c)].slice(0, 24) })}
+          onOk={(c) => {
+            setColor(c);
+            setColorOpen(false);
+          }}
+          onCancel={() => setColorOpen(false)}
+          labels={t as unknown as Record<string, string>}
+        />
+      )}
+      {/* thickness is shown as the real stroke (a dot as wide as the pen), not as a number */}
       {presets.map((w) => (
-        <button key={w} className={chip(width === w)} onClick={() => setWidth(w)} aria-label={`${t.thickness} ${w}`}>{w}</button>
+        <button
+          key={w}
+          type="button"
+          onClick={() => setWidth(w)}
+          title={`${t.thickness} ${w}`}
+          aria-label={`${t.thickness} ${w}`}
+          aria-pressed={width === w}
+          className={`h-9 w-9 sm:h-8 sm:w-8 rounded-lg border shrink-0 flex items-center justify-center transition-colors ${
+            width === w ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-500/20' : 'border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10'
+          }`}
+        >
+          <ThicknessDot width={w} color={color} hl={isHl} />
+        </button>
       ))}
       <input
         type="range" min={0.5} max={20} step={0.5} value={width}
         onChange={(e) => setWidth(Number(e.target.value))}
         aria-label={t.thickness} title={t.thickness} className="w-20 shrink-0"
       />
+      <span className="h-9 w-9 sm:h-8 sm:w-8 shrink-0 flex items-center justify-center rounded-lg bg-gray-50 dark:bg-white/5" aria-hidden>
+        <ThicknessDot width={width} color={color} hl={isHl} />
+      </span>
       {!isHl && (
         <>
           <Sep />
@@ -267,7 +344,7 @@ export default function InkToolbar({
                 onClick={() => setPrefs({ kind: f.kind, color: f.color, width: f.width })}
                 className="h-8 pl-2 pr-1 flex items-center gap-1 text-[11px] text-gray-600 dark:text-white/70"
               >
-                <Dot color={f.color} size={14} /> {f.width}
+                <Dot color={f.color} size={14} /> <ThicknessDot width={f.width} color={f.color} />
               </button>
               <button
                 aria-label={t.removeFavorite}

@@ -8,7 +8,7 @@ import type {
   PointerEvent as ReactPointerEvent,
   ReactNode,
 } from 'react';
-import { ChevronDown, ChevronUp, Clock, RotateCcw } from 'lucide-react';
+import { ChevronDown, ChevronUp, Clock, GripHorizontal, PictureInPicture2, RotateCcw } from 'lucide-react';
 import { useYouTubePlayer } from './useYouTubePlayer';
 import type { PlayerError } from './useYouTubePlayer';
 
@@ -35,6 +35,10 @@ export interface VideoNotesPaneProps {
     expand: string;
     retry: string;
     resizeHandle: string;
+    float: string;
+    dock: string;
+    opacity: string;
+    moveWindow: string;
     errors: Record<PlayerError, string>;
   };
 }
@@ -45,6 +49,17 @@ const MAX_SPLIT = 65;
 const DEFAULT_SPLIT = 45;
 const KEY_STEP = 3;
 const RATES = [0.75, 1, 1.25, 1.5, 2] as const;
+const OPACITY_KEY = 'learning_os_video_float_opacity';
+const FLOAT_W = 340;
+
+function loadOpacity(): number {
+  try {
+    const v = Number.parseFloat(window.localStorage.getItem(OPACITY_KEY) ?? '');
+    return Number.isFinite(v) ? Math.min(1, Math.max(0.25, v)) : 0.85;
+  } catch {
+    return 0.85;
+  }
+}
 
 function clampSplit(value: number): number {
   if (!Number.isFinite(value)) return DEFAULT_SPLIT;
@@ -100,6 +115,11 @@ export default function VideoNotesPane({
   const [dragging, setDragging] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [rate, setRate] = useState<number>(1);
+  // Floating window: the video leaves the split and hovers over the notes (draggable, see-through).
+  const [floating, setFloating] = useState(false);
+  const [pos, setPos] = useState<{ x: number; y: number }>(() => ({ x: Math.max(8, window.innerWidth - FLOAT_W - 16), y: 72 }));
+  const [opacity, setOpacity] = useState<number>(loadOpacity);
+  const moveRef = useRef<{ dx: number; dy: number } | null>(null);
 
   useEffect(() => {
     splitRef.current = split;
@@ -170,6 +190,32 @@ export default function VideoNotesPane({
     player.setRate(next);
   };
 
+  const onOpacity = (event: ChangeEvent<HTMLInputElement>): void => {
+    const next = Math.min(1, Math.max(0.25, Number(event.target.value)));
+    setOpacity(next);
+    try {
+      window.localStorage.setItem(OPACITY_KEY, String(next));
+    } catch {
+      /* not remembered */
+    }
+  };
+
+  const onMoveDown = (event: ReactPointerEvent<HTMLDivElement>): void => {
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    moveRef.current = { dx: event.clientX - pos.x, dy: event.clientY - pos.y };
+  };
+  const onMoveMove = (event: ReactPointerEvent<HTMLDivElement>): void => {
+    const m = moveRef.current;
+    if (!m) return;
+    const x = Math.min(window.innerWidth - 80, Math.max(-FLOAT_W + 80, event.clientX - m.dx));
+    const y = Math.min(window.innerHeight - 60, Math.max(0, event.clientY - m.dy));
+    setPos({ x, y });
+  };
+  const onMoveEnd = (): void => {
+    moveRef.current = null;
+  };
+
   const rootStyle = { '--vn-split': `${split}%` } as CSSProperties;
 
   return (
@@ -181,14 +227,35 @@ export default function VideoNotesPane({
       }`}
     >
       {/* Video column (top on small screens, left on >= 1024px) */}
-      <section className="flex min-w-0 shrink-0 grow-0 flex-col gap-2 bg-gray-50 p-2 dark:bg-white/5 min-[1024px]:basis-[var(--vn-split)] min-[1024px]:sticky min-[1024px]:top-2 min-[1024px]:self-start">
+      <section
+        style={floating ? { left: pos.x, top: pos.y, width: `min(${FLOAT_W}px, 90vw)`, opacity } : undefined}
+        className={
+          floating
+            ? 'fixed z-40 flex flex-col gap-2 rounded-xl border border-gray-300 bg-gray-50 p-2 shadow-2xl dark:border-white/20 dark:bg-neutral-900'
+            : 'flex min-w-0 shrink-0 grow-0 flex-col gap-2 bg-gray-50 p-2 dark:bg-white/5 min-[1024px]:basis-[var(--vn-split)] min-[1024px]:sticky min-[1024px]:top-2 min-[1024px]:self-start'
+        }
+      >
+        {floating && (
+          <div
+            role="presentation"
+            aria-label={labels.moveWindow}
+            title={labels.moveWindow}
+            onPointerDown={onMoveDown}
+            onPointerMove={onMoveMove}
+            onPointerUp={onMoveEnd}
+            onPointerCancel={onMoveEnd}
+            className="flex h-6 cursor-move touch-none items-center justify-center text-gray-400 dark:text-white/50"
+          >
+            <GripHorizontal size={18} aria-hidden="true" />
+          </div>
+        )}
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={() => setCollapsed((value) => !value)}
             aria-expanded={!collapsed}
             aria-controls={regionId}
-            className={`${BTN_PLAIN} min-[1024px]:hidden`}
+            className={`${BTN_PLAIN} ${floating ? 'hidden' : 'min-[1024px]:hidden'}`}
           >
             {collapsed ? <ChevronDown size={16} aria-hidden="true" /> : <ChevronUp size={16} aria-hidden="true" />}
             <span>{collapsed ? labels.expand : labels.collapse}</span>
@@ -221,6 +288,24 @@ export default function VideoNotesPane({
               ))}
             </select>
           </label>
+
+          <button
+            type="button"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => setFloating((value) => !value)}
+            aria-pressed={floating}
+            className={floating ? BTN_PRIMARY : BTN_PLAIN}
+          >
+            <PictureInPicture2 size={16} aria-hidden="true" />
+            <span>{floating ? labels.dock : labels.float}</span>
+          </button>
+
+          {floating && (
+            <label className="inline-flex items-center gap-2 text-xs text-black dark:text-white">
+              <span>{labels.opacity}</span>
+              <input type="range" min={0.25} max={1} step={0.05} value={opacity} onChange={onOpacity} className="w-20" />
+            </label>
+          )}
         </div>
 
         {/*
@@ -230,7 +315,7 @@ export default function VideoNotesPane({
         <div
           id={regionId}
           className={`relative aspect-video w-full overflow-hidden rounded-xl bg-black ${
-            collapsed ? 'invisible max-h-0 min-[1024px]:visible min-[1024px]:max-h-none' : ''
+            collapsed && !floating ? 'invisible max-h-0 min-[1024px]:visible min-[1024px]:max-h-none' : ''
           } ${dragging ? 'pointer-events-none' : ''}`}
         >
           <div ref={videoBoxRef} className="absolute inset-0 [&_iframe]:h-full [&_iframe]:w-full" />
@@ -265,7 +350,7 @@ export default function VideoNotesPane({
         onPointerCancel={endDrag}
         onLostPointerCapture={endDrag}
         onKeyDown={onSeparatorKeyDown}
-        className={`hidden w-9 shrink-0 cursor-col-resize touch-none items-center justify-center bg-gray-100 dark:bg-white/5 min-[1024px]:flex ${FOCUS}`}
+        className={`hidden w-9 shrink-0 cursor-col-resize touch-none items-center justify-center bg-gray-100 dark:bg-white/5 ${floating ? '' : 'min-[1024px]:flex'} ${FOCUS}`}
       >
         <span aria-hidden="true" className="h-12 w-1 rounded-full bg-gray-400 dark:bg-white/40" />
       </div>

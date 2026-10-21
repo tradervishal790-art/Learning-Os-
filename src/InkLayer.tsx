@@ -9,6 +9,7 @@ import {
   type Box, type Xform,
 } from './inkEdit';
 import { recognizeShape } from './inkShapes';
+import { resolveColor } from './inkEngine';
 
 // ============================================================
 // InkLayer.tsx — the handwriting surface of ONE page.
@@ -30,6 +31,7 @@ import { recognizeShape } from './inkShapes';
 type XOp = 'move' | 'nw' | 'ne' | 'se' | 'sw' | 'rot';
 
 type Gesture =
+  | { type: 'laser'; id: number; pts: { x: number; y: number; t: number; b?: boolean }[]; down: boolean; raf: number }
   | { type: 'draw'; id: number; stroke: InkStroke; anchor: [number, number]; snapped: boolean; timer?: ReturnType<typeof setTimeout> }
   | { type: 'erase'; id: number; working: InkStroke[]; last: [number, number] }
   | { type: 'pan'; id: number; lastX: number; lastY: number; scroller: HTMLElement | null; suspended: boolean }
@@ -86,6 +88,12 @@ export default function InkLayer({
   const shown = draft ?? strokes;
   const scale = width > 0 ? width / PAGE_UNITS : 1;
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+  // Stop a fading laser trail when the page goes away.
+  useEffect(() => () => {
+    const g = gesture.current;
+    if (g && g.type === 'laser') cancelAnimationFrame(g.raf);
+  }, []);
 
   // Re-draw when the app switches between light and dark ('auto' ink changes colour).
   useEffect(() => {
@@ -203,6 +211,59 @@ export default function InkLayer({
     lassoRef.current?.setAttribute('points', points.map(([x, y]) => `${x * scale},${y * scale}`).join(' '));
   };
 
+  // ---------- laser pointer: a glowing dot + trail that fades away; nothing is saved ----------
+  const laserFrame = (g: Extract<Gesture, { type: 'laser' }>) => {
+    const c = liveRef.current;
+    if (!c) return;
+    const ink = prefs.laserStyle === 'ink';
+    const life = ink ? prefs.laserDelay * 1000 : 1100; // how long a mark stays
+    const fadeLen = Math.min(life, ink ? 900 : 1100); // the last part of its life is a fade-out
+    const col = ink ? resolveColor(prefs.color, dark) : prefs.laserColor;
+    const now = performance.now();
+    g.pts = g.pts.filter((p, i) => now - p.t < life || (g.down && i === g.pts.length - 1));
+    const ctx = c.getContext('2d')!;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, c.width, c.height);
+    if (g.pts.length === 0) {
+      if (!g.down) {
+        liveOff();
+        if (gesture.current === g) gesture.current = null;
+        return;
+      }
+    } else {
+      ctx.setTransform(dpr * scale, 0, 0, dpr * scale, 0, 0);
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.strokeStyle = col;
+      ctx.shadowColor = col;
+      ctx.shadowBlur = ink ? 0 : 12;
+      for (let i = 1; i < g.pts.length; i++) {
+        const a = g.pts[i - 1];
+        const b = g.pts[i];
+        if (b.b) continue; // a new stroke starts here
+        const left = life - (now - b.t);
+        const k = ink ? Math.max(0, Math.min(1, left / fadeLen)) : Math.max(0, 1 - (now - b.t) / life);
+        ctx.globalAlpha = k;
+        ctx.lineWidth = ink ? Math.max(1, prefs.width * 1.2) : 2 + 4 * k;
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.stroke();
+      }
+      if (g.down && !ink) {
+        const head = g.pts[g.pts.length - 1];
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = col;
+        ctx.beginPath();
+        ctx.arc(head.x, head.y, 6, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      ctx.shadowBlur = 0;
+    }
+    g.raf = requestAnimationFrame(() => laserFrame(g));
+  };
+
   // ---------- pointer: drawing / erasing / lasso (on the live canvas) ----------
 
   const onDown = (e: React.PointerEvent) => {
@@ -211,9 +272,39 @@ export default function InkLayer({
       gesture.current.suspended = true;
       return;
     }
-    if (mode === 'type' || gesture.current) return;
+    {
+      const prev = gesture.current;
+      if (prev && prev.type === 'laser' && !prev.down && !(mode === 'laser' && prefs.laserStyle === 'ink')) {
+        // an old laser trail is still fading: drop it so the new tool can start
+        cancelAnimationFrame(prev.raf);
+        gesture.current = null;
+        liveOff();
+      }
+    }
+    const cur = gesture.current;
+    const fadingInk = !!cur && cur.type === 'laser' && !cur.down && mode === 'laser';
+    if (mode === 'type' || (cur && !fadingInk)) return;
     if (e.pointerType === 'mouse' && e.button !== 0 && e.button !== 5) return;
     if (e.pointerType === 'pen') lastPen.current = Date.now();
+
+    if (mode === 'laser') {
+      // a finger may point too (nothing is written, so no palm worry)
+      liveRef.current!.setPointerCapture(e.pointerId);
+      const [x, y] = toPage(e);
+      const old = gesture.current;
+      if (old && old.type === 'laser') {
+        // fading ink: a new stroke joins the marks that are still fading
+        old.id = e.pointerId;
+        old.down = true;
+        old.pts.push({ x, y, t: performance.now(), b: true });
+        return;
+      }
+      const g: Extract<Gesture, { type: 'laser' }> = { type: 'laser', id: e.pointerId, pts: [{ x, y, t: performance.now() }], down: true, raf: 0 };
+      gesture.current = g;
+      liveOn();
+      laserFrame(g);
+      return;
+    }
 
     if (e.pointerType === 'touch') {
       if (!prefs.fingerDraw) {
@@ -277,6 +368,16 @@ export default function InkLayer({
     }
     if (g.id !== e.pointerId) return;
 
+    if (g.type === 'laser') {
+      if (!g.down) return;
+      const events = e.nativeEvent.getCoalescedEvents?.() ?? [];
+      for (const ev of events.length > 0 ? events : [e.nativeEvent]) {
+        const [x, y] = toPage(ev);
+        g.pts.push({ x, y, t: performance.now() });
+      }
+      return;
+    }
+
     if (g.type === 'pan') {
       const dx = g.lastX - e.clientX;
       const dy = g.lastY - e.clientY;
@@ -332,6 +433,10 @@ export default function InkLayer({
     const g = gesture.current;
     if (!g || g.id !== e.pointerId) return;
     if (g.type === 'xform') return; // overlay finishes it
+    if (g.type === 'laser') {
+      g.down = false; // the trail fades out by itself, then the live canvas is released
+      return;
+    }
     gesture.current = null;
     if (g.type === 'pan') return;
     if (g.type === 'erase') {

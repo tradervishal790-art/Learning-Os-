@@ -489,6 +489,28 @@ export interface TranslationShape {
       modeType: string;
       modePen: string;
       modeHighlighter: string;
+      modeLaser: string;
+      eyedropper: string;
+      editColors: string;
+      basicColors: string;
+      customColors: string;
+      addCustom: string;
+      colorOk: string;
+      colorCancel: string;
+      chRed: string;
+      chGreen: string;
+      chBlue: string;
+      chHue: string;
+      chSat: string;
+      chVal: string;
+      savedColors: string;
+      saveColor: string;
+      laserPointer: string;
+      laserInk: string;
+      laserDelay: string;
+      laserInkHint: string;
+      ocrSolve: string;
+      laserHint: string;
       modeEraser: string;
       penBallpoint: string;
       penFountain: string;
@@ -496,6 +518,12 @@ export interface TranslationShape {
       penPencil: string;
       penBrush: string;
       penCalligraphy: string;
+      penCalligraphyBrush: string;
+      penAirbrush: string;
+      penOil: string;
+      penCrayon: string;
+      penNatural: string;
+      penWatercolor: string;
       penFineliner: string;
       penMarker: string;
       penDotted: string;
@@ -617,6 +645,8 @@ export interface TranslationShape {
       readTime: string;
       focusMode: string;
       exitFocus: string;
+      presentMode: string;
+      exitPresent: string;
       readAloud: string;
       stopReading: string;
       shortcuts: string;
@@ -1630,6 +1660,13 @@ export const translations: Record<Locale, TranslationShape> = {
       attach: {
         addPhoto: "Add photo",
         takePhoto: "Take photo",
+        screenCrop: "Capture from screen",
+        cropTitle: "Capture from screen",
+        cropHint: "Drag a box over the part you want to keep.",
+        cropUse: "Add to page",
+        cropWhole: "Whole screen",
+        cropCancel: "Cancel",
+        cropError: "Could not capture the screen.",
         record: "Record audio",
         addPdf: "Add PDF",
         rotate: "Rotate",
@@ -1697,6 +1734,10 @@ export const translations: Record<Locale, TranslationShape> = {
         expand: "Show video",
         retry: "Try again",
         resizeHandle: "Resize video and notes",
+        float: "Float",
+        dock: "Dock",
+        opacity: "Opacity",
+        moveWindow: "Drag to move the video",
         errNotEmbeddable: "This video cannot be played inside the app. Open it on YouTube instead.",
         errNotFound: "This video was not found. It may be private or removed.",
         errNetwork: "Could not load the video. Check your internet and try again.",
@@ -1857,6 +1898,7 @@ export const translations: Record<Locale, TranslationShape> = {
         scHl: "Highlighter",
         scEraser: "Eraser",
         scSelect: "Select",
+        scLaser: "Laser pointer",
         scUndo: "Undo",
         scRedo: "Redo",
         scSave: "Save",
@@ -1987,13 +2029,41 @@ export const translations: Record<Locale, TranslationShape> = {
         modeType: "Type",
         modePen: "Pen",
         modeHighlighter: "Highlighter",
+        ocrSolve: "Solve maths ({0})",
+        savedColors: "Saved colours",
+        saveColor: "Save this colour",
+        editColors: "Edit colors",
+        basicColors: "Basic colors",
+        customColors: "Custom colors",
+        addCustom: "Add to custom colors",
+        colorOk: "OK",
+        colorCancel: "Cancel",
+        chRed: "Red",
+        chGreen: "Green",
+        chBlue: "Blue",
+        chHue: "Hue",
+        chSat: "Saturation",
+        chVal: "Brightness",
+        eyedropper: "Eyedropper",
+        laserPointer: "Pointer",
+        laserInk: "Fading ink",
+        laserDelay: "Fades after",
+        laserInkHint: "Write on the page; your marks disappear by themselves. Nothing is saved.",
+        modeLaser: "Laser",
+        laserHint: "Drag to point. The red trail fades away, nothing is saved.",
         modeEraser: "Eraser",
         penBallpoint: "Ballpoint",
         penFountain: "Fountain pen",
         penFelt: "Felt tip",
         penPencil: "Pencil",
         penBrush: "Brush",
-        penCalligraphy: "Calligraphy",
+        penCalligraphy: "Calligraphy pen",
+        penCalligraphyBrush: "Calligraphy brush",
+        penAirbrush: "Airbrush",
+        penOil: "Oil brush",
+        penCrayon: "Crayon",
+        penNatural: "Natural pencil",
+        penWatercolor: "Watercolor brush",
         penFineliner: "Fine liner",
         penMarker: "Marker",
         penDotted: "Dotted line",
@@ -2115,6 +2185,8 @@ export const translations: Record<Locale, TranslationShape> = {
         readTime: "{0} min read",
         focusMode: "Focus mode",
         exitFocus: "Exit focus mode",
+        presentMode: "Presentation mode",
+        exitPresent: "Exit presentation",
         readAloud: "Read aloud",
         stopReading: "Stop reading",
         shortcuts: "Keyboard shortcuts",
@@ -3139,6 +3211,13 @@ export const translations: Record<Locale, TranslationShape> = {
       attach: {
         addPhoto: "Add photo",
         takePhoto: "Take photo",
+        screenCrop: "Capture from screen",
+        cropTitle: "Capture from screen",
+        cropHint: "Drag a box over the part you want to keep.",
+        cropUse: "Add to page",
+        cropWhole: "Whole screen",
+        cropCancel: "Cancel",
+        cropError: "Could not capture the screen.",
         record: "Record audio",
         addPdf: "Add PDF",
         rotate: "Rotate",
@@ -3206,6 +3285,10 @@ export const translations: Record<Locale, TranslationShape> = {
         expand: "Show video",
         retry: "Try again",
         resizeHandle: "Resize video and notes",
+        float: "फ्लोट",
+        dock: "डॉक",
+        opacity: "पारदर्शिता",
+        moveWindow: "वीडियो को खिसकाने के लिए खींचें",
         errNotEmbeddable: "यह वीडियो ऐप के अंदर नहीं चल सकता। इसे YouTube पर खोलें।",
         errNotFound: "यह वीडियो नहीं मिला। यह निजी हो सकता है या हटाया जा चुका है।",
         errNetwork: "वीडियो लोड नहीं हो सका। इंटरनेट जाँचें और पुनः प्रयास करें।",
@@ -3366,6 +3449,7 @@ export const translations: Record<Locale, TranslationShape> = {
         scHl: "Highlighter",
         scEraser: "Eraser",
         scSelect: "Select",
+        scLaser: "लेज़र पॉइंटर",
         scUndo: "Undo",
         scRedo: "Redo",
         scSave: "Save",
@@ -3496,13 +3580,41 @@ export const translations: Record<Locale, TranslationShape> = {
         modeType: "Type",
         modePen: "Pen",
         modeHighlighter: "Highlighter",
+        ocrSolve: "गणित हल करें ({0})",
+        savedColors: "सहेजे हुए रंग",
+        saveColor: "यह रंग सहेजें",
+        editColors: "Edit colors",
+        basicColors: "Basic colors",
+        customColors: "Custom colors",
+        addCustom: "Add to custom colors",
+        colorOk: "OK",
+        colorCancel: "Cancel",
+        chRed: "Red",
+        chGreen: "Green",
+        chBlue: "Blue",
+        chHue: "Hue",
+        chSat: "Saturation",
+        chVal: "Brightness",
+        eyedropper: "आईड्रॉपर",
+        laserPointer: "पॉइंटर",
+        laserInk: "मिटने वाली स्याही",
+        laserDelay: "इतनी देर बाद मिटे",
+        laserInkHint: "पन्ने पर लिखें; निशान अपने आप मिट जाते हैं। कुछ सेव नहीं होता।",
+        modeLaser: "लेज़र",
+        laserHint: "इशारा करने के लिए खींचें। लाल निशान अपने आप मिट जाता है, कुछ सेव नहीं होता।",
         modeEraser: "Eraser",
         penBallpoint: "Ballpoint",
         penFountain: "Fountain pen",
         penFelt: "Felt tip",
         penPencil: "Pencil",
         penBrush: "Brush",
-        penCalligraphy: "Calligraphy",
+        penCalligraphy: "Calligraphy pen",
+        penCalligraphyBrush: "Calligraphy brush",
+        penAirbrush: "Airbrush",
+        penOil: "Oil brush",
+        penCrayon: "Crayon",
+        penNatural: "Natural pencil",
+        penWatercolor: "Watercolor brush",
         penFineliner: "Fine liner",
         penMarker: "Marker",
         penDotted: "Dotted line",
@@ -3624,6 +3736,8 @@ export const translations: Record<Locale, TranslationShape> = {
         readTime: "{0} मिनट में पढ़ें",
         focusMode: "Focus mode",
         exitFocus: "Exit focus mode",
+        presentMode: "प्रस्तुति मोड",
+        exitPresent: "प्रस्तुति बंद करें",
         readAloud: "Read aloud",
         stopReading: "Stop reading",
         shortcuts: "Keyboard shortcuts",
@@ -4647,6 +4761,13 @@ export const translations: Record<Locale, TranslationShape> = {
       attach: {
         addPhoto: "Add photo",
         takePhoto: "Take photo",
+        screenCrop: "Capture from screen",
+        cropTitle: "Capture from screen",
+        cropHint: "Drag a box over the part you want to keep.",
+        cropUse: "Add to page",
+        cropWhole: "Whole screen",
+        cropCancel: "Cancel",
+        cropError: "Could not capture the screen.",
         record: "Record audio",
         addPdf: "Add PDF",
         rotate: "Rotate",
@@ -4714,6 +4835,10 @@ export const translations: Record<Locale, TranslationShape> = {
         expand: "Show video",
         retry: "Try again",
         resizeHandle: "Resize video and notes",
+        float: "Float",
+        dock: "Dock",
+        opacity: "Opacity",
+        moveWindow: "Drag to move the video",
         errNotEmbeddable: "This video cannot be played inside the app. Open it on YouTube instead.",
         errNotFound: "This video was not found. It may be private or removed.",
         errNetwork: "Could not load the video. Check your internet and try again.",
@@ -4874,6 +4999,7 @@ export const translations: Record<Locale, TranslationShape> = {
         scHl: "Highlighter",
         scEraser: "Eraser",
         scSelect: "Select",
+        scLaser: "Laser pointer",
         scUndo: "Undo",
         scRedo: "Redo",
         scSave: "Save",
@@ -5004,13 +5130,41 @@ export const translations: Record<Locale, TranslationShape> = {
         modeType: "Type",
         modePen: "Pen",
         modeHighlighter: "Highlighter",
+        ocrSolve: "Solve maths ({0})",
+        savedColors: "Saved colours",
+        saveColor: "Save this colour",
+        editColors: "Edit colors",
+        basicColors: "Basic colors",
+        customColors: "Custom colors",
+        addCustom: "Add to custom colors",
+        colorOk: "OK",
+        colorCancel: "Cancel",
+        chRed: "Red",
+        chGreen: "Green",
+        chBlue: "Blue",
+        chHue: "Hue",
+        chSat: "Saturation",
+        chVal: "Brightness",
+        eyedropper: "Eyedropper",
+        laserPointer: "Pointer",
+        laserInk: "Fading ink",
+        laserDelay: "Fades after",
+        laserInkHint: "Write on the page; your marks disappear by themselves. Nothing is saved.",
+        modeLaser: "Laser",
+        laserHint: "Drag to point. The red trail fades away, nothing is saved.",
         modeEraser: "Eraser",
         penBallpoint: "Ballpoint",
         penFountain: "Fountain pen",
         penFelt: "Felt tip",
         penPencil: "Pencil",
         penBrush: "Brush",
-        penCalligraphy: "Calligraphy",
+        penCalligraphy: "Calligraphy pen",
+        penCalligraphyBrush: "Calligraphy brush",
+        penAirbrush: "Airbrush",
+        penOil: "Oil brush",
+        penCrayon: "Crayon",
+        penNatural: "Natural pencil",
+        penWatercolor: "Watercolor brush",
         penFineliner: "Fine liner",
         penMarker: "Marker",
         penDotted: "Dotted line",
@@ -5132,6 +5286,8 @@ export const translations: Record<Locale, TranslationShape> = {
         readTime: "{0} min read",
         focusMode: "Focus mode",
         exitFocus: "Exit focus mode",
+        presentMode: "Presentation mode",
+        exitPresent: "Exit presentation",
         readAloud: "Read aloud",
         stopReading: "Stop reading",
         shortcuts: "Keyboard shortcuts",

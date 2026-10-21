@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Editor } from '@tiptap/react';
-import { ArrowLeft, ChevronDown, FileDown, History, Keyboard, ChevronUp, Copy, Download, Eye, EyeOff, FilePlus, HelpCircle, LayoutGrid, Maximize2, MoveHorizontal, Minimize2, Plus, RotateCcw, Sparkles, Star, Trash2, Video, VideoOff, X, ZoomIn, ZoomOut } from 'lucide-react';
+import { ArrowLeft, ChevronDown, FileDown, History, Keyboard, ChevronUp, Copy, Download, Eye, EyeOff, FilePlus, HelpCircle, LayoutGrid, Maximize2, MoveHorizontal, Minimize2, Plus, Presentation, RotateCcw, Sparkles, Star, Trash2, Video, VideoOff, X, ZoomIn, ZoomOut } from 'lucide-react';
 import { useLanguage, useTranslation } from './i18n/LanguageContext';
 import { format } from './i18n/format';
 import { loadNoteContent, saveNoteContent, getIndex, type InkStroke, type NotePage, type NoteVideo, type PageAttachment } from './notebookStore';
 import { useInkPrefs, type InkMode } from './inkPrefs';
 import InkToolbar, { ModeSwitch } from './InkToolbar';
+import QuickDock from './QuickDock';
 import InkOcrDialog, { type OcrState } from './InkOcrDialog';
 import ConfirmDialog from './ConfirmDialog';
 import PageThumbnails from './PageThumbnails';
@@ -59,6 +60,8 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
   const [pages, setPages] = useState<NotePage[]>([]);
   const [active, setActive] = useState<Editor | null>(null);
   const [focusMode, setFocusMode] = useState(false);
+  // Presentation mode: full screen, every control hidden except the slim tool dock (laser by default).
+  const [present, setPresent] = useState(false);
   const [focusNew, setFocusNew] = useState<string | null>(null);
   const [mode, setMode] = useState<InkMode>('type');
   const [prefs, setPrefs, resetPrefs] = useInkPrefs();
@@ -339,6 +342,19 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
     setMode(m);
   };
 
+  useEffect(() => {
+    if (!focusMode) setPresent(false);
+  }, [focusMode]);
+  const startPresent = () => {
+    setPresent(true);
+    setFocusMode(true);
+    chooseMode('laser');
+  };
+  const endPresent = () => {
+    setPresent(false);
+    setFocusMode(false);
+  };
+
   // Keyboard in a pen mode: Ctrl/Cmd+Z undo, +Shift+Z / +Y redo; in Select: Delete, Ctrl+C / X / V / D.
   useEffect(() => {
     if (mode === 'type') return;
@@ -414,7 +430,7 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
         e.preventDefault();
         return setDialog('shortcuts');
       }
-      const tool: Record<string, InkMode> = { t: 'type', p: 'pen', h: 'highlighter', e: 'eraser', s: 'select' };
+      const tool: Record<string, InkMode> = { t: 'type', p: 'pen', h: 'highlighter', e: 'eraser', s: 'select', l: 'laser' };
       if (tool[k]) {
         e.preventDefault();
         chooseMode(tool[k]);
@@ -889,6 +905,7 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
       : []),
     { key: 'export', label: t.polish.menuExport, icon: <FileDown size={16} />, onClick: () => setDialog('export'), divider: true },
     { key: 'versions', label: t.polish.menuVersions, icon: <History size={16} />, onClick: () => setDialog('versions') },
+    { key: 'present', label: t.editor.presentMode, icon: <Presentation size={16} />, onClick: startPresent },
     { key: 'focus', label: t.editor.focusMode, icon: <Maximize2 size={16} />, onClick: () => setFocusMode(true), divider: true },
     { key: 'keys', label: t.polish.menuShortcuts, icon: <Keyboard size={16} />, onClick: () => setDialog('shortcuts') },
   ];
@@ -900,6 +917,10 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
     expand: t.video.expand,
     retry: t.video.retry,
     resizeHandle: t.video.resizeHandle,
+    float: t.video.float,
+    dock: t.video.dock,
+    opacity: t.video.opacity,
+    moveWindow: t.video.moveWindow,
     errors: { 'not-embeddable': t.video.errNotEmbeddable, 'not-found': t.video.errNotFound, network: t.video.errNetwork, unknown: t.video.errUnknown },
   };
 
@@ -1054,7 +1075,7 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
 
   return (
     <div className={focusMode ? 'fixed inset-0 z-40 overflow-y-auto bg-[#f4f6ff] dark:bg-black p-2 sm:p-3' : 'max-w-6xl mx-auto'}>
-      {focusMode ? (
+      {present ? null : focusMode ? (
         <div className="flex items-center gap-2 mb-2">
           <input
             value={title}
@@ -1105,6 +1126,14 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
             />
           )}
           {isDesktop && <button
+            onClick={startPresent}
+            aria-label={t.editor.presentMode}
+            title={t.editor.presentMode}
+            className="h-10 w-10 sm:h-9 sm:w-9 shrink-0 rounded-lg flex items-center justify-center text-gray-700 dark:text-white/80 hover:bg-gray-100 dark:hover:bg-white/10"
+          >
+            <Presentation size={18} />
+          </button>}
+          {isDesktop && <button
             onClick={() => setFocusMode(true)}
             aria-label={t.editor.focusMode}
             title={t.editor.focusMode}
@@ -1117,7 +1146,7 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
         </div>
       )}
 
-      {isDesktop && (
+      {isDesktop && !present && (
         <div className="pb-1.5 border-b border-gray-200 dark:border-white/10 mb-2">
           <ModeSwitch mode={mode} onMode={chooseMode} />
           {mode === 'type' ? (
@@ -1232,7 +1261,7 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
           <button onClick={undoDeletePage} className="font-semibold underline">{t.undo}</button>
         </div>
       )}
-      {!isDesktop && (
+      {!isDesktop && !present && (
         <PhoneRibbon tab={phoneTab} open={ribbonOpen} aiOpen={aiOpen} onTab={pickTab} onHeight={setRibbonH}>
           {phoneTab === 'home' && <EditorToolbar editor={active} onAttach={attach} section="home" onFocusMode={() => setFocusMode((f) => !f)} />}
           {phoneTab === 'insert' && <EditorToolbar editor={active} onAttach={attach} section="insert" extra={insertTools} onFocusMode={() => setFocusMode((f) => !f)} />}
@@ -1244,6 +1273,21 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
             </>
           )}
         </PhoneRibbon>
+      )}
+      {(present || (!isDesktop && mode !== 'type')) && (
+        <QuickDock
+          mode={mode}
+          onMode={chooseMode}
+          canUndo={(hist.current[activePage ?? '']?.undo.length ?? 0) > 0}
+          canRedo={(hist.current[activePage ?? '']?.redo.length ?? 0) > 0}
+          onUndo={undoInk}
+          onRedo={redoInk}
+          onExit={present ? endPresent : undefined}
+          labels={{
+            pen: t.ink.modePen, highlighter: t.ink.modeHighlighter, eraser: t.ink.modeEraser, laser: t.ink.modeLaser,
+            select: t.ink.modeSelect, undo: t.ink.undo, redo: t.ink.redo, exit: t.editor.exitPresent,
+          }}
+        />
       )}
       <input ref={pdfInput} type="file" accept="application/pdf" hidden onChange={(e) => { void importPdf(e.target.files?.[0]); e.target.value = ''; }} />
       {aiOpen && (
