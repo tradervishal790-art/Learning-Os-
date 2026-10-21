@@ -3,7 +3,7 @@ import {
   Plus, Redo2, RotateCcw, Scissors, ScanText, SendToBack, Shapes, SquareDashed, Trash2, Undo2, X,
 } from 'lucide-react';
 import { useTranslation } from './i18n/LanguageContext';
-import { rememberColor, type InkMode, type InkPrefs } from './inkPrefs';
+import type { InkMode, InkPrefs } from './inkPrefs';
 import { HL_COLORS, INK_COLORS, PEN_KINDS, WIDTH_PRESETS, resolveColor } from './inkEngine';
 import type { InkKind } from './notebookStore';
 import { Btn, Pop, Swatches, Sep, selectCls } from './toolbarParts';
@@ -118,14 +118,19 @@ export default function InkToolbar({
   const color = isHl ? prefs.hlColor : prefs.color;
   const width = isHl ? prefs.hlWidth : prefs.width;
   const setColor = (c: string) => {
-    rememberColor(c);
     setPrefs(isHl ? { hlColor: c } : { color: c });
   };
   const setWidth = (w: number) => setPrefs(isHl ? { hlWidth: w } : { width: w });
 
   const palette = isHl ? HL_COLORS : INK_COLORS;
   const presets = isHl ? [2, 3, 5, 8] : WIDTH_PRESETS;
-  const quick = palette.slice(0, isHl ? 4 : 7);
+  // Colours are the student's own saved ones (starting from a few suggestions); the colour in use always shows first.
+  const saved = prefs.recentColors.length > 0 ? prefs.recentColors : palette.slice(isHl ? 0 : 1, isHl ? 4 : 6);
+  const quick = [...new Set([color, ...(isHl ? [] : ['auto']), ...saved])].slice(0, isHl ? 5 : 7);
+  const saveColor = (c: string) => {
+    if (c === 'auto') return;
+    setPrefs({ recentColors: [c, ...saved.filter((x) => x !== c)].slice(0, 10) });
+  };
 
   const addFavorite = () =>
     setPrefs({ favorites: [...prefs.favorites, { kind: prefs.kind, color: prefs.color, width: prefs.width }].slice(0, 5) });
@@ -296,16 +301,29 @@ export default function InkToolbar({
         </button>
       )}>
         <div onClick={(e) => e.stopPropagation()} className="space-y-2">
-          <Swatches colors={palette} onPick={setColor} />
-          {!isHl && <div className="text-[11px] text-gray-400 dark:text-white/40">{t.colorAuto}</div>}
-          {prefs.recentColors.length > 0 && (
-            <>
-              <div className="text-[11px] text-gray-500 dark:text-white/50">{t.recentColors}</div>
-              <Swatches colors={prefs.recentColors} onPick={setColor} />
-            </>
+          {!isHl && (
+            <button
+              type="button"
+              onClick={() => setColor('auto')}
+              aria-pressed={color === 'auto'}
+              className={`w-full flex items-center gap-2 px-2 h-9 rounded-lg border text-xs ${color === 'auto' ? 'border-indigo-500' : 'border-gray-200 dark:border-white/10'}`}
+            >
+              <Dot color="auto" size={16} /> {t.colorAuto}
+            </button>
           )}
-          <div className="text-[11px] text-gray-500 dark:text-white/50">{t.customColor}</div>
           <ColorPicker value={color === 'auto' ? '#000000' : color} onChange={setColor} eyedropperLabel={t.eyedropper} />
+          <div className="flex items-center justify-between text-[11px] text-gray-500 dark:text-white/50">
+            <span>{t.savedColors}</span>
+            <button
+              type="button"
+              disabled={color === 'auto'}
+              onClick={() => saveColor(color)}
+              className="px-2 h-7 rounded-lg border border-gray-200 dark:border-white/10 text-xs text-gray-700 dark:text-white/80 disabled:opacity-30 hover:bg-gray-100 dark:hover:bg-white/10"
+            >
+              + {t.saveColor}
+            </button>
+          </div>
+          <Swatches colors={saved} onPick={setColor} />
         </div>
       </Pop>
       {/* thickness is shown as the real stroke (a dot as wide as the pen), not as a number */}

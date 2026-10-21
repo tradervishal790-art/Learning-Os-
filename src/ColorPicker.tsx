@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Pipette } from 'lucide-react';
 
 // ============================================================
@@ -47,6 +47,16 @@ export default function ColorPicker({
   const barRef = useRef<HTMLDivElement>(null);
   const drag = useRef<'box' | 'bar' | null>(null);
   const Eye = (window as unknown as { EyeDropper?: EyeDropperCtor }).EyeDropper;
+
+  // The picker follows the current colour: pick a saved colour (or type a hex) and the
+  // rainbow slider + shade square jump to that colour's own range of shades.
+  useEffect(() => {
+    if (!/^#[0-9a-f]{6}$/i.test(value)) return;
+    if (value.toLowerCase() === hsvToHex(hsv)) return;
+    setHsv(hexToHsv(value));
+    setText(value.toLowerCase());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
 
   const apply = (next: Hsv) => {
     setHsv(next);

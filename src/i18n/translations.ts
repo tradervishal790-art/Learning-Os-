@@ -490,6 +490,8 @@ export interface TranslationShape {
       modeHighlighter: string;
       modeLaser: string;
       eyedropper: string;
+      savedColors: string;
+      saveColor: string;
       laserPointer: string;
       laserInk: string;
       laserDelay: string;
@@ -1951,6 +1953,8 @@ export const translations: Record<Locale, TranslationShape> = {
         modePen: "Pen",
         modeHighlighter: "Highlighter",
         ocrSolve: "Solve maths ({0})",
+        savedColors: "Saved colours",
+        saveColor: "Save this colour",
         eyedropper: "Eyedropper",
         laserPointer: "Pointer",
         laserInk: "Fading ink",
@@ -3424,6 +3428,8 @@ export const translations: Record<Locale, TranslationShape> = {
         modePen: "Pen",
         modeHighlighter: "Highlighter",
         ocrSolve: "गणित हल करें ({0})",
+        savedColors: "सहेजे हुए रंग",
+        saveColor: "यह रंग सहेजें",
         eyedropper: "आईड्रॉपर",
         laserPointer: "पॉइंटर",
         laserInk: "मिटने वाली स्याही",
@@ -4896,6 +4902,8 @@ export const translations: Record<Locale, TranslationShape> = {
         modePen: "Pen",
         modeHighlighter: "Highlighter",
         ocrSolve: "Solve maths ({0})",
+        savedColors: "Saved colours",
+        saveColor: "Save this colour",
         eyedropper: "Eyedropper",
         laserPointer: "Pointer",
         laserInk: "Fading ink",
