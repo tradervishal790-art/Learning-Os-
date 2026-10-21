@@ -217,7 +217,7 @@ Return only JSON, in this EXACT shape, no extra text or markdown backticks:
 };
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const uid = await requireUser(req, res);
+  const uid = await requireUser(req, res, { allowAnonymous: true, guestQuota: { name: 'roadmap', perDay: 2 } }); // guests get 2 free/day, then sign-up
   if (!uid) return;
 
   if (req.method !== 'POST') {
