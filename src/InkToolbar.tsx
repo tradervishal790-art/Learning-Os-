@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   BringToFront, ClipboardPaste, Copy, CopyPlus, Eraser, Hand, Highlighter, Keyboard as TypeIcon, LassoSelect, PenLine, Pointer,
   Plus, Redo2, RotateCcw, Scissors, ScanText, SendToBack, Shapes, SquareDashed, Trash2, Undo2, X,
@@ -112,6 +112,11 @@ export default function InkToolbar({
 }) {
   const t = useTranslation().notebook.ink;
   const [colorOpen, setColorOpen] = useState(false);
+  // Laser: the delay + colour options stay hidden until a laser style is tapped, then open in the same row.
+  const [laserOpts, setLaserOpts] = useState(false);
+  useEffect(() => {
+    if (mode !== 'laser') setLaserOpts(false);
+  }, [mode]);
   const kindLabel: Record<InkKind, string> = {
     ballpoint: t.penBallpoint, fountain: t.penFountain, felt: t.penFelt, pencil: t.penPencil, brush: t.penBrush,
     calligraphy: t.penCalligraphy, fineliner: t.penFineliner, marker: t.penMarker, dotted: t.penDotted, highlighter: t.modeHighlighter,
@@ -196,47 +201,53 @@ export default function InkToolbar({
 
   if (mode === 'laser') {
     const ink = prefs.laserStyle === 'ink';
+    // tapping the style that is already active just shows / hides the options; the other style switches and shows them
+    const pick = (style: 'dot' | 'ink') => {
+      setPrefs({ laserStyle: style });
+      setLaserOpts((o) => (prefs.laserStyle === style ? !o : true));
+    };
     return (
-      <div>
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-          <button className={chip(!ink)} onClick={() => setPrefs({ laserStyle: 'dot' })}>{t.laserPointer}</button>
-          <button className={chip(ink)} onClick={() => setPrefs({ laserStyle: 'ink' })}>{t.laserInk}</button>
-          <Sep />
-          <span className="text-xs text-gray-500 dark:text-white/60 shrink-0">{t.laserDelay}</span>
-          {[1, 3, 5, 10].map((n) => (
-            <button key={n} className={chip(prefs.laserDelay === n)} onClick={() => setPrefs({ laserDelay: n })}>{n}s</button>
-          ))}
-          <Sep />
-          {!ink &&
-            ['#ef4444', '#22c55e', '#3b82f6', '#f59e0b'].map((c) => (
-              <button
-                key={c}
-                type="button"
-                aria-label={c}
-                onClick={() => setPrefs({ laserColor: c })}
-                className={`h-8 w-8 rounded-full border-2 shrink-0 ${prefs.laserColor === c ? 'border-indigo-500' : 'border-transparent'}`}
-                style={{ background: c }}
-              />
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+        <button className={chip(!ink)} aria-expanded={laserOpts} title={t.laserHint} onClick={() => pick('dot')}>{t.laserPointer}</button>
+        <button className={chip(ink)} aria-expanded={laserOpts} title={t.laserInkHint} onClick={() => pick('ink')}>{t.laserInk}</button>
+        {laserOpts && (
+          <>
+            <Sep />
+            <span className="text-xs text-gray-500 dark:text-white/60 shrink-0">{t.laserDelay}</span>
+            {[1, 3, 5, 10].map((n) => (
+              <button key={n} className={chip(prefs.laserDelay === n)} onClick={() => setPrefs({ laserDelay: n })}>{n}s</button>
             ))}
-          {ink && (
-            <>
-              {INK_COLORS.slice(0, 6).map((c) => (
+            <Sep />
+            {!ink &&
+              ['#ef4444', '#22c55e', '#3b82f6', '#f59e0b'].map((c) => (
                 <button
                   key={c}
                   type="button"
                   aria-label={c}
-                  onClick={() => setPrefs({ color: c })}
-                  className={`h-8 w-8 rounded-full border-2 shrink-0 ${prefs.color === c ? 'border-indigo-500' : 'border-black/10 dark:border-white/20'}`}
-                  style={{ background: resolveColor(c, document.documentElement.classList.contains('dark')) }}
+                  onClick={() => setPrefs({ laserColor: c })}
+                  className={`h-8 w-8 rounded-full border-2 shrink-0 ${prefs.laserColor === c ? 'border-indigo-500' : 'border-transparent'}`}
+                  style={{ background: c }}
                 />
               ))}
-              {WIDTH_PRESETS.slice(0, 4).map((w) => (
-                <button key={w} className={chip(prefs.width === w)} onClick={() => setPrefs({ width: w })} aria-label={`${t.thickness} ${w}`}>{w}</button>
-              ))}
-            </>
-          )}
-        </div>
-        <p className="text-xs text-gray-400 dark:text-white/40 pt-1">{ink ? t.laserInkHint : t.laserHint}</p>
+            {ink && (
+              <>
+                {INK_COLORS.slice(0, 6).map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    aria-label={c}
+                    onClick={() => setPrefs({ color: c })}
+                    className={`h-8 w-8 rounded-full border-2 shrink-0 ${prefs.color === c ? 'border-indigo-500' : 'border-black/10 dark:border-white/20'}`}
+                    style={{ background: resolveColor(c, document.documentElement.classList.contains('dark')) }}
+                  />
+                ))}
+                {WIDTH_PRESETS.slice(0, 4).map((w) => (
+                  <button key={w} className={chip(prefs.width === w)} onClick={() => setPrefs({ width: w })} aria-label={`${t.thickness} ${w}`}>{w}</button>
+                ))}
+              </>
+            )}
+          </>
+        )}
       </div>
     );
   }
