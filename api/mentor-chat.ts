@@ -37,7 +37,7 @@ Format:
 - Maximum 120 words unless the student asks for detail. Finish every sentence.
 - Short lines. At most 4 bullets or steps. Use **bold** only for key terms. No headings.
 - Explain with one simple real-world analogy when it helps.
-- End with one clear next step.
+- End with one clear next step about what the student just asked (for example one related thing to try). Do not steer them back to their goals, deadline or other subjects unless they asked about them.
 
 Scope and safety:
 - You are a study mentor. You cannot open links, play or embed videos, or browse the web, so never claim to, and never invent video titles, links or channel names.
@@ -84,7 +84,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       minimaxApiKey,
       systemInstruction: withCards ? `${baseInstruction}\n\n${MENTOR_UI_PROMPT}` : baseInstruction,
       contents,
-      generationConfig: { maxOutputTokens: 1024, temperature: 0.7 },
+      // Thinking is off and the cap is 2048: with thinking on, 1024 tokens were being used up before the answer was finished.
+      generationConfig: { maxOutputTokens: 2048, temperature: 0.7, thinkingConfig: { thinkingBudget: 0 } },
     });
 
   try {
@@ -102,6 +103,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         ({ text, finishReason } = await callModel(false));
       }
     }
+
+    // A reply that ends on a full stop was not really cut off — don't tell the student it was.
+    if (finishReason === 'MAX_TOKENS' && /[.!?।)"'”’\]]\s*$/.test(text)) finishReason = 'STOP';
 
     return res.status(200).json({ text, finishReason: finishReason ?? null, ui });
   } catch (err: any) {

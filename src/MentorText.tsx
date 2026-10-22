@@ -1,14 +1,17 @@
-// Renders mentor replies: **bold**, *italic*, # headings, - / * bullets, 1. lists.
+// Renders mentor replies: **bold**, *italic*, _italic_, # headings, - / * bullets, 1. lists.
 // Small on purpose (same subset as Notes) — no markdown dependency.
 import type { ReactNode } from 'react';
 
 function inline(text: string, key: string): ReactNode[] {
-  const parts = text.split(/(\*\*[^*]+\*\*|\*[^*\s][^*]*\*)/g);
+  const parts = text.split(/(\*\*[^*]+\*\*|\*[^*\s][^*]*\*|(?<!\w)_[^_\n]+_(?!\w))/g);
   return parts.map((part, i) => {
     if (part.startsWith('**') && part.endsWith('**') && part.length > 4) {
       return <strong key={`${key}-${i}`}>{part.slice(2, -2)}</strong>;
     }
     if (part.startsWith('*') && part.endsWith('*') && part.length > 2) {
+      return <em key={`${key}-${i}`}>{part.slice(1, -1)}</em>;
+    }
+    if (part.startsWith('_') && part.endsWith('_') && part.length > 2) {
       return <em key={`${key}-${i}`}>{part.slice(1, -1)}</em>;
     }
     return <span key={`${key}-${i}`}>{part}</span>;

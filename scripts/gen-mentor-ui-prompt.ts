@@ -5,27 +5,29 @@ import { writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { mentorLibrary } from '../src/mentorUi/library';
 
-const preamble = `VISUAL CARDS (optional)
-Most replies stay plain text, exactly as described above. Use cards ONLY when they clearly help the student:
-a quiz or practice questions, flashcards, a step-by-step plan or procedure, or a comparison of real numbers.
-If you use cards, reply with ONLY the card program below: no text before or after it, no code fences, no explanations about the format.
+const preamble = `VISUAL CARDS
+Use cards in these cases:
+1. CONCEPT QUESTIONS: the student asks what something is, how it works, or to explain a topic or concept (for example "what is photosynthesis", "explain recursion"). Reply with: a TextBlock (one or two simple sentences, at most one analogy), then a KeyPoints card (3 to 5 short points), then ONE Quiz question that checks understanding.
+2. The student asks for a quiz, flashcards, a step-by-step plan or procedure, or a comparison of real numbers: use Quiz, FlashcardDeck, StepList or BarChart.
+Everything else (greetings, opinions, advice, follow-ups, short factual answers) stays plain text exactly as described above.
+When you use cards, reply with ONLY the card program below: no text before or after it, no code fences, no explanations about the format.
 Every string inside the cards must be in the reply language above, short and complete. Keep all the tone and safety rules above.`;
 
 const additionalRules = [
   'Only the components listed above exist. There are no tables, forms, buttons, images or links.',
-  'Start with TextBlock (one or two sentences) and then add the cards. Maximum 6 items inside root.',
+  'Start with TextBlock (one or two sentences), then the cards. Maximum 6 items inside root.',
   'Quiz: exactly one correct option, answerIndex is 0-based, the explanation must be factually correct. Never invent facts to fill a quiz.',
-  'BarChart: use only numbers the student gave or that are widely known. Otherwise use StepList or plain text.',
-  'If the question does not need cards, ignore this section and answer in plain text.',
+  'BarChart: use only numbers the student gave or that are widely known. Otherwise use KeyPoints, StepList or plain text.',
+  'Inside cards, never mention the student\'s goals, deadlines or other subjects unless the question is about them.',
 ];
 
 const examples = [
-  `root = Stack([intro, q1, q2])
-intro = TextBlock("Here is a quick 2-question check on **photosynthesis**.")
-q1 = Quiz("Which gas do plants take in for photosynthesis?", ["Oxygen", "Carbon dioxide", "Nitrogen"], 1, "Plants absorb carbon dioxide through their leaves.")
-q2 = Quiz("Where does photosynthesis mainly happen?", ["Roots", "Chloroplasts", "Stem"], 1, "Chloroplasts hold the chlorophyll that captures light.")`,
+  `root = Stack([intro, points, q])
+intro = TextBlock("**Photosynthesis** is how green plants turn sunlight, water and carbon dioxide into food. Think of a leaf as a tiny solar-powered kitchen.")
+points = KeyPoints("Key points", ["Happens in the chloroplasts of leaves.", "Inputs: sunlight, water, carbon dioxide.", "Outputs: glucose (food) and oxygen.", "Chlorophyll is the green pigment that captures light."])
+q = Quiz("Which gas do plants release during photosynthesis?", ["Oxygen", "Carbon dioxide", "Nitrogen"], 0, "Plants release oxygen as a by-product when water is split.")`,
   `root = Stack([intro, deck])
-intro = TextBlock("Four flashcards to revise **Newton's laws**. Tap a card to flip it.")
+intro = TextBlock("Three flashcards to revise **Newton's laws**. Tap a card to flip it.")
 deck = FlashcardDeck([{front: "First law", back: "An object stays at rest or in uniform motion unless a net force acts on it."}, {front: "Second law", back: "Force = mass x acceleration."}, {front: "Third law", back: "Every action has an equal and opposite reaction."}])`,
   `root = Stack([intro, plan])
 intro = TextBlock("A simple way to solve any **quadratic equation**.")

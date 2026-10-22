@@ -3,8 +3,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { loadTs } from './helpers.mjs';
 
-const GOOD = `root = Stack([intro, q, deck, steps, chart])
+const GOOD = `root = Stack([intro, kp, q, deck, steps, chart])
 intro = TextBlock("Quick revision of **photosynthesis**.")
+kp = KeyPoints("Key points", ["Happens in leaves.", "Makes glucose and oxygen."])
 q = Quiz("Which gas do plants absorb?", ["Oxygen", "Carbon dioxide"], 1, "Plants take in CO2.")
 deck = FlashcardDeck([{front: "Chlorophyll", back: "Green pigment that captures light"}, {front: "Stomata", back: "Tiny pores for gas exchange"}])
 steps = StepList("How it works", ["Light is absorbed.", "Water is split.", "Sugar is made."])
@@ -38,7 +39,7 @@ test('prompt file is in sync with the library (run npm run gen:mentor-ui if this
   const gen = await loadTs('api/_lib/mentorUiPrompt.ts');
   assert.equal(JSON.stringify(gen.MENTOR_UI_SCHEMA), JSON.stringify(mentorLibrary.toJSONSchema()));
   assert.equal(gen.MENTOR_UI_ROOT, mentorLibrary.root);
-  for (const name of ['Stack', 'TextBlock', 'StepList', 'Quiz', 'FlashcardDeck', 'BarChart']) {
+  for (const name of ['Stack', 'TextBlock', 'KeyPoints', 'StepList', 'Quiz', 'FlashcardDeck', 'BarChart']) {
     assert.ok(gen.MENTOR_UI_PROMPT.includes(name + '('), name);
   }
 });
@@ -46,7 +47,7 @@ test('prompt file is in sync with the library (run npm run gen:mentor-ui if this
 test('render: every card type shows its content', async () => {
   const { renderCards } = await loadTs('tests/fixtures/mentorCardsHarness.tsx');
   const html = renderCards(GOOD);
-  for (const s of ['photosynthesis', 'Which gas do plants absorb?', 'Carbon dioxide', 'Chlorophyll', 'How it works', 'Light is absorbed.', 'Marks', 'Test 2']) {
+  for (const s of ['photosynthesis', 'Which gas do plants absorb?', 'Carbon dioxide', 'Chlorophyll', 'Key points', 'Makes glucose and oxygen.', 'How it works', 'Light is absorbed.', 'Marks', 'Test 2']) {
     assert.ok(html.includes(s), `missing: ${s}`);
   }
   assert.ok(!html.includes('Plants take in CO2'), 'quiz explanation stays hidden until an answer is picked');
@@ -136,4 +137,34 @@ test('handler: a cut-off card program (MAX_TOKENS) is not shown as cards', async
   const { json } = await callHandler(h, { richUi: true });
   assert.equal(json.ui, false);
   assert.equal(json.text, 'Short plain answer.');
+});
+
+test('handler: a complete reply flagged MAX_TOKENS is not reported as cut off; a real cut-off still is', async () => {
+  let h = await loadHandler([{ text: 'Photosynthesis makes food for plants.', finishReason: 'MAX_TOKENS' }]);
+  let r = await callHandler(h, {});
+  assert.equal(r.json.finishReason, 'STOP');
+  h = await loadHandler([{ text: 'Photosynthesis makes food for', finishReason: 'MAX_TOKENS' }]);
+  r = await callHandler(h, {});
+  assert.equal(r.json.finishReason, 'MAX_TOKENS');
+});
+
+test('handler: prompt tells the AI not to push the goal; thinking is off with 2048 headroom', async () => {
+  const h = await loadHandler([{ text: 'ok.' }]);
+  await callHandler(h, { studentContext: { goals: [{ title: 'Learn video editing' }] } });
+  const sys = globalThis.__calls[0];
+  assert.ok(sys.includes('Do not mention their goals'));
+  assert.ok(sys.includes('about what the student just asked'));
+});
+
+test('prompt: concept questions get text + key points + one quiz', async () => {
+  const { MENTOR_UI_PROMPT } = await loadTs('api/_lib/mentorUiPrompt.ts');
+  assert.ok(MENTOR_UI_PROMPT.includes('CONCEPT QUESTIONS'));
+  assert.ok(MENTOR_UI_PROMPT.includes('KeyPoints'));
+});
+
+test('MentorText: _italic_ renders, snake_case words stay as they are', async () => {
+  const { renderMentorText } = await loadTs('tests/fixtures/mentorTextHarness.tsx');
+  const html = renderMentorText('_( cut off )_ and my_var_name stays');
+  assert.ok(html.includes('<em>( cut off )</em>'), html);
+  assert.ok(html.includes('my_var_name'), html);
 });

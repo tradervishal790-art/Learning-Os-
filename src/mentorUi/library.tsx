@@ -29,6 +29,30 @@ const TextBlock = defineComponent({
   ),
 });
 
+const KeyPoints = defineComponent({
+  name: 'KeyPoints',
+  description: 'A short bulleted list of the key points to remember. 3 to 5 points, one short sentence each.',
+  props: z.object({
+    title: z.string().max(60).describe('Short heading, e.g. Key points'),
+    points: z.array(z.string().max(160)).min(2).max(6),
+  }),
+  component: ({ props }) => (
+    <div className="rounded-xl border-l-4 border-indigo-600 bg-indigo-600/5 dark:bg-white/5 p-3">
+      <div className="text-xs font-bold mb-2 opacity-70">{props.title}</div>
+      <ul className="space-y-1.5">
+        {props.points.map((s, i) => (
+          <li key={i} className="flex gap-2 text-sm leading-relaxed">
+            <span aria-hidden="true" className="mt-0.5">•</span>
+            <span>
+              <Bold text={s} />
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  ),
+});
+
 const StepList = defineComponent({
   name: 'StepList',
   description: 'A numbered list of steps or a short plan. 2 to 6 short steps, one sentence each.',
@@ -192,12 +216,12 @@ const Stack = defineComponent({
   name: 'Stack',
   description: 'Vertical container. The root of every reply. Children are shown top to bottom.',
   props: z.object({
-    children: z.array(z.union([TextBlock.ref, StepList.ref, Quiz.ref, FlashcardDeck.ref, BarChart.ref])).min(1).max(8),
+    children: z.array(z.union([TextBlock.ref, KeyPoints.ref, StepList.ref, Quiz.ref, FlashcardDeck.ref, BarChart.ref])).min(1).max(8),
   }),
   component: ({ props, renderNode }) => <div className="space-y-3">{renderNode(props.children)}</div>,
 });
 
 export const mentorLibrary = createLibrary({
-  components: [Stack, TextBlock, StepList, Quiz, FlashcardDeck, BarChart],
+  components: [Stack, TextBlock, KeyPoints, StepList, Quiz, FlashcardDeck, BarChart],
   root: 'Stack',
 });

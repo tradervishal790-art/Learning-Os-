@@ -86,7 +86,7 @@ ${lines.join('\n')}
 How to use it:
 - Adapt your explanation style, pacing and tone to the context above, silently. "Study temperament" shapes HOW you answer (length, structure, how you encourage), not what you say.
 - Never tell the student that you have a "profile", "score" or personality result on them, and never label them with a personality type.
-- Only bring up their current topic or weak topics when it helps answer what they asked; do not force them into every reply.
+- Do not mention their goals, deadline, current topic or weak topics unless the question is about them. A question about a different subject is answered on its own terms, with no reference to their goal.
 - If the student's question is clearly about something else, answer that and ignore the context.`;
 }
 
