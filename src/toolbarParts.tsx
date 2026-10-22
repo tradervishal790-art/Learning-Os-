@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { Check } from 'lucide-react';
 
 // Small building blocks shared by the typing toolbar and the pen toolbar.
@@ -92,10 +92,17 @@ export function TaperStrip({
   label: string;
   className?: string;
 }) {
+  // onCommit only after the value really moved (a plain tap or a Tab key-up must not fire it)
+  const dirty = useRef(false);
+  const commit = (v: number) => {
+    if (!dirty.current) return;
+    dirty.current = false;
+    onCommit?.(v);
+  };
   const pct = max > min ? Math.min(100, Math.max(0, ((value - min) / (max - min)) * 100)) : 0;
   return (
     <div
-      className={`relative h-10 sm:h-8 shrink-0 ${className}`}
+      className={`relative h-10 sm:h-8 shrink-0 rounded-lg has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-indigo-500 ${className}`}
       title={`${label} ${value}`}
       // inside a popup: dragging must not count as "click outside"
       onClick={(e) => e.stopPropagation()}
@@ -116,10 +123,13 @@ export function TaperStrip({
         step={step}
         value={value}
         aria-label={label}
-        onChange={(e) => onChange(Number(e.target.value))}
-        onPointerUp={(e) => onCommit?.(Number(e.currentTarget.value))}
-        onKeyUp={(e) => onCommit?.(Number(e.currentTarget.value))}
-        className="absolute inset-0 h-full w-full cursor-pointer touch-none appearance-none bg-transparent opacity-0 focus-visible:opacity-100 [&::-webkit-slider-runnable-track]:bg-transparent [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:appearance-none [&::-moz-range-thumb]:h-3.5 [&::-moz-range-thumb]:w-3.5 [&::-moz-range-thumb]:border-0"
+        onChange={(e) => {
+          dirty.current = true;
+          onChange(Number(e.target.value));
+        }}
+        onPointerUp={(e) => commit(Number(e.currentTarget.value))}
+        onKeyUp={(e) => commit(Number(e.currentTarget.value))}
+        className="absolute inset-0 h-full w-full cursor-pointer touch-none appearance-none bg-transparent opacity-0 [&::-webkit-slider-runnable-track]:bg-transparent [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:appearance-none [&::-moz-range-thumb]:h-3.5 [&::-moz-range-thumb]:w-3.5 [&::-moz-range-thumb]:border-0"
       />
     </div>
   );
