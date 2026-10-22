@@ -256,12 +256,12 @@ export default function InkLayer({
         path();
         ctx.stroke();
       } else {
-        // a glowing beam: a soft coloured halo, then a solid core
+        // a thin glowing pen line (round tip, same width as the trail, no big dot): soft halo, then a solid core
         ctx.globalAlpha = alpha * 0.35;
         ctx.strokeStyle = col;
         ctx.shadowColor = col;
-        ctx.shadowBlur = 16 * dpr;
-        ctx.lineWidth = 9 * px;
+        ctx.shadowBlur = 10 * dpr;
+        ctx.lineWidth = 7 * px;
         path();
         ctx.stroke();
         ctx.shadowBlur = 0;
@@ -269,20 +269,6 @@ export default function InkLayer({
         ctx.lineWidth = 3.6 * px;
         path();
         ctx.stroke();
-      }
-    }
-    if (g.down && !ink) {
-      const last = g.strokes[g.strokes.length - 1];
-      const head = last?.pts[last.pts.length - 1];
-      if (head) {
-        ctx.globalAlpha = 1;
-        ctx.shadowColor = col;
-        ctx.shadowBlur = 20 * dpr;
-        ctx.fillStyle = col;
-        ctx.beginPath();
-        ctx.arc(head.x, head.y, 8 * px, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.shadowBlur = 0;
       }
     }
     ctx.globalAlpha = 1;
