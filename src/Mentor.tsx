@@ -234,13 +234,10 @@ export default function Mentor() {
   };
 
   return (
-    <div className="min-h-dvh text-black dark:text-white flex flex-col p-4 md:p-8">
-      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-4 md:mb-6 flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="text-2xl md:text-4xl font-bold mb-1 md:mb-2">{t.mentor.header.title}</h1>
-          <p className="hidden md:block text-gray-500 dark:text-white/60">{t.mentor.header.subtitle}</p>
-        </div>
-        <div className="flex-shrink-0 flex gap-2">
+    <div className="min-h-dvh text-black dark:text-white flex flex-col px-4 pt-2 md:px-8 md:pt-3 md:pb-4">
+      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-2 max-w-4xl mx-auto w-full flex justify-end">
+        <h1 className="sr-only">{t.mentor.header.title}</h1>
+        <div className="flex gap-2">
           <button
             onClick={openHistory}
             aria-label={t.mentor.history}
@@ -339,7 +336,7 @@ export default function Mentor() {
 
       {/* Chat area */}
       <div className="flex-1 max-w-4xl mx-auto w-full md:bg-gray-50 md:dark:bg-white/5 md:border md:border-gray-200 md:dark:border-white/10 md:rounded-2xl flex flex-col md:overflow-hidden">
-        <div className="flex-1 md:overflow-y-auto md:p-6 space-y-3 md:space-y-4 md:max-h-[60vh]">
+        <div className="flex-1 md:overflow-y-auto md:p-6 space-y-3 md:space-y-4 md:h-[calc(100dvh-17rem)]">
           <AnimatePresence>
             {messages.map((msg) => (
               <motion.div
