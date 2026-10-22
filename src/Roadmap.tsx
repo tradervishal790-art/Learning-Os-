@@ -8,7 +8,7 @@ import { MAX_ACTIVE_GOALS } from './goalsStore';
 import type { Topic, Video, UserOnboardingData, Goal, TopicBridge } from './types';
 import { buildCandidatePoolForConcept } from './conceptVideoPool';
 import { selectPlaylistForConceptV2, analyzedVideoToVideo, getLastTeacherForConcept } from './PlaylistBuilder';
-import { getLearningProfile } from './learningProfileStore';
+import { getLearningProfileOrNeutral } from './learningProfileStore';
 import { expandSearchQuery } from './queryExpander';
 import DeepDiveChat from './DeepDiveChat';
 import HintBubble from './HintBubble';
@@ -68,6 +68,8 @@ interface RoadmapProps {
    *  missing API key, Gemini quota, bad JSON) — shown under the form so the
    *  cause is visible instead of a generic "something went wrong". */
   lastRoadmapError?: string | null;
+  /** A roadmap is being built in the background — show a spinner instead of the empty-state form. */
+  roadmapGenerating?: boolean;
   /** Up to MAX_ACTIVE_GOALS goals can run simultaneously — each with its
    *  own roadmap, switched between via the tab strip below the header. */
   goals: Goal[];
@@ -83,6 +85,7 @@ export default function Roadmap({
   onOpenSavedVideo,
   onGenerateForSubject,
   lastRoadmapError,
+  roadmapGenerating,
   goals,
   activeGoalId,
   onAddGoal,
@@ -274,11 +277,8 @@ export default function Roadmap({
   const handleWatchVideos = async () => {
     if (!selectedTopic) return;
 
-    const learnerProfile = getLearningProfile();
-    if (!learnerProfile) {
-      setPlaylistError('Complete the Learning Style Quiz first.');
-      return;
-    }
+    // No quiz yet? Don't block — fall back to a neutral profile (not saved).
+    const learnerProfile = getLearningProfileOrNeutral();
 
     setPlaylistError('');
     setPlaylistLoading(true);
@@ -537,7 +537,14 @@ export default function Roadmap({
           </div>
         )}
 
-        {hasNoRoadmap && activeGoalId && onGenerateForSubject && (
+        {hasNoRoadmap && activeGoalId && roadmapGenerating && (
+          <div className="mt-4 pt-4 border-t border-gray-100 dark:border-white/10 flex items-center justify-center gap-3 py-6 text-sm text-gray-500 dark:text-white/50">
+            <span className="inline-block w-4 h-4 rounded-full border-2 border-gray-300 dark:border-white/20 border-t-indigo-600 dark:border-t-white animate-spin" />
+            {t.roadmap.generateForm.generatingCta}
+          </div>
+        )}
+
+        {hasNoRoadmap && activeGoalId && !roadmapGenerating && onGenerateForSubject && (
           <div className="mt-4 pt-4 border-t border-gray-100 dark:border-white/10">
             <label className="block text-sm font-semibold mb-2">{t.roadmap.generateForm.label}</label>
             <div className="flex flex-col sm:flex-row gap-3">

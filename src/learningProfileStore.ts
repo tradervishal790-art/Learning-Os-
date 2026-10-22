@@ -36,6 +36,34 @@ export function getLearningProfile(): LearningProfile | null {
   }
 }
 
+/**
+ * In-memory neutral profile (every dimension at the 0-10 midpoint) for callers
+ * that must never block a learner who hasn't taken the quiz/interview yet —
+ * e.g. building a video playlist. Deliberately NOT persisted or synced: saving
+ * it would make the app believe a quiz was completed, hide the "take the
+ * quiz" prompts, and pollute the rolling implicit-profile updates.
+ */
+export function getNeutralLearningProfile(): LearningProfile {
+  return {
+    pace: 5,
+    theoryVsPractical: 5,
+    structureNeed: 5,
+    depth: 5,
+    languageComplexity: 5,
+    storytelling: 5,
+    repetitionNeed: 5,
+    priorKnowledgeComfort: 5,
+    reliabilityScore: 0,
+    selfReportedHonesty: 'declined',
+    completedAt: new Date(0).toISOString(),
+  };
+}
+
+/** The saved profile if there is one, otherwise the neutral default. Never null. */
+export function getLearningProfileOrNeutral(): LearningProfile {
+  return getLearningProfile() ?? getNeutralLearningProfile();
+}
+
 export function saveLearningProfile(profile: LearningProfile): void {
   try {
     localStorage.setItem(LEARNING_PROFILE_STORAGE_KEY, JSON.stringify(profile));

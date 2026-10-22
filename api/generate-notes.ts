@@ -135,7 +135,7 @@ const responseSchema = {
 };
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const uid = await requireUser(req, res);
+  const uid = await requireUser(req, res, { allowAnonymous: true, guestQuota: { name: 'notes', perDay: 3 } }); // guests get 3 free/day, then sign-up
   if (!uid) return;
 
   if (req.method !== 'POST') {
