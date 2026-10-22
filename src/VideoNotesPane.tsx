@@ -9,6 +9,7 @@ import type {
   ReactNode,
 } from 'react';
 import { ChevronDown, ChevronUp, Clock, GripHorizontal, PictureInPicture2, RotateCcw } from 'lucide-react';
+import { TaperStrip } from './toolbarParts';
 import { useYouTubePlayer } from './useYouTubePlayer';
 import type { PlayerError } from './useYouTubePlayer';
 
@@ -190,8 +191,8 @@ export default function VideoNotesPane({
     player.setRate(next);
   };
 
-  const onOpacity = (event: ChangeEvent<HTMLInputElement>): void => {
-    const next = Math.min(1, Math.max(0.25, Number(event.target.value)));
+  const onOpacity = (value: number): void => {
+    const next = Math.min(1, Math.max(0.25, value));
     setOpacity(next);
     try {
       window.localStorage.setItem(OPACITY_KEY, String(next));
@@ -303,7 +304,7 @@ export default function VideoNotesPane({
           {floating && (
             <label className="inline-flex items-center gap-2 text-xs text-black dark:text-white">
               <span>{labels.opacity}</span>
-              <input type="range" min={0.25} max={1} step={0.05} value={opacity} onChange={onOpacity} className="w-20" />
+              <TaperStrip label={labels.opacity} min={0.25} max={1} step={0.05} value={opacity} onChange={onOpacity} className="w-24" />
             </label>
           )}
         </div>

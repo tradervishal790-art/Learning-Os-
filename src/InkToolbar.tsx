@@ -5,9 +5,9 @@ import {
 } from 'lucide-react';
 import { useTranslation } from './i18n/LanguageContext';
 import type { InkMode, InkPrefs } from './inkPrefs';
-import { HL_COLORS, INK_COLORS, WIDTH_PRESETS, resolveColor } from './inkEngine';
+import { HL_COLORS, INK_COLORS, resolveColor } from './inkEngine';
 import type { InkKind } from './notebookStore';
-import { Btn, Pop, Swatches, Sep } from './toolbarParts';
+import { Btn, Pop, RingSwatch, Swatches, Sep, TaperStrip } from './toolbarParts';
 import ColorDialog from './ColorPicker';
 import PenPicker from './PenPicker';
 
@@ -113,6 +113,7 @@ export default function InkToolbar({
   const t = useTranslation().notebook.ink;
   const [colorOpen, setColorOpen] = useState(false);
   // Laser: the delay + colour options stay hidden until a laser style is tapped, then open in the same row.
+  const [selWidth, setSelWidth] = useState(2);
   const [laserOpts, setLaserOpts] = useState(false);
   useEffect(() => {
     if (mode !== 'laser') setLaserOpts(false);
@@ -132,7 +133,6 @@ export default function InkToolbar({
   const setWidth = (w: number) => setPrefs(isHl ? { hlWidth: w } : { width: w });
 
   const palette = isHl ? HL_COLORS : INK_COLORS;
-  const presets = isHl ? [2, 3, 5, 8] : WIDTH_PRESETS;
   // Colours are the student's own saved ones (starting from a few suggestions); the colour in use always shows first.
   const saved = prefs.recentColors.length > 0 ? prefs.recentColors : palette.slice(isHl ? 0 : 1, isHl ? 4 : 6);
   const quick = [...new Set([color, ...(isHl ? [] : ['auto']), ...saved])].slice(0, isHl ? 5 : 7);
@@ -181,11 +181,7 @@ export default function InkToolbar({
                 <Swatches colors={[...INK_COLORS, ...HL_COLORS]} onPick={a.onColor} />
               </Pop>
               <Pop trigger={(toggle) => <Btn label={t.selWidth} onClick={toggle}><span className="text-xs font-semibold">{t.thickness.slice(0, 1)}</span></Btn>}>
-                <div className="flex gap-1">
-                  {WIDTH_PRESETS.map((w) => (
-                    <button key={w} className={chip(false)} onClick={() => a.onWidth(w)}>{w}</button>
-                  ))}
-                </div>
+                <TaperStrip label={t.selWidth} min={1} max={12} step={0.5} className="w-40" value={selWidth} onChange={setSelWidth} onCommit={a.onWidth} />
               </Pop>
               <Btn label={t.selFront} onClick={a.onFront}><BringToFront size={16} /></Btn>
               <Btn label={t.selBack} onClick={a.onBack}><SendToBack size={16} /></Btn>
@@ -214,36 +210,24 @@ export default function InkToolbar({
           <>
             <Sep />
             <span className="text-xs text-gray-500 dark:text-white/60 shrink-0">{t.laserDelay}</span>
-            {[1, 3, 5, 10].map((n) => (
-              <button key={n} className={chip(prefs.laserDelay === n)} onClick={() => setPrefs({ laserDelay: n })}>{n}s</button>
-            ))}
+            <TaperStrip label={t.laserDelay} min={1} max={10} step={1} value={prefs.laserDelay} onChange={(v) => setPrefs({ laserDelay: v })} />
             <Sep />
             {!ink &&
               ['#ef4444', '#22c55e', '#3b82f6', '#f59e0b'].map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  aria-label={c}
-                  onClick={() => setPrefs({ laserColor: c })}
-                  className={`h-8 w-8 rounded-full border-2 shrink-0 ${prefs.laserColor === c ? 'border-indigo-500' : 'border-transparent'}`}
-                  style={{ background: c }}
-                />
+                <RingSwatch key={c} color={c} label={c} selected={prefs.laserColor === c} onClick={() => setPrefs({ laserColor: c })} />
               ))}
             {ink && (
               <>
                 {INK_COLORS.slice(0, 6).map((c) => (
-                  <button
+                  <RingSwatch
                     key={c}
-                    type="button"
-                    aria-label={c}
+                    color={resolveColor(c, document.documentElement.classList.contains('dark'))}
+                    label={c}
+                    selected={prefs.color === c}
                     onClick={() => setPrefs({ color: c })}
-                    className={`h-8 w-8 rounded-full border-2 shrink-0 ${prefs.color === c ? 'border-indigo-500' : 'border-black/10 dark:border-white/20'}`}
-                    style={{ background: resolveColor(c, document.documentElement.classList.contains('dark')) }}
                   />
                 ))}
-                {WIDTH_PRESETS.slice(0, 4).map((w) => (
-                  <button key={w} className={chip(prefs.width === w)} onClick={() => setPrefs({ width: w })} aria-label={`${t.thickness} ${w}`}>{w}</button>
-                ))}
+                <TaperStrip label={t.thickness} min={1} max={8} step={0.5} value={prefs.width} onChange={(v) => setPrefs({ width: v })} />
               </>
             )}
           </>
@@ -266,7 +250,7 @@ export default function InkToolbar({
         <Sep />
         <label className="flex items-center gap-2 text-xs text-gray-600 dark:text-white/70 shrink-0">
           {t.eraserSize}
-          <input type="range" min={6} max={60} value={prefs.eraserSize} onChange={(e) => setPrefs({ eraserSize: Number(e.target.value) })} className="w-24" />
+          <TaperStrip label={t.eraserSize} min={6} max={60} value={prefs.eraserSize} onChange={(v) => setPrefs({ eraserSize: v })} />
         </label>
         <Sep />
         <Btn label={t.eraseAll} onClick={onEraseAll}><Trash2 size={16} /></Btn>
@@ -321,27 +305,8 @@ export default function InkToolbar({
           labels={t as unknown as Record<string, string>}
         />
       )}
-      {/* thickness is shown as the real stroke (a dot as wide as the pen), not as a number */}
-      {presets.map((w) => (
-        <button
-          key={w}
-          type="button"
-          onClick={() => setWidth(w)}
-          title={`${t.thickness} ${w}`}
-          aria-label={`${t.thickness} ${w}`}
-          aria-pressed={width === w}
-          className={`h-9 w-9 sm:h-8 sm:w-8 rounded-lg border shrink-0 flex items-center justify-center transition-colors ${
-            width === w ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-500/20' : 'border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10'
-          }`}
-        >
-          <ThicknessDot width={w} color={color} hl={isHl} />
-        </button>
-      ))}
-      <input
-        type="range" min={0.5} max={20} step={0.5} value={width}
-        onChange={(e) => setWidth(Number(e.target.value))}
-        aria-label={t.thickness} title={t.thickness} className="w-20 shrink-0"
-      />
+      {/* thickness: one wedge strip (thin -> thick) and a live dot showing the real stroke */}
+      <TaperStrip label={t.thickness} min={0.5} max={20} step={0.5} className="w-28" value={width} onChange={setWidth} />
       <span className="h-9 w-9 sm:h-8 sm:w-8 shrink-0 flex items-center justify-center rounded-lg bg-gray-50 dark:bg-white/5" aria-hidden>
         <ThicknessDot width={width} color={color} hl={isHl} />
       </span>
@@ -376,7 +341,7 @@ export default function InkToolbar({
       {!isHl && (
         <label className="flex items-center gap-2 text-xs text-gray-600 dark:text-white/70 shrink-0">
           {t.smoothing}
-          <input type="range" min={0} max={1} step={0.05} value={prefs.smoothing} onChange={(e) => setPrefs({ smoothing: Number(e.target.value) })} className="w-16" />
+          <TaperStrip label={t.smoothing} min={0} max={1} step={0.05} className="w-20" value={prefs.smoothing} onChange={(v) => setPrefs({ smoothing: v })} />
         </label>
       )}
       <Btn label={t.shapeSnap} active={prefs.shapeSnap} onClick={() => setPrefs({ shapeSnap: !prefs.shapeSnap })}><Shapes size={16} /></Btn>

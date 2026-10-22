@@ -54,6 +54,15 @@ const HOLD_MS = 550; // hold still this long to snap a shape
 /** Where the selection box is drawn while it is being dragged. */
 interface Preview { box: Box; rotDeg: number }
 
+/** The colour mixed ~65% toward white (the pale centre of the laser line). Non-hex colours fall back to white-ish. */
+function paleOf(hex: string): string {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+  if (!m) return 'rgba(255,255,255,0.7)';
+  const n = parseInt(m[1], 16);
+  const mix = (c: number) => Math.round(c + (255 - c) * 0.65);
+  return `rgb(${mix((n >> 16) & 255)}, ${mix((n >> 8) & 255)}, ${mix(n & 255)})`;
+}
+
 export default function InkLayer({
   strokes, width, height, mode, prefs, selectedIds, paperDark = false, onCommit, onActivate, onSelect,
 }: {
@@ -256,17 +265,21 @@ export default function InkLayer({
         path();
         ctx.stroke();
       } else {
-        // a thin glowing pen line (round tip, same width as the trail, no big dot): soft halo, then a solid core
-        ctx.globalAlpha = alpha * 0.35;
+        // neon marker line: soft halo, strong coloured edge, pale centre (round tip, no big dot)
+        ctx.globalAlpha = alpha * 0.3;
         ctx.strokeStyle = col;
         ctx.shadowColor = col;
         ctx.shadowBlur = 10 * dpr;
-        ctx.lineWidth = 7 * px;
+        ctx.lineWidth = 8 * px;
         path();
         ctx.stroke();
         ctx.shadowBlur = 0;
         ctx.globalAlpha = alpha;
-        ctx.lineWidth = 3.6 * px;
+        ctx.lineWidth = 5 * px;
+        path();
+        ctx.stroke();
+        ctx.strokeStyle = paleOf(col);
+        ctx.lineWidth = 1.8 * px;
         path();
         ctx.stroke();
       }
