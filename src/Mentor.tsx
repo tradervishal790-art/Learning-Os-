@@ -234,8 +234,8 @@ export default function Mentor() {
   };
 
   return (
-    <div className="min-h-dvh text-black dark:text-white flex flex-col px-4 pt-2 md:px-8 md:pt-3 md:pb-4">
-      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-2 max-w-4xl mx-auto w-full flex justify-end">
+    <div className="min-h-dvh md:min-h-0 md:h-[calc(100dvh-5rem)] text-black dark:text-white flex flex-col px-4 pt-2 md:px-8 md:pt-3 md:pb-3">
+      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-2 w-full flex justify-end">
         <h1 className="sr-only">{t.mentor.header.title}</h1>
         <div className="flex gap-2">
           <button
@@ -335,8 +335,8 @@ export default function Mentor() {
       )}
 
       {/* Chat area */}
-      <div className="flex-1 max-w-4xl mx-auto w-full md:bg-gray-50 md:dark:bg-white/5 md:border md:border-gray-200 md:dark:border-white/10 md:rounded-2xl flex flex-col md:overflow-hidden">
-        <div className="flex-1 md:overflow-y-auto md:p-6 space-y-3 md:space-y-4 md:h-[calc(100dvh-17rem)]">
+      <div className="flex-1 min-h-0 w-full flex flex-col">
+        <div className="flex-1 min-h-0 md:overflow-y-auto md:py-4 space-y-3 md:space-y-4">
           <AnimatePresence>
             {messages.map((msg) => (
               <motion.div
@@ -346,7 +346,7 @@ export default function Mentor() {
                 className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div
-                  className={`max-w-[85%] md:max-w-[80%] px-4 py-3 md:p-4 rounded-2xl ${
+                  className={`max-w-[85%] md:max-w-[70%] px-4 py-3 md:p-4 rounded-2xl ${
                     msg.role === 'user'
                       ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white'
                       : 'card text-black dark:text-white'
@@ -403,7 +403,7 @@ export default function Mentor() {
             })}
           </div>
 
-          <div className="px-4 pb-3 md:p-4 md:border-t md:border-gray-200 md:dark:border-white/10 flex gap-2">
+          <div className="px-4 pb-3 md:px-0 md:py-3 flex gap-2">
             <input
               type="text"
               value={input}
