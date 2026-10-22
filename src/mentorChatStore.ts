@@ -16,6 +16,7 @@ export interface StoredMentorMessage {
   id: string;
   role: 'user' | 'mentor';
   content: string;
+  ui?: boolean; // content is an OpenUI card program
   timestamp: string; // ISO
 }
 

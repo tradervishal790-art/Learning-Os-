@@ -11,6 +11,8 @@ import { requireUser } from './_lib/auth.js';
 import { generateAIText } from './_lib/aiFallback.js';
 import { buildMentorContents, type HistoryMessage } from './_lib/mentorHistory.js';
 import { formatStudentContext } from './_lib/mentorPrompt.js';
+import { MENTOR_UI_PROMPT } from './_lib/mentorUiPrompt.js';
+import { extractProgram, looksLikeProgram, validateProgram } from './_lib/mentorUiCheck.js';
 
 type Locale = 'en' | 'hi' | 'hinglish';
 
@@ -50,12 +52,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'POST only' });
   }
 
-  const { userMessage, context, history, studentContext, locale: rawLocale } = (req.body ?? {}) as {
+  const { userMessage, context, history, studentContext, locale: rawLocale, richUi } = (req.body ?? {}) as {
     userMessage?: string;
     context?: string;
     history?: HistoryMessage[];
     studentContext?: unknown;
     locale?: string;
+    richUi?: boolean;
   };
 
   if (!userMessage?.trim()) {
@@ -72,16 +75,35 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const topic = typeof context === 'string' ? context.slice(0, 120) : '';
   const contents = buildMentorContents(history, userMessage);
 
-  try {
-    const { text, finishReason } = await generateAIText({
+  // Visual cards (OpenUI Lang) are opt-in per request; MENTOR_RICH_UI_OFF=1 on the server is a kill switch.
+  const wantCards = richUi === true && process.env.MENTOR_RICH_UI_OFF !== '1';
+  const baseInstruction = buildSystemInstructions(topic, locale) + formatStudentContext(studentContext);
+  const callModel = (withCards: boolean) =>
+    generateAIText({
       geminiApiKey: apiKey,
       minimaxApiKey,
-      systemInstruction: buildSystemInstructions(topic, locale) + formatStudentContext(studentContext),
+      systemInstruction: withCards ? `${baseInstruction}\n\n${MENTOR_UI_PROMPT}` : baseInstruction,
       contents,
       generationConfig: { maxOutputTokens: 1024, temperature: 0.7 },
     });
 
-    return res.status(200).json({ text, finishReason: finishReason ?? null });
+  try {
+    let { text, finishReason } = await callModel(wantCards);
+    let ui = false;
+
+    if (wantCards && looksLikeProgram(text)) {
+      const program = extractProgram(text);
+      if (finishReason !== 'MAX_TOKENS' && validateProgram(program).ok) {
+        text = program;
+        ui = true;
+      } else {
+        // The model tried cards but the program is broken or cut off: ask once more for plain text
+        // rather than showing code. (Only happens when cards were attempted and failed.)
+        ({ text, finishReason } = await callModel(false));
+      }
+    }
+
+    return res.status(200).json({ text, finishReason: finishReason ?? null, ui });
   } catch (err: any) {
     console.error('Mentor chat proxy failed:', err);
     return res.status(500).json({ error: 'Something went wrong (both Gemini and MiniMax failed). Please try again in a bit. 🔄' });

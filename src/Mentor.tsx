@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, lazy, Suspense } from 'react';
 import { MENTOR_PREFILL_KEY } from './mentorPrefill';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Lightbulb, BookOpenText, Link2, ListChecks, Hammer, Bug, SendHorizontal } from 'lucide-react';
@@ -11,6 +11,10 @@ import { buildMentorStudentContext } from './mentorContext';
 import { authFetch } from './apiFetch';
 import { loadMentorChat, saveMentorChat } from './mentorChatStore';
 import MentorText from './MentorText';
+import { richMentorEnabled } from './mentorUi/flag';
+
+// Visual cards (OpenUI) load only when a reply actually uses them.
+const MentorCards = lazy(() => import('./mentorUi/MentorCards'));
 
 const WELCOME_ID = 'welcome';
 
@@ -18,6 +22,8 @@ interface Message {
   id: string;
   role: 'user' | 'mentor';
   content: string;
+  /** True when `content` is a validated OpenUI card program instead of plain text. */
+  ui?: boolean;
   timestamp: Date;
 }
 
@@ -38,7 +44,7 @@ async function generateMentorResponse(
   history: Message[],
   mentorErrors: TranslationShape['mentor']['errors'],
   locale: string
-): Promise<string> {
+): Promise<{ text: string; ui: boolean }> {
   try {
     const response = await authFetch('/api/mentor-chat', {
       method: 'POST',
@@ -49,6 +55,7 @@ async function generateMentorResponse(
         history: history.slice(-6).map((m) => ({ role: m.role, content: m.content })),
         locale,
         studentContext: buildMentorStudentContext(),
+        richUi: richMentorEnabled(),
       }),
     });
 
@@ -56,23 +63,27 @@ async function generateMentorResponse(
 
     if (!response.ok) {
       console.error('Mentor chat API error:', response.status, data);
-      return data?.error || format(mentorErrors.generic, response.status);
+      return { text: data?.error || format(mentorErrors.generic, response.status), ui: false };
     }
 
     if (!data?.text) {
-      return mentorErrors.noResponse;
+      return { text: mentorErrors.noResponse, ui: false };
+    }
+
+    if (data.ui === true) {
+      return { text: data.text, ui: true };
     }
 
     // Let the user know explicitly if a response still got cut off,
     // instead of silently showing an incomplete sentence.
     if (data.finishReason === 'MAX_TOKENS') {
-      return data.text + mentorErrors.truncatedSuffix;
+      return { text: data.text + mentorErrors.truncatedSuffix, ui: false };
     }
 
-    return data.text;
+    return { text: data.text, ui: false };
   } catch (error) {
     console.error('Mentor chat fetch failed:', error);
-    return mentorErrors.network;
+    return { text: mentorErrors.network, ui: false };
   }
 }
 
@@ -119,7 +130,7 @@ export default function Mentor() {
     saveMentorChat(
       messages
         .filter((m) => m.id !== WELCOME_ID)
-        .map((m) => ({ id: m.id, role: m.role, content: m.content, timestamp: m.timestamp.toISOString() }))
+        .map((m) => ({ id: m.id, role: m.role, content: m.content, ui: m.ui, timestamp: m.timestamp.toISOString() }))
     );
   }, [messages]);
 
@@ -155,7 +166,8 @@ export default function Mentor() {
     const mentorMsg: Message = {
       id: (Date.now() + 1).toString(),
       role: 'mentor',
-      content: reply,
+      content: reply.text,
+      ui: reply.ui,
       timestamp: new Date(),
     };
     setMessages((prev) => [...prev, mentorMsg]);
@@ -191,7 +203,13 @@ export default function Mentor() {
                     {stripEmoji(msg.role === 'user' ? t.mentor.youLabel : t.mentor.mentorLabel)}
                   </div>
                   {msg.role === 'mentor' ? (
-                    <MentorText text={msg.content} />
+                    msg.ui ? (
+                      <Suspense fallback={<div className="h-16" />}>
+                        <MentorCards program={msg.content} />
+                      </Suspense>
+                    ) : (
+                      <MentorText text={msg.content} />
+                    )
                   ) : (
                     <div className="whitespace-pre-wrap text-sm leading-relaxed">{msg.content}</div>
                   )}

@@ -727,6 +727,17 @@ export interface TranslationShape {
       truncatedSuffix: string;
       network: string;
     };
+    cards: {
+      correct: string;
+      notQuite: string;
+      question: string;
+      answer: string;
+      tapToFlip: string;
+      prev: string;
+      next: string;
+      counter: string; // "{0}" = current card, "{1}" = total
+      renderFailed: string;
+    };
   };
   progress: {
     header: { title: string; subtitle: string };
@@ -2295,6 +2306,17 @@ export const translations: Record<Locale, TranslationShape> = {
           '\n\n_( The response was long and got cut off — try asking a shorter question instead of "Deep dive")_',
         network: 'A network error occurred. Please check your internet and try again.',
       },
+      cards: {
+        correct: 'Correct!',
+        notQuite: 'Not quite.',
+        question: 'Question',
+        answer: 'Answer',
+        tapToFlip: 'Tap to flip',
+        prev: 'Back',
+        next: 'Next',
+        counter: '{0} of {1}',
+        renderFailed: "Couldn't show this reply as cards. Please ask again.",
+      },
     },
     progress: {
       header: { title: 'Progress', subtitle: 'Your real stats — streak, watch time, weak spots' },
@@ -3860,6 +3882,17 @@ export const translations: Record<Locale, TranslationShape> = {
         noResponse: 'जवाब नहीं मिल पाया, फिर से कोशिश करें।',
         truncatedSuffix: '\n\n_( जवाब लंबा था और बीच में कट गया — "गहराई से" की जगह छोटा सवाल पूछें)_',
         network: 'नेटवर्क में गड़बड़ आई। इंटरनेट जांचें और फिर कोशिश करें।',
+      },
+      cards: {
+        correct: 'सही!',
+        notQuite: 'सही नहीं।',
+        question: 'सवाल',
+        answer: 'जवाब',
+        tapToFlip: 'पलटने के लिए टैप करें',
+        prev: 'पीछे',
+        next: 'आगे',
+        counter: '{1} में से {0}',
+        renderFailed: 'यह जवाब कार्ड में नहीं दिख पाया। कृपया फिर से पूछें।',
       },
     },
     progress: {
@@ -5427,6 +5460,17 @@ export const translations: Record<Locale, TranslationShape> = {
         truncatedSuffix:
           '\n\n_( Response lambi thi aur beech mein kat gayi — "Deep dive" ki jagah chhota sawaal poochhein)_',
         network: 'Network error aaya. Internet check karein aur phir try karein.',
+      },
+      cards: {
+        correct: 'Sahi!',
+        notQuite: 'Sahi nahi.',
+        question: 'Sawaal',
+        answer: 'Jawab',
+        tapToFlip: 'Palatne ke liye tap karein',
+        prev: 'Peeche',
+        next: 'Aage',
+        counter: '{0} / {1}',
+        renderFailed: 'Yeh jawab card mein nahi dikh paaya. Kripya phir se poochhein.',
       },
     },
     progress: {
