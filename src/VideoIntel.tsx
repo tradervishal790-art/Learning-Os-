@@ -8,6 +8,7 @@ import RecallCheck from './RecallCheck';
 import { getLearningProfile } from './learningProfileStore';
 import { maybeUpdateProfileFromEngagement } from './implicitProfileUpdate';
 import { getRoadmapData, saveRoadmapData, findTopicById } from './roadmapData';
+import { applyWatchToTopic } from './roadmapWatch';
 import { useNavigate } from 'react-router-dom';
 import { MENTOR_PREFILL_KEY } from './mentorPrefill';
 import Notes from './Notes';
@@ -106,8 +107,28 @@ const LEARNING_TO_COMPLETED_THRESHOLD = 85;
  * checked only against Goal A, find no keyword match, and do nothing,
  * leaving Goal B's step permanently stuck "in progress".
  */
-function updateRoadmapFromWatch(goalIds: (string | undefined)[], videoTitle: string, watchPercentage: number) {
+function updateRoadmapFromWatch(
+  goalIds: (string | undefined)[],
+  videoTitle: string,
+  watchPercentage: number,
+  openedFor?: { goalId: string | undefined; topicId: string }
+) {
   if (watchPercentage < LOCKED_TO_LEARNING_THRESHOLD) return;
+
+  // The video was opened FROM a roadmap topic: that topic is the one being watched, so finish it
+  // directly instead of guessing from title words (a title without the keywords used to leave the
+  // topic stuck — and the next class locked — until every revision checkpoint was done).
+  if (openedFor) {
+    try {
+      const result = applyWatchToTopic(getRoadmapData(openedFor.goalId), openedFor.topicId, watchPercentage);
+      if (result.found) {
+        if (result.roadmap) saveRoadmapData(openedFor.goalId, result.roadmap);
+        return;
+      }
+    } catch {
+      // Corrupted roadmap data — fall back to matching by title below.
+    }
+  }
 
   for (const goalId of goalIds) {
     try {
@@ -681,7 +702,12 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
       return updated;
     });
 
-    updateRoadmapFromWatch(goalIdsToCheck, data.title, data.watchPercentage);
+    updateRoadmapFromWatch(
+      goalIdsToCheck,
+      data.title,
+      data.watchPercentage,
+      activeTopicId ? { goalId: activeGoalId ?? undefined, topicId: activeTopicId } : undefined
+    );
   };
   
 
