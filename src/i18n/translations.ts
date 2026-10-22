@@ -721,6 +721,14 @@ export interface TranslationShape {
     mentorLabel: string;
     inputPlaceholder: string;
     sendCta: string;
+    newChat: string;
+    history: string;
+    historyEmpty: string;
+    deleteChat: string;
+    deleteConfirm: string;
+    deleteCta: string;
+    cancelCta: string;
+    closeCta: string;
     errors: {
       generic: string; // "{0}" = HTTP status
       noResponse: string;
@@ -2288,6 +2296,14 @@ export const translations: Record<Locale, TranslationShape> = {
       mentorLabel: 'Mentor',
       inputPlaceholder: 'Ask anything...',
       sendCta: 'Send',
+      newChat: 'New chat',
+      history: 'History',
+      historyEmpty: 'No earlier chats yet. A chat is saved here as soon as you ask something.',
+      deleteChat: 'Delete chat',
+      deleteConfirm: 'This chat will be deleted for good. Sure?',
+      deleteCta: 'Delete',
+      cancelCta: 'Cancel',
+      closeCta: 'Close',
       errors: {
         generic: 'Something went wrong ({0}). Please try again in a bit.',
         noResponse: "Couldn't get a response, please try again.",
@@ -3855,6 +3871,14 @@ export const translations: Record<Locale, TranslationShape> = {
       mentorLabel: 'मेंटर',
       inputPlaceholder: 'कुछ भी पूछें...',
       sendCta: 'भेजें',
+      newChat: 'नई चैट',
+      history: 'हिस्ट्री',
+      historyEmpty: 'अभी कोई पुरानी चैट नहीं है। नया सवाल पूछते ही यहां सेव हो जाएगी।',
+      deleteChat: 'चैट डिलीट करें',
+      deleteConfirm: 'यह चैट हमेशा के लिए डिलीट हो जाएगी। पक्का?',
+      deleteCta: 'डिलीट',
+      cancelCta: 'रद्द करें',
+      closeCta: 'बंद करें',
       errors: {
         generic: 'कुछ गड़बड़ हो गई ({0})। थोड़ी देर में फिर कोशिश करें।',
         noResponse: 'जवाब नहीं मिल पाया, फिर से कोशिश करें।',
@@ -5421,6 +5445,14 @@ export const translations: Record<Locale, TranslationShape> = {
       mentorLabel: 'Mentor',
       inputPlaceholder: 'Ask anything...',
       sendCta: 'Send',
+      newChat: 'New chat',
+      history: 'History',
+      historyEmpty: 'Abhi koi purani chat nahi hai. Naya sawaal poochhte hi yahan save ho jayegi.',
+      deleteChat: 'Chat delete karein',
+      deleteConfirm: 'Ye chat hamesha ke liye delete ho jayegi. Pakka?',
+      deleteCta: 'Delete',
+      cancelCta: 'Cancel',
+      closeCta: 'Close',
       errors: {
         generic: 'Kuch gadbad ho gayi ({0}). Thodi der mein phir try karein.',
         noResponse: 'Response nahi mil paaya, phir se try karein.',

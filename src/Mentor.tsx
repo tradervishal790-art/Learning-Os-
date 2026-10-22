@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { MENTOR_PREFILL_KEY } from './mentorPrefill';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Lightbulb, BookOpenText, Link2, ListChecks, Hammer, Bug, SendHorizontal } from 'lucide-react';
+import { Lightbulb, BookOpenText, Link2, ListChecks, Hammer, Bug, SendHorizontal, SquarePen, History, Trash2, X } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { setImmersive, useImmersive } from './immersive';
 import { useTranslation, useLanguage } from './i18n/LanguageContext';
@@ -9,7 +9,18 @@ import { format } from './i18n/format';
 import type { TranslationShape } from './i18n/translations';
 import { buildMentorStudentContext } from './mentorContext';
 import { authFetch } from './apiFetch';
-import { loadMentorChat, saveMentorChat } from './mentorChatStore';
+import {
+  appendToChat,
+  deleteChat,
+  getActiveChatId,
+  listChats,
+  loadChat,
+  newChatId,
+  saveChat,
+  setActiveChatId,
+  type MentorChatSummary,
+} from './mentorChatStore';
+import ConfirmDialog from './ConfirmDialog';
 import MentorText from './MentorText';
 
 const WELCOME_ID = 'welcome';
@@ -85,16 +96,26 @@ const stripEmoji = (label: string) => label.replace(/^[\p{Extended_Pictographic}
 export default function Mentor() {
   const t = useTranslation();
   const { locale } = useLanguage();
-  const [messages, setMessages] = useState<Message[]>(() => [
-    {
-      id: WELCOME_ID,
-      role: 'mentor',
-      content: t.mentor.welcomeMessage,
-      timestamp: new Date(),
-    },
-    // Restore this user's earlier conversation from the device.
-    ...loadMentorChat().map((m) => ({ ...m, timestamp: new Date(m.timestamp) })),
-  ]);
+  const welcome = (): Message => ({
+    id: WELCOME_ID,
+    role: 'mentor',
+    content: t.mentor.welcomeMessage,
+    timestamp: new Date(),
+  });
+  const withWelcome = (id: string): Message[] => [
+    welcome(),
+    ...loadChat(id).map((m) => ({ ...m, timestamp: new Date(m.timestamp) })),
+  ];
+
+  // Reopen the chat the student was last in; otherwise start a fresh one.
+  const [chatId, setChatId] = useState<string>(() => getActiveChatId() ?? newChatId());
+  const chatIdRef = useRef(chatId);
+  const [messages, setMessages] = useState<Message[]>(() => withWelcome(chatId));
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [chats, setChats] = useState<MentorChatSummary[]>([]);
+  const [pendingDelete, setPendingDelete] = useState<string | null>(null);
+  // Chats with a reply still on the way (the student may switch chats meanwhile).
+  const [pending, setPending] = useState<string[]>([]);
   const [input, setInput] = useState(() => {
     try {
       const pre = sessionStorage.getItem(MENTOR_PREFILL_KEY);
@@ -104,7 +125,7 @@ export default function Mentor() {
       return '';
     }
   });
-  const [loading, setLoading] = useState(false);
+  const loading = pending.includes(chatId);
   const [contextTopic, setContextTopic] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   // While the keyboard is up the bottom bar steps aside so the input gets the room.
@@ -116,12 +137,14 @@ export default function Mentor() {
     // message pushed the page header off-screen when Mentor opened.
     if (messages.length > 1) messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     // Persist everything except the localized welcome (rebuilt on every open).
-    saveMentorChat(
+    // An empty chat is not stored, so "New chat" never leaves blank history entries.
+    saveChat(
+      chatId,
       messages
         .filter((m) => m.id !== WELCOME_ID)
         .map((m) => ({ id: m.id, role: m.role, content: m.content, timestamp: m.timestamp.toISOString() }))
     );
-  }, [messages]);
+  }, [messages, chatId]);
 
   // Watch history se context nikaal lo — used internally to give Gemini
   // relevant context, NOT shown in the UI (keeps the header clean).
@@ -146,9 +169,10 @@ export default function Mentor() {
     // History sent to the API = everything BEFORE this message, minus the
     // canned welcome. The new message travels separately as `userMessage`.
     const priorHistory = messages.filter((m) => m.id !== WELCOME_ID);
+    const originId = chatId;
     setMessages([...messages, userMsg]);
     setInput('');
-    setLoading(true);
+    setPending((p) => [...p, originId]);
 
     const reply = await generateMentorResponse(text, contextTopic, priorHistory, t.mentor.errors, locale);
 
@@ -158,16 +182,160 @@ export default function Mentor() {
       content: reply,
       timestamp: new Date(),
     };
-    setMessages((prev) => [...prev, mentorMsg]);
-    setLoading(false);
+    if (chatIdRef.current === originId) {
+      setMessages((prev) => [...prev, mentorMsg]);
+    } else {
+      // The student moved to another chat while this reply was loading — file it where it belongs.
+      appendToChat(originId, { ...mentorMsg, timestamp: mentorMsg.timestamp.toISOString() });
+    }
+    setPending((p) => {
+      const i = p.indexOf(originId);
+      return i === -1 ? p : [...p.slice(0, i), ...p.slice(i + 1)];
+    });
+  };
+
+  const switchTo = (id: string, isNew: boolean) => {
+    chatIdRef.current = id;
+    setChatId(id);
+    setMessages(isNew ? [welcome()] : withWelcome(id));
+    setActiveChatId(isNew ? null : id);
+    setInput('');
+    setHistoryOpen(false);
+  };
+
+  // A chat with no question yet is already "new" — don't stack empty ones.
+  const isFresh = messages.every((m) => m.id === WELCOME_ID);
+  const startNewChat = () => {
+    if (!isFresh) switchTo(newChatId(), true);
+    setHistoryOpen(false);
+  };
+
+  const openHistory = () => {
+    setChats(listChats());
+    setHistoryOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (!pendingDelete) return;
+    const id = pendingDelete;
+    deleteChat(id);
+    setPendingDelete(null);
+    setChats(listChats());
+    if (id === chatIdRef.current) switchTo(newChatId(), true);
+    setHistoryOpen(true);
+  };
+
+  const formatWhen = (iso: string) => {
+    const d = new Date(iso);
+    const sameDay = d.toDateString() === new Date().toDateString();
+    return sameDay
+      ? d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+      : d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
   };
 
   return (
     <div className="min-h-dvh text-black dark:text-white flex flex-col p-4 md:p-8">
-      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-4 md:mb-6">
-        <h1 className="text-2xl md:text-4xl font-bold mb-1 md:mb-2">{t.mentor.header.title}</h1>
-        <p className="hidden md:block text-gray-500 dark:text-white/60">{t.mentor.header.subtitle}</p>
+      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-4 md:mb-6 flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-2xl md:text-4xl font-bold mb-1 md:mb-2">{t.mentor.header.title}</h1>
+          <p className="hidden md:block text-gray-500 dark:text-white/60">{t.mentor.header.subtitle}</p>
+        </div>
+        <div className="flex-shrink-0 flex gap-2">
+          <button
+            onClick={openHistory}
+            aria-label={t.mentor.history}
+            title={t.mentor.history}
+            className="w-10 h-10 flex items-center justify-center card rounded-full hover:bg-gray-100 dark:hover:bg-white/10 transition"
+          >
+            <History className="w-5 h-5" strokeWidth={1.75} />
+          </button>
+          <button
+            onClick={startNewChat}
+            disabled={isFresh}
+            aria-label={t.mentor.newChat}
+            title={t.mentor.newChat}
+            className="w-10 h-10 flex items-center justify-center bg-indigo-600 text-white dark:bg-indigo-500 rounded-full disabled:opacity-40 transition"
+          >
+            <SquarePen className="w-5 h-5" strokeWidth={1.75} />
+          </button>
+        </div>
       </motion.div>
+
+      <AnimatePresence>
+        {historyOpen && (
+          <motion.div
+            key="mentor-history"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[45] bg-black/40 flex items-end md:items-stretch md:justify-end"
+            onClick={() => setHistoryOpen(false)}
+          >
+            <motion.div
+              initial={{ y: 40 }}
+              animate={{ y: 0 }}
+              exit={{ y: 40 }}
+              role="dialog"
+              aria-label={t.mentor.history}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full md:w-96 max-h-[80dvh] md:max-h-none rounded-t-2xl md:rounded-none bg-white dark:bg-neutral-900 border-t md:border-t-0 md:border-l border-gray-200 dark:border-white/10 flex flex-col"
+            >
+              <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-white/10">
+                <h2 className="font-semibold">{t.mentor.history}</h2>
+                <button
+                  onClick={() => setHistoryOpen(false)}
+                  aria-label={t.mentor.closeCta}
+                  title={t.mentor.closeCta}
+                  className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-white/10"
+                >
+                  <X className="w-5 h-5" strokeWidth={1.75} />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
+                {chats.length === 0 ? (
+                  <p className="p-4 text-sm text-gray-500 dark:text-white/60">{t.mentor.historyEmpty}</p>
+                ) : (
+                  chats.map((c) => (
+                    <div
+                      key={c.id}
+                      className={`flex items-center gap-1 rounded-xl ${
+                        c.id === chatId ? 'bg-indigo-50 dark:bg-white/10' : 'hover:bg-gray-100 dark:hover:bg-white/5'
+                      }`}
+                    >
+                      <button
+                        onClick={() => c.id !== chatId ? switchTo(c.id, false) : setHistoryOpen(false)}
+                        className="flex-1 min-w-0 text-left px-3 py-3"
+                      >
+                        <div className="text-sm truncate">{c.title || t.mentor.newChat}</div>
+                        <div className="text-xs text-gray-500 dark:text-white/50">{formatWhen(c.updatedAt)}</div>
+                      </button>
+                      <button
+                        onClick={() => setPendingDelete(c.id)}
+                        aria-label={t.mentor.deleteChat}
+                        title={t.mentor.deleteChat}
+                        className="flex-shrink-0 w-9 h-9 mr-1 flex items-center justify-center rounded-full text-gray-500 dark:text-white/50 hover:text-red-600 hover:bg-gray-200 dark:hover:bg-white/10"
+                      >
+                        <Trash2 className="w-4 h-4" strokeWidth={1.75} />
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {pendingDelete && (
+        <ConfirmDialog
+          danger
+          message={t.mentor.deleteConfirm}
+          confirmLabel={t.mentor.deleteCta}
+          cancelLabel={t.mentor.cancelCta}
+          onConfirm={confirmDelete}
+          onCancel={() => setPendingDelete(null)}
+        />
+      )}
 
       {/* Chat area */}
       <div className="flex-1 max-w-4xl mx-auto w-full md:bg-gray-50 md:dark:bg-white/5 md:border md:border-gray-200 md:dark:border-white/10 md:rounded-2xl flex flex-col md:overflow-hidden">
