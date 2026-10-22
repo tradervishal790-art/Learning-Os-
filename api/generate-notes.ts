@@ -39,8 +39,17 @@ import { tryFetchTranscript, TRANSCRIPT_CHAR_LIMIT } from './_lib/transcript.js'
 import { formatNotesTemperament } from './_lib/mentorPrompt.js';
 
 type NotesSource = 'transcript' | 'metadata' | 'topic-only';
+type Locale = 'en' | 'hi' | 'hinglish';
 
-const buildPrompt = (topic: string, basis: string | undefined, notesSource: NotesSource) => `Generate DEEP, comprehensive study notes for "${topic}" in Hinglish (Hindi + English mix).
+// Same three-way language switch the mentor and blueprint endpoints use. Unknown/missing
+// -> 'hinglish', which is what this endpoint always produced, so old clients are unaffected.
+function languageInstruction(locale: Locale): string {
+  if (locale === 'hi') return 'Hindi (Devanagari script; keep technical terms, formulas and proper nouns in their standard form)';
+  if (locale === 'en') return 'clear, simple English only (do not mix in Hindi words)';
+  return 'Hinglish (Hindi + English mix)';
+}
+
+const buildPrompt = (topic: string, basis: string | undefined, notesSource: NotesSource, locale: Locale) => `Generate DEEP, comprehensive study notes for "${topic}" in ${languageInstruction(locale)}.
 ${basis ? (notesSource === 'transcript' ? `Video transcript:\n${basis}` : `Video context: ${basis}`) : ''}
 
 ${
@@ -142,12 +151,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'POST only' });
   }
 
-  const { topic, videoContext, videoId, personality } = (req.body ?? {}) as {
+  const { topic, videoContext, videoId, personality, locale: rawLocale } = (req.body ?? {}) as {
     topic?: string;
     videoContext?: string;
     videoId?: string;
     personality?: unknown;
+    locale?: string;
   };
+  const locale: Locale = rawLocale === 'hi' || rawLocale === 'en' ? rawLocale : 'hinglish';
   if (!topic?.trim()) {
     return res.status(400).json({ error: 'topic required' });
   }
@@ -179,7 +190,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { text, finishReason } = await generateAIText({
       geminiApiKey: apiKey,
       minimaxApiKey,
-      contents: [{ role: 'user', parts: [{ text: buildPrompt(topic, basis, notesSource) + formatNotesTemperament(personality) }] }],
+      contents: [{ role: 'user', parts: [{ text: buildPrompt(topic, basis, notesSource, locale) + formatNotesTemperament(personality) }] }],
       generationConfig: {
         responseMimeType: 'application/json',
         responseSchema,

@@ -16,6 +16,7 @@ import PersonalityReportCard from './PersonalityReportCard';
 import { computeGrowthEdges } from './growthEdges';
 import { getBehaviourStats } from './behaviourStats';
 import WelcomeBack from './WelcomeBack';
+import CurrentAffairsChip from './CurrentAffairsChip';
 import DailyHabit from './DailyHabit';
 import { analyzeAttempt, analyzeHistory } from './testAnalytics';
 import { getTestAttempts } from './testStore';
@@ -381,7 +382,20 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
     const stats = getRevisionStats(getRevisionDataForGoals(t.revisionTasks, goals));
     if (stats.dueToday + stats.overdue > 0) {
       setRevisionAlert({ dueToday: stats.dueToday, overdue: stats.overdue });
-      playReminderBell();
+      // The banner shows every time, but the chime only rings once every few hours:
+      // this effect runs on every page load, and hearing the same bell on each
+      // refresh quickly turns a helpful reminder into an annoyance.
+      const BELL_KEY = 'learning_os_bell_last';
+      const BELL_GAP_MS = 3 * 60 * 60 * 1000;
+      let ring = true;
+      try {
+        const last = Number(localStorage.getItem(BELL_KEY) ?? 0);
+        if (Date.now() - last < BELL_GAP_MS) ring = false;
+        else localStorage.setItem(BELL_KEY, String(Date.now()));
+      } catch {
+        /* storage unavailable -> just ring */
+      }
+      if (ring) playReminderBell();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -857,6 +871,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
             />
             <WelcomeBack goals={goals} revisionTasks={t.revisionTasks} onOpen={setActivePage} />
             <DailyHabit />
+            <CurrentAffairsChip onOpen={() => setActivePage('current-affairs')} />
             {showOnboardingChecklist && (
               <motion.div
                 initial={{ opacity: 0, y: -10 }}

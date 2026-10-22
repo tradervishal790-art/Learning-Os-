@@ -253,7 +253,9 @@ export interface TranslationShape {
     guestBadge: string;
     guestAccountNote: string;
   };
-  errorBoundary: { title: string; body: string; reloadCta: string; clearDataCta: string };
+  loadingScreen: { loading: string; slow: string; retry: string };
+  caChip: { doneTitle: string; pendingTitle: string; streak: string; cta: string };
+  errorBoundary: { title: string; body: string; reloadCta: string; clearDataCta: string; clearWarn: string; saveCopyCta: string; clearConfirmCta: string; cancelCta: string };
   deepDiveChat: {
     badge: string;
     questionOf: string; // "{0} / {1}"
@@ -1417,11 +1419,26 @@ export const translations: Record<Locale, TranslationShape> = {
       guestBadge: 'Guest',
       guestAccountNote: "You're using Learning OS as a guest. Sign in to unlock roadmap, notes, tests, mentor and more.",
     },
+    loadingScreen: {
+      loading: 'Loading...',
+      slow: 'This is taking longer than usual. Please check your internet connection.',
+      retry: 'Try again',
+    },
+    caChip: {
+      doneTitle: "Today's Current Affairs done — {0}/{1}",
+      pendingTitle: "Today's Current Affairs is ready",
+      streak: '{0}-day streak',
+      cta: 'Start',
+    },
     errorBoundary: {
       title: 'Something went wrong',
       body: "The app ran into an error. Try reloading — if the problem persists, clear local data and reload (your progress/roadmap won't come back, so try just reloading first).",
       reloadCta: 'Reload',
       clearDataCta: 'Clear local data and reload',
+      clearWarn: "This erases everything saved on this device: your notes list, daily-test question bank, revision progress and settings. Data from a signed-in account may come back from the cloud, but not everything. Save a copy first if you are unsure.",
+      saveCopyCta: 'Save a copy of my data (file)',
+      clearConfirmCta: 'Yes, erase and reload',
+      cancelCta: 'Cancel',
     },
     deepDiveChat: {
       badge: 'Deep Dive · Optional',
@@ -2970,11 +2987,26 @@ export const translations: Record<Locale, TranslationShape> = {
       guestBadge: 'गेस्ट',
       guestAccountNote: 'आप Learning OS को गेस्ट के रूप में इस्तेमाल कर रहे हैं। रोडमैप, नोट्स, टेस्ट, मेंटर और बाकी सब खोलने के लिए साइन इन करें।',
     },
+    loadingScreen: {
+      loading: 'लोड हो रहा है...',
+      slow: 'इस बार थोड़ा ज़्यादा समय लग रहा है। कृपया अपना इंटरनेट कनेक्शन जाँच लें।',
+      retry: 'फिर से कोशिश करें',
+    },
+    caChip: {
+      doneTitle: 'आज के करंट अफेयर्स पूरे — {0}/{1}',
+      pendingTitle: 'आज के करंट अफेयर्स तैयार हैं',
+      streak: '{0} दिन की स्ट्रीक',
+      cta: 'शुरू करें',
+    },
     errorBoundary: {
       title: 'कुछ गलत हो गया',
       body: 'ऐप में एक एरर आ गई। रीलोड try करें — अगर प्रॉब्लम बनी रहे तो लोकल डेटा क्लियर करके रीलोड करें (प्रोग्रेस/रोडमैप वापस नहीं मिलेगा, इसलिए पहले सिर्फ रीलोड try करें)।',
       reloadCta: 'रीलोड',
       clearDataCta: 'लोकल डेटा क्लियर करके रीलोड करें',
+      clearWarn: 'इससे इस डिवाइस पर सेव सब कुछ मिट जाएगा: आपकी नोट्स की सूची, डेली-टेस्ट का प्रश्न बैंक, रिवीज़न प्रोग्रेस और सेटिंग्स। साइन-इन खाते का डेटा क्लाउड से वापस आ सकता है, पर सब कुछ नहीं। पक्का न हो तो पहले कॉपी सेव कर लें।',
+      saveCopyCta: 'मेरे डेटा की कॉपी (फ़ाइल) सेव करें',
+      clearConfirmCta: 'हाँ, मिटाकर रीलोड करें',
+      cancelCta: 'रद्द करें',
     },
     deepDiveChat: {
       badge: 'डीप डाइव · वैकल्पिक',
@@ -4520,11 +4552,26 @@ export const translations: Record<Locale, TranslationShape> = {
       guestBadge: 'Guest',
       guestAccountNote: 'Tum Learning OS guest ke roop mein use kar rahe ho. Roadmap, notes, tests, mentor aur baaki sab kholne ke liye sign in karo.',
     },
+    loadingScreen: {
+      loading: 'Load ho raha hai...',
+      slow: 'Is baar thoda zyada time lag raha hai. Apna internet connection check kar lijiye.',
+      retry: 'Phir se try karo',
+    },
+    caChip: {
+      doneTitle: 'Aaj ke Current Affairs ho gaye — {0}/{1}',
+      pendingTitle: 'Aaj ke Current Affairs ready hain',
+      streak: '{0} din ki streak',
+      cta: 'Shuru karo',
+    },
     errorBoundary: {
       title: 'Kuch galat ho gaya',
       body: 'App mein ek error aa gaya. Reload try karo — agar problem rahe toh local data clear karke reload karo (progress/roadmap wapas nahi milega, isliye pehle sirf reload try karo).',
       reloadCta: 'Reload',
       clearDataCta: 'Local data clear karke reload karo',
+      clearWarn: 'Isse is device par saved sab kuch mit jayega: aapki notes ki list, daily-test ka question bank, revision progress aur settings. Sign-in account ka data cloud se wapas aa sakta hai, par sab kuch nahi. Pakka na ho toh pehle ek copy save kar lijiye.',
+      saveCopyCta: 'Mere data ki copy (file) save karo',
+      clearConfirmCta: 'Haan, mita kar reload karo',
+      cancelCta: 'Cancel',
     },
     deepDiveChat: {
       badge: 'Deep Dive · Optional',

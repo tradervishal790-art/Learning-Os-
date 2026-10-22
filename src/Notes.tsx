@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FileText, PenLine, Lightbulb, Calculator, TriangleAlert, Globe, Rocket, Target, Sparkles, Loader2, CirclePlay } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { useTranslation } from './i18n/LanguageContext';
+import { useTranslation, useLanguage } from './i18n/LanguageContext';
 import type { TranslationShape } from './i18n/translations';
 import { authFetch } from './apiFetch';
 import { getPersonalityProfile } from './personalityProfileStore';
@@ -101,6 +101,10 @@ function topicCacheKey(topic: string): string {
 
 interface DeepNotesData {
   topic: string;
+  // Language the notes were written in. A cached copy in a different language is treated
+  // as a miss (see isFreshForLocale) so switching language regenerates instead of
+  // showing stale-language notes forever. Missing = written before this field = Hinglish.
+  locale?: string;
   notesSource?: 'transcript' | 'metadata' | 'topic-only';
   summary: string;
   // Human-style handwritten-feel notes generated straight from the video
@@ -127,11 +131,15 @@ interface DeepNotesData {
 // videoContext (+ videoId, when known, so the server can ground notes in
 // the real transcript instead of generic title-based generation) and
 // gets the parsed notes object back.
-async function generateDeepNotes(topic: string, videoContext?: string, videoId?: string): Promise<DeepNotesData> {
+function isFreshForLocale(cached: { locale?: string } | null | undefined, locale: string): boolean {
+  return (cached?.locale ?? 'hinglish') === locale;
+}
+
+async function generateDeepNotes(topic: string, videoContext: string | undefined, videoId: string | undefined, locale: string): Promise<DeepNotesData> {
   const response = await authFetch('/api/generate-notes', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ topic, videoContext, videoId, personality: buildPersonalityBrief(getPersonalityProfile()) }),
+    body: JSON.stringify({ topic, videoContext, videoId, locale, personality: buildPersonalityBrief(getPersonalityProfile()) }),
   });
 
   const data = await response.json().catch(() => ({}));
@@ -158,6 +166,7 @@ async function fetchVideoMeta(videoId: string): Promise<{ title: string; descrip
 
 export default function Notes({ videoTitle, videoDescription, videoId }: { videoTitle?: string; videoDescription?: string; videoId?: string }) {
   const t = useTranslation();
+  const { locale } = useLanguage();
   const [topic, setTopic] = useState(videoTitle || '');
   const [notes, setNotes] = useState<DeepNotesData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -226,13 +235,17 @@ export default function Notes({ videoTitle, videoDescription, videoId }: { video
       const cacheKey = topicCacheKey(topic);
       const cached = localStorage.getItem(cacheKey);
       if (cached) {
-        setNotes(JSON.parse(cached));
-        setLoading(false);
-        return;
+        const parsed = JSON.parse(cached) as DeepNotesData;
+        if (isFreshForLocale(parsed, locale)) {
+          setNotes(parsed);
+          setLoading(false);
+          return;
+        }
       }
 
       const context = videoDescription ? `Title: ${videoTitle}\nDescription: ${videoDescription}` : '';
-      const deepNotes = await generateDeepNotes(topic, context, videoId);
+      const deepNotes = await generateDeepNotes(topic, context, videoId, locale);
+      deepNotes.locale = locale;
       if (videoId) setCurrentVideoId(videoId);
       localStorage.setItem(cacheKey, JSON.stringify(deepNotes));
       setNotes(deepNotes);
@@ -257,14 +270,18 @@ export default function Notes({ videoTitle, videoDescription, videoId }: { video
     try {
       const cached = localStorage.getItem(`deepnotes_v3_${videoId}`);
       if (cached) {
-        setNotes(JSON.parse(cached));
-        setLoading(false);
-        return;
+        const parsed = JSON.parse(cached) as DeepNotesData;
+        if (isFreshForLocale(parsed, locale)) {
+          setNotes(parsed);
+          setLoading(false);
+          return;
+        }
       }
 
       const meta = await fetchVideoMeta(videoId);
       const context = `Title: ${meta.title}\nDescription: ${meta.description.slice(0, 500)}`;
-      const deepNotes = await generateDeepNotes(meta.title, context, videoId);
+      const deepNotes = await generateDeepNotes(meta.title, context, videoId, locale);
+      deepNotes.locale = locale;
 
       localStorage.setItem(`deepnotes_v3_${videoId}`, JSON.stringify(deepNotes));
       setNotes(deepNotes);

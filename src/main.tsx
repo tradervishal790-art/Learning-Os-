@@ -15,6 +15,22 @@ const LiveJoin = lazy(() => import('./LiveJoin.tsx'))
 // Focus Player: standalone distraction-free player (sits inside AuthGate, which gives visitors a guest session if they have none).
 const FocusPlayer = lazy(() => import('./FocusPlayer.tsx'))
 
+// After a new deploy, a tab that was already open still points at old hashed chunk
+// files that no longer exist, so the next lazy screen (note editor, live test, focus
+// player...) fails to load. Vite fires `vite:preloadError` for that. Reload ONCE to pick
+// up the new version instead of showing the student a crash screen; the sessionStorage
+// guard stops a reload loop if the file is genuinely missing.
+window.addEventListener('vite:preloadError', (event) => {
+  try {
+    if (sessionStorage.getItem('learning_os_chunk_reload')) return;
+    sessionStorage.setItem('learning_os_chunk_reload', String(Date.now()));
+  } catch {
+    return; // can't guard against a loop -> let the error boundary handle it
+  }
+  event.preventDefault();
+  window.location.reload();
+});
+
 function Root() {
   const { pathname } = useLocation()
   if (pathname.startsWith('/live/')) {

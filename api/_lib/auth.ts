@@ -18,9 +18,13 @@
 // the signature was already verified by that lookup, so decoding the payload
 // afterwards is safe.
 //
-// NOTE: rate-limit + token cache live in serverless-instance memory, so every
-// limit here is best-effort (each warm instance counts separately). For a hard
-// global limit / daily AI budget, move `hits` to Upstash Redis / Firestore.
+// NOTE: the short-window rate limits + token cache live in serverless-instance
+// memory, so they are best-effort (each warm instance counts separately).
+// HARD DAILY BUDGET (optional): set UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN
+// (free Upstash Redis) and the per-guest daily limit, a global guest cap
+// (GUEST_GLOBAL_DAILY_LIMIT) and an optional all-users cap (GLOBAL_DAILY_LIMIT)
+// are counted in one shared place instead of per warm instance. Without those
+// env vars nothing changes. If Redis is down we fail OPEN (never lock students out).
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
@@ -36,6 +40,12 @@ const GUEST_RATE_LIMIT = Number(process.env.GUEST_RATE_LIMIT) || 40; // per gues
 const GUEST_DAILY_LIMIT = Number(process.env.GUEST_DAILY_LIMIT) || 150; // per guest, per 24 h
 const GUEST_IP_LIMIT = Number(process.env.GUEST_IP_LIMIT) || 200; // per IP (all guests), per 10 min — generous: hostels/colleges share one IP
 const DAY_MS = 24 * 60 * 60 * 1000;
+
+// Shared (hard) daily budget — see the NOTE at the top. All optional.
+const UPSTASH_URL = process.env.UPSTASH_REDIS_REST_URL;
+const UPSTASH_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
+const GUEST_GLOBAL_DAILY_LIMIT = Number(process.env.GUEST_GLOBAL_DAILY_LIMIT) || 5000; // all guests together, per UTC day
+const GLOBAL_DAILY_LIMIT = Number(process.env.GLOBAL_DAILY_LIMIT) || 0; // every caller together, per UTC day; 0 = off
 
 export interface RequireUserOptions {
   /** Let guest (anonymous) sessions through. Default false = login-only. */
@@ -57,6 +67,29 @@ function overLimit(key: string, limit: number, windowMs: number): boolean {
   recent.push(now);
   hits.set(key, recent);
   return false;
+}
+
+/**
+ * Increments each key in the shared Redis counter (one round trip) and returns the new
+ * counts, or null when Redis is not configured / unreachable (callers then fail open).
+ */
+async function sharedCounts(keys: string[], ttlSeconds: number): Promise<number[] | null> {
+  if (!UPSTASH_URL || !UPSTASH_TOKEN || keys.length === 0) return null;
+  try {
+    const commands = keys.flatMap((k) => [['INCR', k], ['EXPIRE', k, String(ttlSeconds), 'NX']]);
+    const r = await fetch(`${UPSTASH_URL}/pipeline`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${UPSTASH_TOKEN}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(commands),
+      signal: AbortSignal.timeout(1500), // never make a student wait on the budget check
+    });
+    if (!r.ok) return null;
+    const out = (await r.json()) as { result?: unknown }[];
+    const counts = keys.map((_, i) => out?.[i * 2]?.result);
+    return counts.every((n) => typeof n === 'number') ? (counts as number[]) : null;
+  } catch {
+    return null;
+  }
 }
 
 /** True when the (already verified) ID token belongs to an anonymous/guest session. Fails closed. */
@@ -95,6 +128,11 @@ async function verifyToken(idToken: string): Promise<{ uid: string; anonymous: b
   } catch {
     return null;
   }
+}
+
+/** UTC calendar day, e.g. 2026-10-22 — the key suffix for the daily counters. */
+function today(): string {
+  return new Date().toISOString().slice(0, 10);
 }
 
 function clientIp(req: VercelRequest): string {
@@ -138,10 +176,18 @@ export async function requireUser(
       });
       return null;
     }
+    // The IP bucket is shared by everyone on the same hostel / college / mobile-carrier
+    // network, so hitting it is usually NOT this student's fault — say so, and don't
+    // push them to sign up as if they had overspent.
+    if (overLimit(`guest-ip:${clientIp(req)}`, GUEST_IP_LIMIT, RATE_WINDOW_MS)) {
+      res.status(429).json({
+        error: 'Your network is very busy right now — please wait a few minutes and try again. (Signing in with a free account also avoids this.)',
+      });
+      return null;
+    }
     if (
       overLimit(`guest:${uid}`, GUEST_RATE_LIMIT, RATE_WINDOW_MS) ||
-      overLimit(`guest-day:${uid}`, GUEST_DAILY_LIMIT, DAY_MS) ||
-      overLimit(`guest-ip:${clientIp(req)}`, GUEST_IP_LIMIT, RATE_WINDOW_MS)
+      overLimit(`guest-day:${uid}`, GUEST_DAILY_LIMIT, DAY_MS)
     ) {
       res.status(429).json({
         error: 'You have used a lot of free guest requests — please sign in (free) to continue.',
@@ -149,12 +195,39 @@ export async function requireUser(
       });
       return null;
     }
+    const counts = await sharedCounts(
+      [`guest-day:${today()}:${uid}`, `guest-all:${today()}`, ...(GLOBAL_DAILY_LIMIT ? [`all:${today()}`] : [])],
+      DAY_MS / 1000 + 3600
+    );
+    if (counts) {
+      if (counts[0] > GUEST_DAILY_LIMIT) {
+        res.status(429).json({
+          error: 'You have used a lot of free guest requests — please sign in (free) to continue.',
+          code: 'account-required',
+        });
+        return null;
+      }
+      if (counts[1] > GUEST_GLOBAL_DAILY_LIMIT || (GLOBAL_DAILY_LIMIT && counts[2] > GLOBAL_DAILY_LIMIT)) {
+        res.status(429).json({
+          error: 'Free guest capacity is full for today. Sign in (free) to keep learning, or come back tomorrow.',
+          code: 'account-required',
+        });
+        return null;
+      }
+    }
     return uid;
   }
 
   if (overLimit(uid, RATE_LIMIT, RATE_WINDOW_MS)) {
     res.status(429).json({ error: 'Too many requests — please wait a few minutes.' });
     return null;
+  }
+  if (GLOBAL_DAILY_LIMIT) {
+    const counts = await sharedCounts([`all:${today()}`], DAY_MS / 1000 + 3600);
+    if (counts && counts[0] > GLOBAL_DAILY_LIMIT) {
+      res.status(429).json({ error: 'The AI has reached its daily limit — please try again tomorrow.' });
+      return null;
+    }
   }
   return uid;
 }

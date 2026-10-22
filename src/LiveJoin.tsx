@@ -5,6 +5,7 @@ import { isAnswered } from './testGrading';
 import { TakingScreen, type QuestionStatus } from './Test';
 import { JoinError, beginLiveAttempt, joinLiveSession, normalizeCode, normalizePhone, submitLiveAnswers, subscribeSession, type LiveSession } from './liveTest';
 import { loadSavedTheme } from './ThemeContext';
+import ConfirmDialog from './ConfirmDialog';
 
 // ============================================================
 // LiveJoin.tsx — public page at /live/:code (outside the login gate).
@@ -62,6 +63,10 @@ export default function LiveJoin() {
   const [submitted, setSubmitted] = useState(() => localStorage.getItem(doneKey(code)) === '1');
   const [submitState, setSubmitState] = useState<'idle' | 'sending' | 'failed'>('idle');
   const [submitNote, setSubmitNote] = useState('');
+  // In-app confirm box instead of window.confirm(): WhatsApp / Instagram / other in-app
+  // browsers (where live-test links are usually opened) can silently block native dialogs,
+  // which would make the Submit button look dead in the middle of a timed test.
+  const [submitPrompt, setSubmitPrompt] = useState<string | null>(null);
 
   // ── test-taking state (same shape as Test.tsx) ──
   const [answers, setAnswers] = useState<TestUserAnswer[]>([]);
@@ -275,7 +280,7 @@ export default function LiveJoin() {
   const confirmSubmit = () => {
     const unanswered = paper ? paper.questions.length - answers.filter((a) => isAnswered(a)).length : 0;
     const msg = unanswered > 0 ? `${unanswered} question(s) unanswered. Submit anyway?` : 'Submit the test now?';
-    if (confirm(msg)) void doSubmit();
+    setSubmitPrompt(msg);
   };
 
   // ── screens ──
@@ -300,8 +305,15 @@ export default function LiveJoin() {
         <p className="text-xl font-bold mb-2">Submitted ✓</p>
         <p className="text-sm text-gray-500 dark:text-white/60">
           {submitNote ? 'Your answers are already recorded (or the test has closed). ' : 'Your answers have been recorded. '}
-          The ranking will be shared by your host.
+          The ranking will be shared by your host. You can safely close this page now.
         </p>
+        {/* Funnel for the people who joined via a shared link: let them build their own practice. */}
+        <a
+          href="/dashboard/test"
+          className="mt-5 inline-block w-full py-3 rounded-xl border border-gray-200 dark:border-white/10 text-sm font-medium hover:bg-gray-100 dark:hover:bg-white/10"
+        >
+          Make your own practice tests — free
+        </a>
       </div>
     );
   }
@@ -413,6 +425,15 @@ export default function LiveJoin() {
         onClearResponse={clearResponse}
         onSubmit={confirmSubmit}
       />
+      {submitPrompt && (
+        <ConfirmDialog
+          message={submitPrompt}
+          confirmLabel="Submit"
+          cancelLabel="Keep working"
+          onConfirm={() => { setSubmitPrompt(null); void doSubmit(); }}
+          onCancel={() => setSubmitPrompt(null)}
+        />
+      )}
     </div>
   );
 }

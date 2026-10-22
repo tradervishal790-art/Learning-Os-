@@ -34,6 +34,8 @@ export default function AuthGate({ children }: { children: ReactNode }) {
   const isPublicRoute = location.pathname === '/';
   const [status, setStatus] = useState<'loading' | 'ready' | 'login'>('loading');
   const startingGuest = useRef(false);
+  // Flips true if we are still on the loading screen after a while (slow / dropped mobile data).
+  const [slow, setSlow] = useState(false);
 
   useEffect(() => {
     if (isPublicRoute) return;
@@ -59,6 +61,15 @@ export default function AuthGate({ children }: { children: ReactNode }) {
     return unsubscribe;
   }, [isPublicRoute]);
 
+  useEffect(() => {
+    if (status !== 'loading' || isPublicRoute) {
+      setSlow(false);
+      return;
+    }
+    const timer = setTimeout(() => setSlow(true), 8000);
+    return () => clearTimeout(timer);
+  }, [status, isPublicRoute]);
+
   // Apply the device/saved theme to <html> immediately — ThemeProvider
   // (inside App) hasn't mounted yet at this point, so without this the
   // login screen would render before the dark/light class is set.
@@ -74,8 +85,19 @@ export default function AuthGate({ children }: { children: ReactNode }) {
 
   if (status === 'loading') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-black text-black/60 dark:text-white/60 text-sm">
-        Loading...
+      <div className="min-h-screen flex flex-col items-center justify-center gap-3 px-6 text-center bg-white dark:bg-black text-black/60 dark:text-white/60 text-sm">
+        <span>{t.loadingScreen.loading}</span>
+        {slow && (
+          <>
+            <span className="max-w-xs text-xs text-black/50 dark:text-white/50">{t.loadingScreen.slow}</span>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 rounded-xl border border-gray-300 dark:border-white/20 text-xs font-medium text-black dark:text-white"
+            >
+              {t.loadingScreen.retry}
+            </button>
+          </>
+        )}
       </div>
     );
   }

@@ -12,6 +12,7 @@ import TestAnalysis from './TestAnalysis';
 import LiveHost from './LiveHost';
 import { loadDraft, saveDraft, clearDraft } from './testDraft';
 import DailyTest from './DailyTest';
+import ConfirmDialog from './ConfirmDialog';
 import { setImmersive } from './immersive';
 import { completeDailyTest, isDailyPaper, getDailyStatus } from './dailyTestStore';
 
@@ -42,6 +43,9 @@ export default function Test() {
   // Resume an unfinished test after refresh / tab close (see testDraft.ts).
   const [draft] = useState(() => loadDraft());
   const [stage, setStage] = useState<Stage>(draft ? 'taking' : 'list');
+  // In-app confirm boxes (native confirm() is unreliable in in-app browsers / installed PWAs).
+  const [submitPrompt, setSubmitPrompt] = useState<string | null>(null);
+  const [deletePrompt, setDeletePrompt] = useState<string | null>(null);
   // Hide the mobile bottom bar while a timed test is running.
   useEffect(() => {
     setImmersive(stage === 'taking');
@@ -134,9 +138,7 @@ export default function Test() {
     setStage('list');
   };
   const handleDeletePaper = (id: string) => {
-    if (!confirm('Delete this test? This cannot be undone.')) return;
-    deleteTestPaper(id);
-    refresh();
+    setDeletePrompt(id);
   };
 
   // ── taking a test ────────────────────────────────────────────────────
@@ -250,7 +252,7 @@ export default function Test() {
   const confirmSubmit = () => {
     const unanswered = activePaper ? activePaper.questions.length - answers.filter((a) => isAnswered(a)).length : 0;
     const msg = unanswered > 0 ? `${unanswered} question(s) unanswered. Submit anyway?` : 'Submit the test now?';
-    if (confirm(msg)) submitTest();
+    setSubmitPrompt(msg);
   };
 
   const startOver = () => {
@@ -333,6 +335,26 @@ export default function Test() {
 
       {stage === 'results' && attempt && (
         <ResultsDashboard attempt={attempt} allAttempts={history} onSaveInsight={handleSaveInsight} onSelfGrade={handleSelfGrade} onRetake={startOver} />
+      )}
+
+      {submitPrompt && (
+        <ConfirmDialog
+          message={submitPrompt}
+          confirmLabel="Submit"
+          cancelLabel="Keep working"
+          onConfirm={() => { setSubmitPrompt(null); submitTest(); }}
+          onCancel={() => setSubmitPrompt(null)}
+        />
+      )}
+      {deletePrompt && (
+        <ConfirmDialog
+          message="Delete this test? This cannot be undone."
+          confirmLabel="Delete"
+          cancelLabel="Cancel"
+          danger
+          onConfirm={() => { deleteTestPaper(deletePrompt); setDeletePrompt(null); refresh(); }}
+          onCancel={() => setDeletePrompt(null)}
+        />
       )}
     </div>
   );
