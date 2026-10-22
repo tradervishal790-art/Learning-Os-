@@ -149,18 +149,9 @@ function App() {
       });
       const result = await res.json();
       if (res.ok && result.roadmap) {
-        // Stamp the first topic's learning-start date client-side (server
-        // has no reliable "now" to attach) — this is the anchor the
-        // Revision engine schedules Day 1/3/7/15/30/60 checkpoints from.
-        const stampedRoadmap = {
-          ...result.roadmap,
-          children: (result.roadmap.children ?? []).map((t: any) =>
-            t.status === 'learning' && !t.learningStartedAt
-              ? { ...t, learningStartedAt: new Date().toISOString() }
-              : t
-          ),
-        };
-        saveRoadmapData(goalId, stampedRoadmap);
+        // No revision clock yet: it starts the day each class is finished (roadmapWatch.ts /
+        // markTopicFinished), so Day 1/3/7... are counted from the real class day.
+        saveRoadmapData(goalId, result.roadmap);
         setLastRoadmapError(null);
         return true;
       }

@@ -16,6 +16,10 @@ import { pushToCloud, pullFromCloud } from './cloudSync';
 
 const REVISION_REVIEWS_STORAGE_KEY = 'learning_os_revision_reviews';
 const CLOUD_KEY = 'revisionReviews';
+// topicId -> ISO time of the most recent review. Lets the schedule push a late learner's next
+// checkpoint forward instead of showing several overdue ones one after another.
+const REVIEW_DATES_STORAGE_KEY = 'learning_os_revision_review_dates';
+const DATES_CLOUD_KEY = 'revisionReviewDates';
 
 type ReviewsMap = Record<string, number[]>; // topicId -> reviewed schedule days
 
@@ -39,6 +43,31 @@ function saveReviews(reviews: ReviewsMap): void {
   void pushToCloud(CLOUD_KEY, reviews);
 }
 
+type DatesMap = Record<string, string>;
+
+function loadDates(): DatesMap {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(REVIEW_DATES_STORAGE_KEY) || '{}');
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveDates(dates: DatesMap): void {
+  try {
+    localStorage.setItem(REVIEW_DATES_STORAGE_KEY, JSON.stringify(dates));
+  } catch {
+    // non-critical
+  }
+  void pushToCloud(DATES_CLOUD_KEY, dates);
+}
+
+/** ISO time this topic was last marked reviewed, or null (never, or reviewed before dates were kept). */
+export function getLastReviewedAt(topicId: string): string | null {
+  return loadDates()[topicId] ?? null;
+}
+
 /**
  * Called once, the first time the Revision page is opened (see
  * Revision.tsx) — not upfront on sign-in — to pull revision history down
@@ -47,6 +76,16 @@ function saveReviews(reviews: ReviewsMap): void {
  * on Device B, wrongly re-triggering "overdue" reminders there.
  */
 export async function hydrateRevisionFromCloud(): Promise<void> {
+  if (Object.keys(loadDates()).length === 0) {
+    const cloudDates = await pullFromCloud<DatesMap>(DATES_CLOUD_KEY);
+    if (cloudDates && Object.keys(cloudDates).length > 0) {
+      try {
+        localStorage.setItem(REVIEW_DATES_STORAGE_KEY, JSON.stringify(cloudDates));
+      } catch {
+        // Best-effort.
+      }
+    }
+  }
   if (Object.keys(loadReviews()).length > 0) return; // this device already has review history — don't clobber it
   const cloud = await pullFromCloud<ReviewsMap>(CLOUD_KEY);
   if (cloud && Object.keys(cloud).length > 0) {
@@ -70,6 +109,7 @@ export function markDayReviewed(topicId: string, day: number): void {
   if (!existing.includes(day)) {
     reviews[topicId] = [...existing, day].sort((a, b) => a - b);
     saveReviews(reviews);
+    saveDates({ ...loadDates(), [topicId]: new Date().toISOString() });
   }
 }
 
@@ -79,4 +119,10 @@ export function unmarkDayReviewed(topicId: string, day: number): void {
   const existing = reviews[topicId] ?? [];
   reviews[topicId] = existing.filter((d) => d !== day);
   saveReviews(reviews);
+  // The previous review date is not kept, so fall back to the plain schedule for this topic.
+  const dates = loadDates();
+  if (topicId in dates) {
+    delete dates[topicId];
+    saveDates(dates);
+  }
 }

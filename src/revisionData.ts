@@ -1,17 +1,10 @@
 import type { RevisionItem, RevisionStatus, RevisionDifficulty, Topic, Difficulty, Goal } from './types';
 import { getRoadmapData } from './roadmapData';
-import { getReviewedDays } from './revisionstore';
+import { getReviewedDays, getLastReviewedAt } from './revisionstore';
+import { SCHEDULE_DAYS, nextCheckpoint } from './revisionSchedule';
 import type { TranslationShape } from './i18n/translations';
 
-// Standard spaced-repetition checkpoints, referenced across the app copy
-// (App.tsx demo modal) as "Day 1, 3, 7, 15, 30, 60".
-const SCHEDULE_DAYS = [1, 3, 7, 15, 30, 60];
-
-function daysBetween(fromISO: string, to: Date = new Date()): number {
-  const from = new Date(fromISO).getTime();
-  if (Number.isNaN(from)) return 0;
-  return Math.floor((to.getTime() - from) / (1000 * 60 * 60 * 24));
-}
+// Checkpoints (Day 1, 3, 7, 15, 30, 60) and the due-date rules live in revisionSchedule.ts.
 
 function formatDueDate(daysUntilDue: number): string {
   if (daysUntilDue === 0) return 'Today';
@@ -104,7 +97,6 @@ export function getRevisionData(revisionTasks: TranslationShape['revisionTasks']
   for (const topic of topics) {
     if (topic.status === 'locked' || !topic.learningStartedAt) continue;
 
-    const elapsedDays = daysBetween(topic.learningStartedAt, now);
     const reviewedDays = getReviewedDays(topic.id);
     const allCheckpointsDone = SCHEDULE_DAYS.every((d) => reviewedDays.includes(d));
 
@@ -126,10 +118,14 @@ export function getRevisionData(revisionTasks: TranslationShape['revisionTasks']
       continue;
     }
 
-    const nextDay = SCHEDULE_DAYS.find((d) => !reviewedDays.includes(d));
-    if (nextDay === undefined) continue;
-
-    const daysUntilDue = nextDay - elapsedDays;
+    const next = nextCheckpoint({
+      startedAt: topic.learningStartedAt,
+      reviewedDays,
+      lastReviewedAt: getLastReviewedAt(topic.id),
+      now,
+    });
+    if (!next) continue;
+    const { day: nextDay, daysUntilDue } = next;
     let status: RevisionStatus;
     if (daysUntilDue > 0) status = 'upcoming';
     else if (daysUntilDue === 0) status = 'due-today';

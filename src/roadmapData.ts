@@ -145,15 +145,17 @@ export function markTopicFinished(
   if (current.status === finalStatus) return; // already there, nothing to do
 
   const updatedChildren = [...children];
-  updatedChildren[index] = { ...current, status: finalStatus };
+  // Finishing a class starts its revision clock today (Day 1/3/7... are counted from the class day).
+  // Mastered (every checkpoint done) leaves the existing clock alone.
+  updatedChildren[index] =
+    finalStatus === 'completed'
+      ? { ...current, status: finalStatus, learningStartedAt: new Date().toISOString() }
+      : { ...current, status: finalStatus };
 
+  // The next class opens, but gets no revision clock until it is finished too.
   for (let i = index + 1; i < updatedChildren.length; i++) {
     if (updatedChildren[i].status === 'locked') {
-      updatedChildren[i] = {
-        ...updatedChildren[i],
-        status: 'learning' as const,
-        learningStartedAt: new Date().toISOString(),
-      };
+      updatedChildren[i] = { ...updatedChildren[i], status: 'learning' as const };
       break;
     }
   }

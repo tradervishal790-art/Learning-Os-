@@ -155,13 +155,14 @@ function updateRoadmapFromWatch(
 
         if (topic.status === 'locked') {
           changed = true;
-          return { ...topic, status: 'learning' as const, learningStartedAt: new Date().toISOString() };
+          return { ...topic, status: 'learning' as const };
         }
 
         if (topic.status === 'learning' && watchPercentage >= LEARNING_TO_COMPLETED_THRESHOLD) {
           changed = true;
           justCompletedIndex = index;
-          return { ...topic, status: 'completed' as const };
+          // Class finished: its revision clock (Day 1/3/7...) starts today.
+          return { ...topic, status: 'completed' as const, learningStartedAt: new Date().toISOString() };
         }
 
         return topic;
@@ -173,11 +174,7 @@ function updateRoadmapFromWatch(
       if (justCompletedIndex !== -1) {
         for (let i = justCompletedIndex + 1; i < updatedChildren.length; i++) {
           if (updatedChildren[i].status === 'locked') {
-            updatedChildren[i] = {
-              ...updatedChildren[i],
-              status: 'learning' as const,
-              learningStartedAt: new Date().toISOString(),
-            };
+            updatedChildren[i] = { ...updatedChildren[i], status: 'learning' as const };
             changed = true;
             break;
           }

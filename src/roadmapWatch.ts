@@ -3,7 +3,8 @@
 // Pure rule for "the learner watched a video that was opened FROM a roadmap topic".
 // Finishing the class (watching it through) completes THAT topic and opens the next one —
 // revision is a separate schedule (revisionData.ts) that keeps running on its own clock
-// and never decides whether the next class is available.
+// and never decides whether the next class is available. The revision clock starts the day the
+// class is FINISHED (not when the topic unlocks), so Day 1/3/7... are counted from the real class day.
 
 import type { Topic } from './types';
 
@@ -34,15 +35,16 @@ export function applyWatchToTopic(roadmap: Topic, topicId: string, watchPercenta
 
   if (watchPercentage < WATCH_DONE_PCT) {
     if (topic.status === 'learning') return { found: true, roadmap: null };
-    next[index] = { ...topic, status: 'learning', learningStartedAt: stamp };
+    next[index] = { ...topic, status: 'learning' };
     return { found: true, roadmap: { ...roadmap, children: next } };
   }
 
-  // Class finished. Keep (or start) the revision clock for this topic, then open the next class.
-  next[index] = { ...topic, status: 'completed', learningStartedAt: topic.learningStartedAt ?? stamp };
+  // Class finished: the revision clock starts TODAY (even if the topic unlocked days ago), then the
+  // next class opens — without a revision clock of its own until that class is finished too.
+  next[index] = { ...topic, status: 'completed', learningStartedAt: stamp };
   for (let i = index + 1; i < next.length; i++) {
     if (next[i].status === 'locked') {
-      next[i] = { ...next[i], status: 'learning', learningStartedAt: stamp };
+      next[i] = { ...next[i], status: 'learning' };
       break;
     }
   }

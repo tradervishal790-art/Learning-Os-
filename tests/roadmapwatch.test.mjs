@@ -16,20 +16,22 @@ test('finishing the class completes THAT topic, opens the next one, and starts i
   assert.equal(a.status, 'completed');
   assert.equal(a.learningStartedAt, NOW.toISOString(), 'revision schedule starts now');
   assert.equal(b.status, 'learning', 'next class is open');
+  assert.equal(b.learningStartedAt, undefined, 'the next class has no revision clock until it is finished');
   assert.equal(c.status, 'locked', 'only the next one opens');
 });
 
-test('an existing revision start date is kept (revision keeps its own clock)', async () => {
+test('the revision clock starts the day the class is finished, even if the topic unlocked days earlier', async () => {
   const { applyWatchToTopic } = await loadTs('src/roadmapWatch.ts');
   const r = road(topic('t1', 'learning', { learningStartedAt: '2026-10-01T00:00:00.000Z' }), topic('t2', 'locked'));
   const out = applyWatchToTopic(r, 't1', 100, NOW);
-  assert.equal(out.roadmap.children[0].learningStartedAt, '2026-10-01T00:00:00.000Z');
+  assert.equal(out.roadmap.children[0].learningStartedAt, NOW.toISOString());
 });
 
 test('between 70% and 85%: starts a locked topic, otherwise changes nothing', async () => {
   const { applyWatchToTopic } = await loadTs('src/roadmapWatch.ts');
   let out = applyWatchToTopic(road(topic('t1', 'locked')), 't1', 75, NOW);
   assert.equal(out.roadmap.children[0].status, 'learning');
+  assert.equal(out.roadmap.children[0].learningStartedAt, undefined, 'started, not finished: no revision clock yet');
   out = applyWatchToTopic(road(topic('t1', 'learning'), topic('t2', 'locked')), 't1', 75, NOW);
   assert.equal(out.roadmap, null);
 });
