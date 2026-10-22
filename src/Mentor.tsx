@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, lazy, Suspense } from 'react';
 import { MENTOR_PREFILL_KEY } from './mentorPrefill';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Lightbulb, BookOpenText, Link2, ListChecks, Hammer, Bug, SendHorizontal } from 'lucide-react';
+import { Lightbulb, BookOpenText, Link2, ListChecks, Hammer, Bug, SendHorizontal, Plus, History, Trash2, X } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { setImmersive, useImmersive } from './immersive';
 import { useTranslation, useLanguage } from './i18n/LanguageContext';
@@ -9,7 +9,17 @@ import { format } from './i18n/format';
 import type { TranslationShape } from './i18n/translations';
 import { buildMentorStudentContext } from './mentorContext';
 import { authFetch } from './apiFetch';
-import { loadMentorChat, saveMentorChat } from './mentorChatStore';
+import {
+  loadActiveMentorChat,
+  loadMentorChatById,
+  saveMentorChat,
+  setActiveMentorChat,
+  deleteMentorChat,
+  listMentorChats,
+  newMentorChatId,
+  type MentorChatMeta,
+  type StoredMentorMessage,
+} from './mentorChatStore';
 import MentorText from './MentorText';
 import { richMentorEnabled } from './mentorUi/flag';
 
@@ -96,16 +106,16 @@ const stripEmoji = (label: string) => label.replace(/^[\p{Extended_Pictographic}
 export default function Mentor() {
   const t = useTranslation();
   const { locale } = useLanguage();
-  const [messages, setMessages] = useState<Message[]>(() => [
-    {
-      id: WELCOME_ID,
-      role: 'mentor',
-      content: t.mentor.welcomeMessage,
-      timestamp: new Date(),
-    },
-    // Restore this user's earlier conversation from the device.
-    ...loadMentorChat().map((m) => ({ ...m, timestamp: new Date(m.timestamp) })),
-  ]);
+  // Welcome message + a saved conversation (restored from the device) or nothing for a new chat.
+  const withWelcome = (saved: StoredMentorMessage[]): Message[] => [
+    { id: WELCOME_ID, role: 'mentor', content: t.mentor.welcomeMessage, timestamp: new Date() },
+    ...saved.map((m) => ({ ...m, timestamp: new Date(m.timestamp) })),
+  ];
+  const [initialChat] = useState(() => loadActiveMentorChat());
+  const [chatId, setChatId] = useState<string>(() => initialChat?.id ?? newMentorChatId());
+  const [messages, setMessages] = useState<Message[]>(() => withWelcome(initialChat?.messages ?? []));
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [chatList, setChatList] = useState<MentorChatMeta[]>([]);
   const [input, setInput] = useState(() => {
     try {
       const pre = sessionStorage.getItem(MENTOR_PREFILL_KEY);
@@ -128,11 +138,12 @@ export default function Mentor() {
     if (messages.length > 1) messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     // Persist everything except the localized welcome (rebuilt on every open).
     saveMentorChat(
+      chatId,
       messages
         .filter((m) => m.id !== WELCOME_ID)
         .map((m) => ({ id: m.id, role: m.role, content: m.content, ui: m.ui, timestamp: m.timestamp.toISOString() }))
     );
-  }, [messages]);
+  }, [messages, chatId]);
 
   // Watch history se context nikaal lo — used internally to give Gemini
   // relevant context, NOT shown in the UI (keeps the header clean).
@@ -144,6 +155,42 @@ export default function Mentor() {
       }
     } catch {}
   }, []);
+
+  const hasStarted = messages.some((m) => m.role === 'user');
+
+  const startNewChat = () => {
+    if (loading || !hasStarted) return; // already on a blank chat
+    setChatId(newMentorChatId());
+    setMessages(withWelcome([]));
+    setActiveMentorChat(null);
+    setInput('');
+    setHistoryOpen(false);
+  };
+
+  const openHistory = () => {
+    setChatList(listMentorChats());
+    setHistoryOpen(true);
+  };
+
+  const openChat = (id: string) => {
+    if (loading) return;
+    if (id !== chatId) {
+      setChatId(id);
+      setMessages(withWelcome(loadMentorChatById(id)));
+      setActiveMentorChat(id);
+    }
+    setHistoryOpen(false);
+  };
+
+  const removeChat = (id: string) => {
+    if (!window.confirm(t.mentor.chats.deleteConfirm)) return;
+    deleteMentorChat(id);
+    setChatList(listMentorChats());
+    if (id === chatId) {
+      setChatId(newMentorChatId());
+      setMessages(withWelcome([]));
+    }
+  };
 
   const sendMessage = async (text: string) => {
     if (!text.trim() || loading) return;
@@ -176,10 +223,68 @@ export default function Mentor() {
 
   return (
     <div className="min-h-dvh text-black dark:text-white flex flex-col p-4 md:p-8">
-      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-4 md:mb-6">
-        <h1 className="text-2xl md:text-4xl font-bold mb-1 md:mb-2">{t.mentor.header.title}</h1>
-        <p className="hidden md:block text-gray-500 dark:text-white/60">{t.mentor.header.subtitle}</p>
+      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-4 md:mb-6 flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-2xl md:text-4xl font-bold mb-1 md:mb-2">{t.mentor.header.title}</h1>
+          <p className="hidden md:block text-gray-500 dark:text-white/60">{t.mentor.header.subtitle}</p>
+        </div>
+        <div className="flex gap-2 flex-shrink-0">
+          <button
+            type="button"
+            onClick={openHistory}
+            aria-label={t.mentor.chats.history}
+            title={t.mentor.chats.history}
+            className="h-9 px-3 inline-flex items-center gap-1.5 card rounded-full text-xs hover:bg-gray-100 dark:hover:bg-white/10 transition"
+          >
+            <History className="w-4 h-4" strokeWidth={1.75} />
+            <span className="hidden sm:inline">{t.mentor.chats.history}</span>
+          </button>
+          <button
+            type="button"
+            onClick={startNewChat}
+            disabled={loading || !hasStarted}
+            aria-label={t.mentor.chats.newChat}
+            title={t.mentor.chats.newChat}
+            className="h-9 px-3 inline-flex items-center gap-1.5 bg-indigo-600 text-white dark:bg-indigo-500 rounded-full text-xs font-semibold disabled:opacity-40 transition"
+          >
+            <Plus className="w-4 h-4" strokeWidth={2} />
+            <span className="hidden sm:inline">{t.mentor.chats.newChat}</span>
+          </button>
+        </div>
       </motion.div>
+
+      {historyOpen && (
+        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center" role="dialog" aria-modal="true" aria-label={t.mentor.chats.historyTitle}>
+          <button type="button" aria-label={t.mentor.chats.close} onClick={() => setHistoryOpen(false)} className="absolute inset-0 bg-black/50" />
+          <div className="relative w-full md:max-w-md max-h-[75vh] flex flex-col bg-white dark:bg-neutral-900 border border-gray-200 dark:border-white/10 rounded-t-2xl md:rounded-2xl pb-[env(safe-area-inset-bottom)]">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-white/10">
+              <h2 className="font-semibold">{t.mentor.chats.historyTitle}</h2>
+              <button type="button" onClick={() => setHistoryOpen(false)} aria-label={t.mentor.chats.close} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-white/10">
+                <X className="w-4 h-4" strokeWidth={1.75} />
+              </button>
+            </div>
+            <div className="overflow-y-auto p-2">
+              {chatList.length === 0 ? (
+                <p className="text-sm text-gray-500 dark:text-white/60 p-4">{t.mentor.chats.empty}</p>
+              ) : (
+                <ul className="space-y-1">
+                  {chatList.map((c) => (
+                    <li key={c.id} className={`flex items-center gap-1 rounded-xl ${c.id === chatId ? 'bg-indigo-600/10' : ''}`}>
+                      <button type="button" onClick={() => openChat(c.id)} disabled={loading} className="flex-1 min-w-0 text-left px-3 py-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-white/10 disabled:opacity-50">
+                        <div className="text-sm font-medium truncate">{c.title || t.mentor.chats.untitled}</div>
+                        <div className="text-[11px] opacity-60">{new Date(c.updatedAt).toLocaleDateString(locale === 'hinglish' ? 'en-IN' : locale, { day: 'numeric', month: 'short' })}</div>
+                      </button>
+                      <button type="button" onClick={() => removeChat(c.id)} disabled={loading} aria-label={t.mentor.chats.deleteChat} title={t.mentor.chats.deleteChat} className="w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-full text-gray-500 hover:text-red-600 hover:bg-gray-100 dark:hover:bg-white/10 disabled:opacity-40">
+                        <Trash2 className="w-4 h-4" strokeWidth={1.75} />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Chat area */}
       <div className="flex-1 max-w-4xl mx-auto w-full md:bg-gray-50 md:dark:bg-white/5 md:border md:border-gray-200 md:dark:border-white/10 md:rounded-2xl flex flex-col md:overflow-hidden">

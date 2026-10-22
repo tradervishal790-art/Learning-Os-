@@ -738,6 +738,16 @@ export interface TranslationShape {
       counter: string; // "{0}" = current card, "{1}" = total
       renderFailed: string;
     };
+    chats: {
+      newChat: string;
+      history: string;
+      historyTitle: string;
+      empty: string;
+      untitled: string;
+      deleteChat: string;
+      deleteConfirm: string;
+      close: string;
+    };
   };
   progress: {
     header: { title: string; subtitle: string };
@@ -2317,6 +2327,16 @@ export const translations: Record<Locale, TranslationShape> = {
         counter: '{0} of {1}',
         renderFailed: "Couldn't show this reply as cards. Please ask again.",
       },
+      chats: {
+        newChat: 'New chat',
+        history: 'History',
+        historyTitle: 'Your chats',
+        empty: 'No saved chats yet. Your conversations will appear here.',
+        untitled: 'New chat',
+        deleteChat: 'Delete chat',
+        deleteConfirm: "Delete this chat? This can't be undone.",
+        close: 'Close',
+      },
     },
     progress: {
       header: { title: 'Progress', subtitle: 'Your real stats — streak, watch time, weak spots' },
@@ -3893,6 +3913,16 @@ export const translations: Record<Locale, TranslationShape> = {
         next: 'आगे',
         counter: '{1} में से {0}',
         renderFailed: 'यह जवाब कार्ड में नहीं दिख पाया। कृपया फिर से पूछें।',
+      },
+      chats: {
+        newChat: 'नई चैट',
+        history: 'हिस्ट्री',
+        historyTitle: 'आपकी चैट्स',
+        empty: 'अभी कोई सेव की हुई चैट नहीं है। आपकी बातचीत यहाँ दिखेगी।',
+        untitled: 'नई चैट',
+        deleteChat: 'चैट हटाएं',
+        deleteConfirm: 'यह चैट हटाएं? यह वापस नहीं आएगी।',
+        close: 'बंद करें',
       },
     },
     progress: {
@@ -5471,6 +5501,16 @@ export const translations: Record<Locale, TranslationShape> = {
         next: 'Aage',
         counter: '{0} / {1}',
         renderFailed: 'Yeh jawab card mein nahi dikh paaya. Kripya phir se poochhein.',
+      },
+      chats: {
+        newChat: 'Nayi chat',
+        history: 'History',
+        historyTitle: 'Aapki chats',
+        empty: 'Abhi koi saved chat nahi hai. Aapki baatcheet yahan dikhegi.',
+        untitled: 'Nayi chat',
+        deleteChat: 'Chat hatayein',
+        deleteConfirm: 'Yeh chat hatayein? Yeh wapas nahi aayegi.',
+        close: 'Band karein',
       },
     },
     progress: {
