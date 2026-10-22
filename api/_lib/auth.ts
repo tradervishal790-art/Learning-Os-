@@ -40,14 +40,6 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 export interface RequireUserOptions {
   /** Let guest (anonymous) sessions through. Default false = login-only. */
   allowAnonymous?: boolean;
-  /**
-   * Extra, tighter cap for an EXPENSIVE guest-allowed endpoint (e.g. roadmap or
-   * notes generation): at most `perDay` calls per guest per 24 h on top of the
-   * general guest budgets. Lets a visitor feel the product once, free, before
-   * being asked to sign up. Ignored for account holders. Best-effort like every
-   * limit here (per warm serverless instance) — see the NOTE at the top.
-   */
-  guestQuota?: { name: string; perDay: number };
 }
 
 const hits = new Map<string, number[]>();
@@ -149,9 +141,7 @@ export async function requireUser(
     if (
       overLimit(`guest:${uid}`, GUEST_RATE_LIMIT, RATE_WINDOW_MS) ||
       overLimit(`guest-day:${uid}`, GUEST_DAILY_LIMIT, DAY_MS) ||
-      overLimit(`guest-ip:${clientIp(req)}`, GUEST_IP_LIMIT, RATE_WINDOW_MS) ||
-      (options.guestQuota !== undefined &&
-        overLimit(`guest-quota:${options.guestQuota.name}:${uid}`, options.guestQuota.perDay, DAY_MS))
+      overLimit(`guest-ip:${clientIp(req)}`, GUEST_IP_LIMIT, RATE_WINDOW_MS)
     ) {
       res.status(429).json({
         error: 'You have used a lot of free guest requests — please sign in (free) to continue.',

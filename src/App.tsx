@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, Suspense, lazy } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { shouldSkipHeavyVisuals } from './lowEnd';
+import Sphere from './Sphere';
 import Stars from './Stars';
 import Dashboard, { hydrateActiveDaysFromCloud } from './Dashboard';
 import { ThemeProvider } from './ThemeContext';
@@ -21,11 +21,6 @@ import { useAuthPrompt, SignInButton } from './AuthPrompt';
 // initial landing/dashboard bundle, so it's loaded on demand only.
 const Onboarding3D = lazy(() => import('./Onboarding3D'));
 
-// The landing sphere pulls in three.js (~700 KB). It is purely decorative, so load it
-// on demand (never blocks the first paint or the dashboard) and skip it on weak devices.
-const Sphere = lazy(() => import('./Sphere'));
-const SKIP_HEAVY_VISUALS = shouldSkipHeavyVisuals();
-
 type Page = 'landing' | 'onboarding' | 'dashboard';
 
 const ONBOARDING_STORAGE_KEY = 'learning_os_onboarding_data';
@@ -44,7 +39,7 @@ function loadSavedOnboardingData(): UserOnboardingData | null {
 
 function App() {
   const t = useTranslation();
-  const { isGuest } = useAuthPrompt();
+  const { isGuest, openSignIn } = useAuthPrompt();
   const { setLanguage } = useLanguage();
   const demoSteps = t.demo.steps;
   const navigate = useNavigate();
@@ -126,9 +121,6 @@ function App() {
   // shown in Roadmap.tsx's failure banner so a failure is debuggable
   // instead of a silent "something went wrong".
   const [lastRoadmapError, setLastRoadmapError] = useState<string | null>(null);
-  // True while a roadmap is being built in the background (onboarding no longer
-  // blocks on it) — Roadmap.tsx shows a spinner instead of the empty-state form.
-  const [roadmapGenerating, setRoadmapGenerating] = useState(false);
 
   /**
    * Generates a roadmap via the API and saves it to localStorage. Shared by
@@ -142,8 +134,11 @@ function App() {
    * the browser console can show WHY, instead of a black-box failure.
    */
   const generateAndSaveRoadmap = async (data: UserOnboardingData, goalId?: string): Promise<boolean> => {
-    // Guests may build their first roadmap(s) for free — the server caps them per day
-    // and answers `account-required` once that's used up (handled below).
+    // Roadmaps need an account (server enforces it too). Ask a guest to sign in instead of failing.
+    if (isGuest) {
+      openSignIn(t.dashboard.sidebar.roadmap);
+      return false;
+    }
     try {
       const learningProfile = getLearningProfile();
       const personalityBrief = buildPersonalityBrief(getPersonalityProfile());
@@ -168,11 +163,6 @@ function App() {
         saveRoadmapData(goalId, stampedRoadmap);
         setLastRoadmapError(null);
         return true;
-      }
-      if (result?.code === 'account-required') {
-        // Free guest quota used up. apiFetch.ts already opened the sign-in prompt;
-        // remember this goal so the pending-roadmap effect builds it after sign-in.
-        localStorage.setItem(PENDING_ROADMAP_KEY, goalId ?? 'primary');
       }
       const serverMessage =
         typeof result?.error === 'string'
@@ -217,16 +207,21 @@ function App() {
     saveGoals([primaryGoal]);
     setActiveGoalId('primary');
 
-    // Don't make the learner stare at a spinner for up to a minute: land on the
-    // Roadmap page right away and build the roadmap in the background. If it fails,
-    // Roadmap.tsx falls back to its default empty state (with the error shown).
-    navigate('/dashboard/roadmap');
-    setRoadmapGenerating(true);
-    void generateAndSaveRoadmap(data, 'primary')
-      .then((ok) => {
-        if (ok) setRoadmapVersion((v) => v + 1);
-      })
-      .finally(() => setRoadmapGenerating(false));
+    // A guest has no account yet: park the roadmap, show the dashboard (Mind Blueprint, videos
+    // and dictionary are open to guests) and ask them to sign in — the roadmap is then built
+    // automatically (see the pending-roadmap effect below).
+    if (isGuest) {
+      localStorage.setItem(PENDING_ROADMAP_KEY, 'primary');
+      setPage('dashboard');
+      openSignIn(t.dashboard.sidebar.roadmap);
+      return;
+    }
+
+    // If generation fails, Roadmap.tsx falls back to its default empty state —
+    // don't block the user from reaching the dashboard.
+    await generateAndSaveRoadmap(data, 'primary');
+
+    setPage('dashboard');
   };
 
   // Used by the Settings panel to edit name / role / goal / language
@@ -252,12 +247,9 @@ function App() {
     const pendingGoalId = localStorage.getItem(PENDING_ROADMAP_KEY);
     if (!pendingGoalId) return;
     localStorage.removeItem(PENDING_ROADMAP_KEY);
-    setRoadmapGenerating(true);
-    void generateAndSaveRoadmap(userData, pendingGoalId)
-      .then((ok) => {
-        if (ok) setRoadmapVersion((v) => v + 1);
-      })
-      .finally(() => setRoadmapGenerating(false));
+    void generateAndSaveRoadmap(userData, pendingGoalId).then((ok) => {
+      if (ok) setRoadmapVersion((v) => v + 1);
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isGuest, userData]);
   const handleRegenerateRoadmap = async (): Promise<boolean> => {
@@ -372,7 +364,6 @@ function App() {
         onGenerateForSubject={handleGenerateForSubject}
         roadmapVersion={roadmapVersion}
         lastRoadmapError={lastRoadmapError}
-        roadmapGenerating={roadmapGenerating}
         goals={goals}
         activeGoalId={activeGoalId}
         onAddGoal={handleAddGoal}
@@ -395,13 +386,9 @@ function App() {
             zIndex: 2,
           }}
         />
-        {!SKIP_HEAVY_VISUALS && (
-          <div className="absolute inset-0 flex items-center justify-center" style={{ zIndex: 3 }}>
-            <Suspense fallback={null}>
-              <Sphere />
-            </Suspense>
-          </div>
-        )}
+        <div className="absolute inset-0 flex items-center justify-center" style={{ zIndex: 3 }}>
+          <Sphere />
+        </div>
 
         <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-6 text-center">
           <motion.div

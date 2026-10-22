@@ -17,8 +17,7 @@ export interface NavEntry {
   locked: boolean;
 }
 
-// Core loop only (keep in sync with PRIMARY_NAV_IDS in Dashboard.tsx); everything else is under More.
-const PRIMARY_IDS = ['dashboard', 'roadmap', 'revision', 'progress'];
+const PRIMARY_IDS = ['dashboard', 'roadmap', 'mentor', 'progress'];
 
 function LockBadge() {
   return (

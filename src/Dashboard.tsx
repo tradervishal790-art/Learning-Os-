@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState, lazy, Suspense } from 'react';
 import type { ComponentType } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Film, BookOpen, ClipboardCheck, Newspaper, Lock, Settings as SettingsIcon, Bell, X as CloseIcon, Target, RotateCcw, Flame, Check, ChevronRight, ChevronDown, ArrowLeft } from 'lucide-react';
+import { Search, Film, BookOpen, ClipboardCheck, Newspaper, Lock, Settings as SettingsIcon, Bell, X as CloseIcon, Target, RotateCcw, Flame, Check, ChevronRight, ArrowLeft } from 'lucide-react';
 import PagePlaceholder from './PagePlaceholder';
 import BottomNav from './BottomNav';
 import QuickGrid from './QuickGrid';
@@ -17,10 +17,9 @@ import { computeGrowthEdges } from './growthEdges';
 import { getBehaviourStats } from './behaviourStats';
 import WelcomeBack from './WelcomeBack';
 import DailyHabit from './DailyHabit';
-import { computeStreak, localDayKey } from './streak';
 import { analyzeAttempt, analyzeHistory } from './testAnalytics';
 import { getTestAttempts } from './testStore';
-import { getLearningProfile, getLearningProfileOrNeutral, saveLearningProfile, clearLearningProfile } from './learningProfileStore';
+import { getLearningProfile, saveLearningProfile, clearLearningProfile } from './learningProfileStore';
 import { getEngagementSessions } from './engagementStore';
 import { pushToCloud, pullFromCloud } from './cloudSync';
 import { buildCandidatePoolForConcept } from './conceptVideoPool';
@@ -73,9 +72,9 @@ function PageLoading() {
 // must match an `id` added on the actual sidebar/nav element it targets.
 function getDashboardTour(t: ReturnType<typeof useTranslation>): Tour[] {
   // Phones have no sidebar — the tour points at the bottom bar there.
-  // Roadmap, Revision and Progress are all primary slots (see BottomNav PRIMARY_IDS).
+  // Revision lives behind the "More" slot on phones.
   const phone = typeof window !== 'undefined' && !window.matchMedia('(min-width: 768px)').matches;
-  const navSel = (id: string) => (phone ? `#onborda-bnav-${id}` : `#onborda-nav-${id}`);
+  const navSel = (id: string) => (phone ? `#onborda-bnav-${id === 'revision' ? 'more' : id}` : `#onborda-nav-${id}`);
   const navSide = phone ? 'top' : 'right';
   return [
     {
@@ -149,8 +148,6 @@ interface DashboardProps {
   /** Actual server/network error message from the last generation attempt,
    *  shown in Roadmap.tsx's failure banner so failures are debuggable. */
   lastRoadmapError: string | null;
-  /** A roadmap is being built in the background (shown as a spinner on the Roadmap page). */
-  roadmapGenerating?: boolean;
   /** Up to 2 goals can be 'active' simultaneously — each with its own
    *  roadmap. Passed straight through to Roadmap.tsx for the goal tabs. */
   goals: Goal[];
@@ -206,15 +203,9 @@ function playReminderBell() {
 }
 
 // Pages that need a real account. Guests (no sign-up yet) can use the home page,
-// the Mind Blueprint, Roadmap, Notes, Videos and Dictionary (Roadmap/Notes generation is
-// capped per guest per day server-side); everything below asks them to sign in.
+// the Mind Blueprint, Videos and Dictionary; everything below asks them to sign in.
 // (The server enforces the same split for AI endpoints — see api/_lib/auth.ts.)
-const LOGIN_ONLY_PAGES: DashboardPageId[] = ['revision', 'test', 'mentor', 'progress', 'research', 'current-affairs'];
-
-// The core loop is goal -> learn -> revise -> progress. Everything else is a
-// secondary tool and lives behind "More" so a new learner isn't hit by 11 choices.
-// (Keep in sync with PRIMARY_IDS in BottomNav.tsx, which does the same on phones.)
-const PRIMARY_NAV_IDS: DashboardPageId[] = ['dashboard', 'roadmap', 'revision', 'progress'];
+const LOGIN_ONLY_PAGES: DashboardPageId[] = ['roadmap', 'revision', 'notes', 'test', 'mentor', 'progress', 'research', 'current-affairs'];
 
 function getSidebarItems(t: ReturnType<typeof useTranslation>): { id: DashboardPageId; label: string; icon?: ComponentType<{ className?: string }> }[] {
   return [
@@ -273,8 +264,7 @@ export async function hydrateActiveDaysFromCloud(): Promise<void> {
 }
 
 function trackAndComputeStreak(): number {
-  const now = new Date();
-  const todayKey = localDayKey(now);
+  const todayKey = new Date().toISOString().slice(0, 10);
   let activeDays: string[] = [];
   try {
     const saved = localStorage.getItem(ACTIVE_DAYS_STORAGE_KEY);
@@ -290,10 +280,19 @@ function trackAndComputeStreak(): number {
     // is actually added, not on every render, to avoid redundant writes.
     void pushToCloud('activeDays', activeDays);
   }
-  return computeStreak(activeDays, now);
+  const activeSet = new Set(activeDays);
+  let streak = 0;
+  const cursor = new Date();
+  while (true) {
+    const key = cursor.toISOString().slice(0, 10);
+    if (!activeSet.has(key)) break;
+    streak += 1;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  return streak;
 }
 
-function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGenerateForSubject, roadmapVersion, lastRoadmapError, roadmapGenerating, goals, activeGoalId, onAddGoal, onEndGoal, onSwitchGoal }: DashboardProps) {
+function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGenerateForSubject, roadmapVersion, lastRoadmapError, goals, activeGoalId, onAddGoal, onEndGoal, onSwitchGoal }: DashboardProps) {
   const t = useTranslation();
   const { isGuest, requireAccount, openSignIn } = useAuthPrompt();
   const { startOnborda } = useOnborda();
@@ -354,7 +353,6 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   const [viewingTopicId, setViewingTopicId] = useState<string | null>(null);
 
   const [showSettings, setShowSettings] = useState(false);
-  const [sidebarMoreOpen, setSidebarMoreOpen] = useState(false);
   // Deep-settings: the full learning-profile report is hidden by default,
   // only rendered when the user explicitly expands it here — see the
   // "Learning Profile Report" section inside the Settings modal below.
@@ -491,8 +489,11 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
       return;
     }
 
-    // No quiz yet? Don't block — fall back to a neutral profile (not saved).
-    const profile = getLearningProfileOrNeutral();
+    const profile = getLearningProfile();
+    if (!profile) {
+      setCustomError('Complete the Learning Style Quiz first.');
+      return;
+    }
 
     setCustomError('');
     setCustomLoading(true);
@@ -681,9 +682,8 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   const loginRequiredLabel = getSidebarItems(t).find((i) => i.id === activePage)?.label ?? '';
 
   // Two different locks: authLocked = needs a real account (guest);
-  // roadmapLocked = needs a roadmap first. Guests can build a roadmap and
-  // generate notes (server-capped per day), so the value shows up before
-  // any sign-up; Videos also stays open for them without a roadmap.
+  // roadmapLocked = needs a roadmap first. A guest can never build a
+  // roadmap (it needs an account), so Videos stays open for them.
   // Progressive disclosure: Revision/Notes/Videos/Progress only make sense
   // once a roadmap exists (they're all built around topics), so a new user
   // never lands on an empty page on their very first visit.
@@ -714,50 +714,30 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
         </div>
       </div>
       <nav className="space-y-1 flex-1">
-        {(() => {
-          const renderItem = (item: (typeof sidebarItems)[number], i: number) => {
-            const { isLocked } = navState(item.id);
-            return (
-              <motion.button
-                key={item.id}
-                id={`onborda-nav-${item.id}`}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.1 + i * 0.05, duration: 0.4 }}
-                onClick={() => selectNav(item.id, item.label)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
-                  isLocked
-                    ? 'text-gray-300 dark:text-white/20 hover:text-gray-400 dark:hover:text-white/30'
-                    : activePage === item.id
-                    ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white'
-                    : 'text-gray-500 dark:text-white/50 hover:text-black dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5'
-                }`}
-              >
-                {item.icon && <item.icon className="w-4 h-4" />}
-                <span className="flex-1 text-left">{item.label}</span>
-                {isLocked && <Lock className="w-3.5 h-3.5" strokeWidth={2} />}
-              </motion.button>
-            );
-          };
-          const primaryItems = sidebarItems.filter((item) => PRIMARY_NAV_IDS.includes(item.id));
-          const secondaryItems = sidebarItems.filter((item) => !PRIMARY_NAV_IDS.includes(item.id));
-          // Stay expanded while the learner is on a secondary page, so the active item never hides.
-          const moreExpanded = sidebarMoreOpen || secondaryItems.some((item) => item.id === activePage);
+        {sidebarItems.map((item, i) => {
+          const { isLocked } = navState(item.id);
           return (
-            <>
-              {primaryItems.map(renderItem)}
-              <button
-                onClick={() => setSidebarMoreOpen((v) => !v)}
-                aria-expanded={moreExpanded}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-500 dark:text-white/50 hover:text-black dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5 transition-all"
-              >
-                <span className="flex-1 text-left">More</span>
-                <ChevronDown className={`w-4 h-4 transition-transform ${moreExpanded ? 'rotate-180' : ''}`} />
-              </button>
-              {moreExpanded && secondaryItems.map(renderItem)}
-            </>
+            <motion.button
+              key={item.id}
+              id={`onborda-nav-${item.id}`}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.1 + i * 0.05, duration: 0.4 }}
+              onClick={() => selectNav(item.id, item.label)}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
+                isLocked
+                  ? 'text-gray-300 dark:text-white/20 hover:text-gray-400 dark:hover:text-white/30'
+                  : activePage === item.id
+                  ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white'
+                  : 'text-gray-500 dark:text-white/50 hover:text-black dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5'
+              }`}
+            >
+              {item.icon && <item.icon className="w-4 h-4" />}
+              <span className="flex-1 text-left">{item.label}</span>
+              {isLocked && <Lock className="w-3.5 h-3.5" strokeWidth={2} />}
+            </motion.button>
           );
-        })()}
+        })}
       </nav>
       <div className="mt-auto pt-6 border-t border-gray-200 dark:border-white/10">
         <div className="flex items-center gap-3 px-2">
@@ -1030,7 +1010,6 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
             onOpenSavedVideo={handleOpenSavedVideo}
             onGenerateForSubject={onGenerateForSubject}
             lastRoadmapError={lastRoadmapError}
-            roadmapGenerating={roadmapGenerating}
             goals={goals}
             activeGoalId={activeGoalId}
             onAddGoal={onAddGoal}
