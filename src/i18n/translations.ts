@@ -2308,7 +2308,7 @@ export const translations: Record<Locale, TranslationShape> = {
         generic: 'Something went wrong ({0}). Please try again in a bit.',
         noResponse: "Couldn't get a response, please try again.",
         truncatedSuffix:
-          '\n\n_( The response was long and got cut off — try asking a shorter question instead of "Deep dive")_',
+          '\n\n*( The response was long and got cut off — try asking a shorter question instead of "Deep dive")*',
         network: 'A network error occurred. Please check your internet and try again.',
       },
     },
@@ -3882,7 +3882,7 @@ export const translations: Record<Locale, TranslationShape> = {
       errors: {
         generic: 'कुछ गड़बड़ हो गई ({0})। थोड़ी देर में फिर कोशिश करें।',
         noResponse: 'जवाब नहीं मिल पाया, फिर से कोशिश करें।',
-        truncatedSuffix: '\n\n_( जवाब लंबा था और बीच में कट गया — "गहराई से" की जगह छोटा सवाल पूछें)_',
+        truncatedSuffix: '\n\n*( जवाब लंबा था और बीच में कट गया — "गहराई से" की जगह छोटा सवाल पूछें)*',
         network: 'नेटवर्क में गड़बड़ आई। इंटरनेट जांचें और फिर कोशिश करें।',
       },
     },
@@ -5457,7 +5457,7 @@ export const translations: Record<Locale, TranslationShape> = {
         generic: 'Kuch gadbad ho gayi ({0}). Thodi der mein phir try karein.',
         noResponse: 'Response nahi mil paaya, phir se try karein.',
         truncatedSuffix:
-          '\n\n_( Response lambi thi aur beech mein kat gayi — "Deep dive" ki jagah chhota sawaal poochhein)_',
+          '\n\n*( Response lambi thi aur beech mein kat gayi — "Deep dive" ki jagah chhota sawaal poochhein)*',
         network: 'Network error aaya. Internet check karein aur phir try karein.',
       },
     },

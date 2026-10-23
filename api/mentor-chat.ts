@@ -78,7 +78,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       minimaxApiKey,
       systemInstruction: buildSystemInstructions(topic, locale) + formatStudentContext(studentContext),
       contents,
-      generationConfig: { maxOutputTokens: 1024, temperature: 0.7 },
+      // Gemini 2.5+/3.x "thinking" tokens are billed against maxOutputTokens, so with the default
+      // thinking on, long answers (Deep dive) were cut off after a few lines. A tutor reply doesn't
+      // need hidden reasoning — turn it off so the whole budget goes to the visible answer.
+      generationConfig: { maxOutputTokens: 2048, temperature: 0.7, thinkingConfig: { thinkingBudget: 0 } },
     });
 
     return res.status(200).json({ text, finishReason: finishReason ?? null });
