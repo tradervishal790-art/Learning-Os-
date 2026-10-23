@@ -70,7 +70,13 @@ export default function Revision({ goals = [] }: RevisionProps) {
   // actually opened, not upfront on sign-in. No-op if this device already
   // has revision data.
   useEffect(() => {
-    void hydrateRevisionFromCloud().then(() => setItems(getRevisionDataForGoals(t.revisionTasks, goals)));
+    let active = true;
+    void hydrateRevisionFromCloud().then(() => {
+      if (active) setItems(getRevisionDataForGoals(t.revisionTasks, goals));
+    });
+    return () => {
+      active = false;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
