@@ -22,6 +22,8 @@ import {
 } from './mentorChatStore';
 import ConfirmDialog from './ConfirmDialog';
 import MentorText from './MentorText';
+import { Renderer, createParser } from '@openuidev/react-lang';
+import { mentorUiLibrary } from './mentorUiLibrary';
 
 const WELCOME_ID = 'welcome';
 
@@ -30,6 +32,8 @@ interface Message {
   role: 'user' | 'mentor';
   content: string;
   timestamp: Date;
+  /** Reply is OpenUI Lang (interactive components), not plain text. */
+  ui?: boolean;
 }
 
 // ============================================
@@ -43,13 +47,20 @@ interface Message {
 //
 // `mentorErrors` is passed in (rather than called via useTranslation)
 // since this is a plain async helper, not a component.
+// Parser for interactive (OpenUI) replies — created once, parsers memoize by identity.
+const uiParser = createParser(mentorUiLibrary.toJSONSchema(), mentorUiLibrary.root);
+
+/** Models sometimes wrap code in ``` fences despite the prompt; strip them. */
+const stripFences = (t: string) => t.replace(/^\s*```[a-z-]*\s*\n?/i, '').replace(/\n?```\s*$/, '').trim();
+
 async function generateMentorResponse(
   userMessage: string,
   context: string,
   history: Message[],
   mentorErrors: TranslationShape['mentor']['errors'],
-  locale: string
-): Promise<string> {
+  locale: string,
+  ui: boolean
+): Promise<{ text: string; ui: boolean }> {
   try {
     const response = await authFetch('/api/mentor-chat', {
       method: 'POST',
@@ -60,6 +71,7 @@ async function generateMentorResponse(
         history: history.slice(-6).map((m) => ({ role: m.role, content: m.content })),
         locale,
         studentContext: buildMentorStudentContext(),
+        ui,
       }),
     });
 
@@ -67,28 +79,41 @@ async function generateMentorResponse(
 
     if (!response.ok) {
       console.error('Mentor chat API error:', response.status, data);
-      return data?.error || format(mentorErrors.generic, response.status);
+      return { text: data?.error || format(mentorErrors.generic, response.status), ui: false };
     }
 
     if (!data?.text) {
-      return mentorErrors.noResponse;
+      return { text: mentorErrors.noResponse, ui: false };
+    }
+
+    if (ui) {
+      // Show components only if the reply really parses into some; otherwise fall back to plain text
+      // so a malformed model answer never leaves the student with a blank bubble.
+      const code = stripFences(data.text);
+      try {
+        if (uiParser.parse(code).root) return { text: code, ui: true };
+      } catch {
+        // fall through to plain text
+      }
     }
 
     // Let the user know explicitly if a response still got cut off,
     // instead of silently showing an incomplete sentence.
     if (data.finishReason === 'MAX_TOKENS') {
-      return data.text + mentorErrors.truncatedSuffix;
+      return { text: data.text + mentorErrors.truncatedSuffix, ui: false };
     }
 
-    return data.text;
+    return { text: data.text, ui: false };
   } catch (error) {
     console.error('Mentor chat fetch failed:', error);
-    return mentorErrors.network;
+    return { text: mentorErrors.network, ui: false };
   }
 }
 
 // Quick-prompt icons by position (the translation data still carries emoji; the UI uses these instead).
 const PROMPT_ICONS: LucideIcon[] = [Lightbulb, BookOpenText, Link2, ListChecks, Hammer, Bug];
+// Same positions: which quick prompts get an interactive (OpenUI) answer. "Quiz me" -> clickable quiz.
+const PROMPT_UI = [false, false, false, true, false, false];
 
 /** Strips a leading emoji from a translated label ("👤 You" -> "You"). */
 const stripEmoji = (label: string) => label.replace(/^[\p{Extended_Pictographic}\uFE0F\s]+/u, '');
@@ -142,7 +167,7 @@ export default function Mentor() {
       chatId,
       messages
         .filter((m) => m.id !== WELCOME_ID)
-        .map((m) => ({ id: m.id, role: m.role, content: m.content, timestamp: m.timestamp.toISOString() }))
+        .map((m) => ({ id: m.id, role: m.role, content: m.content, timestamp: m.timestamp.toISOString(), ui: m.ui }))
     );
   }, [messages, chatId]);
 
@@ -157,7 +182,7 @@ export default function Mentor() {
     } catch {}
   }, []);
 
-  const sendMessage = async (text: string) => {
+  const sendMessage = async (text: string, ui = false) => {
     if (!text.trim() || loading) return;
 
     const userMsg: Message = {
@@ -174,13 +199,14 @@ export default function Mentor() {
     setInput('');
     setPending((p) => [...p, originId]);
 
-    const reply = await generateMentorResponse(text, contextTopic, priorHistory, t.mentor.errors, locale);
+    const reply = await generateMentorResponse(text, contextTopic, priorHistory, t.mentor.errors, locale, ui);
 
     const mentorMsg: Message = {
       id: (Date.now() + 1).toString(),
       role: 'mentor',
-      content: reply,
+      content: reply.text,
       timestamp: new Date(),
+      ui: reply.ui || undefined,
     };
     if (chatIdRef.current === originId) {
       setMessages((prev) => [...prev, mentorMsg]);
@@ -355,7 +381,9 @@ export default function Mentor() {
                   <div className="hidden md:block text-xs opacity-60 mb-1">
                     {stripEmoji(msg.role === 'user' ? t.mentor.youLabel : t.mentor.mentorLabel)}
                   </div>
-                  {msg.role === 'mentor' ? (
+                  {msg.role === 'mentor' && msg.ui ? (
+                    <Renderer response={msg.content} library={mentorUiLibrary} isStreaming={false} />
+                  ) : msg.role === 'mentor' ? (
                     <MentorText text={msg.content} />
                   ) : (
                     <div className="whitespace-pre-wrap text-sm leading-relaxed">{msg.content}</div>
@@ -392,7 +420,7 @@ export default function Mentor() {
                 <button
                   key={p.label}
                   onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => sendMessage(input.trim() ? `${input.trim()}\n\n${p.prompt}` : p.prompt)}
+                  onClick={() => sendMessage(input.trim() ? `${input.trim()}\n\n${p.prompt}` : p.prompt, PROMPT_UI[i] === true)}
                   disabled={loading}
                   className="flex-shrink-0 h-9 px-3 inline-flex items-center gap-1.5 card rounded-full text-xs hover:bg-gray-100 dark:hover:bg-white/10 transition disabled:opacity-40"
                 >

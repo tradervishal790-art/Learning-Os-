@@ -20,6 +20,8 @@ export interface StoredMentorMessage {
   role: 'user' | 'mentor';
   content: string;
   timestamp: string; // ISO
+  /** Reply is OpenUI Lang (interactive components), not plain text. */
+  ui?: boolean;
 }
 
 export interface MentorChatSummary {

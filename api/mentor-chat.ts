@@ -11,6 +11,7 @@ import { requireUser } from './_lib/auth.js';
 import { generateAIText } from './_lib/aiFallback.js';
 import { buildMentorContents, type HistoryMessage } from './_lib/mentorHistory.js';
 import { formatStudentContext } from './_lib/mentorPrompt.js';
+import { MENTOR_UI_PROMPT } from './_lib/mentorUiPrompt.js';
 
 type Locale = 'en' | 'hi' | 'hinglish';
 
@@ -42,6 +43,13 @@ Scope and safety:
 - Never tell the student to bypass a ban or restriction (VPN, region change, APK from third-party sites). Say briefly that the app is not officially available there and suggest legal alternatives that work in India, or help with the underlying skill instead.
 - If the question is not about learning, answer in two lines and steer back to their study goal.`;
 
+// Interactive mode (OpenUI): the reply is OpenUI Lang that the client renders as real components.
+const buildUiInstructions = (topic: string, locale: Locale) => `${MENTOR_UI_PROMPT}
+
+Reply language for ALL visible text: ${languageInstruction(locale)} only.
+${topic ? `The student's most recently watched video (use only if it helps): ${topic}` : ''}
+Address the student respectfully (in Hindi/Hinglish use "aap"). If the question is not about learning, still answer with a single short Text inside Stack.`;
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const uid = await requireUser(req, res);
   if (!uid) return;
@@ -50,12 +58,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'POST only' });
   }
 
-  const { userMessage, context, history, studentContext, locale: rawLocale } = (req.body ?? {}) as {
+  const { userMessage, context, history, studentContext, locale: rawLocale, ui } = (req.body ?? {}) as {
     userMessage?: string;
     context?: string;
     history?: HistoryMessage[];
     studentContext?: unknown;
     locale?: string;
+    ui?: boolean;
   };
 
   if (!userMessage?.trim()) {
@@ -76,7 +85,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { text, finishReason } = await generateAIText({
       geminiApiKey: apiKey,
       minimaxApiKey,
-      systemInstruction: buildSystemInstructions(topic, locale) + formatStudentContext(studentContext),
+      systemInstruction:
+        (ui === true ? buildUiInstructions(topic, locale) : buildSystemInstructions(topic, locale)) +
+        formatStudentContext(studentContext),
       contents,
       // Gemini 2.5+/3.x "thinking" tokens are billed against maxOutputTokens, so with the default
       // thinking on, long answers (Deep dive) were cut off after a few lines. A tutor reply doesn't
