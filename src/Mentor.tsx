@@ -392,7 +392,7 @@ export default function Mentor() {
                 <button
                   key={p.label}
                   onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => sendMessage(p.prompt)}
+                  onClick={() => sendMessage(input.trim() ? `${input.trim()}\n\n${p.prompt}` : p.prompt)}
                   disabled={loading}
                   className="flex-shrink-0 h-9 px-3 inline-flex items-center gap-1.5 card rounded-full text-xs hover:bg-gray-100 dark:hover:bg-white/10 transition disabled:opacity-40"
                 >
