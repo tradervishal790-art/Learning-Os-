@@ -4,6 +4,7 @@ import { buildExtensions } from './editorExtensions';
 import { pageToHtml, type InkStroke, type NotePage, type PageAttachment } from './notebookStore';
 import type { InkMode, InkPrefs } from './inkPrefs';
 import { PAGE_RATIO, PAGE_UNITS, inkExtentY } from './inkEngine';
+import { pickStrokes, selectInPolygon } from './inkEdit';
 import InkLayer from './InkLayer';
 import PageBackground from './PageBackground';
 import PageAttachments, { requestAttach } from './PageAttachments';
@@ -12,6 +13,26 @@ import { useAppDark } from './useAppDark';
 import './noteEditor.css';
 
 /** One page "sheet": highlights under the text, rich text in the middle, pen ink on top. */
+/** What the AI pen found inside a loop on one page. Pictures are only referenced by id; they are read later, after consent. */
+export interface CircleCapture {
+  pageId: string;
+  typed: string;
+  ink: InkStroke[];
+  imageIds: string[];
+}
+
+type ClientBox = { x0: number; y0: number; x1: number; y1: number };
+
+/** True when the loop and the element share a meaningful area (so a sliver at the edge does not drag a whole block in). */
+function overlaps(el: Element, b: ClientBox): boolean {
+  const r = el.getBoundingClientRect();
+  const w = Math.min(r.right, b.x1) - Math.max(r.left, b.x0);
+  const h = Math.min(r.bottom, b.y1) - Math.max(r.top, b.y0);
+  if (w <= 0 || h <= 0) return false;
+  const smaller = Math.min(r.width * r.height, (b.x1 - b.x0) * (b.y1 - b.y0));
+  return smaller > 0 && (w * h) / smaller >= 0.3;
+}
+
 export default function PageEditor({
   page,
   strokes,
@@ -30,6 +51,7 @@ export default function PageEditor({
   onAttachments,
   attachLabels,
   onSeekVideo,
+  onCircle,
   recall = false,
 }: {
   page: NotePage;
@@ -52,6 +74,8 @@ export default function PageEditor({
   attachLabels: Record<string, string>;
   /** A time chip in the text was clicked (Part 7). */
   onSeekVideo?: (seconds: number, videoId: string | null) => void;
+  /** AI pen: the student drew a loop on this page. */
+  onCircle?: (capture: CircleCapture) => void;
   /** Recall mode: read-only, highlights are covered (see noteEditor.css). */
   recall?: boolean;
 }) {
@@ -152,6 +176,18 @@ export default function PageEditor({
           onSelect={(ids) => onSelect(page.id, ids)}
           onCommit={(next) => onInk(page.id, next)}
           onActivate={() => editor && onActive(editor, page.id)}
+          onCircle={
+            onCircle
+              ? ({ poly, client }) => {
+                  const blocks = Array.from(editor?.view.dom.children ?? []).filter((el) => overlaps(el, client));
+                  const typed = blocks.map((el) => (el as HTMLElement).innerText.trim()).filter(Boolean).join('\n');
+                  const figures = Array.from(sheet.current?.querySelectorAll<HTMLElement>('figure[data-attach-id]') ?? []);
+                  const imageIds = figures.filter((f) => overlaps(f, client)).map((f) => f.dataset.attachId ?? '').filter(Boolean);
+                  const ink = pickStrokes(strokes, new Set(selectInPolygon(strokes, poly)));
+                  onCircle({ pageId: page.id, typed, ink, imageIds });
+                }
+              : undefined
+          }
         />
       )}
     </div>

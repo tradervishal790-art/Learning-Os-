@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Editor } from '@tiptap/react';
-import { ArrowLeft, ChevronDown, FileDown, History, Keyboard, ChevronUp, Copy, Download, Eye, EyeOff, FilePlus, HelpCircle, LayoutGrid, Maximize2, MoveHorizontal, Minimize2, Plus, Presentation, RotateCcw, Sparkles, Star, Trash2, Video, VideoOff, X, ZoomIn, ZoomOut } from 'lucide-react';
+import { ArrowLeft, ChevronDown, FileDown, History, Keyboard, ChevronUp, Copy, Download, Eye, EyeOff, FilePlus, HelpCircle, LayoutGrid, Maximize2, MoveHorizontal, Minimize2, PenTool, Plus, Presentation, RotateCcw, Sparkles, Star, Trash2, Video, VideoOff, X, ZoomIn, ZoomOut } from 'lucide-react';
 import { useLanguage, useTranslation } from './i18n/LanguageContext';
 import { format } from './i18n/format';
 import { loadNoteContent, saveNoteContent, getIndex, type InkStroke, type NotePage, type NoteVideo, type PageAttachment } from './notebookStore';
@@ -18,13 +18,13 @@ import { useElementSize, useFillHeight } from './useLayoutSize';
 import { setImmersive, setNoteOpen } from './immersive';
 import { useMediaQuery } from './useMediaQuery';
 import { addPageAfter, blankPage, deletePage, duplicatePage, inkOf, movePage, newPageId, patchPage, restorePage } from './pageOps';
-import { recognizeHandwriting } from './inkOcrApi';
+import { describePicture, recognizeHandwriting } from './inkOcrApi';
 import { getClipboard, nextPasteOffset, setClipboard, useClipboardCount } from './inkClipboard';
 import {
   cloneStrokes, deleteSelected, neatenSelected, pickStrokes, recolorSelected, renderStrokesPng, reorderSelected, rewidthSelected,
 } from './inkEdit';
 import { SaveChip } from './SaveChip';
-import PageEditor from './PageEditor';
+import PageEditor, { type CircleCapture } from './PageEditor';
 import EditorToolbar from './EditorToolbar';
 import PhoneRibbon from './PhoneRibbon';
 import { requestAttach, type AttachAction } from './PageAttachments';
@@ -39,7 +39,9 @@ import VideoNotesPane, { type VideoPlayerApi } from './VideoNotesPane';
 import MomentList from './MomentList';
 import { newMomentId, parseYouTubeUrl, timestampUrl, type MomentKind } from './videoTime';
 import { cloneAttachment } from './attachClone';
-import { getPdf, newAttachId, putPdf } from './attachStore';
+import { getImage, getPdf, newAttachId, putPdf } from './attachStore';
+import { compressImage, blobToDataUrl } from './imageTools';
+import type { NoteAiOp } from './noteAiTypes';
 
 // ============================================================
 // NoteEditor.tsx — title + pages (rich text from Part 2, handwriting from
@@ -48,6 +50,8 @@ import { getPdf, newAttachId, putPdf } from './attachStore';
 
 const AUTOSAVE_MS = 700;
 const OCR_OK_KEY = 'learning_os_ink_ocr_ok';
+/** Most photos read from one circle (each is one AI call). */
+const MAX_CIRCLE_IMAGES = 3;
 const NO_STROKES: InkStroke[] = []; // one shared empty array keeps the memo'd thumbnails from re-rendering
 const COLUMN_MAX = 768; // page width at 100% zoom (px)
 const MAX_PDF_PAGES = 150; // one PDF becomes at most this many note pages
@@ -376,6 +380,10 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
       const el = e.target as HTMLElement | null;
       if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return;
       const k = e.key.toLowerCase();
+      if (mode === 'circle' && k === 'escape') {
+        e.preventDefault();
+        return cancelCircle();
+      }
       if (mode === 'select' && (k === 'delete' || k === 'backspace')) {
         e.preventDefault();
         return deleteSel();
@@ -609,6 +617,88 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
   // The panel works on text only. The student chooses the scope; nothing is sent before they agree (see NoteAiPanel).
 
   const [aiOpen, setAiOpen] = useState(false);
+  // AI pen (circle an area): the panel closes while the student draws, then reopens with the area's text.
+  const [circleArea, setCircleArea] = useState('');
+  const [aiStart, setAiStart] = useState<{ op: NoteAiOp; area: boolean } | null>(null);
+  const circleToken = useRef(0);
+  const openAi = () => {
+    setAiStart(null);
+    setCircleArea('');
+    setAiOpen(true);
+  };
+  const closeAi = () => {
+    setAiOpen(false);
+    setAiStart(null);
+    setCircleArea('');
+  };
+  const startCircle = (op: NoteAiOp) => {
+    setAiStart({ op, area: false });
+    setAiOpen(false);
+    chooseMode('circle');
+    flash(t.ai.circleHint);
+  };
+  const cancelCircle = () => {
+    circleToken.current++; // a reading that is still running is dropped
+    setMode('type');
+    setNotice('');
+    setAiOpen(true);
+  };
+  /** The loop is drawn: read what is inside (text as is; handwriting and photos by AI, after consent), then hand it to the panel. */
+  const onCircled = async (c: CircleCapture) => {
+    const token = ++circleToken.current;
+    const needsAi = c.ink.length > 0 || c.imageIds.length > 0;
+    if (needsAi && localStorage.getItem(OCR_OK_KEY) !== '1') {
+      if (!window.confirm(t.ai.circleConsent)) return; // stay in circle mode: they can circle again or press Esc
+      try {
+        localStorage.setItem(OCR_OK_KEY, '1');
+      } catch {
+        // ask again next time
+      }
+    }
+    setMode('type');
+    if (needsAi) {
+      clearTimeout(noticeTimer.current);
+      setNotice(t.ai.circleReading);
+    }
+    const parts: string[] = [];
+    if (c.typed.trim()) parts.push(c.typed.trim());
+    let failed = false;
+    if (c.ink.length > 0) {
+      const png = renderStrokesPng(c.ink);
+      if (png) {
+        try {
+          const r = await recognizeHandwriting(png.data);
+          if (r.text.trim()) parts.push(r.text.trim());
+        } catch {
+          failed = true;
+        }
+      }
+    }
+    for (const imageId of c.imageIds.slice(0, MAX_CIRCLE_IMAGES)) {
+      if (token !== circleToken.current) return;
+      try {
+        const blob = await getImage(imageId);
+        if (!blob) continue;
+        const small = await compressImage(blob, { maxSide: 1600, quality: 0.8 });
+        const r = await describePicture((await blobToDataUrl(small.blob)).split(',')[1] ?? '');
+        if (r.text.trim()) parts.push(r.text.trim());
+      } catch {
+        failed = true;
+      }
+    }
+    if (token !== circleToken.current) return; // cancelled or circled again meanwhile
+    setNotice('');
+    const text = parts.join('\n\n').trim();
+    if (!text) {
+      setMode('circle'); // nothing readable: let them try again
+      flash(failed ? t.ai.circleFailed : t.ai.circleEmpty);
+      return;
+    }
+    setCircleArea(text);
+    setAiStart((s) => ({ op: s?.op ?? 'summarize', area: true }));
+    setAiOpen(true);
+    if (failed) flash(t.ai.circleFailed);
+  };
   const otherNotes = useRef<{ id: string; title: string; text: string }[]>([]);
 
   // Other notes are only read (and only on this device's copy when possible) while the panel is open, for "Ask my notes".
@@ -638,7 +728,7 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
     const sel = active ? active.state.doc.textBetween(active.state.selection.from, active.state.selection.to, '\n') : '';
     const pageText = latest.current.pages.find((p) => p.id === activePage)?.text ?? '';
     const noteText = latest.current.pages.map((p) => p.text).join('\n');
-    return { selectedText: sel, pageText, noteText };
+    return { selectedText: sel, pageText, noteText, areaText: circleArea };
   };
 
   const textToNodes = (text: string) =>
@@ -1003,6 +1093,7 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
                     onAttachments={setAttachments}
                     attachLabels={t.attach}
                     onSeekVideo={seekFromChip}
+                    onCircle={(c) => void onCircled(c)}
                     recall={recall}
                   />
                   )}
@@ -1012,6 +1103,22 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
           </div>
         </div>
       </div>
+  );
+
+  const circleBar = (
+    <div className="flex items-center gap-2 px-1 py-1.5 text-sm text-violet-700 dark:text-violet-300">
+      <PenTool size={16} aria-hidden />
+      <span className="min-w-0 flex-1">{t.ai.circleHint}</span>
+      <button
+        type="button"
+        onClick={cancelCircle}
+        aria-label={t.ai.closePanel}
+        title={t.ai.closePanel}
+        className="h-9 w-9 shrink-0 rounded-lg flex items-center justify-center hover:bg-violet-100 dark:hover:bg-white/10"
+      >
+        <X size={18} />
+      </button>
+    </div>
   );
 
   const inkBar = (
@@ -1053,7 +1160,7 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
 
   const pickTab = (id: NoteTabId) => {
     if (id === 'ai') {
-      setAiOpen(true);
+      openAi();
       return;
     }
     if (id === phoneTab) {
@@ -1123,7 +1230,7 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
             className="min-w-0 flex-1 bg-transparent text-lg sm:text-xl font-bold outline-none placeholder:text-gray-300 dark:placeholder:text-white/30"
           />
           {isDesktop && <button
-            onClick={() => setAiOpen(true)}
+            onClick={openAi}
             aria-label={t.ai.panelTitle}
             title={t.ai.panelTitle}
             className="h-10 w-10 sm:h-9 sm:w-auto sm:px-3 shrink-0 rounded-lg flex items-center justify-center gap-1.5 text-xs font-medium text-indigo-600 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-500/15 hover:bg-indigo-100 dark:hover:bg-indigo-500/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-500"
@@ -1165,6 +1272,8 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
           <ModeSwitch mode={mode} onMode={chooseMode} />
           {mode === 'type' ? (
             <EditorToolbar editor={active} onAttach={attach} onFocusMode={() => setFocusMode((f) => !f)} />
+          ) : mode === 'circle' ? (
+            circleBar
           ) : (
             inkBar
           )}
@@ -1283,7 +1392,7 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
           {phoneTab === 'draw' && (
             <>
               <ModeSwitch mode={mode} onMode={chooseMode} />
-              {inkBar}
+              {mode === 'circle' ? circleBar : inkBar}
             </>
           )}
         </PhoneRibbon>
@@ -1306,11 +1415,11 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
       <input ref={pdfInput} type="file" accept="application/pdf" hidden onChange={(e) => { void importPdf(e.target.files?.[0]); e.target.value = ''; }} />
       {aiOpen && (
         <div className="fixed inset-0 z-50 flex justify-end">
-          <button aria-label={t.ai.closePanel} className="hidden sm:block flex-1 bg-black/30" onClick={() => setAiOpen(false)} />
+          <button aria-label={t.ai.closePanel} className="hidden sm:block flex-1 bg-black/30" onClick={closeAi} />
           <div className="h-full w-full sm:w-[440px] overflow-y-auto bg-white dark:bg-black border-l border-gray-200 dark:border-white/10 p-3">
             <div className="flex items-center justify-end mb-2">
               <button
-                onClick={() => setAiOpen(false)}
+                onClick={closeAi}
                 aria-label={t.ai.closePanel}
                 title={t.ai.closePanel}
                 className="h-9 w-9 rounded-lg flex items-center justify-center text-gray-500 dark:text-white/60 hover:bg-gray-100 dark:hover:bg-white/10"
@@ -1323,6 +1432,9 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
               getOtherNotes={() => otherNotes.current}
               onInsertText={aiInsert}
               onReplaceSelection={aiReplace}
+              onStartCircle={startCircle}
+              initialOp={aiStart?.op}
+              preferArea={aiStart?.area}
               labels={t.ai}
             />
           </div>

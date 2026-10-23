@@ -204,7 +204,7 @@ function ImageCard({ a, labels, onRemove }: { a: PageAttachment; labels: Record<
   );
 
   return (
-    <figure className="rounded-xl border border-gray-200 dark:border-white/10 p-2">
+    <figure data-attach-id={a.id} className="rounded-xl border border-gray-200 dark:border-white/10 p-2">
       {missing ? (
         <p className="py-6 text-center text-xs text-gray-500 dark:text-white/50">{t('notHere')}</p>
       ) : url ? (

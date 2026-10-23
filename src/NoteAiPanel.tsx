@@ -27,7 +27,7 @@ import type { LucideIcon } from 'lucide-react';
 import {
   AlertTriangle, ArrowLeftRight, BookOpen, Check, ClipboardCheck, Copy, Eye, EyeOff, FileText,
   Languages, Layers, Lightbulb, List, ListChecks, Loader2, MessageCircleQuestion, MessageSquareText,
-  Network, Pencil, Plus, RefreshCw, Search, ShieldCheck, Sparkles, SpellCheck, Undo2, X, Minus,
+  Network, Pencil, PenTool, Plus, RefreshCw, Search, ShieldCheck, Sparkles, SpellCheck, Undo2, X, Minus,
 } from 'lucide-react';
 import { NoteAiError, runNoteAi } from './noteAiClient';
 import type {
@@ -37,7 +37,7 @@ import { NOTE_AI_LIMITS } from './noteAiTypes';
 
 /* ------------------------------------------------------------------ types */
 
-type Scope = 'selection' | 'page' | 'note';
+type Scope = 'selection' | 'page' | 'note' | 'area';
 type Translate = (key: string) => string;
 type Difficulty = NonNullable<NoteAiRequest['difficulty']>;
 type Level = NonNullable<NoteAiRequest['level']>;
@@ -45,12 +45,17 @@ type QuizQuestions = Extract<NoteAiResult, { kind: 'quiz' }>['questions'];
 type FlashCards = Extract<NoteAiResult, { kind: 'flashcards' }>['cards'];
 
 interface Props {
-  getSource(): { selectedText: string; pageText: string; noteText: string };
+  getSource(): { selectedText: string; pageText: string; noteText: string; /** text read from an area the student circled with the AI pen */ areaText?: string };
   getOtherNotes(): { id: string; title: string; text: string }[];
   onInsertText(text: string): void;
   onReplaceSelection(text: string): void;
   onCreateFlashcards?(cards: FlashCards): void;
   onCreateQuiz?(questions: QuizQuestions): void;
+  /** Close the panel and let the student circle an area on the page; the panel reopens with the result. */
+  onStartCircle?(op: NoteAiOp): void;
+  /** Reopen with this tool selected / the circled area as the scope (after circling). */
+  initialOp?: NoteAiOp;
+  preferArea?: boolean;
   labels: Record<string, string>;
 }
 
@@ -787,7 +792,7 @@ function ResultView(props: {
 
 export default function NoteAiPanel(props: Props) {
   const {
-    getSource, getOtherNotes, onInsertText, onReplaceSelection, onCreateFlashcards, onCreateQuiz, labels,
+    getSource, getOtherNotes, onInsertText, onReplaceSelection, onCreateFlashcards, onCreateQuiz, onStartCircle, labels,
   } = props;
   const t: Translate = useCallback((k: string) => labels[k] ?? k, [labels]);
 
@@ -797,8 +802,8 @@ export default function NoteAiPanel(props: Props) {
   const lastJobRef = useRef<Job | null>(null);
 
   const [src, setSrc] = useState(() => getSource());
-  const [scopePref, setScopePref] = useState<Scope | null>(null);
-  const [op, setOp] = useState<NoteAiOp>('summarize');
+  const [scopePref, setScopePref] = useState<Scope | null>(props.preferArea ? 'area' : null);
+  const [op, setOp] = useState<NoteAiOp>(props.initialOp ?? 'summarize');
   const [level, setLevel] = useState<Level>('intermediate');
   const [outLang, setOutLang] = useState<'same' | NoteLang>('same');
   const [targetLang, setTargetLang] = useState<NoteLang>('en');
@@ -820,11 +825,12 @@ export default function NoteAiPanel(props: Props) {
       if (
         prev.selectedText === selectedText &&
         prev.pageText === next.pageText &&
-        prev.noteText === next.noteText
+        prev.noteText === next.noteText &&
+        prev.areaText === next.areaText
       ) {
         return prev;
       }
-      return { selectedText, pageText: next.pageText, noteText: next.noteText };
+      return { selectedText, pageText: next.pageText, noteText: next.noteText, areaText: next.areaText };
     });
   }, [getSource]);
 
@@ -855,6 +861,7 @@ export default function NoteAiPanel(props: Props) {
     selection: src.selectedText,
     page: src.pageText,
     note: src.noteText,
+    area: src.areaText ?? '',
   };
   const available = (s: Scope) => scopeText[s].trim().length > 0;
   const scope: Scope =
@@ -957,12 +964,13 @@ export default function NoteAiPanel(props: Props) {
         <p className={MUTED}>{t('answerScopeHint')}</p>
       ) : (
         <Field label={t('scopeLabel')}>
-          <div role="group" aria-label={t('scopeLabel')} className="grid grid-cols-3 gap-2">
+          <div role="group" aria-label={t('scopeLabel')} className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             {(
               [
                 ['selection', 'scopeSelection'],
                 ['page', 'scopePage'],
                 ['note', 'scopeNote'],
+                ...(src.areaText ? ([['area', 'scopeArea']] as const) : []),
               ] as const
             ).map(([s, key]) => {
               const active = scope === s;
@@ -985,6 +993,14 @@ export default function NoteAiPanel(props: Props) {
             })}
           </div>
         </Field>
+      )}
+
+      {/* AI pen: close the panel, circle something on the page, come back with it as the scope */}
+      {onStartCircle && !isAnswer && (
+        <button type="button" onClick={() => onStartCircle(op)} className={`${BTN_GHOST} -mt-2 w-full`}>
+          <PenTool className="h-4 w-4" aria-hidden />
+          {t('circleStart')}
+        </button>
       )}
 
       {/* Tools */}

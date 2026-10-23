@@ -6,7 +6,8 @@ import type { InkKind } from './notebookStore';
 // (localStorage) so the last-used pen, colour and size come back next time.
 // ============================================================
 
-export type InkMode = 'type' | 'pen' | 'highlighter' | 'eraser' | 'select' | 'laser';
+/** 'circle' is the AI pen: draw a loop around something and the AI tools work on what is inside it (nothing is saved). */
+export type InkMode = 'type' | 'pen' | 'highlighter' | 'eraser' | 'select' | 'laser' | 'circle';
 
 export interface PenFavorite {
   kind: InkKind;

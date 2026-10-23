@@ -35,7 +35,7 @@ type Gesture =
   | { type: 'draw'; id: number; stroke: InkStroke; anchor: [number, number]; snapped: boolean; timer?: ReturnType<typeof setTimeout> }
   | { type: 'erase'; id: number; working: InkStroke[]; last: [number, number] }
   | { type: 'pan'; id: number; lastX: number; lastY: number; scroller: HTMLElement | null; suspended: boolean }
-  | { type: 'lasso'; id: number; start: [number, number]; pts: [number, number][]; sx: number; sy: number; moved: boolean }
+  | { type: 'lasso'; id: number; start: [number, number]; pts: [number, number][]; sx: number; sy: number; moved: boolean; ai?: boolean }
   | { type: 'xform'; id: number; op: XOp; start: [number, number]; pivot: [number, number]; box: Box; sel: InkStroke[]; xf: Xform };
 
 function findScroller(el: HTMLElement | null): HTMLElement | null {
@@ -64,7 +64,7 @@ function paleOf(hex: string): string {
 }
 
 export default function InkLayer({
-  strokes, width, height, mode, prefs, selectedIds, paperDark = false, onCommit, onActivate, onSelect,
+  strokes, width, height, mode, prefs, selectedIds, paperDark = false, onCommit, onActivate, onSelect, onCircle,
 }: {
   strokes: InkStroke[];
   width: number;
@@ -77,6 +77,8 @@ export default function InkLayer({
   onCommit: (next: InkStroke[]) => void;
   onActivate: () => void;
   onSelect: (ids: string[]) => void;
+  /** AI pen: a loop was drawn. `poly` is in page units, `client` is the loop's bounding box on screen. */
+  onCircle?: (c: { poly: [number, number][]; client: { x0: number; y0: number; x1: number; y1: number } }) => void;
 }) {
   const hlRef = useRef<HTMLCanvasElement>(null);
   const inkRef = useRef<HTMLCanvasElement>(null);
@@ -309,6 +311,7 @@ export default function InkLayer({
     const cur = gesture.current;
     const fadingInk = !!cur && cur.type === 'laser' && !cur.down && mode === 'laser';
     if (mode === 'type' || (cur && !fadingInk)) return;
+    if (mode === 'circle' && !onCircle) return; // this sheet cannot be circled (e.g. a PDF page)
     if (e.pointerType === 'mouse' && e.button !== 0 && e.button !== 5) return;
     if (e.pointerType === 'pen') lastPen.current = Date.now();
 
@@ -346,8 +349,8 @@ export default function InkLayer({
     liveRef.current!.setPointerCapture(e.pointerId);
     const [x, y] = toPage(e);
 
-    if (mode === 'select') {
-      gesture.current = { type: 'lasso', id: e.pointerId, start: [x, y], pts: [[x, y]], sx: e.clientX, sy: e.clientY, moved: false };
+    if (mode === 'select' || mode === 'circle') {
+      gesture.current = { type: 'lasso', id: e.pointerId, start: [x, y], pts: [[x, y]], sx: e.clientX, sy: e.clientY, moved: false, ai: mode === 'circle' };
       return;
     }
 
@@ -423,7 +426,7 @@ export default function InkLayer({
     if (g.type === 'lasso') {
       if (Math.hypot(e.clientX - g.sx, e.clientY - g.sy) > 6) g.moved = true;
       const [x, y] = toPage(e);
-      if (prefs.selectShape === 'rect') {
+      if (prefs.selectShape === 'rect' && !g.ai) {
         const [sx, sy] = g.start;
         setLasso([[sx, sy], [x, sy], [x, y], [sx, y]]);
       } else {
@@ -476,6 +479,22 @@ export default function InkLayer({
       setLasso([]);
       if (cancelled) return;
       const [x, y] = toPage(e);
+      if (g.ai) {
+        // AI pen: a loop (not a tap or a tiny scribble) is handed over; nothing is drawn into the note
+        const rect = liveRef.current?.getBoundingClientRect();
+        if (!rect || !g.moved || g.pts.length < 6) return;
+        const xs = g.pts.map((p) => p[0]);
+        const ys = g.pts.map((p) => p[1]);
+        const client = {
+          x0: rect.left + Math.min(...xs) * scale,
+          y0: rect.top + Math.min(...ys) * scale,
+          x1: rect.left + Math.max(...xs) * scale,
+          y1: rect.top + Math.max(...ys) * scale,
+        };
+        if (client.x1 - client.x0 < 12 || client.y1 - client.y0 < 12) return;
+        onCircle?.({ poly: g.pts, client });
+        return;
+      }
       if (!g.moved) {
         // a tap: pick the topmost stroke under the finger / pen, or clear the selection
         const all = strokesRef.current;
@@ -591,9 +610,14 @@ export default function InkLayer({
         onPointerCancel={(e) => finish(e, true)}
         onPointerLeave={() => !gesture.current && placeRing(0, 0, false)}
       />
-      {mode === 'select' && (
+      {(mode === 'select' || mode === 'circle') && (
         <svg aria-hidden className="absolute inset-0 z-40 pointer-events-none" width={width} height={height}>
-          <polygon ref={lassoRef} points="" fill="rgba(37,99,235,0.08)" stroke="#2563eb" strokeWidth={1.5} strokeDasharray="6 4" />
+          {mode === 'circle' ? (
+            // the AI pen: a violet glowing loop that disappears when the pen lifts
+            <polygon ref={lassoRef} points="" fill="rgba(124,58,237,0.10)" stroke="#7c3aed" strokeWidth={3} strokeLinejoin="round" style={{ filter: 'drop-shadow(0 0 4px rgba(124,58,237,0.8))' }} />
+          ) : (
+            <polygon ref={lassoRef} points="" fill="rgba(37,99,235,0.08)" stroke="#2563eb" strokeWidth={1.5} strokeDasharray="6 4" />
+          )}
         </svg>
       )}
       {mode === 'select' && shownBox && (
