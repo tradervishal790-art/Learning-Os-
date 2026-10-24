@@ -118,7 +118,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const { videoId } = (req.body ?? {}) as { videoId?: string };
-  if (!videoId?.trim()) {
+  if (typeof videoId !== 'string' || !videoId.trim()) {
     res.status(400).json({ error: 'videoId is required' });
     return;
   }

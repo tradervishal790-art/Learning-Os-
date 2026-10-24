@@ -64,7 +64,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const { userInput, blueprint } = (req.body ?? {}) as { userInput?: string; blueprint?: Blueprint };
 
-  if (!userInput?.trim()) {
+  if (typeof userInput !== 'string' || !userInput.trim()) {
     return res.status(400).json({ error: 'userInput required' });
   }
   if (!blueprint) {
