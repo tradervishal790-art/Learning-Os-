@@ -149,7 +149,16 @@ function parseAttachments(raw: unknown, where: string, w: Warnings): PageAttachm
       w.add(`${where}: an attachment was dropped (bad data)`);
       continue;
     }
-    out.push({ id, kind: a.kind, name: str(a.name, LIMIT.name) ?? '' });
+    const item: PageAttachment = { id, kind: a.kind, name: str(a.name, LIMIT.name) ?? '' };
+    const num = (v: unknown): number | undefined => (typeof v === 'number' && Number.isFinite(v) ? v : undefined);
+    const px = num(a.x), py = num(a.y), pw = num(a.w), par = num(a.ar);
+    if (a.kind === 'image' && px !== undefined && py !== undefined && pw !== undefined && pw > 0) {
+      item.x = px;
+      item.y = py;
+      item.w = pw;
+      if (par !== undefined && par > 0) item.ar = par;
+    }
+    out.push(item);
   }
   return out;
 }

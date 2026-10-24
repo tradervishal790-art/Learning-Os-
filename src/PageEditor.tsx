@@ -7,7 +7,8 @@ import { PAGE_RATIO, PAGE_UNITS, inkExtentY } from './inkEngine';
 import { pickStrokes, selectInPolygon } from './inkEdit';
 import InkLayer from './InkLayer';
 import PageBackground from './PageBackground';
-import PageAttachments, { requestAttach } from './PageAttachments';
+import PageAttachments, { isFloating, requestAttach } from './PageAttachments';
+import PageImages from './PageImages';
 import { isTemplateId, paperIsDark } from './pageTemplates';
 import { useAppDark } from './useAppDark';
 import './noteEditor.css';
@@ -124,7 +125,9 @@ export default function PageEditor({
   const scale = size.w / PAGE_UNITS;
   const extent = useMemo(() => inkExtentY(strokes), [strokes]);
   // At least an A4 sheet; grows when handwriting reaches the bottom.
-  const minHeight = size.w > 0 ? Math.max(size.w * PAGE_RATIO, extent * scale + 160) : undefined;
+  // Photos placed on the page also push the sheet's bottom edge down.
+  const imageExtent = (page.attachments ?? []).reduce((m, a) => (isFloating(a) ? Math.max(m, (a.y ?? 0) + (a.w ?? 0) * (a.ar ?? 0.75)) : m), 0);
+  const minHeight = size.w > 0 ? Math.max(size.w * PAGE_RATIO, Math.max(extent, imageExtent) * scale + 160) : undefined;
 
   const appDark = useAppDark();
   const template = isTemplateId(page.template) ? page.template : 'blank';
@@ -164,6 +167,9 @@ export default function PageEditor({
         <EditorContent editor={editor} />
       </div>
       <PageAttachments pageId={page.id} attachments={page.attachments ?? []} onChange={(next) => onAttachments(page.id, next)} labels={attachLabels} />
+      {size.w > 0 && (
+        <PageImages attachments={page.attachments ?? []} width={size.w} onChange={(next) => onAttachments(page.id, next)} labels={attachLabels} />
+      )}
       {size.w > 0 && (
         <InkLayer
           strokes={strokes}

@@ -111,6 +111,12 @@ export interface PageAttachment {
   id: string;
   kind: 'image' | 'audio';
   name: string;
+  /** Photos placed ON the page (page units, page width = 1000, like ink): left / top / width, and height÷width.
+   *  Missing = an older photo that sits in the flow under the text. */
+  x?: number;
+  y?: number;
+  w?: number;
+  ar?: number;
 }
 
 /** Notes made before the rich editor only have `text` — show it as paragraphs. */

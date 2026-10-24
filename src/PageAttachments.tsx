@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { RotateCw, Trash2 } from 'lucide-react';
 import type { PageAttachment } from './notebookStore';
+import { PAGE_UNITS } from './inkEngine';
 import { deleteImage, getImage, newAttachId, putImage } from './attachStore';
 import { deleteAudio, getAudio, putAudio, updateBookmarks, type AudioMeta } from './audioStore';
 import ScreenCrop from './ScreenCrop';
@@ -13,10 +14,10 @@ import AudioPlayer from './AudioPlayer';
 // Files are stored on this device; the page only keeps a small reference.
 // ============================================================
 
-const BTN =
+export const BTN =
   'inline-flex h-9 items-center gap-1.5 rounded-lg border border-gray-200 dark:border-white/10 px-2.5 text-xs text-gray-600 dark:text-white/70 hover:bg-gray-100 dark:hover:bg-white/10 disabled:opacity-40';
 
-function errorKey(e: unknown): string {
+export function errorKey(e: unknown): string {
   if (e instanceof ImageError) {
     return { 'too-large': 'errTooLarge', 'not-image': 'errNotImage', 'decode-failed': 'errDecode', unsupported: 'errUnsupported' }[e.code];
   }
@@ -28,6 +29,23 @@ export type AttachAction = 'photo' | 'camera' | 'audio' | 'screen';
 export function requestAttach(pageId: string, action: AttachAction, files?: File[]) {
   window.dispatchEvent(new CustomEvent('note-attach', { detail: { pageId, action, files } }));
 }
+
+const NEW_IMAGE_W = 520; // page units
+
+/** Where a new photo lands ON the page: just under the typed text (and under earlier photos), horizontally centred. The student drags it from there. */
+function placeNew(root: HTMLElement | null, list: PageAttachment[], ar: number) {
+  const sheet = root?.parentElement;
+  const text = root?.previousElementSibling as HTMLElement | null;
+  const scale = sheet && sheet.clientWidth > 0 ? sheet.clientWidth / PAGE_UNITS : 0;
+  let y = scale > 0 && text ? (text.offsetTop + text.offsetHeight) / scale + 20 : 40;
+  for (const a of list) {
+    if (a.kind === 'image' && a.w !== undefined) y = Math.max(y, (a.y ?? 0) + a.w * (a.ar ?? 0.75) + 24);
+  }
+  return { x: Math.round((PAGE_UNITS - NEW_IMAGE_W) / 2), y: Math.round(y), w: NEW_IMAGE_W, ar: Math.round(ar * 1000) / 1000 };
+}
+
+/** Photos with a position live ON the page (PageImages.tsx); only older ones stay in the flow here. */
+export const isFloating = (a: PageAttachment) => a.kind === 'image' && a.w !== undefined && a.x !== undefined && a.y !== undefined;
 
 export default function PageAttachments({
   pageId,
@@ -45,6 +63,7 @@ export default function PageAttachments({
   const [recording, setRecording] = useState(false);
   const [cropping, setCropping] = useState(false);
   const [error, setError] = useState('');
+  const rootRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const camRef = useRef<HTMLInputElement>(null);
   // Always the latest list, so two quick additions never overwrite each other.
@@ -81,10 +100,10 @@ export default function PageAttachments({
     setError('');
     setBusy(true);
     try {
-      const { blob } = await compressImage(file);
+      const { blob, width, height } = await compressImage(file);
       const id = newAttachId('im');
       await putImage(id, blob, file.name);
-      push({ id, kind: 'image', name: file.name });
+      push({ id, kind: 'image', name: file.name, ...placeNew(rootRef.current, listRef.current, height / width) });
     } catch (e) {
       setError(t(errorKey(e)));
     } finally {
@@ -114,11 +133,12 @@ export default function PageAttachments({
     }
   };
 
+  const flow = attachments.filter((a) => !isFloating(a));
   return (
-    <div className={`relative z-10 ${attachments.length > 0 || recording || busy || error ? 'mt-3 border-t border-dashed border-gray-200 dark:border-white/10 pt-2' : ''}`}>
-      {attachments.length > 0 && (
+    <div ref={rootRef} className={`relative z-10 ${flow.length > 0 || recording || busy || error ? 'mt-3 border-t border-dashed border-gray-200 dark:border-white/10 pt-2' : ''}`}>
+      {flow.length > 0 && (
         <div className="mb-2 space-y-3">
-          {attachments.map((a) =>
+          {flow.map((a) =>
             a.kind === 'image' ? (
               <ImageCard key={a.id} a={a} labels={labels} onRemove={() => remove(a)} />
             ) : (
@@ -208,7 +228,7 @@ function ImageCard({ a, labels, onRemove }: { a: PageAttachment; labels: Record<
       {missing ? (
         <p className="py-6 text-center text-xs text-gray-500 dark:text-white/50">{t('notHere')}</p>
       ) : url ? (
-        <img src={url} alt={t('imageAlt')} className="mx-auto max-h-[70vh] max-w-full rounded-lg bg-white" />
+        <img src={url} alt={t('imageAlt')} className="mx-auto h-auto w-full rounded-lg bg-white" />
       ) : (
         <div className="h-24 animate-pulse rounded-lg bg-gray-100 dark:bg-white/5" />
       )}
