@@ -9,6 +9,8 @@ import type { InkKind, InkStroke } from './notebookStore';
 
 export const PAGE_UNITS = 1000;
 export const PAGE_RATIO = 1.414; // A4 height / width
+/** Page width (px) at which text is 16px. Text scales with the page width from here, exactly like the ink does. */
+export const TEXT_REF_WIDTH = 768;
 
 export type Layer = 'ink' | 'hl';
 

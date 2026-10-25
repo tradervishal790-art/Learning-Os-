@@ -4,6 +4,7 @@ import { ArrowLeft, ChevronDown, FileDown, History, Keyboard, ChevronUp, Copy, D
 import { useLanguage, useTranslation } from './i18n/LanguageContext';
 import { format } from './i18n/format';
 import { loadNoteContent, saveNoteContent, getIndex, type InkStroke, type NotePage, type NoteVideo, type PageAttachment } from './notebookStore';
+import { TEXT_REF_WIDTH } from './inkEngine';
 import { useInkPrefs, type InkMode } from './inkPrefs';
 import InkToolbar, { ModeSwitch } from './InkToolbar';
 import QuickDock from './QuickDock';
@@ -54,7 +55,7 @@ const OCR_OK_KEY = 'learning_os_ink_ocr_ok';
 /** Most photos read from one circle (each is one AI call). */
 const MAX_CIRCLE_IMAGES = 3;
 const NO_STROKES: InkStroke[] = []; // one shared empty array keeps the memo'd thumbnails from re-rendering
-const COLUMN_MAX = 768; // page width at 100% zoom (px)
+const COLUMN_MAX = TEXT_REF_WIDTH; // page width at 100% zoom (px)
 const MAX_PDF_PAGES = 150; // one PDF becomes at most this many note pages
 
 export default function NoteEditor({ id, onBack }: { id: string; onBack: () => void }) {

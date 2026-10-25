@@ -52,11 +52,14 @@ export default function PageAttachments({
   attachments,
   onChange,
   labels,
+  layoutScale = 1,
 }: {
   pageId: string;
   attachments: PageAttachment[];
   onChange: (next: PageAttachment[]) => void;
   labels: Record<string, string>;
+  /** Page width ÷ reference width. The audio / older-photo block is laid out at the reference width and scaled, so its height (and everything below it) matches the ink at any screen size. */
+  layoutScale?: number;
 }) {
   const t = (k: string) => labels[k] ?? k;
   const [busy, setBusy] = useState(false);
@@ -135,7 +138,11 @@ export default function PageAttachments({
 
   const flow = attachments.filter((a) => !isFloating(a));
   return (
-    <div ref={rootRef} className={`relative z-10 ${flow.length > 0 || recording || busy || error ? 'mt-3 border-t border-dashed border-gray-200 dark:border-white/10 pt-2' : ''}`}>
+    <div ref={rootRef} className="relative z-10">
+      <div
+        className={flow.length > 0 || recording || busy || error ? 'mt-3 border-t border-dashed border-gray-200 dark:border-white/10 pt-2' : ''}
+        style={layoutScale > 0 && layoutScale !== 1 ? { zoom: layoutScale } : undefined}
+      >
       {flow.length > 0 && (
         <div className="mb-2 space-y-3">
           {flow.map((a) =>
@@ -162,6 +169,7 @@ export default function PageAttachments({
           )}
         </div>
       )}
+      </div>
       {cropping && (
         <ScreenCrop
           labels={labels}

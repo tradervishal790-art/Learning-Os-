@@ -3,7 +3,7 @@ import { EditorContent, useEditor, type Editor } from '@tiptap/react';
 import { buildExtensions } from './editorExtensions';
 import { pageToHtml, type InkStroke, type NotePage, type PageAttachment } from './notebookStore';
 import type { InkMode, InkPrefs } from './inkPrefs';
-import { PAGE_RATIO, PAGE_UNITS, inkExtentY } from './inkEngine';
+import { PAGE_RATIO, PAGE_UNITS, TEXT_REF_WIDTH, inkExtentY } from './inkEngine';
 import { pickStrokes, selectInPolygon } from './inkEdit';
 import InkLayer from './InkLayer';
 import PageBackground from './PageBackground';
@@ -129,6 +129,9 @@ export default function PageEditor({
   const imageExtent = (page.attachments ?? []).reduce((m, a) => (isFloating(a) ? Math.max(m, (a.y ?? 0) + (a.w ?? 0) * (a.ar ?? 0.75)) : m), 0);
   const minHeight = size.w > 0 ? Math.max(size.w * PAGE_RATIO, Math.max(extent, imageExtent) * scale + 160) : undefined;
 
+  // 1 when the page is at the reference width; same factor the ink uses. Before the first measure, fall back to zoom.
+  const textK = size.w > 0 ? size.w / TEXT_REF_WIDTH : zoom;
+
   const appDark = useAppDark();
   const template = isTemplateId(page.template) ? page.template : 'blank';
   const darkPaper = paperIsDark(page.paper, appDark);
@@ -136,7 +139,9 @@ export default function PageEditor({
   return (
     <div
       ref={sheet}
-      style={{ minHeight, fontSize: `${16 * zoom}px`, ['--note-px' as string]: `${zoom}px` }}
+      // Text size follows the PAGE width (not the screen), so typed text, ruled lines and ink always stay in the same place.
+      // Padding is in em so it scales with the text too. --note-px is "1 text px" for sized text (PowerPoint-style sizes).
+      style={{ minHeight, padding: '1em', fontSize: `${16 * textK}px`, ['--note-px' as string]: `${textK}px` }}
       onDragOver={(e) => {
         if (!hasFiles(e)) return;
         e.preventDefault();
@@ -153,7 +158,7 @@ export default function PageEditor({
         const photos = Array.from(e.dataTransfer.files).filter((f) => f.type.startsWith('image/'));
         if (photos.length > 0) requestAttach(page.id, 'photo', photos);
       }}
-      className={`relative isolate p-4 rounded-2xl border bg-white dark:bg-white/5 focus-within:border-gray-400 dark:focus-within:border-white/30 ${
+      className={`relative isolate rounded-2xl border bg-white dark:bg-white/5 focus-within:border-gray-400 dark:focus-within:border-white/30 ${
         dropping ? 'border-indigo-500 ring-2 ring-indigo-500/40' : 'border-gray-200 dark:border-white/10'
       } ${darkPaper ? 'note-paper-dark' : ''}`}
     >
@@ -166,7 +171,7 @@ export default function PageEditor({
       <div className="relative z-10">
         <EditorContent editor={editor} />
       </div>
-      <PageAttachments pageId={page.id} attachments={page.attachments ?? []} onChange={(next) => onAttachments(page.id, next)} labels={attachLabels} />
+      <PageAttachments pageId={page.id} attachments={page.attachments ?? []} onChange={(next) => onAttachments(page.id, next)} labels={attachLabels} layoutScale={size.w > 0 ? size.w / TEXT_REF_WIDTH : 1} />
       {size.w > 0 && (
         <PageImages attachments={page.attachments ?? []} width={size.w} onChange={(next) => onAttachments(page.id, next)} labels={attachLabels} />
       )}
