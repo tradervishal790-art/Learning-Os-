@@ -10,8 +10,9 @@ import QuickDock from './QuickDock';
 import InkOcrDialog, { type OcrState } from './InkOcrDialog';
 import ConfirmDialog from './ConfirmDialog';
 import PageThumbnails from './PageThumbnails';
+import PageTemplatePicker from './PageTemplatePicker';
 import ZoomControls from './ZoomControls';
-import { isTemplateId } from './pageTemplates';
+import { isTemplateId, type PageTemplateId } from './pageTemplates';
 import { useZoom } from './useZoom';
 import { useAppDark } from './useAppDark';
 import { useElementSize, useFillHeight } from './useLayoutSize';
@@ -766,8 +767,11 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
   const scrollToPage = (id: string) =>
     requestAnimationFrame(() => document.querySelector(`[data-page-id="${id}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
 
-  const addPageAt = (afterId: string | null, template?: string) => {
-    const page = blankPage({ template });
+  // Where the next page goes while the "choose a page type" dialog is open (null = dialog closed).
+  const [addAfter, setAddAfter] = useState<{ afterId: string | null } | null>(null);
+
+  const addPageAt = (afterId: string | null, template?: string, paper?: string) => {
+    const page = blankPage({ template, paper });
     inkRef.current = { ...inkRef.current, [page.id]: [] };
     setInk(inkRef.current);
     setAllPages(addPageAfter(latest.current.pages, afterId, page).pages);
@@ -950,12 +954,20 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
       })),
     [pages, ink]
   );
+  const pageTemplateLabels = useMemo<Record<PageTemplateId, string>>(
+    () => ({
+      blank: t.pageOps.tplBlank, ruled: t.pageOps.tplRuled, ruledNarrow: t.pageOps.tplRuledNarrow, ruledWide: t.pageOps.tplRuledWide,
+      notebook: t.pageOps.tplNotebook, dotted: t.pageOps.tplDotted, grid: t.pageOps.tplGrid, graph: t.pageOps.tplGraph,
+      isometric: t.pageOps.tplIsometric, music: t.pageOps.tplMusic, todo: t.pageOps.tplTodo, cornell: t.pageOps.tplCornell,
+    }),
+    [t]
+  );
   const thumbLabels = useMemo(
     () => ({
       title: t.pageOps.panelTitle, page: t.editor.pageLabel, add: t.pageOps.panelAdd, duplicate: t.pageOps.duplicatePage,
       delete: t.pageOps.deleteBtn, moveUp: t.pageOps.moveUp, moveDown: t.pageOps.moveDown, bookmark: t.pageOps.bookmark,
       removeBookmark: t.pageOps.removeBookmark, template: t.pageOps.template, paper: t.pageOps.paper,
-      templates: { blank: t.pageOps.tplBlank, ruled: t.pageOps.tplRuled, dotted: t.pageOps.tplDotted, grid: t.pageOps.tplGrid, cornell: t.pageOps.tplCornell },
+      templates: pageTemplateLabels,
       collapse: t.pageOps.collapsePanel, expand: t.pageOps.expandPanel,
     }),
     [t]
@@ -975,7 +987,7 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
         scrollToPage(pid);
         setDrawerOpen(false);
       }}
-      onAdd={(afterId, template) => addPageAt(afterId, template)}
+      onAskAdd={(afterId) => setAddAfter({ afterId })}
       onDuplicate={duplicatePageById}
       onDelete={askDeletePage}
       onMove={movePageById}
@@ -1327,7 +1339,7 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
 
       <div className="flex flex-wrap items-center justify-between gap-3 mt-3">
         <button
-          onClick={() => addPageAt(pages[pages.length - 1]?.id ?? null)}
+          onClick={() => setAddAfter({ afterId: pages[pages.length - 1]?.id ?? null })}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-200 dark:border-white/10 text-gray-600 dark:text-white/70 hover:bg-gray-100 dark:hover:bg-white/10"
         >
           <Plus size={14} /> {t.editor.addPage}
@@ -1355,6 +1367,19 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
           cancelLabel={t.cancel}
           onConfirm={() => deletePageById(confirmDeleteId)}
           onCancel={() => setConfirmDeleteId(null)}
+        />
+      )}
+      {addAfter && (
+        <PageTemplatePicker
+          labels={{ title: t.pageOps.newPageTitle, paper: t.pageOps.paper, close: t.pageOps.closePanel, templates: pageTemplateLabels }}
+          dark={appDark}
+          onClose={() => setAddAfter(null)}
+          onPick={(template, paper) => {
+            const afterId = addAfter.afterId;
+            setAddAfter(null);
+            setDrawerOpen(false);
+            addPageAt(afterId, template, paper === 'white' ? undefined : paper);
+          }}
         />
       )}
       {dialog === 'export' && (

@@ -1,14 +1,17 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import type { Editor } from '@tiptap/react';
 import { useEditorState } from '@tiptap/react';
 import {
-  AlignCenter, AlignLeft, AlignRight, Bold, Camera, Code, Code2, Crop, Eraser, Highlighter, Image as ImageIcon, Italic, Link2, List, Mic,
+  AArrowDown, AArrowUp, AlignCenter, AlignJustify, AlignLeft, AlignRight, Bold, ChevronDown, Camera, Code, Code2, Crop, Eraser, Highlighter, Image as ImageIcon, Italic, Link2, List, Mic,
   ListChecks, ListOrdered, Maximize2, Minus, Palette, Quote, Redo2, Search, Strikethrough, Subscript as SubIcon,
   Superscript as SupIcon, Table as TableIcon, Underline as UnderlineIcon, Undo2, Volume2, VolumeX, X, Keyboard,
 } from 'lucide-react';
 import { useTranslation } from './i18n/LanguageContext';
 import { format } from './i18n/format';
-import { FONT_SIZES, HIGHLIGHT_COLORS, TEXT_COLORS } from './editorExtensions';
+import {
+  ALL_FONTS, BASE_SIZE, FONT_GROUPS, HIGHLIGHT_COLORS, MAX_SIZE, MIN_SIZE, SIZE_PRESETS, TEXT_COLORS, cssToSize, sizeToCss, stepSize,
+} from './editorExtensions';
 import { Btn, Pop, Swatches, Sep, selectCls } from './toolbarParts';
 import { canCaptureScreen } from './ScreenCrop';
 
@@ -85,6 +88,92 @@ function FindBar({ editor, onClose }: { editor: Editor; onClose: () => void }) {
   );
 }
 
+// ---------- font size box (like PowerPoint: [A-] [ 18 v ] [A+]) ----------
+
+function SizeBox({
+  value, onSet, labels,
+}: {
+  value: number | null;
+  onSet: (n: number | null) => void;
+  labels: { size: string; bigger: string; smaller: string; reset: string };
+}) {
+  const shown = value ?? BASE_SIZE;
+  const [draft, setDraft] = useState<string | null>(null);
+  const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
+  const wrap = useRef<HTMLDivElement>(null);
+
+  const commit = () => {
+    if (draft === null) return;
+    const n = Math.round(Number(draft.replace(',', '.')) * 10) / 10;
+    setDraft(null);
+    if (Number.isFinite(n) && n >= MIN_SIZE && n <= MAX_SIZE) onSet(n);
+  };
+  const openList = () => {
+    const r = wrap.current?.getBoundingClientRect();
+    if (r) setPos({ left: r.left, top: r.bottom + 4 });
+  };
+
+  return (
+    <>
+      <Btn label={labels.smaller} onClick={() => onSet(stepSize(shown, -1))}><AArrowDown size={16} /></Btn>
+      <div ref={wrap} className="flex items-center shrink-0">
+        <input
+          aria-label={labels.size}
+          title={labels.size}
+          inputMode="decimal"
+          value={draft ?? String(shown)}
+          onFocus={(e) => e.currentTarget.select()}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              commit();
+            } else if (e.key === 'Escape') setDraft(null);
+          }}
+          className={`${selectCls} w-12 text-center rounded-r-none`}
+        />
+        <button
+          type="button"
+          aria-label={labels.size}
+          aria-haspopup="listbox"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={openList}
+          className="h-10 sm:h-9 w-6 flex items-center justify-center rounded-r-lg border border-l-0 border-gray-200 dark:border-white/10 text-gray-600 dark:text-white/70 hover:bg-gray-100 dark:hover:bg-white/10"
+        >
+          <ChevronDown size={14} />
+        </button>
+      </div>
+      <Btn label={labels.bigger} onClick={() => onSet(stepSize(shown, 1))}><AArrowUp size={16} /></Btn>
+      {/* the list is drawn on <body> so the scrolling toolbar row can't clip it */}
+      {pos && createPortal(
+        <>
+          <div className="fixed inset-0 z-[60]" onClick={() => setPos(null)} />
+          <div
+            role="listbox"
+            className="fixed z-[61] max-h-64 w-20 overflow-y-auto rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-neutral-900 py-1 shadow-lg"
+            style={{ left: pos.left, top: pos.top }}
+          >
+            <button type="button" role="option" aria-selected={value === null} onMouseDown={(e) => e.preventDefault()}
+              onClick={() => { onSet(null); setPos(null); }}
+              className="w-full px-3 py-1.5 text-left text-xs text-gray-500 dark:text-white/60 hover:bg-gray-100 dark:hover:bg-white/10">
+              {labels.reset}
+            </button>
+            {SIZE_PRESETS.map((n) => (
+              <button key={n} type="button" role="option" aria-selected={n === shown} onMouseDown={(e) => e.preventDefault()}
+                onClick={() => { onSet(n); setPos(null); }}
+                className={`w-full px-3 py-1.5 text-left text-xs hover:bg-gray-100 dark:hover:bg-white/10 ${n === shown ? 'font-semibold text-indigo-600 dark:text-indigo-300' : 'text-gray-700 dark:text-white/80'}`}>
+                {n}
+              </button>
+            ))}
+          </div>
+        </>,
+        document.body
+      )}
+    </>
+  );
+}
+
 // ---------- toolbar ----------
 
 export default function EditorToolbar({
@@ -129,8 +218,10 @@ export default function EditorToolbar({
       left: !!e?.isActive({ textAlign: 'left' }),
       center: !!e?.isActive({ textAlign: 'center' }),
       right: !!e?.isActive({ textAlign: 'right' }),
+      justify: !!e?.isActive({ textAlign: 'justify' }),
       heading: e?.isActive('heading', { level: 1 }) ? '1' : e?.isActive('heading', { level: 2 }) ? '2' : e?.isActive('heading', { level: 3 }) ? '3' : 'p',
-      size: (e?.getAttributes('textStyle').fontSize as string | undefined) ?? '',
+      size: cssToSize(e?.getAttributes('textStyle').fontSize as string | undefined),
+      font: (e?.getAttributes('textStyle').fontFamily as string | undefined) ?? '',
       canUndo: !!e?.can().undo(),
       canRedo: !!e?.can().redo(),
     }),
@@ -140,7 +231,7 @@ export default function EditorToolbar({
   const c = () => editor.chain().focus();
 
   const setHeading = (v: string) => (v === 'p' ? c().setParagraph().run() : c().toggleHeading({ level: Number(v) as 1 | 2 | 3 }).run());
-  const setSize = (v: string) => (v ? c().setFontSize(v).run() : c().unsetFontSize().run());
+  const setSize = (n: number | null) => (n === null ? c().unsetFontSize().run() : c().setFontSize(sizeToCss(n)).run());
   const setFont = (v: string) => (v ? c().setFontFamily(v).run() : c().unsetFontFamily().run());
 
   const addLink = () => {
@@ -194,18 +285,20 @@ export default function EditorToolbar({
           <option value="2">{t.heading2}</option>
           <option value="3">{t.heading3}</option>
         </select>
-        <select aria-label="Font" className={`${selectCls} ml-1`} defaultValue="" onChange={(e) => setFont(e.target.value)}>
-          <option value="">Sans</option>
-          <option value="Georgia, serif">Serif</option>
-          <option value="ui-monospace, monospace">Mono</option>
-          <option value="'Comic Sans MS', cursive">Hand</option>
+        <select aria-label={t.fontFamily} title={t.fontFamily} className={`${selectCls} ml-1 w-36`}
+          value={s.font} onChange={(e) => setFont(e.target.value)} style={s.font ? { fontFamily: s.font } : undefined}>
+          <option value="">Default</option>
+          {/* a font saved by an older version / pasted from elsewhere that is not in the list */}
+          {s.font && !ALL_FONTS.some((f) => f.value === s.font) && (
+            <option value={s.font}>{s.font.split(',')[0].replace(/['"]/g, '')}</option>
+          )}
+          {FONT_GROUPS.map((g) => (
+            <optgroup key={g.label} label={g.label}>
+              {g.fonts.map((f) => <option key={f.value} value={f.value} style={{ fontFamily: f.value }}>{f.label}</option>)}
+            </optgroup>
+          ))}
         </select>
-        <select aria-label={t.fontSize} title={t.fontSize} className={`${selectCls} ml-1`} value={FONT_SIZES.includes(s.size as never) ? s.size : ''} onChange={(e) => setSize(e.target.value)}>
-          <option value="">{t.sizeNormal}</option>
-          <option value={FONT_SIZES[0]}>{t.sizeSmall}</option>
-          <option value={FONT_SIZES[2]}>{t.sizeLarge}</option>
-          <option value={FONT_SIZES[3]}>{t.sizeHuge}</option>
-        </select>
+        <SizeBox value={s.size} onSet={setSize} labels={{ size: t.fontSize, bigger: t.increaseSize, smaller: t.decreaseSize, reset: t.sizeNormal }} />
     </>
   );
   const marks = (
@@ -248,6 +341,7 @@ export default function EditorToolbar({
         <Btn label={t.alignLeft} active={s.left} onClick={() => c().setTextAlign('left').run()}><AlignLeft size={16} /></Btn>
         <Btn label={t.alignCenter} active={s.center} onClick={() => c().setTextAlign('center').run()}><AlignCenter size={16} /></Btn>
         <Btn label={t.alignRight} active={s.right} onClick={() => c().setTextAlign('right').run()}><AlignRight size={16} /></Btn>
+        <Btn label={t.alignJustify} active={s.justify} onClick={() => c().setTextAlign('justify').run()}><AlignJustify size={16} /></Btn>
     </>
   );
   const tableBtn = (

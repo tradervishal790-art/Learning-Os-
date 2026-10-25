@@ -136,7 +136,7 @@ export default function PageEditor({
   return (
     <div
       ref={sheet}
-      style={{ minHeight, fontSize: `${16 * zoom}px` }}
+      style={{ minHeight, fontSize: `${16 * zoom}px`, ['--note-px' as string]: `${zoom}px` }}
       onDragOver={(e) => {
         if (!hasFiles(e)) return;
         e.preventDefault();

@@ -481,6 +481,14 @@ export interface TranslationShape {
       tplDotted: string;
       tplGrid: string;
       tplCornell: string;
+      tplRuledNarrow: string;
+      tplRuledWide: string;
+      tplNotebook: string;
+      tplGraph: string;
+      tplIsometric: string;
+      tplMusic: string;
+      tplTodo: string;
+      newPageTitle: string;
       zoomIn: string;
       zoomOut: string;
       zoomFit: string;
@@ -632,6 +640,10 @@ export interface TranslationShape {
       sizeNormal: string;
       sizeLarge: string;
       sizeHuge: string;
+      fontFamily: string;
+      increaseSize: string;
+      decreaseSize: string;
+      alignJustify: string;
       find: string;
       findPlaceholder: string;
       replacePlaceholder: string;
@@ -2052,6 +2064,14 @@ export const translations: Record<Locale, TranslationShape> = {
         tplDotted: "Dotted",
         tplGrid: "Grid",
         tplCornell: "Cornell",
+        tplRuledNarrow: "Lined (narrow)",
+        tplRuledWide: "Lined (wide)",
+        tplNotebook: "Notebook",
+        tplGraph: "Graph",
+        tplIsometric: "Isometric",
+        tplMusic: "Music staff",
+        tplTodo: "To-do",
+        newPageTitle: "New page",
         zoomIn: "Zoom in",
         zoomOut: "Zoom out",
         zoomFit: "Fit",
@@ -2203,6 +2223,10 @@ export const translations: Record<Locale, TranslationShape> = {
         sizeNormal: "Normal",
         sizeLarge: "Large",
         sizeHuge: "Huge",
+        fontFamily: "Font",
+        increaseSize: "Increase font size",
+        decreaseSize: "Decrease font size",
+        alignJustify: "Justify",
         find: "Find and replace",
         findPlaceholder: "Find...",
         replacePlaceholder: "Replace with...",
@@ -3634,6 +3658,14 @@ export const translations: Record<Locale, TranslationShape> = {
         tplDotted: "Dotted",
         tplGrid: "Grid",
         tplCornell: "Cornell",
+        tplRuledNarrow: "Lined (narrow)",
+        tplRuledWide: "Lined (wide)",
+        tplNotebook: "Notebook",
+        tplGraph: "Graph",
+        tplIsometric: "Isometric",
+        tplMusic: "Music staff",
+        tplTodo: "To-do",
+        newPageTitle: "New page",
         zoomIn: "Zoom in",
         zoomOut: "Zoom out",
         zoomFit: "Fit",
@@ -3785,6 +3817,10 @@ export const translations: Record<Locale, TranslationShape> = {
         sizeNormal: "Normal",
         sizeLarge: "Large",
         sizeHuge: "Huge",
+        fontFamily: "Font",
+        increaseSize: "Increase font size",
+        decreaseSize: "Decrease font size",
+        alignJustify: "Justify",
         find: "Find and replace",
         findPlaceholder: "खोजें...",
         replacePlaceholder: "इससे बदलें...",
@@ -5215,6 +5251,14 @@ export const translations: Record<Locale, TranslationShape> = {
         tplDotted: "Dotted",
         tplGrid: "Grid",
         tplCornell: "Cornell",
+        tplRuledNarrow: "Lined (narrow)",
+        tplRuledWide: "Lined (wide)",
+        tplNotebook: "Notebook",
+        tplGraph: "Graph",
+        tplIsometric: "Isometric",
+        tplMusic: "Music staff",
+        tplTodo: "To-do",
+        newPageTitle: "New page",
         zoomIn: "Zoom in",
         zoomOut: "Zoom out",
         zoomFit: "Fit",
@@ -5366,6 +5410,10 @@ export const translations: Record<Locale, TranslationShape> = {
         sizeNormal: "Normal",
         sizeLarge: "Large",
         sizeHuge: "Huge",
+        fontFamily: "Font",
+        increaseSize: "Increase font size",
+        decreaseSize: "Decrease font size",
+        alignJustify: "Justify",
         find: "Find and replace",
         findPlaceholder: "Find...",
         replacePlaceholder: "Replace with...",

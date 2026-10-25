@@ -32,6 +32,14 @@ export default function PageBackground({
   const ruled = `r${uid}`;
   const dots = `d${uid}`;
   const grid = `g${uid}`;
+  const iso = `i${uid}`;
+  const staff = `s${uid}`;
+  const box = `b${uid}`;
+  const isRuled = template === 'ruled' || template === 'ruledNarrow' || template === 'ruledWide' || template === 'notebook';
+  const isGrid = template === 'grid' || template === 'graph';
+  const margin = onDark ? '#7a4a52' : '#e8a3a3'; // notebook margin line
+  const isoH = sp * Math.sqrt(3); // triangular dot lattice: row pitch is half of this
+  const boxSide = sp * 0.5; // to-do checkbox
 
   // Cornell geometry (against an A4 page so it does not stretch when the page grows)
   const pageH = width * PAGE_RATIO;
@@ -57,11 +65,36 @@ export default function PageBackground({
             <pattern id={grid} width={sp} height={sp} patternUnits="userSpaceOnUse">
               <path d={`M0 ${sp - sw / 2} H${sp} M${sp - sw / 2} 0 V${sp}`} stroke={stroke} strokeWidth={sw} fill="none" />
             </pattern>
+            <pattern id={iso} width={sp} height={isoH} patternUnits="userSpaceOnUse">
+              <circle cx={sp / 2} cy={isoH / 4} r={Math.max(1, 1.5 * k)} fill={stroke} />
+              <circle cx={0} cy={(isoH * 3) / 4} r={Math.max(1, 1.5 * k)} fill={stroke} />
+              <circle cx={sp} cy={(isoH * 3) / 4} r={Math.max(1, 1.5 * k)} fill={stroke} />
+            </pattern>
+            {/* music: one 5-line staff per 7 spacings, so there is a gap between staves */}
+            <pattern id={staff} width={10} height={sp * 7} patternUnits="userSpaceOnUse">
+              {[0, 1, 2, 3, 4].map((n) => (
+                <line key={n} x1={0} y1={sp * (1.5 + n)} x2={10} y2={sp * (1.5 + n)} stroke={stroke} strokeWidth={sw} />
+              ))}
+            </pattern>
+            <pattern id={box} width={boxSide} height={sp} patternUnits="userSpaceOnUse">
+              <rect x={sw / 2} y={sp * 0.3} width={boxSide - sw} height={boxSide - sw} rx={sw * 1.5} fill="none" stroke={stroke} strokeWidth={sw} />
+            </pattern>
           </defs>
 
-          {template === 'ruled' && <rect x={0} y={0} width={width} height={height} fill={`url(#${ruled})`} />}
+          {isRuled && <rect x={0} y={0} width={width} height={height} fill={`url(#${ruled})`} />}
           {template === 'dotted' && <rect x={0} y={0} width={width} height={height} fill={`url(#${dots})`} />}
-          {template === 'grid' && <rect x={0} y={0} width={width} height={height} fill={`url(#${grid})`} />}
+          {isGrid && <rect x={0} y={0} width={width} height={height} fill={`url(#${grid})`} />}
+          {template === 'isometric' && <rect x={0} y={0} width={width} height={height} fill={`url(#${iso})`} />}
+          {template === 'music' && <rect x={0} y={0} width={width} height={height} fill={`url(#${staff})`} />}
+          {template === 'notebook' && <line x1={width * 0.12} y1={0} x2={width * 0.12} y2={height} stroke={margin} strokeWidth={sw * 1.5} />}
+          {template === 'todo' && (
+            <>
+              <rect x={0} y={0} width={width} height={height} fill={`url(#${ruled})`} />
+              <g transform={`translate(${sp * 0.5} 0)`}>
+                <rect x={0} y={0} width={boxSide} height={height} fill={`url(#${box})`} />
+              </g>
+            </>
+          )}
 
           {template === 'cornell' && (
             <>

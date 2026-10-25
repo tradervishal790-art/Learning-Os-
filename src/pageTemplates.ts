@@ -1,13 +1,22 @@
 // src/pageTemplates.ts
 
-export type PageTemplateId = 'blank' | 'ruled' | 'dotted' | 'grid' | 'cornell';
+export type PageTemplateId =
+  | 'blank' | 'ruled' | 'ruledNarrow' | 'ruledWide' | 'notebook'
+  | 'dotted' | 'grid' | 'graph' | 'isometric' | 'music' | 'todo' | 'cornell';
 
 /** Spacing is in PAGE UNITS (the sheet is always 1000 units wide). */
 export const PAGE_TEMPLATES: { id: PageTemplateId; spacing: number }[] = [
   { id: 'blank', spacing: 0 },
   { id: 'ruled', spacing: 40 },
+  { id: 'ruledNarrow', spacing: 28 },
+  { id: 'ruledWide', spacing: 56 },
+  { id: 'notebook', spacing: 40 },
   { id: 'dotted', spacing: 40 },
   { id: 'grid', spacing: 40 },
+  { id: 'graph', spacing: 20 },
+  { id: 'isometric', spacing: 40 },
+  { id: 'music', spacing: 24 },
+  { id: 'todo', spacing: 48 },
   { id: 'cornell', spacing: 40 },
 ];
 

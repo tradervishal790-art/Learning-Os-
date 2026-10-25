@@ -64,7 +64,8 @@ export interface PageThumbnailsProps {
     expand: string;
   };
   onSelect(id: string): void;
-  onAdd(afterId: string | null, template: PageTemplateId): void;
+  /** Asks the editor to open the page-type picker (the new page goes after `afterId`). */
+  onAskAdd(afterId: string | null): void;
   onDuplicate(id: string): void;
   onDelete(id: string): void;
   onMove(id: string, toIndex: number): void;
@@ -511,7 +512,7 @@ export default function PageThumbnails(props: PageThumbnailsProps) {
       select: (id) => cbRef.current.onSelect(id),
       addAfter(id) {
         setMenuId(null);
-        cbRef.current.onAdd(id, 'blank');
+        cbRef.current.onAskAdd(id);
       },
       duplicate(id) {
         setMenuId(null);
@@ -701,7 +702,7 @@ export default function PageThumbnails(props: PageThumbnailsProps) {
           aria-label={labels.add}
           title={labels.add}
           className={`mt-3 flex min-h-10 w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-gray-300 text-xs hover:bg-gray-100 dark:border-white/20 dark:hover:bg-white/10 ${FOCUS}`}
-          onClick={() => props.onAdd(lastId, 'blank')}
+          onClick={() => props.onAskAdd(lastId)}
         >
           <Plus className="h-4 w-4" aria-hidden="true" />
           <span>{labels.add}</span>

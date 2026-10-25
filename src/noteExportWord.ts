@@ -157,7 +157,9 @@ function cssColorToHex(v: string): string | undefined {
 
 /** CSS font-size -> half-points (docx unit). */
 function cssSizeToHalfPt(v: string): number | undefined {
-  const m = /^(\d+(?:\.\d+)?)\s*(px|pt)$/.exec(v.trim());
+  // the editor stores sizes as calc(N * var(--note-px, 1px)); N is in px
+  const calc = /^calc\(\s*(\d+(?:\.\d+)?)\s*\*\s*var\(\s*--note-px\s*,\s*1px\s*\)\s*\)$/.exec(v.trim());
+  const m = calc ? [calc[0], calc[1], 'px'] : /^(\d+(?:\.\d+)?)\s*(px|pt)$/.exec(v.trim());
   if (!m) return undefined;
   const n = Number(m[1]);
   const pt = m[2] === 'px' ? n * 0.75 : n;
