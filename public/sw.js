@@ -5,12 +5,38 @@
  *  - /api/* and everything cross-origin (Firebase, YouTube, Gemini proxy): never touched.
  * The dictionary uses its own cache ('learning-os-data-v1', see dictionaryStore.ts);
  * this file only manages caches prefixed "los-". */
-const VERSION = 'v1';
+const VERSION = 'v2';
 const ASSETS = 'los-assets-' + VERSION;
 const PAGES = 'los-pages-' + VERSION;
-const MAX_ASSETS = 150;
+const MAX_ASSETS = 600;
 
-self.addEventListener('install', () => self.skipWaiting());
+// On install, download every built file once (list made at build time) so the
+// whole app works offline. Best-effort: a failure here never breaks the app.
+async function precacheAll() {
+  try {
+    const res = await fetch('/precache-manifest.json', { cache: 'no-store' });
+    if (!res.ok) return;
+    const files = await res.json();
+    const cache = await caches.open(ASSETS);
+    await Promise.all(
+      files.map(async (f) => {
+        try {
+          if (await cache.match(f)) return;
+          const r = await fetch(f);
+          if (r.status === 200) await cache.put(f, r);
+        } catch (e) {}
+      })
+    );
+    // Also keep the app shell ready, so the very first offline open works.
+    const shell = await fetch('/', { cache: 'no-store' });
+    if (shell.status === 200) await (await caches.open(PAGES)).put('/index.html', shell);
+  } catch (e) {}
+}
+
+self.addEventListener('install', (event) => {
+  self.skipWaiting();
+  event.waitUntil(precacheAll());
+});
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
