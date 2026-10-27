@@ -20,7 +20,7 @@ import { useElementSize, useFillHeight } from './useLayoutSize';
 import { setImmersive, setNoteOpen } from './immersive';
 import { useMediaQuery } from './useMediaQuery';
 import { addPageAfter, blankPage, deletePage, duplicatePage, inkOf, movePage, newPageId, patchPage, restorePage } from './pageOps';
-import { describePicture, recognizeHandwriting } from './inkOcrApi';
+import { describePicture, recognizeInk } from './inkOcrApi';
 import { getClipboard, nextPasteOffset, setClipboard, useClipboardCount } from './inkClipboard';
 import {
   cloneStrokes, deleteSelected, neatenSelected, pickStrokes, recolorSelected, renderStrokesPng, reorderSelected, rewidthSelected,
@@ -309,13 +309,14 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
         // ask again next time
       }
     }
-    const png = renderStrokesPng(pickStrokes(inkRef.current[sel.pageId] ?? [], sel.ids));
+    const picked = pickStrokes(inkRef.current[sel.pageId] ?? [], sel.ids);
+    const png = renderStrokesPng(picked);
     const token = ++ocrToken.current;
     if (!png) return flash(t.ink.ocrEmpty);
     const ids = [...sel.ids];
     setOcr({ status: 'loading', text: '', confidence: 'low', pageId: sel.pageId, ids });
     try {
-      const r = await recognizeHandwriting(png.data);
+      const r = await recognizeInk(picked, png.data);
       if (token === ocrToken.current) setOcr({ status: 'ready', text: r.text, confidence: r.confidence, pageId: sel.pageId, ids });
     } catch {
       if (token === ocrToken.current) setOcr({ status: 'error', text: '', confidence: 'low', pageId: sel.pageId, ids });
@@ -669,7 +670,7 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
       const png = renderStrokesPng(c.ink);
       if (png) {
         try {
-          const r = await recognizeHandwriting(png.data);
+          const r = await recognizeInk(c.ink, png.data);
           if (r.text.trim()) parts.push(r.text.trim());
         } catch {
           failed = true;

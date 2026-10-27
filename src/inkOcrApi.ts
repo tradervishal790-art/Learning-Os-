@@ -1,8 +1,20 @@
 import { authFetch } from './apiFetch';
+import type { InkStroke } from './notebookStore';
+import { recognizeStrokes, type InkLang } from './strokeRecognizer';
 
 export interface InkOcrResult {
   text: string;
   confidence: 'high' | 'medium' | 'low';
+}
+
+/**
+ * Handwriting -> text, fastest way first: the stroke points are read directly (browser API or Google Input Tools,
+ * no picture, no LLM). Only when that gives nothing is the PNG sent to the Gemini picture reader.
+ */
+export async function recognizeInk(strokes: InkStroke[], pngBase64: string, lang: InkLang = 'en'): Promise<InkOcrResult> {
+  const fast = await recognizeStrokes(strokes, lang);
+  if (fast) return { text: fast, confidence: 'medium' }; // no score from these readers: the student checks the preview
+  return recognizeHandwriting(pngBase64);
 }
 
 /** Send a PNG (base64, no prefix) of selected handwriting to be read as typed text. */
