@@ -5,6 +5,7 @@ import type { ReactNode } from 'react';
 import NotesToRevise from './NotesToRevise';
 import { getRevisionStats, getRevisionDataForGoals } from './revisionData';
 import { markDayReviewed, hydrateRevisionFromCloud } from './revisionstore';
+import { getRecallAccuracy, getRecallTrend, hydrateRecallScoresFromCloud, saveRecallRating, type RecallRating, type RecallTrendPoint } from './revisionRecallStore';
 import { markTopicFinished } from './roadmapData';
 import type { RevisionStatus, RevisionDifficulty, RevisionItem, Goal } from './types';
 import { useTranslation } from './i18n/LanguageContext';
@@ -65,12 +66,18 @@ export default function Revision({ goals = [] }: RevisionProps) {
   // real refresh after persisting to revisionStore.
   const [items, setItems] = useState<(RevisionItem & { goalTitle?: string })[]>(() => getRevisionDataForGoals(t.revisionTasks, goals));
   const [reviewingId, setReviewingId] = useState<string | null>(null);
+  const [recallAccuracy, setRecallAccuracy] = useState<number | null>(() => getRecallAccuracy());
+  const [recallTrend, setRecallTrend] = useState<RecallTrendPoint[]>(() => getRecallTrend());
 
   // ON-DEMAND CLOUD HYDRATION: only pulled down when the Revision page is
   // actually opened, not upfront on sign-in. No-op if this device already
   // has revision data.
   useEffect(() => {
-    void hydrateRevisionFromCloud().then(() => setItems(getRevisionDataForGoals(t.revisionTasks, goals)));
+    void Promise.all([hydrateRevisionFromCloud(), hydrateRecallScoresFromCloud()]).then(() => {
+      setItems(getRevisionDataForGoals(t.revisionTasks, goals));
+      setRecallAccuracy(getRecallAccuracy());
+      setRecallTrend(getRecallTrend());
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -94,8 +101,13 @@ export default function Revision({ goals = [] }: RevisionProps) {
 
   const handleReviewNow = (id: string) => {
     setReviewingId(id);
-    // TODO: once Mentor is wired in, this should open a quiz/explanation
-    // session for the topic instead of just flagging it as "in review".
+  };
+
+  const handleRecallRating = (item: RevisionItem & { goalId?: string }, rating: RecallRating) => {
+    saveRecallRating(item.topicId, item.day, rating);
+    setRecallAccuracy(getRecallAccuracy());
+    setRecallTrend(getRecallTrend());
+    handleMarkDone(item);
   };
 
   const stats = getRevisionStats(items);
@@ -145,7 +157,7 @@ export default function Revision({ goals = [] }: RevisionProps) {
           { label: t.revision.stats.dueToday, value: String(stats.dueToday), Icon: Flame },
           { label: t.revision.stats.overdue, value: String(stats.overdue), Icon: TriangleAlert },
           { label: t.revision.stats.mastered, value: String(stats.mastered), Icon: Star },
-          { label: t.revision.stats.retention, value: `${stats.avgRetention}%`, Icon: Gauge },
+          { label: 'Recall accuracy', value: recallAccuracy === null ? '—' : `${recallAccuracy}%`, Icon: Gauge },
         ].map(({ label, value, Icon }) => (
           <div key={label} title={label} aria-label={`${label}: ${value}`} className="px-2 md:px-4 py-3 md:py-4 text-center md:text-left min-w-0">
             <Icon className="md:hidden w-5 h-5 mx-auto mb-1 text-gray-500 dark:text-white/50" strokeWidth={1.75} />
@@ -154,6 +166,29 @@ export default function Revision({ goals = [] }: RevisionProps) {
           </div>
         ))}
       </motion.div>
+
+      {/* Observed recall trend — blank days are intentionally not treated as failures. */}
+      <section className="rounded-2xl card border border-gray-200 dark:border-white/10 p-4 mb-5 md:mb-6" aria-label="Seven-day recall trend">
+        <div className="flex items-center justify-between gap-3 mb-3">
+          <h2 className="text-sm font-semibold">7-day recall trend</h2>
+          <span className="text-xs text-gray-400 dark:text-white/50">Based on your ratings</span>
+        </div>
+        <div className="grid grid-cols-7 gap-2 items-end">
+          {recallTrend.map((point) => (
+            <div key={point.date} className="min-w-0 text-center">
+              <div className="h-12 flex items-end justify-center mb-1">
+                <div
+                  title={point.accuracy === null ? 'No ratings' : `${point.accuracy}% recall accuracy · ${point.attempts} rating(s)`}
+                  className={`w-full max-w-8 rounded-t-md ${point.accuracy === null ? 'bg-gray-200 dark:bg-white/10' : 'bg-indigo-500 dark:bg-indigo-400'}`}
+                  style={{ height: point.accuracy === null ? '4px' : `${Math.max(6, Math.round(point.accuracy * 0.44))}px` }}
+                />
+              </div>
+              <div className="text-[10px] text-gray-500 dark:text-white/50">{point.label}</div>
+              <div className="text-[10px] font-medium tabular-nums">{point.accuracy === null ? '—' : `${point.accuracy}%`}</div>
+            </div>
+          ))}
+        </div>
+      </section>
 
       {/* Filter tabs */}
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2, duration: 0.5 }} className="flex gap-2 mb-4 md:mb-6 overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -236,6 +271,20 @@ export default function Revision({ goals = [] }: RevisionProps) {
                     <h3 className="font-semibold mb-1">{item.topic}</h3>
                     {item.status !== 'mastered' && (
                       <p className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-white/60 mb-1"><PenLine className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.75} /><span className="min-w-0">{item.task}</span></p>
+                    )}
+                    {isReviewing && item.status !== 'mastered' && (
+                      <div className="mt-3 flex flex-wrap gap-2" aria-label="How well did you recall this topic?">
+                        <span className="w-full text-xs text-gray-500 dark:text-white/60">How well did you remember it?</span>
+                        {([
+                          ['forgot', 'Forgot'],
+                          ['partial', 'Some of it'],
+                          ['remembered', 'Remembered'],
+                        ] as [RecallRating, string][]).map(([rating, label]) => (
+                          <button key={rating} onClick={() => handleRecallRating(item, rating)} className="rounded-full border border-gray-200 dark:border-white/15 px-3 py-1.5 text-xs font-medium hover:bg-indigo-50 dark:hover:bg-indigo-500/15 transition">
+                            {label}
+                          </button>
+                        ))}
+                      </div>
                     )}
                     <div className="flex items-center gap-3 text-xs text-gray-400 dark:text-white/50">
                       <span className="inline-flex items-center gap-1"><CalendarDays className="w-3.5 h-3.5" strokeWidth={1.75} />{item.dueDate}</span>

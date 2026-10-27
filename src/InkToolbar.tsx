@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
-  BringToFront, ClipboardPaste, Copy, CopyPlus, Eraser, Hand, Highlighter, Keyboard as TypeIcon, LassoSelect, PenLine, Pointer,
+  BringToFront, ClipboardPaste, Copy, CopyPlus, Eraser, Hand, Highlighter, Keyboard as TypeIcon, LassoSelect, PenLine, Pointer, Pencil, Paintbrush,
   Plus, Redo2, RotateCcw, Scissors, ScanText, SendToBack, Shapes, SquareDashed, Trash2, Undo2, X,
 } from 'lucide-react';
 import { useTranslation } from './i18n/LanguageContext';
@@ -138,8 +138,15 @@ export default function InkToolbar({
   const quick = [...new Set([color, ...(isHl ? [] : ['auto']), ...saved])].slice(0, isHl ? 5 : 7);
 
 
-  const addFavorite = () =>
-    setPrefs({ favorites: [...prefs.favorites, { kind: prefs.kind, color: prefs.color, width: prefs.width }].slice(0, 5) });
+  const addFavorite = () => {
+    const current = { kind: prefs.kind, color: prefs.color, width: prefs.width };
+    // Saving the same pen again promotes it instead of wasting a favorite slot.
+    const favorites = [
+      current,
+      ...prefs.favorites.filter((f) => f.kind !== current.kind || f.color !== current.color || f.width !== current.width),
+    ].slice(0, 5);
+    setPrefs({ favorites });
+  };
 
   const undoRedo = (
     <>
@@ -158,7 +165,7 @@ export default function InkToolbar({
     const a = select;
     return (
       <div>
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+        <div className="flex flex-wrap items-center gap-1.5 overflow-visible pb-2">
           {undoRedo}
           <Sep />
           <Btn label={t.selLasso} active={prefs.selectShape === 'lasso'} onClick={() => setPrefs({ selectShape: 'lasso' })}><LassoSelect size={16} /></Btn>
@@ -203,7 +210,7 @@ export default function InkToolbar({
       setLaserOpts((o) => (prefs.laserStyle === style ? !o : true));
     };
     return (
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+      <div className="flex flex-wrap items-center gap-1.5 overflow-visible pb-2">
         <button className={chip(!ink)} aria-expanded={laserOpts} title={t.laserHint} onClick={() => pick('dot')}>{t.laserPointer}</button>
         <button className={chip(ink)} aria-expanded={laserOpts} title={t.laserInkHint} onClick={() => pick('ink')}>{t.laserInk}</button>
         {laserOpts && (
@@ -260,11 +267,19 @@ export default function InkToolbar({
   }
 
   return (
-    <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+    <div className="flex flex-wrap items-center gap-1.5 overflow-visible pb-2">
       {undoRedo}
       <Sep />
       {!isHl && (
-        <PenPicker kind={prefs.kind} color={color} labels={kindLabel} title={t.penType} onPick={(k) => setPrefs({ kind: k })} />
+        <>
+          <PenPicker kind={prefs.kind} color={color} labels={kindLabel} title={t.penType} onPick={(k) => setPrefs({ kind: k })} />
+          <Sep />
+          <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-white/40">Quick styles</span>
+          <button type="button" onClick={() => setPrefs({ kind: 'pencil', width: 2, color: '#6b7280' })} title="Pencil" aria-label="Pencil style" aria-pressed={prefs.kind === 'pencil'} className={chip(prefs.kind === 'pencil')}><Pencil size={15} /><span className="ml-1">Pencil</span></button>
+          <button type="button" onClick={() => setPrefs({ kind: 'fineliner', width: 1, color: '#3b82f6' })} title="Fine liner" aria-label="Fine liner style" aria-pressed={prefs.kind === 'fineliner'} className={chip(prefs.kind === 'fineliner')}><PenLine size={15} /><span className="ml-1">Fine</span></button>
+          <button type="button" onClick={() => setPrefs({ kind: 'marker', width: 4, color: '#f97316' })} title="Marker" aria-label="Marker style" aria-pressed={prefs.kind === 'marker'} className={chip(prefs.kind === 'marker')}><Highlighter size={15} /><span className="ml-1">Marker</span></button>
+          <button type="button" onClick={() => setPrefs({ kind: 'brush', width: 3, color: '#a855f7' })} title="Brush" aria-label="Brush style" aria-pressed={prefs.kind === 'brush'} className={chip(prefs.kind === 'brush')}><Paintbrush size={15} /><span className="ml-1">Brush</span></button>
+        </>
       )}
       {/* the first colours sit right on the toolbar; the rest (and "recent" + custom) are one tap away */}
       {quick.map((c) => (
@@ -344,7 +359,16 @@ export default function InkToolbar({
           <TaperStrip label={t.smoothing} min={0} max={1} step={0.05} className="w-20" value={prefs.smoothing} onChange={(v) => setPrefs({ smoothing: v })} />
         </label>
       )}
-      <Btn label={t.shapeSnap} active={prefs.shapeSnap} onClick={() => setPrefs({ shapeSnap: !prefs.shapeSnap })}><Shapes size={16} /></Btn>
+      <button
+        type="button"
+        title="Draw a rough circle, rectangle, or line and hold still to snap it into a neat shape"
+        aria-label="Shape snap"
+        aria-pressed={prefs.shapeSnap}
+        onClick={() => setPrefs({ shapeSnap: !prefs.shapeSnap })}
+        className={chip(prefs.shapeSnap) + ' flex items-center gap-1.5'}
+      >
+        <Shapes size={16} /> <span>Snap shapes</span>
+      </button>
       {fingerBtn}
       <Btn label={t.resetPen} onClick={resetPrefs}><RotateCcw size={16} /></Btn>
     </div>

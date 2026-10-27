@@ -138,3 +138,50 @@ html, body, #root {
 .ca-theme [class*="dark:text-white"] { color: #64748b !important; }
 .ca-theme [class*="dark:hover:text-white"]:hover { color: #0b132b !important; }
 .ca-theme [class*="dark:text-indigo-400"] { color: #315bff !important; }
+
+
+/* Global interaction polish: visible keyboard focus and comfortable touch feedback. */
+:root {
+  -webkit-tap-highlight-color: transparent;
+  text-rendering: optimizeLegibility;
+  font-synthesis: none;
+}
+.dark { color-scheme: dark; }
+button, a, input, textarea, select { -webkit-tap-highlight-color: transparent; }
+button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
+  outline: 2px solid #818cf8;
+  outline-offset: 3px;
+}
+::selection { background: rgba(99, 102, 241, 0.25); }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Subtle lift on hover: gives clickable controls a tactile, premium feel.
+   Keep touch devices and reduced-motion preferences calm. */
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  button:not(:disabled),
+  a[href],
+  [role="button"]:not([aria-disabled="true"]) {
+    transition-property: transform, box-shadow, background-color, border-color, color;
+    transition-duration: 180ms;
+    transition-timing-function: cubic-bezier(0.2, 0.75, 0.25, 1);
+  }
+
+  button:not(:disabled):hover,
+  a[href]:hover,
+  [role="button"]:not([aria-disabled="true"]):hover {
+    transform: translateY(-2px);
+  }
+
+  button:not(:disabled):active,
+  a[href]:active,
+  [role="button"]:not([aria-disabled="true"]):active {
+    transform: translateY(0) scale(0.99);
+  }
+}

@@ -29,7 +29,23 @@ export default function PageTemplatePicker({
   onPick: (template: PageTemplateId, paper: string) => void;
   onClose: () => void;
 }) {
-  const [paper, setPaper] = useState('white');
+  const [paper, setPaper] = useState(() => {
+    // Reuse the student's last paper choice when adding the next page.
+    try {
+      const saved = localStorage.getItem('learning_os_last_paper_template_v1');
+      return saved && PAPER_COLORS.some((c) => c.id === saved) ? saved : 'white';
+    } catch {
+      return 'white';
+    }
+  });
+  const choosePaper = (id: string) => {
+    setPaper(id);
+    try {
+      localStorage.setItem('learning_os_last_paper_template_v1', id);
+    } catch {
+      // The page can still be created when storage is unavailable.
+    }
+  };
   const first = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -70,7 +86,7 @@ export default function PageTemplatePicker({
                 type="button"
                 aria-label={`${labels.paper} ${n + 1}`}
                 aria-pressed={on}
-                onClick={() => setPaper(c.id)}
+                onClick={() => choosePaper(c.id)}
                 className={`h-8 w-8 rounded-full border ${FOCUS} ${on ? 'ring-2 ring-black dark:ring-white ring-offset-1' : 'border-gray-300 dark:border-white/30'}`}
                 style={{ background: paperColor(c.id, dark) }}
               />
