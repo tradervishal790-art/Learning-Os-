@@ -93,7 +93,7 @@ export function normalizeInkPrefs(value: unknown): InkPrefs {
     }
   }
   const recentColors = Array.isArray(raw.recentColors)
-    ? [...new Set(raw.recentColors.filter((c): c is string => typeof c === 'string' && c.trim() && c !== 'auto'))].slice(0, 24)
+    ? [...new Set(raw.recentColors.filter((c): c is string => typeof c === 'string' && c.trim().length > 0 && c !== 'auto'))].slice(0, 24)
     : [];
   return {
     ...DEFAULT_PREFS,
