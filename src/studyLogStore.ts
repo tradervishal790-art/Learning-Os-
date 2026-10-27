@@ -112,7 +112,7 @@ export function addStudyLogEntry(input: AddStudyLogInput, state = loadStudyLog()
   const subject = input.subject.trim();
   const topic = input.topic.trim();
   if (!subject || !topic) throw new Error('Subject and topic are required.');
-  if (!Number.isFinite(input.minutes) || input.minutes <= 0 || Math.round(input.minutes) < 1) throw new Error('Study time must be at least one minute.');
+  if (!Number.isFinite(input.minutes) || input.minutes <= 0 || !Number.isSafeInteger(Math.round(input.minutes)) || Math.round(input.minutes) < 1) throw new Error('Study time must be a safe whole number of at least one minute.');
   const date = input.date ?? localDateKey();
   if (!isValidDateKey(date)) throw new Error('Study date must be a valid YYYY-MM-DD date.');
   if (input.recallScore !== undefined && (!Number.isFinite(input.recallScore) || input.recallScore < 0 || input.recallScore > 100)) {
