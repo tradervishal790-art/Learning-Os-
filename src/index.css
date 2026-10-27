@@ -161,3 +161,27 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Subtle lift on hover: gives clickable controls a tactile, premium feel.
+   Keep touch devices and reduced-motion preferences calm. */
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  button:not(:disabled),
+  a[href],
+  [role="button"]:not([aria-disabled="true"]) {
+    transition-property: transform, box-shadow, background-color, border-color, color;
+    transition-duration: 180ms;
+    transition-timing-function: cubic-bezier(0.2, 0.75, 0.25, 1);
+  }
+
+  button:not(:disabled):hover,
+  a[href]:hover,
+  [role="button"]:not([aria-disabled="true"]):hover {
+    transform: translateY(-2px);
+  }
+
+  button:not(:disabled):active,
+  a[href]:active,
+  [role="button"]:not([aria-disabled="true"]):active {
+    transform: translateY(0) scale(0.99);
+  }
+}
