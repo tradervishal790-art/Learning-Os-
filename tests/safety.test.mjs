@@ -171,6 +171,7 @@ async function loadStore() {
     export const pullFromCloud = async (k) => (cloud.has(k) ? structuredClone(cloud.get(k)) : null);
     export const pushToCloudChecked = async (k, v) => { cloud.set(k, structuredClone(v)); return true; };
     export const deleteFromCloud = async (k) => { cloud.delete(k); };
+    export const subscribeCloud = () => () => {};
   `);
   const outfile = join(dir, `store${process.pid}.mjs`);
   await build({

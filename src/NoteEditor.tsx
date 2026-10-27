@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Editor } from '@tiptap/react';
-import { ArrowLeft, ChevronDown, FileDown, History, Keyboard, ChevronUp, Copy, Download, Eye, EyeOff, FilePlus, HelpCircle, LayoutGrid, Maximize2, MoveHorizontal, Minimize2, PenTool, Plus, Presentation, RotateCcw, Sparkles, Star, Trash2, Video, VideoOff, X, ZoomIn, ZoomOut } from 'lucide-react';
+import { ArrowLeft, Check, Loader2, Save, ChevronDown, FileDown, History, Keyboard, ChevronUp, Copy, Download, Eye, EyeOff, FilePlus, HelpCircle, LayoutGrid, Maximize2, MoveHorizontal, Minimize2, PenTool, Plus, Presentation, RotateCcw, Sparkles, Star, Trash2, Video, VideoOff, X, ZoomIn, ZoomOut } from 'lucide-react';
 import { useLanguage, useTranslation } from './i18n/LanguageContext';
 import { format } from './i18n/format';
 import { loadNoteContent, saveNoteContent, getIndex, type InkStroke, type NotePage, type NoteVideo, type PageAttachment } from './notebookStore';
@@ -10,6 +10,7 @@ import InkToolbar, { ModeSwitch } from './InkToolbar';
 import QuickDock from './QuickDock';
 import InkOcrDialog, { type OcrState } from './InkOcrDialog';
 import ConfirmDialog from './ConfirmDialog';
+import UnsavedDialog from './UnsavedDialog';
 import PageThumbnails from './PageThumbnails';
 import PageTemplatePicker from './PageTemplatePicker';
 import ZoomControls from './ZoomControls';
@@ -102,6 +103,13 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
   const latest = useRef<{ title: string; pages: NotePage[]; video?: NoteVideo }>({ title: '', pages: [] });
   const dirty = useRef(false);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  // Save / discard: `baseline` is the note as of the last explicit Save (or when it was opened).
+  const baseline = useRef<{ title: string; pages: NotePage[]; video?: NoteVideo }>({ title: '', pages: [] });
+  const rev = useRef(0); // bumped on every change, so a Save never hides edits typed while it was running
+  const unsavedRef = useRef(false);
+  const [unsaved, setUnsaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [leaveAsk, setLeaveAsk] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -114,6 +122,7 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
         return;
       }
       latest.current = { title: meta.title, pages: content.pages, video: content.video };
+      baseline.current = latest.current;
       videoRef.current = content.video ?? null;
       setVideo(content.video ?? null);
       const initial: Record<string, InkStroke[]> = {};
@@ -146,7 +155,8 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
     clearTimeout(timer.current);
     if (!dirty.current) return;
     dirty.current = false;
-    void saveNoteContent(id, latest.current.title, latest.current.pages, latest.current.video);
+    // Autosave keeps a draft on THIS device (nothing is lost if the tab dies); Save sends it to the account.
+    void saveNoteContent(id, latest.current.title, latest.current.pages, latest.current.video, { cloud: false });
     // Version history: at most one automatic snapshot every 10 minutes (and never when nothing changed).
     if (Date.now() - lastAutoVersion.current > 10 * 60_000) {
       lastAutoVersion.current = Date.now();
@@ -171,7 +181,85 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
+  const markUnsaved = () => {
+    rev.current += 1;
+    if (!unsavedRef.current) {
+      unsavedRef.current = true;
+      setUnsaved(true);
+    }
+  };
+
+  /** Save button / Ctrl+S: keep the note on this device AND send it to the account (other devices get it). */
+  const save = async (): Promise<boolean> => {
+    clearTimeout(timer.current);
+    dirty.current = false;
+    const snap = { title: latest.current.title, pages: latest.current.pages, video: latest.current.video };
+    const at = rev.current;
+    setSaving(true);
+    try {
+      const ok = await saveNoteContent(id, snap.title, snap.pages, snap.video);
+      if (!ok) {
+        flash(t.polish.saveFailed);
+        return false;
+      }
+      if (unsavedRef.current) void saveVersion(id, { title: snap.title, pages: snap.pages, ...(snap.video ? { video: snap.video } : {}) }, 'manual').catch(() => undefined);
+      baseline.current = snap;
+      if (rev.current === at) {
+        unsavedRef.current = false;
+        setUnsaved(false);
+      }
+      flash(t.polish.saved);
+      return true;
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  /** Throw away everything since the last Save and go back. */
+  const discardAndLeave = async () => {
+    clearTimeout(timer.current);
+    dirty.current = false;
+    const b = baseline.current;
+    setSaving(true);
+    await saveNoteContent(id, b.title, b.pages, b.video, { cloud: false }).catch(() => false);
+    unsavedRef.current = false;
+    setUnsaved(false);
+    setSaving(false);
+    setLeaveAsk(false);
+    onBack();
+  };
+
+  const requestBack = () => {
+    if (unsavedRef.current) setLeaveAsk(true);
+    else onBack();
+  };
+
+  // Closing the tab / refreshing with unsaved changes: the browser asks first (it does not allow custom wording).
+  useEffect(() => {
+    const warn = (e: BeforeUnloadEvent) => {
+      if (!unsavedRef.current) return;
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, []);
+
+  // Ctrl/Cmd+S saves — also while typing in the note (the old shortcut ignored text fields).
+  useEffect(() => {
+    const onSave = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        void save();
+      }
+    };
+    window.addEventListener('keydown', onSave);
+    return () => window.removeEventListener('keydown', onSave);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
+
   const commit = (nextTitle: string, nextPages: NotePage[]) => {
+    markUnsaved();
     latest.current = { ...latest.current, title: nextTitle, pages: nextPages };
     dirty.current = true;
     clearTimeout(timer.current);
@@ -432,6 +520,7 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
     setPages(v.pages);
     setActivePage(v.pages[0]?.id ?? null);
     setRestoreKey((k) => k + 1);
+    markUnsaved();
     dirty.current = true;
     flush();
   };
@@ -443,12 +532,6 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
       if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable)) return;
       if (dialog) return;
       const k = e.key.toLowerCase();
-      if ((e.ctrlKey || e.metaKey) && k === 's') {
-        e.preventDefault();
-        dirty.current = true;
-        flush();
-        return flash(t.polish.saved);
-      }
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       if (e.key === '?') {
         e.preventDefault();
@@ -1228,7 +1311,7 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
       ) : (
         <div className="flex items-center gap-1 mb-1.5">
           <button
-            onClick={onBack}
+            onClick={requestBack}
             aria-label={t.editor.back}
             title={t.editor.back}
             className="h-10 w-10 sm:h-9 sm:w-9 shrink-0 rounded-lg flex items-center justify-center text-gray-700 dark:text-white/80 hover:bg-gray-100 dark:hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-500"
@@ -1276,6 +1359,20 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
             <Maximize2 size={18} />
           </button>}
           <NoteMenu label={t.polish.menuTitle} items={menuItems} />
+          <button
+            onClick={() => void save()}
+            disabled={saving || !unsaved}
+            aria-label={t.polish.save}
+            title={`${t.polish.save} (Ctrl+S)`}
+            className={`h-10 sm:h-9 shrink-0 rounded-lg px-3 flex items-center justify-center gap-1.5 text-xs font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-500 ${
+              unsaved
+                ? 'bg-indigo-600 text-white dark:bg-indigo-500 hover:opacity-85'
+                : 'text-gray-500 dark:text-white/50'
+            }`}
+          >
+            {saving ? <Loader2 size={15} className="animate-spin" /> : unsaved ? <Save size={15} /> : <Check size={15} />}
+            <span className="hidden sm:inline">{unsaved ? t.polish.save : t.polish.saved}</span>
+          </button>
           <SaveChip />
         </div>
       )}
@@ -1359,6 +1456,18 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
             <X size={20} className="text-white" />
           </button>
         </div>
+      )}
+      {leaveAsk && (
+        <UnsavedDialog
+          message={t.polish.unsavedMsg}
+          saveLabel={t.polish.saveLeave}
+          discardLabel={t.polish.discardLeave}
+          keepLabel={t.polish.keepEditing}
+          busy={saving}
+          onSave={() => void save().then((ok) => (ok ? onBack() : setLeaveAsk(false)))}
+          onDiscard={() => void discardAndLeave()}
+          onKeep={() => setLeaveAsk(false)}
+        />
       )}
       {confirmDeleteId && (
         <ConfirmDialog

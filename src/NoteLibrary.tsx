@@ -7,7 +7,7 @@ import { useLanguage, useTranslation } from './i18n/LanguageContext';
 import { format } from './i18n/format';
 import {
   FOLDER_COLORS, createFolder, createNote, deleteFolder, deleteNotesForever, duplicateNote,
-  getAllSnapshots, hydrateNotebook, importSnapshots, loadConflict, moveNotes, recolorFolder, renameFolder, renameNote, resolveConflict, restoreNotes, restoreSnapshot,
+  getAllSnapshots, hydrateNotebook, setEditorOpen, startLiveNotebookSync, importSnapshots, loadConflict, moveNotes, recolorFolder, renameFolder, renameNote, resolveConflict, restoreNotes, restoreSnapshot,
   searchNoteIds, setArchived, setConfidence, setExamDate, setNoteTags, setStudyStatus, snapshotIndex, toggleFavorite, togglePin, trashNotes,
   useNoteConflicts, useNotebookIndex, type NoteFolder, type NoteMeta, type NotebookIndex, type StudyStatus,
 } from './notebookStore';
@@ -133,7 +133,15 @@ export default function NoteLibrary() {
   // Pull the cloud copy once when the notebook opens (safe offline / signed out).
   useEffect(() => {
     void hydrateNotebook();
+    // Keep listening afterwards, so edits made on another device show up here without signing in again.
+    return startLiveNotebookSync();
   }, []);
+
+  // While a note is open we never merge other devices' changes into it; they are merged when it closes.
+  useEffect(() => {
+    setEditorOpen(openId !== null);
+  }, [openId]);
+  useEffect(() => () => setEditorOpen(false), []);
 
   // Search (title + tags + page text) — debounced, reads page text from IndexedDB.
   useEffect(() => {

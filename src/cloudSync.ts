@@ -1,5 +1,5 @@
 import { auth, db } from './firebase';
-import { doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
 
 // ============================================================
 // cloudSync.ts
@@ -85,4 +85,22 @@ export async function deleteFromCloud(key: string): Promise<void> {
   } catch {
     // Best-effort.
   }
+}
+
+/** Live listener for one synced key. Fires only for changes that really came from the server
+ *  (not this device's own pending writes), so the other device's edits show up without re-login.
+ *  Returns an unsubscribe function. Signed out = does nothing. */
+export function subscribeCloud<T>(key: string, onChange: (value: T | null) => void): () => void {
+  const uid = currentUid();
+  if (!uid) return () => {};
+  return onSnapshot(
+    doc(db, 'users', uid, 'data', key),
+    (snap) => {
+      if (snap.metadata.hasPendingWrites || snap.metadata.fromCache) return;
+      onChange(snap.exists() ? ((snap.data()?.value as T) ?? null) : null);
+    },
+    () => {
+      // Permission / network error — the app keeps working on local data.
+    }
+  );
 }

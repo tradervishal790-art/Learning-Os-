@@ -18,7 +18,7 @@
 // ============================================================
 
 import { useSyncExternalStore } from 'react';
-import { pullFromCloud, pushToCloudChecked, deleteFromCloud } from './cloudSync';
+import { pullFromCloud, pushToCloudChecked, deleteFromCloud, subscribeCloud } from './cloudSync';
 import { parseLocalDate } from './studyInfo';
 import type { VideoMoment } from './videoTime';
 import { cloneAttachment } from './attachClone';
@@ -480,7 +480,12 @@ function scheduleContentPush(id: string, content: NoteContent): void {
       const ok = await pushContent(content);
       if (ok) cleanRemovedPages(id);
       pendingContent.delete(id);
-      settleStatus(ok);
+      if (ok) {
+        // Index goes AFTER the note itself, so another device that sees the new index can always fetch the new content.
+        clearTimeout(indexPushTimer);
+        indexPushTimer = undefined;
+        await pushIndex();
+      } else settleStatus(false);
     }, 2500)
   );
 }
@@ -535,7 +540,15 @@ export async function loadNoteContent(id: string): Promise<NoteContent | null> {
 }
 
 /** Called by the editor's autosave. Writes content, refreshes the note's meta. */
-export async function saveNoteContent(id: string, title: string, pages: NotePage[], video?: NoteVideo | null): Promise<boolean> {
+export async function saveNoteContent(
+  id: string,
+  title: string,
+  pages: NotePage[],
+  video?: NoteVideo | null,
+  /** cloud:false = keep this as a draft on this device only (the editor's autosave). The Save button uses the default. */
+  opts: { cloud?: boolean } = {}
+): Promise<boolean> {
+  const toCloud = opts.cloud !== false;
   const t = nowIso();
   const content: NoteContent = { id, schemaVersion: 1, pages, updatedAt: t };
   if (video) content.video = video;
@@ -559,9 +572,14 @@ export async function saveNoteContent(id: string, title: string, pages: NotePage
     },
     { push: false }
   );
-  // index push is part of the same debounce chain as content
+  if (!toCloud) {
+    // Draft: stays on this device until the student presses Save.
+    if (pendingContent.size === 0 && !indexPushTimer) setStatus('local');
+    return true;
+  }
+  // The index is pushed right after the content (see scheduleContentPush); this timer is only a fallback.
   clearTimeout(indexPushTimer);
-  indexPushTimer = setTimeout(() => void pushIndex(), 2500);
+  indexPushTimer = setTimeout(() => void pushIndex(), 15000);
   scheduleContentPush(id, content);
   return true;
 }
@@ -1180,4 +1198,57 @@ if (typeof window !== 'undefined') {
       void pushIndex();
     }
   });
+}
+
+
+// ---------- live sync: edits from another device appear without signing in again ----------
+
+/** True when the cloud index holds something this device does not have yet (or has older). */
+function remoteHasNewer(cloud: NotebookIndex): boolean {
+  const local = getIndex();
+  const deleted = { ...(cloud.deleted ?? {}), ...local.deleted };
+  const ln = new Map(local.notes.map((n) => [n.id, n]));
+  const lf = new Map(local.folders.map((f) => [f.id, f]));
+  for (const n of cloud.notes ?? []) {
+    if (deleted[n.id]) continue;
+    const l = ln.get(n.id);
+    if (!l || newer(n, l)) return true;
+  }
+  for (const f of cloud.folders ?? []) {
+    if (deleted[f.id]) continue;
+    const l = lf.get(f.id);
+    if (!l || newer(f, l)) return true;
+  }
+  return Object.keys(cloud.deleted ?? {}).some((id) => ln.has(id) || lf.has(id));
+}
+
+let editorOpen = false;
+let liveMissed = false;
+let liveTimer: ReturnType<typeof setTimeout> | undefined;
+
+/** The library tells us when a note is open. While a note is being edited we never swap notes under the
+ *  student's hands; whatever arrived meanwhile is merged as soon as the note is closed. */
+export function setEditorOpen(open: boolean): void {
+  editorOpen = open;
+  if (!open && liveMissed) {
+    liveMissed = false;
+    void hydrateNotebook();
+  }
+}
+
+/** Start listening for changes from this account's other devices. Returns a stop function. */
+export function startLiveNotebookSync(): () => void {
+  const off = subscribeCloud<NotebookIndex>(CLOUD_INDEX_KEY, (cloud) => {
+    if (!cloud || !remoteHasNewer(cloud)) return;
+    if (editorOpen) {
+      liveMissed = true;
+      return;
+    }
+    clearTimeout(liveTimer);
+    liveTimer = setTimeout(() => void hydrateNotebook(), 800);
+  });
+  return () => {
+    off();
+    clearTimeout(liveTimer);
+  };
 }
