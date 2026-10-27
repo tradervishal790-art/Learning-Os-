@@ -5,7 +5,7 @@ import type { ReactNode } from 'react';
 import NotesToRevise from './NotesToRevise';
 import { getRevisionStats, getRevisionDataForGoals } from './revisionData';
 import { markDayReviewed, hydrateRevisionFromCloud } from './revisionstore';
-import { getRecallAccuracy, hydrateRecallScoresFromCloud, saveRecallRating, type RecallRating } from './revisionRecallStore';
+import { getRecallAccuracy, getRecallTrend, hydrateRecallScoresFromCloud, saveRecallRating, type RecallRating, type RecallTrendPoint } from './revisionRecallStore';
 import { markTopicFinished } from './roadmapData';
 import type { RevisionStatus, RevisionDifficulty, RevisionItem, Goal } from './types';
 import { useTranslation } from './i18n/LanguageContext';
@@ -67,6 +67,7 @@ export default function Revision({ goals = [] }: RevisionProps) {
   const [items, setItems] = useState<(RevisionItem & { goalTitle?: string })[]>(() => getRevisionDataForGoals(t.revisionTasks, goals));
   const [reviewingId, setReviewingId] = useState<string | null>(null);
   const [recallAccuracy, setRecallAccuracy] = useState<number | null>(() => getRecallAccuracy());
+  const [recallTrend, setRecallTrend] = useState<RecallTrendPoint[]>(() => getRecallTrend());
 
   // ON-DEMAND CLOUD HYDRATION: only pulled down when the Revision page is
   // actually opened, not upfront on sign-in. No-op if this device already
@@ -75,6 +76,7 @@ export default function Revision({ goals = [] }: RevisionProps) {
     void Promise.all([hydrateRevisionFromCloud(), hydrateRecallScoresFromCloud()]).then(() => {
       setItems(getRevisionDataForGoals(t.revisionTasks, goals));
       setRecallAccuracy(getRecallAccuracy());
+      setRecallTrend(getRecallTrend());
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -104,6 +106,7 @@ export default function Revision({ goals = [] }: RevisionProps) {
   const handleRecallRating = (item: RevisionItem & { goalId?: string }, rating: RecallRating) => {
     saveRecallRating(item.topicId, item.day, rating);
     setRecallAccuracy(getRecallAccuracy());
+    setRecallTrend(getRecallTrend());
     handleMarkDone(item);
   };
 
@@ -163,6 +166,29 @@ export default function Revision({ goals = [] }: RevisionProps) {
           </div>
         ))}
       </motion.div>
+
+      {/* Observed recall trend — blank days are intentionally not treated as failures. */}
+      <section className="rounded-2xl card border border-gray-200 dark:border-white/10 p-4 mb-5 md:mb-6" aria-label="Seven-day recall trend">
+        <div className="flex items-center justify-between gap-3 mb-3">
+          <h2 className="text-sm font-semibold">7-day recall trend</h2>
+          <span className="text-xs text-gray-400 dark:text-white/50">Based on your ratings</span>
+        </div>
+        <div className="grid grid-cols-7 gap-2 items-end">
+          {recallTrend.map((point) => (
+            <div key={point.date} className="min-w-0 text-center">
+              <div className="h-12 flex items-end justify-center mb-1">
+                <div
+                  title={point.accuracy === null ? 'No ratings' : `${point.accuracy}% recall accuracy · ${point.attempts} rating(s)`}
+                  className={`w-full max-w-8 rounded-t-md ${point.accuracy === null ? 'bg-gray-200 dark:bg-white/10' : 'bg-indigo-500 dark:bg-indigo-400'}`}
+                  style={{ height: point.accuracy === null ? '4px' : `${Math.max(6, Math.round(point.accuracy * 0.44))}px` }}
+                />
+              </div>
+              <div className="text-[10px] text-gray-500 dark:text-white/50">{point.label}</div>
+              <div className="text-[10px] font-medium tabular-nums">{point.accuracy === null ? '—' : `${point.accuracy}%`}</div>
+            </div>
+          ))}
+        </div>
+      </section>
 
       {/* Filter tabs */}
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2, duration: 0.5 }} className="flex gap-2 mb-4 md:mb-6 overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
