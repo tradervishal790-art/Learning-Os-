@@ -35,15 +35,47 @@ export function Btn({
 
 export function Pop({ trigger, children }: { trigger: (toggle: () => void, open: boolean) => ReactNode; children: ReactNode }) {
   const [open, setOpen] = useState(false);
+  const [placement, setPlacement] = useState<{ left: number; top?: number; bottom?: number; maxHeight: number }>({ left: 8, top: 8, maxHeight: 320 });
+  const anchorRef = useRef<HTMLDivElement>(null);
+
+  const toggle = () => {
+    if (open) {
+      setOpen(false);
+      return;
+    }
+    const rect = anchorRef.current?.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const compact = viewportHeight < 760 || viewportWidth < 900;
+    const estimatedPanelHeight = Math.min(320, viewportHeight * 0.55);
+    const spaceBelow = rect ? viewportHeight - rect.bottom - 12 : 0;
+    const spaceAbove = rect ? rect.top - 12 : 0;
+    // On phones / compact windows, open upward so the panel stays above the bottom toolbar.
+    // On a full-size desktop, prefer opening below, unless there is clearly more room above.
+    const openUp = compact ? spaceAbove > Math.min(120, spaceBelow) : spaceBelow < Math.min(estimatedPanelHeight, 220) && spaceAbove > spaceBelow;
+    const left = rect ? Math.max(8, Math.min(rect.left, viewportWidth - Math.min(280, viewportWidth - 16) - 8)) : 8;
+    const maxHeight = Math.max(120, Math.min(360, openUp ? spaceAbove : spaceBelow, viewportHeight - 24));
+    setPlacement(openUp
+      ? { left, bottom: Math.max(8, viewportHeight - (rect?.top ?? viewportHeight / 2) + 4), maxHeight }
+      : { left, top: Math.max(8, (rect?.bottom ?? 0) + 4), maxHeight });
+    setOpen(true);
+  };
+
   return (
-    <div className="relative shrink-0">
-      {trigger(() => setOpen((o) => !o), open)}
+    <div ref={anchorRef} className="relative shrink-0">
+      {trigger(toggle, open)}
       {open && (
         <>
-          <div className="fixed inset-0 z-20" onClick={() => setOpen(false)} />
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
           <div
-            className="absolute left-0 top-full mt-1 z-30 p-2 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-neutral-900 shadow-lg min-w-max"
-            onClick={() => setOpen(false)}
+            className="fixed z-50 max-w-[calc(100vw-16px)] overflow-x-hidden overflow-y-auto overscroll-contain p-2 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-neutral-900 shadow-xl"
+            style={{
+              left: placement.left,
+              ...(placement.top !== undefined ? { top: placement.top } : { bottom: placement.bottom }),
+              maxHeight: placement.maxHeight,
+              minWidth: 'min-content',
+            }}
+            onClick={(e) => e.stopPropagation()}
           >
             {children}
           </div>
