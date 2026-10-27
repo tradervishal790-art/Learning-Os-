@@ -154,7 +154,7 @@ export default function Revision({ goals = [] }: RevisionProps) {
           { label: t.revision.stats.dueToday, value: String(stats.dueToday), Icon: Flame },
           { label: t.revision.stats.overdue, value: String(stats.overdue), Icon: TriangleAlert },
           { label: t.revision.stats.mastered, value: String(stats.mastered), Icon: Star },
-          { label: t.revision.stats.retention, value: recallAccuracy === null ? '—' : `${recallAccuracy}%`, Icon: Gauge },
+          { label: 'Recall accuracy', value: recallAccuracy === null ? '—' : `${recallAccuracy}%`, Icon: Gauge },
         ].map(({ label, value, Icon }) => (
           <div key={label} title={label} aria-label={`${label}: ${value}`} className="px-2 md:px-4 py-3 md:py-4 text-center md:text-left min-w-0">
             <Icon className="md:hidden w-5 h-5 mx-auto mb-1 text-gray-500 dark:text-white/50" strokeWidth={1.75} />
