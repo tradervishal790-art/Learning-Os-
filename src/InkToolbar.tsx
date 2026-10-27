@@ -158,7 +158,7 @@ export default function InkToolbar({
     const a = select;
     return (
       <div>
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+        <div className="flex flex-wrap items-center gap-1.5 overflow-visible pb-2">
           {undoRedo}
           <Sep />
           <Btn label={t.selLasso} active={prefs.selectShape === 'lasso'} onClick={() => setPrefs({ selectShape: 'lasso' })}><LassoSelect size={16} /></Btn>
@@ -203,7 +203,7 @@ export default function InkToolbar({
       setLaserOpts((o) => (prefs.laserStyle === style ? !o : true));
     };
     return (
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+      <div className="flex flex-wrap items-center gap-1.5 overflow-visible pb-2">
         <button className={chip(!ink)} aria-expanded={laserOpts} title={t.laserHint} onClick={() => pick('dot')}>{t.laserPointer}</button>
         <button className={chip(ink)} aria-expanded={laserOpts} title={t.laserInkHint} onClick={() => pick('ink')}>{t.laserInk}</button>
         {laserOpts && (
