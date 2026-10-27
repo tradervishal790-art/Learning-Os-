@@ -138,8 +138,15 @@ export default function InkToolbar({
   const quick = [...new Set([color, ...(isHl ? [] : ['auto']), ...saved])].slice(0, isHl ? 5 : 7);
 
 
-  const addFavorite = () =>
-    setPrefs({ favorites: [...prefs.favorites, { kind: prefs.kind, color: prefs.color, width: prefs.width }].slice(0, 5) });
+  const addFavorite = () => {
+    const current = { kind: prefs.kind, color: prefs.color, width: prefs.width };
+    // Saving the same pen again promotes it instead of wasting a favorite slot.
+    const favorites = [
+      current,
+      ...prefs.favorites.filter((f) => f.kind !== current.kind || f.color !== current.color || f.width !== current.width),
+    ].slice(0, 5);
+    setPrefs({ favorites });
+  };
 
   const undoRedo = (
     <>
