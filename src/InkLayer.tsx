@@ -425,12 +425,19 @@ export default function InkLayer({
 
     if (g.type === 'lasso') {
       if (Math.hypot(e.clientX - g.sx, e.clientY - g.sy) > 6) g.moved = true;
-      const [x, y] = toPage(e);
       if (prefs.selectShape === 'rect' && !g.ai) {
+        const [x, y] = toPage(e);
         const [sx, sy] = g.start;
         setLasso([[sx, sy], [x, sy], [x, y], [sx, y]]);
       } else {
-        g.pts.push([x, y]);
+        // Use the browser's coalesced pointer samples so fast lasso loops and AI circles
+        // retain their shape instead of connecting only the lower-frequency event endpoints.
+        const samples = events.length > 0 ? events : [native];
+        for (const sample of samples) {
+          const [x, y] = toPage(sample);
+          const last = g.pts[g.pts.length - 1];
+          if (!last || Math.hypot(x - last[0], y - last[1]) >= 0.35) g.pts.push([x, y]);
+        }
         setLasso(g.pts);
       }
       return;
