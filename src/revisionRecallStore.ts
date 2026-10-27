@@ -104,7 +104,12 @@ export function getRecallTrend(now: Date = new Date()): RecallTrendPoint[] {
   for (let offset = 6; offset >= 0; offset -= 1) {
     const day = new Date(now.getFullYear(), now.getMonth(), now.getDate() - offset);
     const date = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
-    const dayRecords = records.filter((record) => record.recordedAt.slice(0, 10) === date);
+    const dayRecords = records.filter((record) => {
+      const recorded = new Date(record.recordedAt);
+      if (Number.isNaN(recorded.getTime())) return false;
+      const recordedDate = `${recorded.getFullYear()}-${String(recorded.getMonth() + 1).padStart(2, '0')}-${String(recorded.getDate()).padStart(2, '0')}`;
+      return recordedDate === date;
+    });
     const score = dayRecords.length
       ? Math.round(dayRecords.reduce((sum, record) => sum + (record.rating === 'remembered' ? 100 : record.rating === 'partial' ? 50 : 0), 0) / dayRecords.length)
       : null;
