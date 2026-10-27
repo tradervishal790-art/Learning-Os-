@@ -85,8 +85,8 @@ export function normalizeInkPrefs(value: unknown): InkPrefs {
       if (!item || typeof item !== 'object') continue;
       const favorite = item as Partial<PenFavorite>;
       if (!INK_KINDS.has(favorite.kind as InkKind) || typeof favorite.color !== 'string' || !favorite.color.trim()) continue;
-      const width = bounded(favorite.width, NaN, 0.5, 20);
-      if (!Number.isFinite(width)) continue;
+      if (typeof favorite.width !== 'number' || !Number.isFinite(favorite.width) || favorite.width < 0.5 || favorite.width > 20) continue;
+      const width = favorite.width;
       if (favorites.some((f) => f.kind === favorite.kind && f.color === favorite.color && f.width === width)) continue;
       favorites.push({ kind: favorite.kind as InkKind, color: favorite.color, width });
       if (favorites.length === 5) break;
