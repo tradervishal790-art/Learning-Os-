@@ -204,7 +204,6 @@ function playReminderBell() {
 // Pages that need a real account. Guests (no sign-up yet) can use the home page,
 // the Mind Blueprint, Videos and Dictionary; everything below asks them to sign in.
 // (The server enforces the same split for AI endpoints — see api/_lib/auth.ts.)
-const LOGIN_ONLY_PAGES: DashboardPageId[] = ['roadmap', 'revision', 'notes', 'test', 'mentor', 'progress', 'research', 'current-affairs'];
 
 function getSidebarItems(t: ReturnType<typeof useTranslation>): { id: DashboardPageId; label: string; icon?: ComponentType<{ className?: string }> }[] {
   return [
@@ -690,8 +689,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   ];
 
   const config = pageConfigs[activePage];
-  const showLoginRequired = isGuest && LOGIN_ONLY_PAGES.includes(activePage);
-  const loginRequiredLabel = getSidebarItems(t).find((i) => i.id === activePage)?.label ?? '';
+  // Guests can preview every section; account checks remain on protected actions.
 
   // Two different locks: authLocked = needs a real account (guest);
   // roadmapLocked = needs a roadmap first. A guest can never build a
@@ -809,8 +807,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
         )}
 
         <Suspense fallback={<PageLoading />}>
-        {showLoginRequired && <LoginRequired feature={loginRequiredLabel} />}
-        {activePage === 'dashboard' && (
+                {activePage === 'dashboard' && (
           <div className="p-4 md:p-8 flex flex-col gap-4 md:gap-6">
             <section className="relative isolate overflow-hidden rounded-[28px] border border-indigo-200/60 bg-gradient-to-br from-white via-indigo-50 to-violet-100 p-5 shadow-[0_18px_55px_rgba(79,70,229,0.10)] dark:border-white/[0.09] dark:from-[#17171f] dark:via-[#11111a] dark:to-[#211735] dark:shadow-[0_20px_60px_rgba(0,0,0,0.22)] md:p-7">
               <div aria-hidden="true" className="pointer-events-none absolute -right-12 -top-20 -z-10 h-56 w-56 rounded-full bg-violet-400/20 blur-3xl dark:bg-violet-500/20" />
