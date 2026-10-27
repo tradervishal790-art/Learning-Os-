@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Film, BookOpen, ClipboardCheck, Newspaper, Lock, Settings as SettingsIcon, Bell, X as CloseIcon, Target, RotateCcw, Flame, Check, ChevronRight, ArrowLeft } from 'lucide-react';
 import PagePlaceholder from './PagePlaceholder';
 import BottomNav from './BottomNav';
-import QuickGrid from './QuickGrid';
 import { useImmersive, useNoteOpen } from './immersive';
 import { getRoadmapData, getCurrentTopic } from './roadmapData';
 import { getRevisionStats, getRevisionDataForGoals } from './revisionData';
@@ -873,20 +872,8 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                 })}
               </div>
             </section>
-            <QuickGrid
-              items={sidebarItems
-                .filter((i) => !['dashboard', 'roadmap', 'mentor', 'progress'].includes(i.id))
-                .map((i) => ({
-                  id: i.id,
-                  label: i.label,
-                  locked: navState(i.id).isLocked,
-                  highlight: i.id === 'revision' && revisionStats.dueToday + revisionStats.overdue > 0,
-                }))}
-              onSelect={(id) => {
-                const item = sidebarItems.find((i) => i.id === id);
-                if (item) selectNav(item.id, item.label);
-              }}
-            />
+            {/* Secondary destinations remain available from the navigation menu. */}
+
             <WelcomeBack goals={goals} revisionTasks={t.revisionTasks} onOpen={setActivePage} />
             <DailyHabit />
             <CurrentAffairsChip onOpen={() => setActivePage('current-affairs')} />
