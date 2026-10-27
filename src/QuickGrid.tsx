@@ -1,12 +1,7 @@
 import { Lock } from 'lucide-react';
 import { NAV_ICONS, FALLBACK_NAV_ICON, NAV_TONES } from './navIcons';
 
-/**
- * "Quick Access" grid for Home on phones (Learning OS look): rounded tiles,
- * each page with its own soft colour, name underneath. A red dot marks a page
- * with something waiting (e.g. revision due); a lock marks a page that is
- * not open yet.
- */
+/** Compact, thumb-friendly shortcuts for the mobile dashboard. */
 export interface QuickItem {
   id: string;
   label: string;
@@ -21,28 +16,38 @@ interface Props {
 
 export default function QuickGrid({ items, onSelect }: Props) {
   return (
-    <div className="md:hidden card rounded-2xl p-3 grid grid-cols-4 gap-x-1 gap-y-3">
+    <nav
+      aria-label="Quick access"
+      className="md:hidden grid grid-cols-4 gap-2 rounded-3xl border border-gray-200/80 bg-white/80 p-3 shadow-[0_8px_30px_rgba(32,48,90,0.06)] backdrop-blur-xl dark:border-white/[0.08] dark:bg-[#101014]/90 dark:shadow-none"
+    >
       {items.map((item) => {
         const Icon = NAV_ICONS[item.id] ?? FALLBACK_NAV_ICON;
         return (
           <button
             key={item.id}
+            type="button"
             onClick={() => onSelect(item.id)}
-            className={`flex flex-col items-center gap-1.5 active:scale-95 transition-transform ${item.locked ? 'opacity-50' : ''}`}
+            aria-label={item.locked ? `${item.label}, sign-in or setup required` : item.label}
+            aria-disabled={item.locked}
+            className={`group flex min-w-0 flex-col items-center justify-start gap-2 rounded-2xl px-1 py-2.5 text-center transition duration-200 hover:bg-gray-100/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 active:scale-[0.97] dark:hover:bg-white/[0.06] ${item.locked ? 'opacity-55' : ''}`}
           >
-            <span className={`relative w-12 h-12 rounded-2xl flex items-center justify-center ${NAV_TONES[item.id] ?? NAV_TONES.revision}`}>
-              <Icon className="w-6 h-6" strokeWidth={1.75} />
-              {item.highlight && <span className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-rose-500 ring-2 ring-white dark:ring-black" />}
+            <span className={`relative flex h-11 w-11 items-center justify-center rounded-[15px] shadow-sm ring-1 ring-black/[0.03] transition-transform duration-200 group-hover:-translate-y-0.5 dark:ring-white/[0.06] ${NAV_TONES[item.id] ?? NAV_TONES.revision}`}>
+              <Icon className="h-[21px] w-[21px]" strokeWidth={1.8} />
+              {item.highlight && (
+                <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-rose-500 ring-[3px] ring-white dark:ring-[#101014]" />
+              )}
               {item.locked && (
-                <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-white dark:bg-neutral-900 shadow flex items-center justify-center text-gray-600 dark:text-white/70">
-                  <Lock className="w-2.5 h-2.5" strokeWidth={2.5} />
+                <span className="absolute -bottom-1 -right-1 flex h-[18px] w-[18px] items-center justify-center rounded-full bg-white text-gray-600 shadow-sm ring-1 ring-black/5 dark:bg-neutral-800 dark:text-white/70 dark:ring-white/10">
+                  <Lock className="h-2.5 w-2.5" strokeWidth={2.4} />
                 </span>
               )}
             </span>
-            <span className="text-[11px] leading-tight text-center text-gray-600 dark:text-white/60 line-clamp-2 w-full">{item.label}</span>
+            <span className="w-full break-words text-[11px] font-medium leading-[1.25] text-gray-600 dark:text-white/65">
+              {item.label}
+            </span>
           </button>
         );
       })}
-    </div>
+    </nav>
   );
 }
