@@ -40,18 +40,30 @@ export function localDateKey(date = new Date()): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
 
+function isValidDateKey(value: unknown): value is string {
+  if (typeof value !== 'string' || !/^\\d{4}-\\d{2}-\\d{2}$/.test(value)) return false;
+  const [year, month, day] = value.split('-').map(Number);
+  const parsed = new Date(year, month - 1, day);
+  return parsed.getFullYear() === year && parsed.getMonth() === month - 1 && parsed.getDate() === day;
+}
+
 function validEntry(value: unknown): value is StudyLogEntry {
   if (!value || typeof value !== 'object') return false;
   const e = value as Partial<StudyLogEntry>;
   return typeof e.id === 'string'
-    && typeof e.date === 'string'
+    && e.id.trim().length > 0
+    && isValidDateKey(e.date)
     && typeof e.subject === 'string'
+    && e.subject.trim().length > 0
     && typeof e.topic === 'string'
+    && e.topic.trim().length > 0
     && typeof e.minutes === 'number'
-    && Number.isFinite(e.minutes)
+    && Number.isSafeInteger(e.minutes)
     && e.minutes > 0
     && typeof e.createdAt === 'string'
-    && (e.recallScore === undefined || (typeof e.recallScore === 'number' && e.recallScore >= 0 && e.recallScore <= 100));
+    && e.createdAt.trim().length > 0
+    && !Number.isNaN(Date.parse(e.createdAt))
+    && (e.recallScore === undefined || (typeof e.recallScore === 'number' && Number.isFinite(e.recallScore) && e.recallScore >= 0 && e.recallScore <= 100));
 }
 
 function normalize(value: unknown): StudyLogState {
@@ -100,14 +112,16 @@ export function addStudyLogEntry(input: AddStudyLogInput, state = loadStudyLog()
   const subject = input.subject.trim();
   const topic = input.topic.trim();
   if (!subject || !topic) throw new Error('Subject and topic are required.');
-  if (!Number.isFinite(input.minutes) || input.minutes <= 0) throw new Error('Study time must be greater than zero.');
+  if (!Number.isFinite(input.minutes) || input.minutes <= 0 || Math.round(input.minutes) < 1) throw new Error('Study time must be at least one minute.');
+  const date = input.date ?? localDateKey();
+  if (!isValidDateKey(date)) throw new Error('Study date must be a valid YYYY-MM-DD date.');
   if (input.recallScore !== undefined && (!Number.isFinite(input.recallScore) || input.recallScore < 0 || input.recallScore > 100)) {
     throw new Error('Recall score must be between 0 and 100.');
   }
 
   const entry: StudyLogEntry = {
     id: `study_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`,
-    date: input.date ?? localDateKey(),
+    date,
     subject,
     topic,
     minutes: Math.round(input.minutes),
