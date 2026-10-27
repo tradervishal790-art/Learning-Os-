@@ -50,6 +50,7 @@ test('rejects empty subject/topic, invalid time, recall, and calendar dates', ()
   assert.throws(() => store.addStudyLogEntry({ ...base, minutes: 0 }, empty), /at least one minute/i);
   assert.throws(() => store.addStudyLogEntry({ ...base, minutes: 0.4 }, empty), /at least one minute/i);
   assert.throws(() => store.addStudyLogEntry({ ...base, minutes: Number.NaN }, empty), /at least one minute/i);
+  assert.throws(() => store.addStudyLogEntry({ ...base, minutes: Number.MAX_SAFE_INTEGER + 1 }, empty), /safe whole number/i);
   assert.throws(() => store.addStudyLogEntry({ ...base, recallScore: 101 }, empty), /recall score/i);
   assert.throws(() => store.addStudyLogEntry({ ...base, date: '2026-02-30' }, empty), /valid YYYY-MM-DD/i);
   assert.throws(() => store.addStudyLogEntry({ ...base, date: 'tomorrow' }, empty), /valid YYYY-MM-DD/i);
