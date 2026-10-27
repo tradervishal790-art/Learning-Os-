@@ -140,7 +140,7 @@ export default function Progress({ goals = [] }: ProgressProps) {
                 {heatmap.map((topic) => (
                   <div
                     key={topic.topicId}
-                    title={`${topic.title} — ${topic.masteryScore}%`}
+                    title={`${topic.title} — ${topic.masteryScore}%${topic.observedRecall === null ? ' estimated from progress' : ` observed recall from ${topic.recallAttempts} rating(s)`}`}
                     className={`aspect-[5/4] md:aspect-square rounded-lg ${masteryColor(topic.masteryScore)} flex items-center justify-center text-[10px] font-medium ${topic.masteryScore >= 60 ? 'text-white dark:text-black' : 'text-indigo-400 dark:text-white/60'}`}
                   >
                     {statusIcon[topic.status] ?? ''}
@@ -204,6 +204,7 @@ export default function Progress({ goals = [] }: ProgressProps) {
                     </div>
                     <div className="text-right flex-shrink-0 ml-3">
                       <div className="text-sm font-bold">{topic.masteryScore}%</div>
+                      <div className="text-[10px] text-gray-400 dark:text-white/40">{topic.observedRecall === null ? 'Progress estimate' : `Recall · ${topic.recallAttempts}`}</div>
                       <div className="w-16 h-1 bg-gray-100 dark:bg-white/5 rounded-full overflow-hidden mt-1">
                         <div className={`h-full ${masteryColor(topic.masteryScore)}`} style={{ width: `${topic.masteryScore}%` }} />
                       </div>
