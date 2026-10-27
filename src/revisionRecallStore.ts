@@ -88,3 +88,32 @@ export function getRecallAccuracy(): number | null {
   const points = records.reduce((sum, record) => sum + (record.rating === 'remembered' ? 100 : record.rating === 'partial' ? 50 : 0), 0);
   return Math.round(points / records.length);
 }
+
+
+export interface RecallTrendPoint {
+  date: string;
+  label: string;
+  accuracy: number | null;
+  attempts: number;
+}
+
+/** Seven local-calendar days of observed recall; empty days stay null, not zero. */
+export function getRecallTrend(now: Date = new Date()): RecallTrendPoint[] {
+  const records = getRecallRecords();
+  const points: RecallTrendPoint[] = [];
+  for (let offset = 6; offset >= 0; offset -= 1) {
+    const day = new Date(now.getFullYear(), now.getMonth(), now.getDate() - offset);
+    const date = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
+    const dayRecords = records.filter((record) => record.recordedAt.slice(0, 10) === date);
+    const score = dayRecords.length
+      ? Math.round(dayRecords.reduce((sum, record) => sum + (record.rating === 'remembered' ? 100 : record.rating === 'partial' ? 50 : 0), 0) / dayRecords.length)
+      : null;
+    points.push({
+      date,
+      label: day.toLocaleDateString(undefined, { weekday: 'short' }),
+      accuracy: score,
+      attempts: dayRecords.length,
+    });
+  }
+  return points;
+}
