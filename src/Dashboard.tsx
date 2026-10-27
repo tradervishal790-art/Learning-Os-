@@ -27,7 +27,7 @@ import { selectPlaylistForConcept, analyzedVideoToVideo } from './PlaylistBuilde
 import { expandSearchQuery } from './queryExpander';
 import { useTheme } from './ThemeContext';
 import { signOutOfApp, getCurrentUser } from './authStore';
-import { useAuthPrompt, SignInButton, LoginRequired } from './AuthPrompt';
+import { useAuthPrompt, SignInButton } from './AuthPrompt';
 import type { DashboardPageId, PageConfig, UserOnboardingData, LearningProfile, Video, Topic, Goal, TopicBridge } from './types';
 import Onborda from './Onborda';
 import { OnbordaProvider, useOnborda } from './OnbordaContext';
@@ -292,7 +292,7 @@ function trackAndComputeStreak(): number {
 
 function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGenerateForSubject, roadmapVersion, lastRoadmapError, goals, activeGoalId, onAddGoal, onEndGoal, onSwitchGoal }: DashboardProps) {
   const t = useTranslation();
-  const { isGuest, requireAccount, openSignIn } = useAuthPrompt();
+  const { isGuest, openSignIn } = useAuthPrompt();
   const { startOnborda } = useOnborda();
 
   // Auto-start the guided tour once, for a first-time learner only.
@@ -1013,7 +1013,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
           </div>
         )}
 
-        {activePage === 'roadmap' && !showLoginRequired && (
+        {activePage === 'roadmap' && (
           <Roadmap
             key={`${roadmapVersion}-${activeGoalId}`}
             userData={userData}
@@ -1028,7 +1028,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
             onSwitchGoal={onSwitchGoal}
           />
         )}
-        {activePage === 'revision' && !showLoginRequired && <Revision goals={goals} />}
+        {activePage === 'revision' && <Revision goals={goals} />}
         {activePage === 'videos' && (
           <div className="relative">
             <VideoIntel
@@ -1039,13 +1039,13 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
             />
           </div>
         )}
-        {activePage === 'mentor' && !showLoginRequired && <Mentor />}
-        {activePage === 'notes' && !showLoginRequired && <Notes />}
-        {activePage === 'test' && !showLoginRequired && <Test />}
-        {activePage === 'progress' && !showLoginRequired && <Progress goals={goals} />}
-        {activePage === 'research' && !showLoginRequired && <Research />}
+        {activePage === 'mentor' && <Mentor />}
+        {activePage === 'notes' && <Notes />}
+        {activePage === 'test' && <Test />}
+        {activePage === 'progress' && <Progress goals={goals} />}
+        {activePage === 'research' && <Research />}
         {activePage === 'dictionary' && <Dictionary />}
-        {activePage === 'current-affairs' && !showLoginRequired && <CurrentAffairs />}
+        {activePage === 'current-affairs' && <CurrentAffairs />}
 
         {config && (
           <PagePlaceholder
