@@ -97,7 +97,6 @@ export function normalizeInkPrefs(value: unknown): InkPrefs {
     : [];
   return {
     ...DEFAULT_PREFS,
-    ...raw,
     kind: INK_KINDS.has(raw.kind as InkKind) ? raw.kind as InkKind : DEFAULT_PREFS.kind,
     color: typeof raw.color === 'string' ? raw.color : DEFAULT_PREFS.color,
     width: bounded(raw.width, DEFAULT_PREFS.width, 0.5, 20),
