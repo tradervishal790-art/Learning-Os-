@@ -30,7 +30,6 @@ import { useTheme } from './ThemeContext';
 import { signOutOfApp, getCurrentUser } from './authStore';
 import { useAuthPrompt, SignInButton, LoginRequired } from './AuthPrompt';
 import type { DashboardPageId, PageConfig, UserOnboardingData, LearningProfile, Video, Topic, Goal, TopicBridge } from './types';
-import HintBubble from './HintBubble';
 import Onborda from './Onborda';
 import { OnbordaProvider, useOnborda } from './OnbordaContext';
 import OnbordaCard from './OnbordaCard';
@@ -1178,7 +1177,6 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                     when the user explicitly taps to view it. */}
                 {learningProfile && (
                   <div className="pt-2 border-t border-gray-200 dark:border-white/10">
-                    <HintBubble id="learning-profile" text={t.settingsModal.learningProfileSection.hintBubble} />
                     <label className="block text-xs uppercase tracking-wider text-gray-400 dark:text-white/40 mb-2 mt-4">
                       {t.settingsModal.learningProfileSection.label}
                     </label>
