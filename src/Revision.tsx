@@ -5,6 +5,7 @@ import type { ReactNode } from 'react';
 import NotesToRevise from './NotesToRevise';
 import { getRevisionStats, getRevisionDataForGoals } from './revisionData';
 import { markDayReviewed, hydrateRevisionFromCloud } from './revisionstore';
+import { getRecallAccuracy, hydrateRecallScoresFromCloud, saveRecallRating, type RecallRating } from './revisionRecallStore';
 import { markTopicFinished } from './roadmapData';
 import type { RevisionStatus, RevisionDifficulty, RevisionItem, Goal } from './types';
 import { useTranslation } from './i18n/LanguageContext';
@@ -65,12 +66,16 @@ export default function Revision({ goals = [] }: RevisionProps) {
   // real refresh after persisting to revisionStore.
   const [items, setItems] = useState<(RevisionItem & { goalTitle?: string })[]>(() => getRevisionDataForGoals(t.revisionTasks, goals));
   const [reviewingId, setReviewingId] = useState<string | null>(null);
+  const [recallAccuracy, setRecallAccuracy] = useState<number | null>(() => getRecallAccuracy());
 
   // ON-DEMAND CLOUD HYDRATION: only pulled down when the Revision page is
   // actually opened, not upfront on sign-in. No-op if this device already
   // has revision data.
   useEffect(() => {
-    void hydrateRevisionFromCloud().then(() => setItems(getRevisionDataForGoals(t.revisionTasks, goals)));
+    void Promise.all([hydrateRevisionFromCloud(), hydrateRecallScoresFromCloud()]).then(() => {
+      setItems(getRevisionDataForGoals(t.revisionTasks, goals));
+      setRecallAccuracy(getRecallAccuracy());
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -94,8 +99,12 @@ export default function Revision({ goals = [] }: RevisionProps) {
 
   const handleReviewNow = (id: string) => {
     setReviewingId(id);
-    // TODO: once Mentor is wired in, this should open a quiz/explanation
-    // session for the topic instead of just flagging it as "in review".
+  };
+
+  const handleRecallRating = (item: RevisionItem & { goalId?: string }, rating: RecallRating) => {
+    saveRecallRating(item.topicId, item.day, rating);
+    setRecallAccuracy(getRecallAccuracy());
+    handleMarkDone(item);
   };
 
   const stats = getRevisionStats(items);
@@ -145,7 +154,7 @@ export default function Revision({ goals = [] }: RevisionProps) {
           { label: t.revision.stats.dueToday, value: String(stats.dueToday), Icon: Flame },
           { label: t.revision.stats.overdue, value: String(stats.overdue), Icon: TriangleAlert },
           { label: t.revision.stats.mastered, value: String(stats.mastered), Icon: Star },
-          { label: t.revision.stats.retention, value: `${stats.avgRetention}%`, Icon: Gauge },
+          { label: t.revision.stats.retention, value: recallAccuracy === null ? '—' : `${recallAccuracy}%`, Icon: Gauge },
         ].map(({ label, value, Icon }) => (
           <div key={label} title={label} aria-label={`${label}: ${value}`} className="px-2 md:px-4 py-3 md:py-4 text-center md:text-left min-w-0">
             <Icon className="md:hidden w-5 h-5 mx-auto mb-1 text-gray-500 dark:text-white/50" strokeWidth={1.75} />
@@ -236,6 +245,20 @@ export default function Revision({ goals = [] }: RevisionProps) {
                     <h3 className="font-semibold mb-1">{item.topic}</h3>
                     {item.status !== 'mastered' && (
                       <p className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-white/60 mb-1"><PenLine className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.75} /><span className="min-w-0">{item.task}</span></p>
+                    )}
+                    {isReviewing && item.status !== 'mastered' && (
+                      <div className="mt-3 flex flex-wrap gap-2" aria-label="How well did you recall this topic?">
+                        <span className="w-full text-xs text-gray-500 dark:text-white/60">How well did you remember it?</span>
+                        {([
+                          ['forgot', 'Forgot'],
+                          ['partial', 'Some of it'],
+                          ['remembered', 'Remembered'],
+                        ] as [RecallRating, string][]).map(([rating, label]) => (
+                          <button key={rating} onClick={() => handleRecallRating(item, rating)} className="rounded-full border border-gray-200 dark:border-white/15 px-3 py-1.5 text-xs font-medium hover:bg-indigo-50 dark:hover:bg-indigo-500/15 transition">
+                            {label}
+                          </button>
+                        ))}
+                      </div>
                     )}
                     <div className="flex items-center gap-3 text-xs text-gray-400 dark:text-white/50">
                       <span className="inline-flex items-center gap-1"><CalendarDays className="w-3.5 h-3.5" strokeWidth={1.75} />{item.dueDate}</span>
