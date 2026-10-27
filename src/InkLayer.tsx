@@ -588,7 +588,7 @@ export default function InkLayer({
 
   const active = mode !== 'type';
   const shownBox = preview?.box ?? box;
-  const knob = 'absolute w-5 h-5 rounded-full bg-white border-2 border-blue-500 pointer-events-auto';
+  const knob = 'absolute w-6 h-6 rounded-full bg-white border-2 border-blue-500 shadow-sm pointer-events-auto transition-transform duration-100 hover:scale-110 active:scale-95';
   return (
     <>
       <canvas ref={hlRef} aria-hidden className="absolute inset-0 z-0 pointer-events-none" style={{ width, height }} />
