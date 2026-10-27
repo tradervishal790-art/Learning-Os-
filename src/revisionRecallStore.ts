@@ -38,7 +38,11 @@ function writeAll(value: RecallMap): void {
 
 export function getRecallRecords(topicId?: string): RecallRecord[] {
   const all = readAll();
-  if (topicId) return Array.isArray(all[topicId]) ? all[topicId] : [];
+  if (topicId) {
+    return Array.isArray(all[topicId])
+      ? all[topicId].filter(isRecallRecord).filter((record) => record.topicId === topicId)
+      : [];
+  }
   return Object.entries(all).flatMap(([key, records]) =>
     Array.isArray(records) ? records.filter(isRecallRecord).filter((record) => record.topicId === key) : []
   );
