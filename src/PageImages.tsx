@@ -17,6 +17,8 @@ import { BTN, errorKey, isFloating } from './PageAttachments';
 
 const MIN_W = 80;
 const KEEP_VISIBLE = 100; // page units that must stay on the page when dragging
+const CLICKS_FOR_TOOLS = 4; // quick clicks on one photo before Rotate / filters / Delete appear
+const CLICK_WINDOW_MS = 1500;
 
 type Drag =
   | { kind: 'move'; id: string; sx: number; sy: number; x: number; y: number }
@@ -172,6 +174,11 @@ function FloatingImage({
   const [rev, setRev] = useState(0);
   const [working, setWorking] = useState(false);
   const [err, setErr] = useState('');
+  const [tools, setTools] = useState(false);
+  const clicks = useRef({ n: 0, t: 0 });
+  useEffect(() => {
+    if (!selected) setTools(false);
+  }, [selected]);
 
   useEffect(() => {
     let alive = true;
@@ -211,6 +218,13 @@ function FloatingImage({
       data-attach-id={a.id}
       onPointerDown={(e) => {
         if ((e.target as Element).closest('[data-img-ui]')) return;
+        const now = Date.now();
+        clicks.current.n = now - clicks.current.t > CLICK_WINDOW_MS ? 1 : clicks.current.n + 1;
+        clicks.current.t = now;
+        if (clicks.current.n >= CLICKS_FOR_TOOLS) {
+          clicks.current.n = 0;
+          setTools(true);
+        }
         onSelect();
         // Selected photos drag right away; an unselected one only selects, so a finger can still scroll the page.
         if (selected) onStartMove(e as unknown as React.PointerEvent<HTMLDivElement>);
@@ -246,7 +260,6 @@ function FloatingImage({
 
       {selected && (
         <>
-          <div className="pointer-events-none absolute inset-0 rounded-sm ring-2 ring-blue-500" />
           <div
             data-img-ui
             onPointerDown={onStartSize}
@@ -256,7 +269,7 @@ function FloatingImage({
             className="absolute -bottom-2.5 -right-2.5 h-5 w-5 cursor-nwse-resize rounded-full border-2 border-blue-500 bg-white"
             style={{ touchAction: 'none' }}
           />
-          <div data-img-ui className="absolute left-0 top-full z-10 mt-2 flex w-max max-w-[90vw] flex-wrap items-center gap-1.5 rounded-xl bg-white/95 dark:bg-gray-900/95 p-1.5 shadow-lg" style={{ fontSize: 12 }}>
+          {tools && <div data-img-ui className="absolute left-0 top-full z-10 mt-2 flex w-max max-w-[90vw] flex-wrap items-center gap-1.5 rounded-xl bg-white/95 dark:bg-gray-900/95 p-1.5 shadow-lg" style={{ fontSize: 12 }}>
             {!missing && (
               <>
                 <button type="button" className={BTN} disabled={working} onClick={() => void edit((b) => cropRotateFlip(b, { rotate: 90 }))}>
@@ -281,7 +294,7 @@ function FloatingImage({
                 {err}
               </span>
             )}
-          </div>
+          </div>}
         </>
       )}
     </figure>

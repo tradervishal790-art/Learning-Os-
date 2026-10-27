@@ -93,6 +93,41 @@ export default function PageAttachments({
     return () => window.removeEventListener('note-attach', onAsk);
   }, [pageId]);
 
+  // Older photos sat in a bordered card under the text. Move them ON the page (stacked under the text) once.
+  const migrating = useRef(false);
+  useEffect(() => {
+    const old = attachments.filter((a) => a.kind === 'image' && !isFloating(a));
+    if (old.length === 0 || migrating.current) return;
+    migrating.current = true;
+    void (async () => {
+      try {
+        const placed = new Map<string, Partial<PageAttachment>>();
+        let working = listRef.current;
+        for (const a of old) {
+          let ar = 0.75;
+          try {
+            const blob = await getImage(a.id);
+            if (blob) {
+              const bmp = await createImageBitmap(blob);
+              if (bmp.width > 0) ar = bmp.height / bmp.width;
+              bmp.close();
+            }
+          } catch {
+            /* keep the default ratio; the photo corrects it when it loads */
+          }
+          const spot = placeNew(rootRef.current, working, ar);
+          placed.set(a.id, spot);
+          working = working.map((x) => (x.id === a.id ? { ...x, ...spot } : x));
+        }
+        listRef.current = listRef.current.map((x) => (placed.has(x.id) ? { ...x, ...placed.get(x.id) } : x));
+        onChange(listRef.current);
+      } finally {
+        migrating.current = false;
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [attachments]);
+
   const push = (a: PageAttachment) => {
     listRef.current = [...listRef.current, a];
     onChange(listRef.current);
