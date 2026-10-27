@@ -866,7 +866,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
               <div className="mt-6 grid grid-cols-1 gap-2.5 sm:grid-cols-3">
                 {[
                   { id: 'roadmap' as DashboardPageId, icon: Target, hint: statsCards[0].subtitle },
-                  { id: 'mentor' as DashboardPageId, icon: Film, hint: t.dashboard.sidebar.mentor },
+                  { id: 'revision' as DashboardPageId, icon: RotateCcw, hint: revisionStats.overdue > 0 ? `${revisionStats.overdue} overdue` : revisionStats.dueToday > 0 ? `${revisionStats.dueToday} due today` : 'Review what you learned' },
                   { id: 'test' as DashboardPageId, icon: ClipboardCheck, hint: t.dashboard.sidebar.test },
                 ].map((shortcut) => {
                   const item = sidebarItems.find((entry) => entry.id === shortcut.id);
