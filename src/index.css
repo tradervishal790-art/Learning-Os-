@@ -138,3 +138,26 @@ html, body, #root {
 .ca-theme [class*="dark:text-white"] { color: #64748b !important; }
 .ca-theme [class*="dark:hover:text-white"]:hover { color: #0b132b !important; }
 .ca-theme [class*="dark:text-indigo-400"] { color: #315bff !important; }
+
+
+/* Global interaction polish: visible keyboard focus and comfortable touch feedback. */
+:root {
+  -webkit-tap-highlight-color: transparent;
+  text-rendering: optimizeLegibility;
+  font-synthesis: none;
+}
+.dark { color-scheme: dark; }
+button, a, input, textarea, select { -webkit-tap-highlight-color: transparent; }
+button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
+  outline: 2px solid #818cf8;
+  outline-offset: 3px;
+}
+::selection { background: rgba(99, 102, 241, 0.25); }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
