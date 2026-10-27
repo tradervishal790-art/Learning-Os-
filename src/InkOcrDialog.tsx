@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useTranslation } from './i18n/LanguageContext';
 import { solveMathText } from './mathSolve';
 
@@ -17,6 +18,13 @@ export default function InkOcrDialog({
   onClose: () => void;
 }) {
   const t = useTranslation().notebook.ink;
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [onClose]);
   const btn = 'px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-200 dark:border-white/10 text-gray-700 dark:text-white/80 hover:bg-gray-100 dark:hover:bg-white/10';
   const primary = 'px-3 py-1.5 rounded-lg text-xs font-medium bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white hover:opacity-80 disabled:opacity-30';
   const empty = state.status === 'ready' && !state.text.trim();
@@ -27,6 +35,7 @@ export default function InkOcrDialog({
         className="w-full max-w-lg rounded-2xl bg-white dark:bg-neutral-900 border border-gray-200 dark:border-white/10 p-5"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
+        aria-modal="true"
         aria-label={t.ocrTitle}
       >
         <div className="font-semibold mb-3">{t.ocrTitle}</div>
