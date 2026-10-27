@@ -699,21 +699,15 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   // Progressive disclosure: Revision/Notes/Videos/Progress only make sense
   // once a roadmap exists (they're all built around topics), so a new user
   // never lands on an empty page on their very first visit.
-  const navState = (id: DashboardPageId) => {
-    const authLocked = isGuest && LOGIN_ONLY_PAGES.includes(id);
-    const roadmapLocked = ['revision', 'notes', 'videos', 'progress'].includes(id) && !hasRoadmap && !(isGuest && id === 'videos');
-    return { authLocked, roadmapLocked, isLocked: authLocked || roadmapLocked };
-  };
-  // Shared by the desktop sidebar and the mobile bottom bar. Locked items
-  // redirect to Roadmap instead of opening an empty page — nudges toward
-  // the actual next step rather than silently doing nothing.
-  const selectNav = (id: DashboardPageId, label: string) => {
-    const { authLocked, roadmapLocked } = navState(id);
-    if (authLocked) {
-      requireAccount(label); // opens the sign-in modal for guests
-      return;
-    }
-    setActivePage(roadmapLocked ? 'roadmap' : id);
+  // Exploration-first navigation: let guests open every section to preview
+  // the interface. Individual save/sync actions can still request an account.
+  const navState = (_id: DashboardPageId) => ({
+    authLocked: false,
+    roadmapLocked: false,
+    isLocked: false,
+  });
+  const selectNav = (id: DashboardPageId, _label: string) => {
+    setActivePage(id);
   };
   const sidebarItems = getSidebarItems(t);
 
