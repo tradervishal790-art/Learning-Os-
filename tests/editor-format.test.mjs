@@ -44,3 +44,11 @@ test('page templates: ids unique, valid, spacing set for every patterned page', 
   for (const t of tpl.PAGE_TEMPLATES) assert.equal(t.spacing > 0, t.id !== 'blank', t.id);
   for (const id of ['grid', 'graph', 'isometric', 'music', 'todo', 'notebook', 'ruledNarrow', 'ruledWide']) assert.ok(ids.includes(id), id);
 });
+
+test('text line pitch: lined / grid pages use the SAME number as their background lines; free pages use none', () => {
+  for (const id of ['ruled', 'ruledNarrow', 'ruledWide', 'notebook', 'todo', 'cornell', 'grid', 'graph', 'dotted']) {
+    assert.equal(tpl.textLineUnits(id), tpl.templateSpacing(id), id);
+    assert.ok(tpl.textLineUnits(id) > 0, id);
+  }
+  for (const id of ['blank', 'isometric', 'music']) assert.equal(tpl.textLineUnits(id), 0, id);
+});

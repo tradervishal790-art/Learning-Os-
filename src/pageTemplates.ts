@@ -60,3 +60,17 @@ export function paperIsDark(id: string | undefined, dark: boolean): boolean {
 export function templateSpacing(id: PageTemplateId): number {
   return PAGE_TEMPLATES.find((t) => t.id === id)?.spacing ?? 0;
 }
+
+/** Pages where typed text sits on the paper's lines / grid; the other pages (blank, isometric, music staff) keep free line spacing. */
+const TEXT_ON_GRID: ReadonlySet<PageTemplateId> = new Set<PageTemplateId>([
+  'ruled', 'ruledNarrow', 'ruledWide', 'notebook', 'todo', 'cornell', 'grid', 'graph', 'dotted',
+]);
+
+/**
+ * Height of ONE typed text line in page units, or 0 for free spacing.
+ * It is the same number the background uses for its lines, so text, ruled lines and ink share one rhythm:
+ * a typed line can never drift away from the rule it was written on, however far down the page it is.
+ */
+export function textLineUnits(id: PageTemplateId): number {
+  return TEXT_ON_GRID.has(id) ? templateSpacing(id) : 0;
+}

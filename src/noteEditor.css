@@ -30,6 +30,24 @@
 .note-prose p.is-editor-empty:first-child::before { content: attr(data-placeholder); float: left; height: 0; pointer-events: none; color: #9ca3af; }
 .note-prose td > p, .note-prose th > p { margin: 0; }
 
+/* Lined / grid paper: typed text is snapped to the paper's lines.
+   --note-line is the height of one ruled line (set in PageEditor from the same spacing the background draws with),
+   so every line of text, every heading and every blank line is a whole number of ruled lines and nothing drifts.
+   Spacing between blocks therefore comes from blank lines (Enter), not from margins. */
+.note-gridded .note-prose { line-height: var(--note-line); }
+.note-gridded .note-prose > * + * { margin-top: 0; }
+.note-gridded .note-prose h1, .note-gridded .note-prose h2, .note-gridded .note-prose h3 { line-height: var(--note-line); }
+.note-gridded .note-prose pre { padding-block: calc(var(--note-line) / 2); }
+.note-gridded .note-prose hr { margin: 0; height: var(--note-line); background: linear-gradient(rgba(107,114,128,0.4), rgba(107,114,128,0.4)) center / 100% 1px no-repeat; }
+/* Bigger text (headings, PowerPoint-style sizes) takes the next whole number of ruled lines instead of overlapping the line below. */
+@supports (line-height: round(up, 10px, 3px)) {
+  .note-gridded .note-prose,
+  .note-gridded .note-prose [style*="font-size"] { line-height: round(up, 1.3em, var(--note-line)); }
+  .note-gridded .note-prose h1 { line-height: round(up, 1.25em, var(--note-line)); }
+  .note-gridded .note-prose h2,
+  .note-gridded .note-prose h3 { line-height: round(up, 1.3em, var(--note-line)); }
+}
+
 /* dark paper (charcoal / navy) keeps light text even in the light theme */
 .note-paper-dark .note-prose { color: #f3f4f6; }
 .note-paper-dark .note-prose blockquote { color: rgba(255,255,255,0.65); border-color: rgba(255,255,255,0.3); }

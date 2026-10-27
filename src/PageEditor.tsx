@@ -9,7 +9,7 @@ import InkLayer from './InkLayer';
 import PageBackground from './PageBackground';
 import PageAttachments, { isFloating, requestAttach } from './PageAttachments';
 import PageImages from './PageImages';
-import { isTemplateId, paperIsDark } from './pageTemplates';
+import { isTemplateId, paperIsDark, textLineUnits } from './pageTemplates';
 import { useAppDark } from './useAppDark';
 import './noteEditor.css';
 
@@ -135,13 +135,22 @@ export default function PageEditor({
   const appDark = useAppDark();
   const template = isTemplateId(page.template) ? page.template : 'blank';
   const darkPaper = paperIsDark(page.paper, appDark);
+  // One typed line = one ruled line (px). 0 on pages without lines, where text keeps its free spacing.
+  const linePx = size.w > 0 ? textLineUnits(template) * (size.w / PAGE_UNITS) : 0;
 
   return (
     <div
       ref={sheet}
       // Text size follows the PAGE width (not the screen), so typed text, ruled lines and ink always stay in the same place.
       // Padding is in em so it scales with the text too. --note-px is "1 text px" for sized text (PowerPoint-style sizes).
-      style={{ minHeight, padding: '1em', fontSize: `${16 * textK}px`, ['--note-px' as string]: `${textK}px` }}
+      // On lined / grid paper the first line also starts half a line down, so the text sits ON the rule instead of straddling it (see noteEditor.css).
+      style={{
+        minHeight,
+        padding: '1em',
+        ...(linePx > 0 ? { paddingTop: 'max(0px, calc(var(--note-line) / 2 - 0.47em))', ['--note-line' as string]: `${linePx}px` } : {}),
+        fontSize: `${16 * textK}px`,
+        ['--note-px' as string]: `${textK}px`,
+      }}
       onDragOver={(e) => {
         if (!hasFiles(e)) return;
         e.preventDefault();
@@ -158,7 +167,7 @@ export default function PageEditor({
         const photos = Array.from(e.dataTransfer.files).filter((f) => f.type.startsWith('image/'));
         if (photos.length > 0) requestAttach(page.id, 'photo', photos);
       }}
-      className={`relative isolate rounded-2xl border bg-white dark:bg-white/5 focus-within:border-gray-400 dark:focus-within:border-white/30 ${
+      className={`relative isolate rounded-2xl border bg-white dark:bg-white/5 focus-within:border-gray-400 dark:focus-within:border-white/30 ${linePx > 0 ? 'note-gridded' : ''} ${
         dropping ? 'border-indigo-500 ring-2 ring-indigo-500/40' : 'border-gray-200 dark:border-white/10'
       } ${darkPaper ? 'note-paper-dark' : ''}`}
     >
