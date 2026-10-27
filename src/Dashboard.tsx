@@ -818,26 +818,6 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
         {showLoginRequired && <LoginRequired feature={loginRequiredLabel} />}
         {activePage === 'dashboard' && (
           <div className="p-4 md:p-8 flex flex-col gap-4 md:gap-6">
-            <button
-              type="button"
-              onClick={() => setActivePage('revision')}
-              className="flex w-full items-center gap-3 rounded-2xl border border-amber-200/70 bg-amber-50/80 px-4 py-3 text-left transition hover:border-amber-300 hover:bg-amber-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 dark:border-amber-300/15 dark:bg-amber-400/[0.06] dark:hover:bg-amber-400/[0.1]"
-              aria-label={`Open revision: ${revisionStats.dueToday} due today, ${revisionStats.overdue} overdue`}
-            >
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700 dark:bg-amber-300/10 dark:text-amber-300">
-                <RotateCcw className="h-[18px] w-[18px]" strokeWidth={1.9} />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block text-sm font-semibold text-gray-900 dark:text-white">Revision</span>
-                <span className="mt-0.5 block text-xs text-gray-600 dark:text-white/55">
-                  {revisionStats.overdue > 0 ? `${revisionStats.overdue} overdue` : 'Stay consistent with your reviews'}
-                  {revisionStats.dueToday > 0 ? ` · ${revisionStats.dueToday} due today` : ''}
-                </span>
-              </span>
-              <span className="shrink-0 rounded-full bg-amber-200/70 px-3 py-1.5 text-xs font-semibold text-amber-900 dark:bg-amber-300/10 dark:text-amber-200">
-                Review <ChevronRight className="ml-1 inline h-3.5 w-3.5" />
-              </span>
-            </button>
             <section className="relative isolate overflow-hidden rounded-[28px] border border-indigo-200/60 bg-gradient-to-br from-white via-indigo-50 to-violet-100 p-5 shadow-[0_18px_55px_rgba(79,70,229,0.10)] dark:border-white/[0.09] dark:from-[#17171f] dark:via-[#11111a] dark:to-[#211735] dark:shadow-[0_20px_60px_rgba(0,0,0,0.22)] md:p-7">
               <div aria-hidden="true" className="pointer-events-none absolute -right-12 -top-20 -z-10 h-56 w-56 rounded-full bg-violet-400/20 blur-3xl dark:bg-violet-500/20" />
               <div aria-hidden="true" className="pointer-events-none absolute -bottom-24 left-1/3 -z-10 h-48 w-48 rounded-full bg-blue-400/15 blur-3xl dark:bg-blue-500/10" />
