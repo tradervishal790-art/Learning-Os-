@@ -39,22 +39,37 @@ function writeAll(value: RecallMap): void {
 export function getRecallRecords(topicId?: string): RecallRecord[] {
   const all = readAll();
   if (topicId) return Array.isArray(all[topicId]) ? all[topicId] : [];
-  return Object.values(all).flat().filter(isRecallRecord);
+  return Object.entries(all).flatMap(([key, records]) =>
+    Array.isArray(records) ? records.filter(isRecallRecord).filter((record) => record.topicId === key) : []
+  );
 }
 
 function isRecallRecord(value: unknown): value is RecallRecord {
   if (!value || typeof value !== 'object') return false;
   const record = value as Partial<RecallRecord>;
   return typeof record.topicId === 'string'
+    && record.topicId.trim().length > 0
     && typeof record.day === 'number'
+    && Number.isInteger(record.day)
+    && record.day > 0
     && (record.rating === 'forgot' || record.rating === 'partial' || record.rating === 'remembered')
-    && typeof record.recordedAt === 'string';
+    && typeof record.recordedAt === 'string'
+    && record.recordedAt.trim().length > 0
+    && !Number.isNaN(Date.parse(record.recordedAt));
 }
 
 /** Store or replace the score for this topic's checkpoint; repeated clicks are idempotent. */
 export function saveRecallRating(topicId: string, day: number, rating: RecallRating): RecallRecord {
+  if (!topicId.trim() || !Number.isInteger(day) || day <= 0) {
+    throw new Error('A valid topic ID and positive checkpoint day are required.');
+  }
+  if (rating !== 'forgot' && rating !== 'partial' && rating !== 'remembered') {
+    throw new Error('Invalid recall rating.');
+  }
   const all = readAll();
-  const existing = Array.isArray(all[topicId]) ? all[topicId].filter(isRecallRecord) : [];
+  const existing = Array.isArray(all[topicId])
+    ? all[topicId].filter(isRecallRecord).filter((item) => item.topicId === topicId)
+    : [];
   const record: RecallRecord = { topicId, day, rating, recordedAt: new Date().toISOString() };
   all[topicId] = [...existing.filter((item) => item.day !== day), record].sort((a, b) => a.day - b.day);
   writeAll(all);
@@ -70,7 +85,13 @@ export async function hydrateRecallScoresFromCloud(): Promise<void> {
   for (const [topicId, records] of Object.entries(cloud as Record<string, unknown>)) {
     if (Array.isArray(records)) {
       const valid = records.filter(isRecallRecord).filter((record) => record.topicId === topicId);
-      if (valid.length) safe[topicId] = valid;
+      const uniqueByDay = new Map<number, RecallRecord>();
+      for (const record of valid) {
+        const previous = uniqueByDay.get(record.day);
+        if (!previous || Date.parse(record.recordedAt) > Date.parse(previous.recordedAt)) uniqueByDay.set(record.day, record);
+      }
+      const cleaned = [...uniqueByDay.values()].sort((a, b) => a.day - b.day);
+      if (cleaned.length) safe[topicId] = cleaned;
     }
   }
   if (Object.keys(safe).length === 0) return;
