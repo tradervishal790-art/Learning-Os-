@@ -2,6 +2,7 @@ import type { Goal, Topic, EngagementSession } from './types';
 import { getRoadmapData } from './roadmapData';
 import { getEngagementSessions } from './engagementStore';
 import { getRevisionDataForGoals, getRevisionStats } from './revisionData';
+import { getRecallRecords } from './revisionRecallStore';
 import type { TranslationShape } from './i18n/translations';
 
 // ============================================================
@@ -131,6 +132,9 @@ export interface TopicMastery {
    *  breezed through and the other was full of replays/dislikes. */
   masteryScore: number;
   sessionCount: number;
+  /** Latest observed recall score from the learner's explicit revision ratings; null means not measured. */
+  observedRecall: number | null;
+  recallAttempts: number;
   goalTitle?: string;
 }
 
@@ -163,13 +167,20 @@ export function getMasteryHeatmap(goals: Goal[], sessions: EngagementSession[] =
 
       const topicSessions = sessions.filter((s) => s.conceptId === topic.id);
       const baseline = STATUS_BASELINE[topic.status];
+      const topicRecallRecords = getRecallRecords(topic.id);
+      const observedRecall = topicRecallRecords.length
+        ? Math.round(topicRecallRecords.reduce((sum, record) => sum + (record.rating === 'remembered' ? 100 : record.rating === 'partial' ? 50 : 0), 0) / topicRecallRecords.length)
+        : null;
 
-      let adjusted = baseline;
+      let adjusted = observedRecall ?? baseline;
       if (topicSessions.length > 0) {
         const avgSignalPoints =
           topicSessions.reduce((sum, s) => sum + SIGNAL_POINTS[s.signal], 0) / topicSessions.length;
         adjusted = Math.max(0, Math.min(100, Math.round(baseline + avgSignalPoints)));
       }
+
+      // Prefer explicit recall ratings over inferred status/engagement when available.
+      if (observedRecall !== null) adjusted = observedRecall;
 
       result.push({
         topicId: topic.id,
@@ -178,6 +189,8 @@ export function getMasteryHeatmap(goals: Goal[], sessions: EngagementSession[] =
         difficulty: topic.difficulty,
         masteryScore: adjusted,
         sessionCount: topicSessions.length,
+        observedRecall,
+        recallAttempts: topicRecallRecords.length,
         goalTitle,
       });
     }
