@@ -132,7 +132,6 @@ export interface TranslationShape {
     learningProfileSection: {
       label: string;
       hint: string;
-      hintBubble: string;
       viewCta: string;
       hideCta: string;
       dims: {
@@ -1054,7 +1053,6 @@ export const translations: Record<Locale, TranslationShape> = {
       learningProfileSection: {
         label: 'Learning Profile Report',
         hint: 'This only shows when requested — the home page just has a short summary.',
-        hintBubble: 'Your full learning profile lives here — tap to view it.',
         viewCta: 'View Full Report',
         hideCta: 'Hide Report',
         dims: {
@@ -2652,7 +2650,6 @@ export const translations: Record<Locale, TranslationShape> = {
       learningProfileSection: {
         label: 'लर्निंग प्रोफ़ाइल रिपोर्ट',
         hint: 'यह सिर्फ मांगने पर दिखती है — होम पेज पर सिर्फ छोटा सारांश होता है।',
-        hintBubble: 'आपकी पूरी लर्निंग प्रोफ़ाइल यहां है — देखने के लिए टैप करें।',
         viewCta: 'पूरी रिपोर्ट देखें',
         hideCta: 'रिपोर्ट छुपाएं',
         dims: {
@@ -4244,7 +4241,6 @@ export const translations: Record<Locale, TranslationShape> = {
       learningProfileSection: {
         label: 'Learning Profile Report',
         hint: 'Yeh sirf request karne par dikhta hai — home page pe sirf ek short summary hoti hai.',
-        hintBubble: 'Your full learning profile lives here — tap to view it.',
         viewCta: 'View Full Report',
         hideCta: 'Hide Report',
         dims: {
