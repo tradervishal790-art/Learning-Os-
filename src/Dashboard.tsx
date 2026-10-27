@@ -819,41 +819,60 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
         {showLoginRequired && <LoginRequired feature={loginRequiredLabel} />}
         {activePage === 'dashboard' && (
           <div className="p-4 md:p-8 flex flex-col gap-4 md:gap-6">
-            {/* Phones: today's goal hero, two quick numbers, then the Quick Access grid */}
-            <div className="md:hidden space-y-3">
-              <button
-                onClick={() => setActivePage('videos')}
-                className="w-full text-left rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white p-4 flex items-center gap-3 shadow-card active:scale-[0.99] transition-transform"
-              >
-                <span className="w-11 h-11 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
-                  <Target className="w-6 h-6" strokeWidth={1.75} />
-                </span>
-                <span className="flex-1 min-w-0">
-                  <span className="block text-xs text-white/70">{statsCards[0].title}</span>
-                  <span className="block font-semibold leading-snug line-clamp-2">{statsCards[0].value}</span>
-                </span>
-                <span className="w-9 h-9 rounded-full bg-white text-indigo-600 flex items-center justify-center flex-shrink-0">
-                  <ChevronRight className="w-5 h-5" strokeWidth={2.2} />
-                </span>
-              </button>
-              <div className="grid grid-cols-2 gap-3">
-                {statsCards.slice(1).map((card, i) => {
-                  const StatIcon = STAT_ICONS[card.icon as keyof typeof STAT_ICONS];
-                  const tone = i === 0 ? 'bg-violet-100 text-violet-600 dark:bg-violet-500/15 dark:text-violet-300' : 'bg-orange-100 text-orange-600 dark:bg-orange-500/15 dark:text-orange-300';
+            <section className="relative isolate overflow-hidden rounded-[28px] border border-indigo-200/60 bg-gradient-to-br from-white via-indigo-50 to-violet-100 p-5 shadow-[0_18px_55px_rgba(79,70,229,0.10)] dark:border-white/[0.09] dark:from-[#17171f] dark:via-[#11111a] dark:to-[#211735] dark:shadow-[0_20px_60px_rgba(0,0,0,0.22)] md:p-7">
+              <div aria-hidden="true" className="pointer-events-none absolute -right-12 -top-20 -z-10 h-56 w-56 rounded-full bg-violet-400/20 blur-3xl dark:bg-violet-500/20" />
+              <div aria-hidden="true" className="pointer-events-none absolute -bottom-24 left-1/3 -z-10 h-48 w-48 rounded-full bg-blue-400/15 blur-3xl dark:bg-blue-500/10" />
+              <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+                <div className="min-w-0 flex-1">
+                  <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-indigo-200/70 bg-white/75 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-indigo-700 dark:border-white/10 dark:bg-white/[0.06] dark:text-indigo-200">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_0_3px_rgba(16,185,129,0.12)]" />
+                    {statsCards[0].title}
+                  </div>
+                  <h3 className="max-w-2xl text-xl font-semibold leading-tight tracking-tight text-gray-950 dark:text-white sm:text-2xl md:text-3xl">
+                    {statsCards[0].value}
+                  </h3>
+                  <p className="mt-2 max-w-xl text-sm leading-relaxed text-gray-600 dark:text-white/55">
+                    {currentTopic ? statsCards[0].subtitle : t.dashboard.home.learningStyleCard.subtitleNotReady}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActivePage(currentTopic ? 'videos' : 'roadmap')}
+                  className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(79,70,229,0.25)] transition hover:bg-indigo-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white active:scale-[0.98] dark:bg-indigo-500 dark:hover:bg-indigo-400 dark:focus-visible:ring-offset-[#17171f] sm:w-auto"
+                >
+                  {t.dashboard.home.suggestion.watchCta}
+                  <ChevronRight className="h-4 w-4" strokeWidth={2.2} />
+                </button>
+              </div>
+              <div className="mt-6 grid grid-cols-1 gap-2.5 sm:grid-cols-3">
+                {[
+                  { id: 'roadmap' as DashboardPageId, icon: Target, hint: statsCards[0].subtitle },
+                  { id: 'mentor' as DashboardPageId, icon: Film, hint: t.dashboard.sidebar.mentor },
+                  { id: 'test' as DashboardPageId, icon: ClipboardCheck, hint: t.dashboard.sidebar.test },
+                ].map((shortcut) => {
+                  const item = sidebarItems.find((entry) => entry.id === shortcut.id);
+                  const locked = navState(shortcut.id).isLocked;
+                  const ShortcutIcon = shortcut.icon;
                   return (
-                    <button key={card.title} onClick={card.onClick} className="card rounded-2xl p-3 flex items-center gap-3 text-left active:scale-[0.98] transition-transform">
-                      <span className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${tone}`}>
-                        <StatIcon className="w-5 h-5" strokeWidth={1.75} />
+                    <button
+                      key={shortcut.id}
+                      type="button"
+                      onClick={() => item && selectNav(item.id, item.label)}
+                      className="group flex min-w-0 items-center gap-3 rounded-2xl border border-gray-200/80 bg-white/75 p-3 text-left transition hover:-translate-y-0.5 hover:border-indigo-200 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 active:scale-[0.99] dark:border-white/[0.07] dark:bg-white/[0.035] dark:hover:border-indigo-400/30 dark:hover:bg-white/[0.07]"
+                    >
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 ring-1 ring-indigo-100/80 dark:bg-indigo-500/15 dark:text-indigo-300 dark:ring-indigo-300/10">
+                        <ShortcutIcon className="h-[18px] w-[18px]" strokeWidth={1.8} />
                       </span>
-                      <span className="min-w-0">
-                        <span className="block font-semibold tabular-nums truncate">{card.value}</span>
-                        <span className="block text-[11px] text-gray-500 dark:text-white/50 truncate">{card.title}</span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-semibold text-gray-900 dark:text-white/90">{item?.label ?? shortcut.id}</span>
+                        <span className="mt-0.5 block truncate text-xs text-gray-500 dark:text-white/45">{shortcut.hint}</span>
                       </span>
+                      {locked ? <Lock className="h-3.5 w-3.5 shrink-0 text-gray-400" /> : <ChevronRight className="h-4 w-4 shrink-0 text-gray-400 transition group-hover:translate-x-0.5 group-hover:text-indigo-500" />}
                     </button>
                   );
                 })}
               </div>
-            </div>
+            </section>
             <QuickGrid
               items={sidebarItems
                 .filter((i) => !['dashboard', 'roadmap', 'mentor', 'progress'].includes(i.id))
