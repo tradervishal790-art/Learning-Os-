@@ -24,7 +24,7 @@
 - [x] Transcript-based human-style notes (`myNotes`) in `api/generate-notes.ts`
 - [x] Revision-due reminder with sound on app open (`playReminderBell` in Dashboard; chime now at most once per 3 h, banner always shows)
 
-## Current Affairs (built, committed locally, not pushed)
+## Current Affairs (built; merged to main via #66 / #67)
 - [x] Sidebar section, daily points + category tabs, 5-question quiz with instant feedback, streak, last-6-days picker, missed-questions list
 - [x] Firestore rule for `shared_current_affairs` is already in `firestore.rules` (publish that file in the Firebase Console if not yet published)
 - [x] "Today's CA done" status on the home page: `CurrentAffairsChip.tsx` (shown only to learners who finished a CA quiz before; deliberately NOT in the Get Started card, which hides for good after setup)
@@ -56,11 +56,11 @@
 
 ## UX problems found in the Oct 22 audit — still open
 - [ ] Taste Onboarding needs 5 videos x 45+ min before any value; consider a skippable/shorter path (check whether any skip exists)
-- [ ] ~40 components still English-only (BottomNav, Test, ReviewSession, Dictionary, DailyTest, StudyPlan, FocusPlayer, LiveHost/LiveJoin ...) -> Phase 2 i18n
-- [ ] ~14 native `prompt()`/`confirm()` left (NoteLibrary rename/folder/tags/delete, EditorToolbar link, NoteEditor, PageAttachments, StudyPlan, LiveHost, RevisionSheet, NoteTools) -> need an in-app prompt dialog next to `ConfirmDialog`
+- [ ] ~14 screens still have hard-coded English text (BreakFeed, DailyHabit, DailyTest, Dictionary, FocusPlayer, GrowthEdgesCard, LiveHost, LiveJoin, PdfPage, PersonalityQuiz, RecallCheck, ShortsBank, Test, TestBuilder — heuristic scan, Oct 27). 39 of 91 .tsx files import i18n; the rest are mostly sub-components that get labels via props. (The Oct 22 audit said ~40: overstated.) -> Phase 2 i18n
+- [ ] 18 native `prompt()`/`confirm()` calls left in 11 files (Oct 27 recount; Oct 22 said ~14): NoteLibrary 7, NoteEditor 4 (erase-all ink, OCR consent, unlink video, circle consent), EditorToolbar link, LiveHost, NoteTools, PageAttachments, PageImages, RevisionSheet, StudyPlan, **DailyTest ("Delete the whole question bank" — destructive, fix first)**. Need an in-app prompt dialog next to `ConfirmDialog`
 - [ ] Daily Test bank is localStorage-only: a lost phone / cleared browser loses it (Backup/Restore exists but is manual)
 - [ ] Per-instance rate limits are inconsistent unless the Redis budget is enabled
-- [ ] ~22 generic "Failed to..." error strings; most don't say what the student can do next
+- [ ] Generic error strings: the Oct 22 figure (~22 "Failed to...") could not be reproduced — only 1 string literal starts with "Failed to"; 77 start with Failed / Couldn't / Could not / Unable to. Re-audit them for "what can the student do next?"
 
 ## Fixed in the Oct 22 audit
 - [x] Crash screen "Clear local data" is now warn -> optional save-a-copy -> confirm (was one tap, `localStorage.clear()`)
@@ -69,3 +69,8 @@
 - [x] First-load screen shows a slow-connection message + retry after 8 s
 - [x] Notes follow the chosen language; cached notes in another language regenerate
 - [x] Shared-network (hostel/college) guest limit no longer says "you used too many requests"
+
+## Open items found in the Oct 27 audit revision
+- [ ] Server reads the Gemini key from an env var named `VITE_GEMINI_API_KEY` (18 places in `api/`). Vite treats every `VITE_*` var as safe to ship to browsers; today nothing in `src/` reads it (only comments mention it), so no leak — but one careless `import.meta.env.VITE_GEMINI_API_KEY` would put the key in every student's browser. Rename to `GEMINI_API_KEY` (code: accept both, then drop the old name in Vercel).
+- [ ] Restrict the Firebase web key (public by design, in `src/firebase.ts`) in Google Cloud Console: HTTP referrers = the Vercel domain(s) + localhost, and API restrictions to Identity Toolkit / Firestore only.
+- [ ] Live deployment was not tested from the audit sandbox (network blocked). Check by hand: open `/api/mentor-chat` on the live site -> `{"error":"POST only"}` means the function is up.

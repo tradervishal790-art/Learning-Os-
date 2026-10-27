@@ -47,3 +47,11 @@ Use this file as persistent context. Read before starting new work; append new d
 - Prefer the in-app `ConfirmDialog` over `window.confirm()` anywhere a student may be mid-task (in-app browsers can block native dialogs).
 - Cached AI notes carry a `locale` field; a cache hit in another language is treated as a miss.
 - Environment note: this audit could not run `tsc -b`/`vite build` (offline install). Run both before committing these changes.
+
+## Oct 27, 2026 audit revision (corrections to the Oct 22 audit, append-only)
+- The Oct 22 audit could not run the build. Now run: `tsc -b` clean, `vite build` OK, `npm test` 110/110 pass (incl. new `tests/page-to-backend.test.mjs`).
+- Page -> backend connection verified over real HTTP (built page + real `api/*` handlers, only Firebase/Gemini faked): all 12 `/api/*` paths the page calls have a handler and every handler is used; no token -> 401 JSON with nothing upstream; guest -> 403 `account-required`; signed-in -> Firebase check -> Gemini -> JSON back; SPA deep links fall back to index.html; unknown `/api/x` is a JSON 404. NOT verified: the live Vercel site and its env vars (sandbox network is blocked) — check by hand.
+- Security claim re-verified on the BUILT bundle: no Gemini / YouTube / MiniMax key inside it. The only Google key in the browser bundle is the public Firebase web key from `src/firebase.ts` (expected). See the `VITE_GEMINI_API_KEY` naming risk in TASKS.md.
+- Confirmed correct: `LOCKED_TO_ENGLISH=false`; `shared_*` Firestore rules; Upstash budget is env-gated and fails open (covered by tests); `CurrentAffairsChip` on the Dashboard; `vite:preloadError` reload in `main.tsx`; `playReminderBell` in Dashboard; cached notes carry `locale`.
+- Corrected (were wrong or stale): native dialog count is 18 in 11 files, not ~14 (missed destructive `DailyTest` confirm and `PageImages`); English-only screens are ~14, not ~40; the "~22 Failed to..." figure was not reproducible; Current Affairs is merged to main (#66/#67), not "committed locally, not pushed".
+- Notes editor (Oct 27): font family / size controls PowerPoint-style, 12 page templates + Add-page picker. Sized text is stored as `calc(N * var(--note-px, 1px))` so it zooms with the page; older `20px` values still read fine.
