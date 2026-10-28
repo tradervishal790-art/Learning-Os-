@@ -30,7 +30,7 @@ Base: `main` (no changes made directly to `main`)
 - **Severity:** High (participant privacy)
 - **Location:** `firestore.rules`, `src/liveTest.ts`, `src/LiveJoin.tsx`
 - **Evidence:** the old rules let any signed-in account directly read `allowed/{phone}` documents containing phone/name and `done/{phone}` markers containing UID/phone.
-- **Change:** the allow-list can now be read only by the host or by a signed-in UID that already owns the corresponding player slot. The join flow first attempts the player write (whose rule checks allow-list membership), then reads its own allow-list entry. Existing done markers are readable only by the host or the matching UID. The UI uses a neutral message for permission-denied join attempts.
+- **Change:** the allow-list can now be read only by the host or by a signed-in UID that already owns the corresponding player slot. The join flow first attempts the player write (whose rule checks allow-list membership), then reads its own allow-list entry. Existing done markers are readable only by the host or the matching UID. The UI uses a neutral message for permission-denied join attempts. Static regression guards are in `tests/live-test-security.test.mjs`; Firestore Emulator validation is still required.
 - **Residual limitation:** phone numbers are not OTP-verified, as documented in `src/liveTest.ts`; a person who knows another participant's phone number may still attempt to claim that slot before it is taken. Preventing identity spoofing requires phone verification or another trusted identity step. The rules change must be deployed to Firebase before production is protected.
 
 ### 5. Several local-first stores cannot tell the user when cloud sync failed
