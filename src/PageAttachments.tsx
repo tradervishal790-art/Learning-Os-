@@ -215,7 +215,21 @@ export default function PageAttachments({
           }}
         />
       )}
-      <input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => { void addImage(e.target.files?.[0]); e.target.value = ''; }} />
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/*"
+        multiple
+        hidden
+        onChange={(e) => {
+          const files = Array.from(e.target.files ?? []);
+          e.target.value = '';
+          // Process selected photos sequentially so each push sees the previous attachment.
+          void (async () => {
+            for (const file of files) await addImageRef.current(file);
+          })();
+        }}
+      />
       <input ref={camRef} type="file" accept="image/*" capture="environment" hidden onChange={(e) => { void addImage(e.target.files?.[0]); e.target.value = ''; }} />
     </div>
   );
