@@ -80,10 +80,13 @@ service cloud.firestore {
         allow read, write: if isHost();
       }
 
-      // Host's guest list. A joining student can fetch their own number's doc
-      // (get) but nobody except the host can list the numbers.
+      // Host's guest list. Students may read their own entry only after their
+      // player document proves ownership of that phone-number slot.
       match /allowed/{phone} {
-        allow get: if signedIn();
+        allow get: if isHost()
+          || (signedIn()
+            && exists(/databases/$(database)/documents/liveTests/$(code)/players/$(phone))
+            && get(/databases/$(database)/documents/liveTests/$(code)/players/$(phone)).data.uid == request.auth.uid);
         allow list: if isHost();
         allow create, update: if isHost()
           && request.resource.data.keys().hasOnly(['phone', 'name'])
@@ -133,11 +136,13 @@ service cloud.firestore {
           && !exists(/databases/$(database)/documents/liveTests/$(code)/done/$(phone));
       }
 
-      // "Already finished" marker, written in the same batch as the submission.
-      // Any signed-in user can get() it (a student re-joining from another
-      // device must be told ALREADY_DONE); only the host can list it.
+      // "Already finished" marker. The host can read all markers; students
+      // can read only their own marker. Missing markers remain readable as
+      // missing so a participant can check whether they have already finished.
       match /done/{phone} {
-        allow get: if signedIn();
+        allow get: if isHost()
+          || !exists(/databases/$(database)/documents/liveTests/$(code)/done/$(phone))
+          || (signedIn() && resource.data.uid == request.auth.uid);
         allow list: if isHost();
         allow create: if signedIn()
           && request.resource.data.keys().hasOnly(['uid', 'phone'])

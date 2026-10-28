@@ -314,21 +314,33 @@ export async function joinLiveSession(
   phone: string
 ): Promise<{ offsetMs: number; name: string; startedAtMs: number | null }> {
   const uid = await ensureSignedIn();
-  const allowedSnap = await getDoc(doc(db, 'liveTests', code, 'allowed', phone));
-  if (!allowedSnap.exists()) throw new JoinError('NOT_ALLOWED');
-  if ((await getDoc(doc(db, 'liveTests', code, 'done', phone))).exists()) throw new JoinError('ALREADY_DONE');
-
-  const hostName = String(allowedSnap.data().name ?? '').trim();
-  const name = hostName || typedName;
   const ref = doc(db, 'liveTests', code, 'players', phone);
   const before = Date.now();
   try {
-    // merge: a returning student keeps the startedAt they already have
-    await setDoc(ref, { uid, name, phone, joinedAt: serverTimestamp() }, { merge: true });
+    // The player write checks allow-list membership in Firestore rules. Do this
+    // before reading the allow-list so students cannot enumerate names/phone data.
+    await setDoc(ref, { uid, name: typedName, phone, joinedAt: serverTimestamp() }, { merge: true });
   } catch (e) {
-    if ((e as { code?: string })?.code?.includes('permission-denied')) throw new JoinError('OTHER_DEVICE');
+    if ((e as { code?: string })?.code?.includes('permission-denied')) throw new JoinError('NOT_ALLOWED');
     throw e;
   }
+
+  try {
+    if ((await getDoc(doc(db, 'liveTests', code, 'done', phone))).exists()) throw new JoinError('ALREADY_DONE');
+  } catch (e) {
+    if (e instanceof JoinError) throw e;
+    // An existing done marker for another UID is intentionally unreadable.
+    if ((e as { code?: string })?.code?.includes('permission-denied')) throw new JoinError('ALREADY_DONE');
+    throw e;
+  }
+
+  // The rules allow this read only after the player document proves that this
+  // authenticated UID owns the phone-number slot.
+  const allowedSnap = await getDoc(doc(db, 'liveTests', code, 'allowed', phone));
+  if (!allowedSnap.exists()) throw new JoinError('NOT_ALLOWED');
+  const hostName = String(allowedSnap.data().name ?? '').trim();
+  const name = hostName || typedName;
+  if (name !== typedName) await updateDoc(ref, { name });
   return readClock(ref, before, name, 'joinedAt');
 }
 
