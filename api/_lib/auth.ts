@@ -52,33 +52,36 @@ export interface RequireUserOptions {
   allowAnonymous?: boolean;
 }
 
-const hits = new Map<string, number[]>();
+const hits = new Map<string, { timestamps: number[]; windowMs: number }>();
 const tokenCache = new Map<string, { uid: string; anonymous: boolean; exp: number }>();
+let lastHitsPruneAt = 0;
 
 /** Records a hit for `key`; returns true when that key is over `limit` within `windowMs`. */
 function overLimit(key: string, limit: number, windowMs: number): boolean {
   const now = Date.now();
-  // Prune expired buckets instead of clearing every user's live quota at once.
-  // Clearing the whole map at the threshold lets traffic from many distinct
-  // identities reset other users' rate limits.
-  if (hits.size >= 5000) {
-    for (const [existingKey, timestamps] of hits) {
-      const active = timestamps.filter((t) => now - t < windowMs);
-      if (active.length) hits.set(existingKey, active);
+  // Prune at most once a minute when at capacity. Keep each bucket's own
+  // window: guest daily counters must not be aged out by a 10-minute check.
+  if (hits.size >= 5000 && now - lastHitsPruneAt >= 60_000) {
+    for (const [existingKey, bucket] of hits) {
+      const active = bucket.timestamps.filter((t) => now - t < bucket.windowMs);
+      if (active.length) hits.set(existingKey, { ...bucket, timestamps: active });
       else hits.delete(existingKey);
     }
+    lastHitsPruneAt = now;
   }
+
   const existing = hits.get(key);
-  // If the bounded map is still full, fail closed for a new key rather than
-  // erasing active limits. Existing users can continue to use their own bucket.
+  // Do not erase live quotas to make room for new identities. If still full,
+  // fail closed for new keys until expired buckets can be pruned.
   if (!existing && hits.size >= 5000) return true;
-  const recent = (existing ?? []).filter((t) => now - t < windowMs);
+
+  const recent = (existing?.timestamps ?? []).filter((t) => now - t < windowMs);
   if (recent.length >= limit) {
-    hits.set(key, recent);
+    hits.set(key, { timestamps: recent, windowMs });
     return true;
   }
   recent.push(now);
-  hits.set(key, recent);
+  hits.set(key, { timestamps: recent, windowMs });
   return false;
 }
 
