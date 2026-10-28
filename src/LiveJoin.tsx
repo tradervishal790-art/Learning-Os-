@@ -112,7 +112,7 @@ export default function LiveJoin() {
           setSubmitted(true);
           setSubmitNote('already-or-closed');
         } else if (reason === 'NOT_ALLOWED') {
-          setFormError('This phone number is not on the list for this test. Please contact your host.');
+          setFormError('This number is not on the test list or is already linked to another device. Check it or ask your host for help.');
         } else if (reason === 'OTHER_DEVICE') {
           setFormError('This number is already in use on another device. Ask your host to unlock it.');
         } else {
