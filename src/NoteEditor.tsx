@@ -459,7 +459,7 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
     };
     window.addEventListener('paste', onPaste);
     return () => window.removeEventListener('paste', onPaste);
-  }, [activePage]);
+  }, [activePage, viewPage]);
 
   const startPresent = () => {
     modeBeforePresent.current = mode;
@@ -1231,8 +1231,8 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
       prefs={prefs}
       setPrefs={setPrefs}
       resetPrefs={resetPrefs}
-      canUndo={(hist.current[activePage ?? '']?.undo.length ?? 0) > 0}
-      canRedo={(hist.current[activePage ?? '']?.redo.length ?? 0) > 0}
+      canUndo={(hist.current[viewPage ?? activePage ?? '']?.undo.length ?? 0) > 0}
+      canRedo={(hist.current[viewPage ?? activePage ?? '']?.redo.length ?? 0) > 0}
       onUndo={undoInk}
       onRedo={redoInk}
       onEraseAll={eraseWholePage}
