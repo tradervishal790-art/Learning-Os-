@@ -132,7 +132,7 @@ test('noteExport: html -> markdown keeps headings, lists, tasks, marks, links, t
   assert.match(md, /```\nx = 1\n```/);
   const pages = [{ id: 'a', text: 'Hello', html: '<p>Hello</p>' }, { id: 'b', text: 'World', html: '<p>World <script>alert(1)</script></p>' }];
   assert.equal(noteToMarkdown('My note', pages), '# My note\n\n## Page 1\n\nHello\n\n## Page 2\n\nWorld alert(1)\n'.replace(' alert(1)', ' alert(1)'));
-  assert.equal(noteToText('My note', pages), 'My note\n\nHello\n\nWorld\n');
+  assert.equal(noteToText('My note', pages), 'My note\n\nPage 1\nHello\n\nPage 2\nWorld\n');
   const page = noteToHtml('A <b>', pages);
   assert.ok(!page.includes('<script>alert') && page.includes('A &lt;b&gt;'));
   assert.equal(fileName('  a/b:c?  ', 'md'), 'a b c.md');
