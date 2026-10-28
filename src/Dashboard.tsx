@@ -342,6 +342,8 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   const [showPersonalityQuiz, setShowPersonalityQuiz] = useState(false);
   const [personalityProfile, setPersonalityProfile] = useState<PersonalityProfile | null>(getPersonalityProfile);
   const [showPersonalityResult, setShowPersonalityResult] = useState(false);
+  // Set by Home's Watch button -> Roadmap opens this topic's lecture straight away.
+  const [roadmapAutoStart, setRoadmapAutoStart] = useState<string | null>(null);
   const [preloadedPlaylist, setPreloadedPlaylist] = useState<{ primary: Video; fallbacks: Video[]; bridge?: TopicBridge; previousVideoId?: string | null } | null>(null);
   // Which topic's saved-video slot the Videos page is currently showing —
   // set whenever a topic's playlist is launched or its "Saved video" is
@@ -619,6 +621,13 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   const currentTopic = getCurrentTopic(getRoadmapData(activeGoalId));
   const revisionStats = getRevisionStats(getRevisionDataForGoals(t.revisionTasks, goals));
 
+  // Home's "Watch" always means the ROADMAP's next lecture — never the generic
+  // Videos search page. Roadmap resumes the saved video or builds the playlist.
+  const startNextLecture = () => {
+    if (currentTopic) setRoadmapAutoStart(currentTopic.id);
+    setActivePage('roadmap');
+  };
+
   // ---------- "Get Started" checklist (new-user guidance) ----------
   // New users land on a Dashboard with 8 sidebar sections and no clear
   // "do this first" signal. This computes the 3 steps that actually
@@ -647,11 +656,17 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
       done: hasWatchedVideo,
       title: t.dashboard.checklist.steps[2].title,
       subtitle: t.dashboard.checklist.steps[2].subtitle,
-      action: () => setActivePage('videos'),
+      action: startNextLecture,
       cta: t.dashboard.checklist.steps[2].cta,
     },
   ];
   const showOnboardingChecklist = onboardingSteps.some((s) => !s.done);
+  // A learner who already has a roadmap AND has watched before. First-time
+  // users keep the original home untouched.
+  const isReturning = hasRoadmap && hasWatchedVideo;
+  const dueCount = revisionStats.dueToday + revisionStats.overdue;
+  // Roadmap times come from the AI as free text ("1 hours").
+  const tidyTime = (v: string) => v.replace(/\b1 hours\b/gi, '1 hour');
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -666,7 +681,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
     {
       title: t.dashboard.home.statsCards.goal,
       value: currentTopic ? currentTopic.title : t.dashboard.home.statsCards.pickTopic,
-      subtitle: currentTopic ? `${currentTopic.estimatedTime} - ${currentTopic.difficulty}` : t.dashboard.home.statsCards.openRoadmap,
+      subtitle: currentTopic ? tidyTime(`${currentTopic.estimatedTime} - ${currentTopic.difficulty}`) : t.dashboard.home.statsCards.openRoadmap,
       icon: 'target',
       onClick: () => setActivePage('roadmap'),
     },
@@ -813,8 +828,17 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
               <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
                 <div className="min-w-0 flex-1">
                   <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-indigo-200/70 bg-white/75 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-indigo-700 dark:border-white/10 dark:bg-white/[0.06] dark:text-indigo-200">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_0_3px_rgba(16,185,129,0.12)]" />
-                    {statsCards[0].title}
+                    {isReturning && streak > 0 ? (
+                      <>
+                        <Flame className="h-3 w-3 text-orange-500" strokeWidth={2} />
+                        {streak} {streak === 1 ? t.dashboard.home.statsCards.day : t.dashboard.home.statsCards.days}
+                      </>
+                    ) : (
+                      <>
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_0_3px_rgba(16,185,129,0.12)]" />
+                        {statsCards[0].title}
+                      </>
+                    )}
                   </div>
                   <h3 className="max-w-2xl text-xl font-semibold leading-tight tracking-tight text-gray-950 dark:text-white sm:text-2xl md:text-3xl">
                     {statsCards[0].value}
@@ -825,19 +849,26 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                 </div>
                 <button
                   type="button"
-                  onClick={() => setActivePage(currentTopic ? 'videos' : 'roadmap')}
+                  onClick={startNextLecture}
                   className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(79,70,229,0.25)] transition hover:bg-indigo-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white active:scale-[0.98] dark:bg-indigo-500 dark:hover:bg-indigo-400 dark:focus-visible:ring-offset-[#17171f] sm:w-auto"
                 >
                   {t.dashboard.home.suggestion.watchCta}
                   <ChevronRight className="h-4 w-4" strokeWidth={2.2} />
                 </button>
               </div>
-              <div className="mt-6 grid grid-cols-1 gap-2.5 sm:grid-cols-3">
-                {[
+              {(() => {
+                const shortcuts = [
                   { id: 'roadmap' as DashboardPageId, icon: Target, hint: statsCards[0].subtitle },
-                  { id: 'revision' as DashboardPageId, icon: RotateCcw, hint: revisionStats.overdue > 0 ? `${revisionStats.overdue} overdue` : revisionStats.dueToday > 0 ? `${revisionStats.dueToday} due today` : 'Review what you learned' },
+                  { id: 'revision' as DashboardPageId, icon: RotateCcw, hint: isReturning ? format(t.dashboard.home.statsCards.dueSuffix, dueCount) : revisionStats.overdue > 0 ? `${revisionStats.overdue} overdue` : revisionStats.dueToday > 0 ? `${revisionStats.dueToday} due today` : 'Review what you learned' },
                   { id: 'test' as DashboardPageId, icon: ClipboardCheck, hint: t.dashboard.sidebar.test },
-                ].map((shortcut) => {
+                ];
+                // Returning learners see one calm line at most (revision, if any) —
+                // the hero's Start is the only real decision.
+                const visible = isReturning ? shortcuts.filter((x) => x.id === 'revision' && dueCount > 0) : shortcuts;
+                if (visible.length === 0) return null;
+                return (
+              <div className={`mt-6 grid grid-cols-1 gap-2.5 ${visible.length === 1 ? 'sm:grid-cols-1' : 'sm:grid-cols-3'}`}>
+                {visible.map((shortcut) => {
                   const item = sidebarItems.find((entry) => entry.id === shortcut.id);
                   const locked = navState(shortcut.id).isLocked;
                   const ShortcutIcon = shortcut.icon;
@@ -860,6 +891,8 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                   );
                 })}
               </div>
+                );
+              })()}
             </section>
             {/* Secondary destinations remain available from the navigation menu. */}
 
@@ -928,12 +961,14 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
               })}
             </div>
 
+            {!isReturning && (
             <button
-              onClick={() => setActivePage('videos')}
+              onClick={startNextLecture}
               className="hidden md:block px-5 py-2.5 rounded-full bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white text-sm font-medium hover:opacity-85 active:opacity-70 transition-opacity"
             >
               {t.dashboard.home.suggestion.watchCta}
             </button>
+            )}
 
             <section className="pt-6 border-t border-gray-200 dark:border-white/10">
               <h3 className="font-semibold mb-1">{learningProfile ? t.dashboard.home.learningStyleCard.titleReady : t.dashboard.home.learningStyleCard.titleNotReady}</h3>
@@ -987,6 +1022,8 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
             onAddGoal={onAddGoal}
             onEndGoal={onEndGoal}
             onSwitchGoal={onSwitchGoal}
+            autoStartTopicId={roadmapAutoStart}
+            onAutoStartConsumed={() => setRoadmapAutoStart(null)}
           />
         )}
         {activePage === 'revision' && <Revision goals={goals} />}

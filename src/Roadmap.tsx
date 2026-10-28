@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CircleX, Star, Check, Flame, Lock, Route, Target, Gauge, CircleCheck, Clock, X as CloseIcon, ChartNoAxesColumn, Link2, CircleHelp, Globe, TriangleAlert } from 'lucide-react';
 import type { ReactNode } from 'react';
@@ -75,6 +75,10 @@ interface RoadmapProps {
   onAddGoal: () => boolean;
   onEndGoal: (goalId: string, outcome?: 'completed' | 'abandoned') => void;
   onSwitchGoal: (goalId: string) => void;
+  /** Home's "Watch" button: open this topic's lecture straight away (resume the
+   *  saved video, or build the playlist) instead of landing on the topic grid. */
+  autoStartTopicId?: string | null;
+  onAutoStartConsumed?: () => void;
 }
 
 export default function Roadmap({
@@ -88,6 +92,8 @@ export default function Roadmap({
   onAddGoal,
   onEndGoal,
   onSwitchGoal,
+  autoStartTopicId,
+  onAutoStartConsumed,
 }: RoadmapProps) {
   const t = useTranslation();
   const statusLabels: Record<Topic['status'], string> = {
@@ -271,13 +277,14 @@ export default function Roadmap({
     setTimeout(() => handleMarkComplete(), 0);
   };
 
-  const handleWatchVideos = async () => {
-    if (!selectedTopic) return;
+  const handleWatchVideos = async (topicArg?: Topic): Promise<boolean> => {
+    const topic = topicArg ?? selectedTopic;
+    if (!topic) return false;
 
     const learnerProfile = getLearningProfile();
     if (!learnerProfile) {
       setPlaylistError('Complete the Learning Style Quiz first.');
-      return;
+      return false;
     }
 
     setPlaylistError('');
@@ -290,7 +297,7 @@ export default function Roadmap({
         try {
           localStorage.setItem(
             'learning_os_topic_timing',
-            JSON.stringify({ topic: selectedTopic.title, hours: topicHours, deadline: topicDeadline })
+            JSON.stringify({ topic: topic.title, hours: topicHours, deadline: topicDeadline })
           );
         } catch {
           // non-fatal
@@ -333,7 +340,7 @@ export default function Roadmap({
           },
         };
         try {
-          const expansion = await expandSearchQuery(selectedTopic.title, blueprint);
+          const expansion = await expandSearchQuery(topic.title, blueprint);
           if (expansion?.queries && expansion.queries.length > 0) {
             queries = expansion.queries;
           }
@@ -343,20 +350,20 @@ export default function Roadmap({
         }
       }
 
-      const candidates = await buildCandidatePoolForConcept(selectedTopic, queries, userData?.language, true);
+      const candidates = await buildCandidatePoolForConcept(topic, queries, userData?.language, true);
       if (candidates.length === 0) {
         setPlaylistError('No good video found. Please try again in a bit.');
-        return;
+        return false;
       }
 
-      const currentTeacherId = getLastTeacherForConcept(selectedTopic.id);
+      const currentTeacherId = getLastTeacherForConcept(topic.id);
       const result = selectPlaylistForConceptV2(candidates, learnerProfile, currentTeacherId, {
         hours: topicHours,
         deadline: topicDeadline,
       });
       if (!result) {
         setPlaylistError('Playlist could not be built, please try again.');
-        return;
+        return false;
       }
 
       // 'control' variant -> teachingProcess is undefined -> this stays null,
@@ -368,23 +375,60 @@ export default function Roadmap({
       // video the learner actually ends up picking (primary or fallback).
       // This file only hands over the unverified claim + the previous
       // topic's watched videoId so that re-check can happen there.
-      const bridge = getBridgeForTopic(selectedTopic);
-      const previousVideoId = getPreviousWatchedVideoId(selectedTopic);
+      const bridge = getBridgeForTopic(topic);
+      const previousVideoId = getPreviousWatchedVideoId(topic);
 
       onLaunchPlaylist({
         primary: analyzedVideoToVideo(result.primary),
         fallbacks: result.fallbacks.map(analyzedVideoToVideo),
         bridge,
         previousVideoId,
-        topicId: selectedTopic.id,
+        topicId: topic.id,
       });
       setSelectedTopic(null);
+      return true;
     } catch (err: any) {
       setPlaylistError(err.message || 'Something went wrong.');
+      return false;
     } finally {
       setPlaylistLoading(false);
     }
   };
+
+  // Home -> "Watch": go straight to this topic's lecture. A saved video resumes
+  // instantly (no API calls); otherwise the same playlist build as the topic
+  // modal's Watch button runs. Any failure falls back to the topic modal so the
+  // real error message is visible.
+  const [autoLaunching, setAutoLaunching] = useState(!!autoStartTopicId);
+  const autoStartedRef = useRef(false);
+  useEffect(() => {
+    if (!autoStartTopicId || autoStartedRef.current) return;
+    autoStartedRef.current = true;
+    onAutoStartConsumed?.();
+    const topic = roadmap.children?.find((c) => c.id === autoStartTopicId);
+    if (!topic) {
+      setAutoLaunching(false);
+      return;
+    }
+    if (hasSavedVideoForTopic(activeGoalId ?? undefined, topic.id)) {
+      onOpenSavedVideo(topic.id);
+      return;
+    }
+    void handleWatchVideos(topic).then((ok) => {
+      if (!ok) setSelectedTopic(topic);
+      setAutoLaunching(false);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  if (autoLaunching) {
+    return (
+      <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3 p-8 text-black dark:text-white" role="status">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" />
+        <p className="text-sm text-gray-500 dark:text-white/60">{t.roadmap.topicModal.searchingCta}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 md:p-8 max-w-6xl mx-auto text-black dark:text-white">
@@ -828,7 +872,7 @@ export default function Roadmap({
                       </button>
 
                       <button
-                        onClick={handleWatchVideos}
+                        onClick={() => void handleWatchVideos()}
                         disabled={playlistLoading}
                         className="w-full px-4 py-3.5 md:py-2.5 rounded-lg bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white disabled:opacity-40 text-sm font-semibold transition active:scale-[0.98]"
                       >
