@@ -46,16 +46,35 @@ function saveReviews(reviews: ReviewsMap): void {
  * this, a topic marked "revised" on Device A would show as never-revised
  * on Device B, wrongly re-triggering "overdue" reminders there.
  */
-export async function hydrateRevisionFromCloud(): Promise<void> {
-  if (Object.keys(loadReviews()).length > 0) return; // this device already has review history — don't clobber it
-  const cloud = await pullFromCloud<ReviewsMap>(CLOUD_KEY);
-  if (cloud && Object.keys(cloud).length > 0) {
-    try {
-      localStorage.setItem(REVISION_REVIEWS_STORAGE_KEY, JSON.stringify(cloud));
-    } catch {
-      // Best-effort.
+/** Merge local + cloud checkpoints without losing reviews recorded on either device. */
+export function mergeReviewMaps(local: ReviewsMap, cloud: ReviewsMap): ReviewsMap {
+  const merged: ReviewsMap = {};
+  for (const source of [cloud, local]) {
+    for (const [topicId, days] of Object.entries(source)) {
+      if (!topicId.trim() || !Array.isArray(days)) continue;
+      const validDays = days.filter((day): day is number =>
+        typeof day === 'number' && Number.isInteger(day) && day > 0
+      );
+      merged[topicId] = [...new Set([...(merged[topicId] ?? []), ...validDays])].sort((a, b) => a - b);
     }
   }
+  return merged;
+}
+
+export async function hydrateRevisionFromCloud(): Promise<void> {
+  const local = loadReviews();
+  const cloud = await pullFromCloud<ReviewsMap>(CLOUD_KEY);
+  if (!cloud) return;
+
+  const merged = mergeReviewMaps(local, cloud);
+  if (JSON.stringify(merged) === JSON.stringify(local)) return;
+  try {
+    localStorage.setItem(REVISION_REVIEWS_STORAGE_KEY, JSON.stringify(merged));
+  } catch {
+    // Best-effort.
+  }
+  // Publish the union so the next device receives both sets of checkpoints.
+  void pushToCloud(CLOUD_KEY, merged);
 }
 
 /** Which schedule-day checkpoints (e.g. [1, 3]) have been marked done for this topic. */
