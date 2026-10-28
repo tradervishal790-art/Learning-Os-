@@ -698,14 +698,19 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
         }
         const bytes = await exportAnnotatedPdf(await blob.arrayBuffer(), g.pages);
         const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: 'application/pdf' }));
+        // Start URL cleanup before clicking so even a failed download click cannot leak it.
+        setTimeout(() => URL.revokeObjectURL(url), 10_000);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `${g.name.replace(/\.pdf$/i, '') || 'note'}-annotated.pdf`;
+        const baseName = g.name.replace(/\.pdf$/i, '').replace(/[\\/:*?"<>|\u0000-\u001f]+/g, ' ').trim().slice(0, 80) || 'note';
+        a.download = `${baseName}-annotated.pdf`;
         document.body.appendChild(a);
-        a.click();
-        a.remove();
-        exportedCount += 1;
-        setTimeout(() => URL.revokeObjectURL(url), 10_000);
+        try {
+          a.click();
+          exportedCount += 1;
+        } finally {
+          a.remove();
+        }
       }
       if (missingFile) flash(t.attach.pdfMissing);
       else if (exportedCount > 0) flash(t.attach.pdfExportDone);
