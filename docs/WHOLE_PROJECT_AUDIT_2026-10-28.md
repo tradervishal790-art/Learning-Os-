@@ -26,13 +26,12 @@ Base: `main` (no changes made directly to `main`)
 - **Change:** merge local and cloud checkpoint days as a validated, deduplicated union, persist the union locally, and publish it back to cloud.
 - **Regression test:** `tests/revisionstore.test.mjs` covers union/deduplication and malformed values.
 
-## Confirmed risks requiring a separate architectural change
-
-### 4. Live-test allow-list documents can be read by any signed-in session that knows a session code
+### 4. Live-test allow-list documents exposed participant metadata — fixed on this branch
 - **Severity:** High (participant privacy)
-- **Location:** `firestore.rules`, `liveTests/{code}/allowed/{phone}` (current rule: `allow get: if signedIn();`)
-- **Evidence:** the rule does not check that the requester owns the phone number/document. The allow-list documents contain phone and name fields, and the rule permits direct document reads to any signed-in account. Listing is host-only, but document IDs can still be queried when known/guessed. The related `done/{phone}` rule also permits any signed-in account to read a marker containing `uid` and `phone`.
-- **Not changed here:** simply restricting reads to the host would break student joining, because the current client checks eligibility by reading this document directly. The safe fix is to move eligibility verification behind a trusted server endpoint or redesign the document so clients cannot retrieve other participants' PII, then tighten the rules. Do not deploy the current rules as if the list were private.
+- **Location:** `firestore.rules`, `src/liveTest.ts`, `src/LiveJoin.tsx`
+- **Evidence:** the old rules let any signed-in account directly read `allowed/{phone}` documents containing phone/name and `done/{phone}` markers containing UID/phone.
+- **Change:** the allow-list can now be read only by the host or by a signed-in UID that already owns the corresponding player slot. The join flow first attempts the player write (whose rule checks allow-list membership), then reads its own allow-list entry. Existing done markers are readable only by the host or the matching UID. The UI uses a neutral message for permission-denied join attempts.
+- **Residual limitation:** phone numbers are not OTP-verified, as documented in `src/liveTest.ts`; a person who knows another participant's phone number may still attempt to claim that slot before it is taken. Preventing identity spoofing requires phone verification or another trusted identity step. The rules change must be deployed to Firebase before production is protected.
 
 ### 5. Several local-first stores cannot tell the user when cloud sync failed
 - **Severity:** Medium (cross-device reliability)
