@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState, lazy, Suspense } from 'react';
 import type { ComponentType } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Film, BookOpen, ClipboardCheck, Newspaper, Lock, Settings as SettingsIcon, Bell, X as CloseIcon, Target, RotateCcw, Flame, Check, ChevronRight, ArrowLeft } from 'lucide-react';
+import { Search, Film, BookOpen, ClipboardCheck, Newspaper, Lock, Settings as SettingsIcon, Target, RotateCcw, Flame, Check, ChevronRight, ArrowLeft } from 'lucide-react';
 import PagePlaceholder from './PagePlaceholder';
 import BottomNav from './BottomNav';
 import { useImmersive, useNoteOpen } from './immersive';
@@ -330,9 +330,8 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   const [streak, setStreak] = useState(0);
   const noteOpen = useNoteOpen();
   const immersive = useImmersive(); // true while a full-attention flow (e.g. a timed test) hides the bottom bar
-  // Bell + sound reminder — computed once when the app/home page opens (not
-  // only on navigating into the Revision tab), so nothing due gets missed.
-  const [revisionAlert, setRevisionAlert] = useState<{ dueToday: number; overdue: number } | null>(null);
+  // Sound reminder — computed once when the app/home page opens (not only on
+  // navigating into the Revision tab), so nothing due gets missed.
   const [showLearningQuiz, setShowLearningQuiz] = useState(false);
   // Alternative onboarding path — does NOT replace showLearningQuiz above,
   // both remain independently reachable from the home page.
@@ -378,8 +377,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   useEffect(() => {
     const stats = getRevisionStats(getRevisionDataForGoals(t.revisionTasks, goals));
     if (stats.dueToday + stats.overdue > 0) {
-      setRevisionAlert({ dueToday: stats.dueToday, overdue: stats.overdue });
-      // The banner shows every time, but the chime only rings once every few hours:
+      // The chime only rings once every few hours:
       // this effect runs on every page load, and hearing the same bell on each
       // refresh quickly turns a helpful reminder into an annoyance.
       const BELL_KEY = 'learning_os_bell_last';
@@ -910,43 +908,6 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                 </div>
               </motion.div>
             )}
-
-            <AnimatePresence>
-              {revisionAlert && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="p-4 rounded-2xl border border-black/10 dark:border-white/20 bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white flex items-center gap-3 flex-wrap"
-                >
-                  <Bell className="w-5 h-5 flex-shrink-0" strokeWidth={1.75} />
-                  <div className="flex-1 min-w-[200px]">
-                    <div className="font-semibold text-sm">
-                      {revisionAlert.overdue > 0
-                        ? format(t.dashboard.home.revisionBanner.overdueTitle, revisionAlert.dueToday + revisionAlert.overdue, revisionAlert.overdue)
-                        : format(t.dashboard.home.revisionBanner.dueTitle, revisionAlert.dueToday)}
-                    </div>
-                    <div className="text-xs opacity-70">{t.dashboard.home.revisionBanner.subtitle}</div>
-                  </div>
-                  <button
-                    onClick={() => {
-                      setRevisionAlert(null);
-                      setActivePage('revision');
-                    }}
-                    className="px-4 py-2 rounded-full bg-white text-black dark:bg-black dark:text-white text-sm font-medium hover:opacity-80 transition whitespace-nowrap"
-                  >
-                    View Revision
-                  </button>
-                  <button
-                    onClick={() => setRevisionAlert(null)}
-                    aria-label="Dismiss"
-                    className="px-3 py-2 rounded-full text-sm opacity-70 hover:opacity-100 transition"
-                  >
-                    <CloseIcon className="w-4 h-4" />
-                  </button>
-                </motion.div>
-              )}
-            </AnimatePresence>
 
             <div className="hidden md:grid rounded-2xl card overflow-hidden grid-cols-3 divide-x divide-gray-100 dark:divide-white/10">
               {statsCards.map((card) => {
