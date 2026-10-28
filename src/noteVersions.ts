@@ -81,7 +81,8 @@ export async function saveVersion(noteId: string, snap: VersionData, kind: Versi
   if (existing[0]?.hash === hash && kind === 'auto') return null;
   const at = now.toISOString();
   const meta: VersionMeta = {
-    key: `${noteId}:${at}`,
+    // Include a unique suffix: multiple manual snapshots can legitimately be created in one millisecond.
+    key: `${noteId}:${at}:${Math.random().toString(36).slice(2, 9)}`,
     noteId,
     at,
     kind,
