@@ -138,7 +138,8 @@ const pageTitle = (p: NotePage, i: number, pages: NotePage[]) =>
   p.pdf ? `${p.pdf.name} · ${p.pdf.pageNumber}` : pages.length > 1 ? `Page ${i + 1}` : '';
 
 export function noteToMarkdown(title: string, pages: NotePage[]): string {
-  const parts = [`# ${title.trim() || 'Untitled'}`];
+  const safeTitle = (title.trim() || 'Untitled').replace(/([\\\\`*_{}\\[\\]()#+.!|>~-])/g, '\\\\$1');
+  const parts = [`# ${safeTitle}`];
   pages.forEach((p, i) => {
     const heading = pageTitle(p, i, pages);
     const body = p.pdf ? p.text.trim() : htmlToMarkdown(pageToHtml(p));
@@ -218,8 +219,12 @@ export function downloadBlob(name: string, blob: Blob): void {
   const a = document.createElement('a');
   a.href = url;
   a.download = name;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 10_000);
+  try {
+    document.body.appendChild(a);
+    a.click();
+  } finally {
+    a.remove();
+    // Delay revocation so browsers have time to begin reading the download, even when click throws.
+    setTimeout(() => URL.revokeObjectURL(url), 10_000);
+  }
 }
