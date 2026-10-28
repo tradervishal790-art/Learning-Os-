@@ -151,7 +151,11 @@ export function useInkPrefs(): [InkPrefs, (patch: Partial<InkPrefs>) => void, ()
     getPrefs,
     getPrefs
   );
-  const reset = useCallback(() => setPrefs({ ...DEFAULT_PREFS, favorites: getPrefs().favorites }), []);
+  const reset = useCallback(() => {
+    const current = getPrefs();
+    // Reset active pen settings without deleting the student's saved quick styles or recent colours.
+    setPrefs({ ...DEFAULT_PREFS, favorites: current.favorites, recentColors: current.recentColors });
+  }, []);
   return [prefs, setPrefs, reset];
 }
 
