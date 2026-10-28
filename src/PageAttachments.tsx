@@ -364,7 +364,6 @@ function AudioCard({ a, labels, onRemove }: { a: PageAttachment; labels: Record<
         <div className="h-14 animate-pulse rounded-lg bg-gray-100 dark:bg-white/5" />
       )}
       {bookmarkError && <p role="alert" className="mt-1 text-xs text-red-600 dark:text-red-400">{t('errStorage')}</p>}
-      {bookmarkError && <p role="alert" className="mt-1 text-xs text-red-600 dark:text-red-400">{t('errStorage')}</p>}
       <div className="mt-2 flex justify-end">
         <button type="button" className={BTN} onClick={onRemove} aria-label={t('remove')} title={t('remove')}>
           <Trash2 size={14} />
