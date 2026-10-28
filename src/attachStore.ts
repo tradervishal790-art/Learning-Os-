@@ -60,13 +60,29 @@ async function run<T>(store: StoreName, mode: IDBTransactionMode, work: (s: IDBO
   const db = await openDb();
   return new Promise<T>((resolve, reject) => {
     let result: T | undefined;
-    const tx = db.transaction(store, mode);
+    let workError: unknown;
+    let tx: IDBTransaction;
+    try {
+      tx = db.transaction(store, mode);
+    } catch (error) {
+      reject(error instanceof Error ? error : new Error('Cannot start the attachment storage transaction.'));
+      return;
+    }
     tx.oncomplete = () => resolve(result as T);
-    tx.onabort = () =>
-      reject(tx.error?.name === 'QuotaExceededError' ? new Error('Not enough storage space on this device.') : (tx.error ?? new Error('Storage error.')));
-    work(tx.objectStore(store), (v) => {
-      result = v;
-    });
+    tx.onabort = () => {
+      const error = workError ?? tx.error;
+      reject(error instanceof Error && error.name === 'QuotaExceededError'
+        ? new Error('Not enough storage space on this device.')
+        : (error instanceof Error ? error : new Error('Attachment storage operation was aborted.')));
+    };
+    try {
+      work(tx.objectStore(store), (v) => {
+        result = v;
+      });
+    } catch (error) {
+      workError = error;
+      try { tx.abort(); } catch { reject(error instanceof Error ? error : new Error('Attachment storage operation failed.')); }
+    }
   });
 }
 
