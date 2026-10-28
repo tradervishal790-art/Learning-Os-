@@ -119,7 +119,12 @@ function blocks(parent: Element): string[] {
     if (/^H[1-6]$/.test(tag)) out.push(`${'#'.repeat(Number(tag[1]))} ${inline(el).trim()}`);
     else if (tag === 'UL' || tag === 'OL') out.push(list(el, 0));
     else if (tag === 'BLOCKQUOTE') out.push(blocks(el).join('\n\n').split('\n').map((l) => `> ${l}`).join('\n'));
-    else if (tag === 'PRE') out.push('```\n' + (el.textContent ?? '').replace(/\n$/, '') + '\n```');
+    else if (tag === 'PRE') {
+      const code = (el.textContent ?? '').replace(/\n$/, '');
+      const longestTicks = Math.max(0, ...Array.from(code.matchAll(/`+/g), (m) => m[0].length));
+      const fence = '`'.repeat(Math.max(3, longestTicks + 1));
+      out.push(`${fence}\n${code}\n${fence}`);
+    }
     else if (tag === 'TABLE') out.push(table(el));
     else if (tag === 'HR') out.push('---');
     else if (tag === 'DIV') out.push(...blocks(el));
