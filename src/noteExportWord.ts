@@ -498,18 +498,21 @@ export async function exportDocx(
         try {
           const blob = await getImage(a.id);
           if (blob && typeof createImageBitmap === 'function') {
-            const type = blob.type === 'image/jpeg' ? 'jpg' : blob.type === 'image/png' ? 'png' : blob.type === 'image/gif' ? 'gif' : blob.type === 'image/bmp' ? 'bmp' : null;
-            if (type) {
-              const bitmap = await createImageBitmap(blob);
+            // Normalize supported browser image formats to PNG: DOCX readers reliably support
+            // PNG/JPEG, while GIF/BMP and the original MIME type can fail typechecking or export.
+            const bitmap = await createImageBitmap(blob);
+            try {
               const scale = Math.min(1, 600 / Math.max(bitmap.width, bitmap.height));
               const width = Math.max(1, Math.round(bitmap.width * scale));
               const height = Math.max(1, Math.round(bitmap.height * scale));
-              bitmap.close();
+              const data = await canvasToPng(width, height, (ctx) => ctx.drawImage(bitmap, 0, 0, width, height));
               children.push(new Paragraph({
                 alignment: AlignmentType.CENTER,
-                children: [new ImageRun({ type, data: new Uint8Array(await blob.arrayBuffer()), transformation: { width, height } })],
+                children: [new ImageRun({ type: 'png', data, transformation: { width, height } })],
               }));
               embedded = true;
+            } finally {
+              bitmap.close();
             }
           }
         } catch {
