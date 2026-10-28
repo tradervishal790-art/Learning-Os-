@@ -58,8 +58,21 @@ const tokenCache = new Map<string, { uid: string; anonymous: boolean; exp: numbe
 /** Records a hit for `key`; returns true when that key is over `limit` within `windowMs`. */
 function overLimit(key: string, limit: number, windowMs: number): boolean {
   const now = Date.now();
-  if (hits.size > 5000) hits.clear(); // keep memory bounded
-  const recent = (hits.get(key) ?? []).filter((t) => now - t < windowMs);
+  // Prune expired buckets instead of clearing every user's live quota at once.
+  // Clearing the whole map at the threshold lets traffic from many distinct
+  // identities reset other users' rate limits.
+  if (hits.size > 5000) {
+    for (const [existingKey, timestamps] of hits) {
+      const active = timestamps.filter((t) => now - t < windowMs);
+      if (active.length) hits.set(existingKey, active);
+      else hits.delete(existingKey);
+    }
+  }
+  const existing = hits.get(key);
+  // If the bounded map is still full, fail closed for a new key rather than
+  // erasing active limits. Existing users can continue to use their own bucket.
+  if (!existing && hits.size >= 5000) return true;
+  const recent = (existing ?? []).filter((t) => now - t < windowMs);
   if (recent.length >= limit) {
     hits.set(key, recent);
     return true;
