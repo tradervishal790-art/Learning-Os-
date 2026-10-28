@@ -61,6 +61,6 @@ Base: `main` (no changes made directly to `main`)
 ## Validation and limits
 
 - The Notes font-preservation commit on PR #70 passed its GitHub Actions CI: install, lint, TypeScript/build, and test steps all succeeded.
-- This audit branch adds regression tests for rate-limit capacity and revision merge. Its own CI must pass before these changes are treated as verified.
+- This audit branch adds regression tests for rate-limit capacity, revision merging, live-test privacy guards, and malformed daily-test backups. Its own latest CI must pass before these changes are treated as verified.
 - This is a static/code-and-test audit, not a full manual QA run on Android, desktop, offline mode, two real accounts/devices, or production Firebase rules. Those require environment/device access.
-- High-priority next step is the live-test allow-list privacy redesign. Do not label the entire project “bug-free”; use the remaining findings and manual-test gaps as the exit checklist.
+- High-priority next steps are Firebase Emulator validation and deployment of the live-test rules, identity verification for phone-based joining, and a durable cloud-sync retry/status design. Do not label the entire project “bug-free”; use the remaining findings and manual-test gaps as the exit checklist.
