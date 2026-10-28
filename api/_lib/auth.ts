@@ -61,7 +61,7 @@ function overLimit(key: string, limit: number, windowMs: number): boolean {
   // Prune expired buckets instead of clearing every user's live quota at once.
   // Clearing the whole map at the threshold lets traffic from many distinct
   // identities reset other users' rate limits.
-  if (hits.size > 5000) {
+  if (hits.size >= 5000) {
     for (const [existingKey, timestamps] of hits) {
       const active = timestamps.filter((t) => now - t < windowMs);
       if (active.length) hits.set(existingKey, active);
