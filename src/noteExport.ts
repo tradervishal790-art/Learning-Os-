@@ -49,8 +49,11 @@ function inline(node: Node): string {
     case 'CODE':
       return inner ? `\`${inner}\`` : '';
     case 'A': {
-      const href = el.getAttribute('href');
-      return href && inner.trim() ? `[${inner.trim()}](${href})` : inner;
+      const href = el.getAttribute('href')?.trim() ?? '';
+      // Do not emit active javascript:/data: links into exported Markdown.
+      const safeHref = /^(?:https?:|mailto:|tel:|\/|#|\.\.?\/)/i.test(href) ? href : '';
+      const label = inner.trim();
+      return safeHref && label ? `[${label}](${safeHref.replace(/([()\\s])/g, '\\$1')})` : inner;
     }
     case 'BR':
       return '  \n';
