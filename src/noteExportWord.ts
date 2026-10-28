@@ -3,8 +3,7 @@
 // so the docx library never weighs on the notes screen.
 // Headings, bold / italic / underline / strike, lists, tasks, tables, links, highlights, text colour.
 // Handwriting is added as one picture per page, below that page's text.
-// Not in the file: the page backgrounds, the PDF pages themselves, and the photos / recordings
-// (their names are listed so nothing disappears without a trace).
+// Photos are embedded when available locally. PDF pages and audio recordings remain labelled references.
 // ============================================================
 import {
   AlignmentType,
@@ -27,6 +26,7 @@ import {
   type ParagraphChild,
 } from 'docx';
 import { renderInk } from './inkSvg';
+import { getImage } from './attachStore';
 import { pageToHtml, type InkStroke, type NotePage } from './notebookStore';
 
 const HEX6 = /^#[0-9a-fA-F]{6}$/;
@@ -489,7 +489,38 @@ export async function exportDocx(
     if (i > 0) children.push(new Paragraph({ children: [new PageBreak()] }));
     if (page.pdf) children.push(note(fill(L.pdfPage, page.pdf.pageNumber, page.pdf.name)));
     blocksFrom(parseHtml(pageToHtml(page)).body.childNodes, { quote: false }, state, children);
-    for (const a of page.attachments ?? []) children.push(note(fill(a.kind === 'image' ? L.photo : L.recording, a.name || a.id)));
+    for (const a of page.attachments ?? []) {
+      const label = a.name || a.id;
+      if (a.kind === 'image') {
+        // The attachment blob is local, while its small reference is in the note.
+        // Embed it in the Word export when available; never silently omit a missing file.
+        let embedded = false;
+        try {
+          const blob = await getImage(a.id);
+          if (blob && typeof createImageBitmap === 'function') {
+            const type = blob.type === 'image/jpeg' ? 'jpg' : blob.type === 'image/png' ? 'png' : blob.type === 'image/gif' ? 'gif' : blob.type === 'image/bmp' ? 'bmp' : null;
+            if (type) {
+              const bitmap = await createImageBitmap(blob);
+              const scale = Math.min(1, 600 / Math.max(bitmap.width, bitmap.height));
+              const width = Math.max(1, Math.round(bitmap.width * scale));
+              const height = Math.max(1, Math.round(bitmap.height * scale));
+              bitmap.close();
+              children.push(new Paragraph({
+                alignment: AlignmentType.CENTER,
+                children: [new ImageRun({ type, data: new Uint8Array(await blob.arrayBuffer()), transformation: { width, height } })],
+              }));
+              embedded = true;
+            }
+          }
+        } catch {
+          // Fall through to an explicit label so the user knows the image wasn't embedded.
+        }
+        if (!embedded) children.push(note(fill(L.photo, label)));
+      } else {
+        // DOCX cannot preserve a browser-local audio recording as a playable note attachment.
+        children.push(note(fill(L.recording, label)));
+      }
+    }
     if (o.includeInk && page.ink && page.ink.length > 0) {
       const img = await inkPng(page.ink);
       if (img) {
