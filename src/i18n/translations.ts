@@ -351,6 +351,7 @@ export interface TranslationShape {
       reviewNowCta: string;
       reviewingCta: string;
     };
+    recall: { question: string; forgot: string; partial: string; remembered: string; forgotNote: string };
     emptyState: {
       noRevisionTitle: string;
       noRevisionBody: string;
@@ -1556,7 +1557,7 @@ export const translations: Record<Locale, TranslationShape> = {
     revision: {
       header: { title: 'Revision', subtitle: 'Comes back to you on a schedule — 1, 3, 7, 15, 30, 60 days' },
       stats: { dueToday: 'Due Today', overdue: 'Overdue', mastered: 'Mastered', retention: 'Retention' },
-      filters: { all: 'All', dueToday: 'Due Today', overdue: 'Overdue', upcoming: 'Upcoming', mastered: 'Mastered' },
+      filters: { all: 'All', dueToday: 'Due Today', overdue: 'Pending', upcoming: 'Upcoming', mastered: 'Mastered' },
       difficultyLabels: { easy: 'Easy', medium: 'Medium', hard: 'Hard' },
       card: {
         day: 'Day',
@@ -1566,6 +1567,13 @@ export const translations: Record<Locale, TranslationShape> = {
         doneCta: 'Done',
         reviewNowCta: 'Review Now',
         reviewingCta: 'Reviewing…',
+      },
+      recall: {
+        question: 'How well did you remember it?',
+        forgot: 'Forgot',
+        partial: 'Some of it',
+        remembered: 'Remembered',
+        forgotNote: 'No problem — this topic comes back tomorrow.',
       },
       emptyState: {
         noRevisionTitle: 'No revisions yet',
@@ -3150,7 +3158,7 @@ export const translations: Record<Locale, TranslationShape> = {
     revision: {
       header: { title: 'रिवीज़न', subtitle: '1, 3, 7, 15, 30, 60 दिन के शेड्यूल पर वापस आता है' },
       stats: { dueToday: 'आज देय', overdue: 'बकाया', mastered: 'महारत', retention: 'रिटेंशन' },
-      filters: { all: 'सभी', dueToday: 'आज देय', overdue: 'बकाया', upcoming: 'आने वाला', mastered: 'महारत' },
+      filters: { all: 'सभी', dueToday: 'आज देय', overdue: 'बाकी', upcoming: 'आने वाला', mastered: 'महारत' },
       difficultyLabels: { easy: 'आसान', medium: 'मध्यम', hard: 'कठिन' },
       card: {
         day: 'दिन',
@@ -3160,6 +3168,13 @@ export const translations: Record<Locale, TranslationShape> = {
         doneCta: 'पूरा हुआ',
         reviewNowCta: 'अभी रिव्यू करें',
         reviewingCta: 'रिव्यू हो रहा है…',
+      },
+      recall: {
+        question: 'आपको कितना याद रहा?',
+        forgot: 'भूल गया',
+        partial: 'थोड़ा याद रहा',
+        remembered: 'याद रहा',
+        forgotNote: 'कोई बात नहीं — यह टॉपिक कल फिर आएगा।',
       },
       emptyState: {
         noRevisionTitle: 'अभी कोई रिवीज़न नहीं',
@@ -4743,7 +4758,7 @@ export const translations: Record<Locale, TranslationShape> = {
     revision: {
       header: { title: 'Revision', subtitle: 'Comes back to you on a schedule — 1, 3, 7, 15, 30, 60 days' },
       stats: { dueToday: 'Due Today', overdue: 'Overdue', mastered: 'Mastered', retention: 'Retention' },
-      filters: { all: 'All', dueToday: 'Due Today', overdue: 'Overdue', upcoming: 'Upcoming', mastered: 'Mastered' },
+      filters: { all: 'All', dueToday: 'Due Today', overdue: 'Baaki', upcoming: 'Upcoming', mastered: 'Mastered' },
       difficultyLabels: { easy: 'Easy', medium: 'Medium', hard: 'Hard' },
       card: {
         day: 'Day',
@@ -4753,6 +4768,13 @@ export const translations: Record<Locale, TranslationShape> = {
         doneCta: 'Done',
         reviewNowCta: 'Review Now',
         reviewingCta: 'Reviewing…',
+      },
+      recall: {
+        question: 'Kitna yaad raha?',
+        forgot: 'Bhool gaya',
+        partial: 'Thoda yaad raha',
+        remembered: 'Yaad raha',
+        forgotNote: 'Koi baat nahi — ye topic kal phir aayega.',
       },
       emptyState: {
         noRevisionTitle: 'Abhi koi revision nahi',

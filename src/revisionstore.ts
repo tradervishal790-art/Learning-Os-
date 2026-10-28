@@ -99,3 +99,34 @@ export function unmarkDayReviewed(topicId: string, day: number): void {
   reviews[topicId] = existing.filter((d) => d !== day);
   saveReviews(reviews);
 }
+// "Forgot" snooze — a checkpoint the learner could not recall stays pending (it is NOT
+// marked reviewed) but is held back until tomorrow, so it returns for another try
+// instead of nagging again the same minute. Per-device, best-effort.
+const SNOOZE_KEY = 'learning_os_revision_snooze';
+const todayKey = () => new Date().toLocaleDateString('en-CA');
+
+function loadSnoozes(): Record<string, string> {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(SNOOZE_KEY) || '{}');
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+export function snoozeCheckpointUntilTomorrow(topicId: string, day: number): void {
+  const all = loadSnoozes();
+  const today = todayKey();
+  // Drop stale entries so the map never grows.
+  for (const k of Object.keys(all)) if (all[k] !== today) delete all[k];
+  all[`${topicId}:${day}`] = today;
+  try {
+    localStorage.setItem(SNOOZE_KEY, JSON.stringify(all));
+  } catch {
+    // Best-effort.
+  }
+}
+
+export function isCheckpointSnoozed(topicId: string, day: number): boolean {
+  return loadSnoozes()[`${topicId}:${day}`] === todayKey();
+}

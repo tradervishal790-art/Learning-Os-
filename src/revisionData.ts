@@ -1,6 +1,6 @@
 import type { RevisionItem, RevisionStatus, RevisionDifficulty, Topic, Difficulty, Goal } from './types';
 import { getRoadmapData } from './roadmapData';
-import { getReviewedDays } from './revisionstore';
+import { getReviewedDays, isCheckpointSnoozed } from './revisionstore';
 import type { TranslationShape } from './i18n/translations';
 
 // Standard spaced-repetition checkpoints, referenced across the app copy
@@ -134,6 +134,9 @@ export function getRevisionData(revisionTasks: TranslationShape['revisionTasks']
     if (daysUntilDue > 0) status = 'upcoming';
     else if (daysUntilDue === 0) status = 'due-today';
     else status = 'overdue';
+    // Rated "Forgot" today: stays pending, comes back tomorrow (home, banner and Revision all agree).
+    const snoozed = status !== 'upcoming' && isCheckpointSnoozed(topic.id, nextDay);
+    if (snoozed) status = 'upcoming';
 
     const retention = estimateRetention(Math.max(0, -daysUntilDue), nextDay);
 
@@ -143,7 +146,7 @@ export function getRevisionData(revisionTasks: TranslationShape['revisionTasks']
       topic: topic.title,
       category: categoryForDifficulty(topic.difficulty),
       day: nextDay,
-      dueDate: formatDueDate(daysUntilDue),
+      dueDate: snoozed ? formatDueDate(1) : formatDueDate(daysUntilDue),
       status,
       difficulty: toRevisionDifficulty(topic.difficulty),
       retention,

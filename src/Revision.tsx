@@ -1,15 +1,14 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { RotateCcw, Route, FileText, Flame, TriangleAlert, CalendarDays, Star, Target, PenLine, Check, Play, Sprout, PartyPopper } from 'lucide-react';
+import { RotateCcw, Route, FileText, Flame, TriangleAlert, CalendarDays, Star, Target, PenLine, Check, Sprout, PartyPopper } from 'lucide-react';
 import type { ReactNode } from 'react';
 import NotesToRevise from './NotesToRevise';
 import { getRevisionDataForGoals } from './revisionData';
-import { markDayReviewed, hydrateRevisionFromCloud } from './revisionstore';
+import { markDayReviewed, hydrateRevisionFromCloud, snoozeCheckpointUntilTomorrow } from './revisionstore';
 import { hydrateRecallScoresFromCloud, saveRecallRating, type RecallRating } from './revisionRecallStore';
 import { markTopicFinished } from './roadmapData';
 import type { RevisionStatus, RevisionDifficulty, RevisionItem, Goal } from './types';
 import { useTranslation } from './i18n/LanguageContext';
-import { format } from './i18n/format';
 import StudyPlan from './StudyPlan';
 import { studyPlanText } from './studyPlanText';
 import { useLanguage } from './i18n/LanguageContext';
@@ -55,6 +54,7 @@ export default function Revision({ goals = [] }: RevisionProps) {
   // real refresh after persisting to revisionStore.
   const [items, setItems] = useState<(RevisionItem & { goalTitle?: string })[]>(() => getRevisionDataForGoals(t.revisionTasks, goals));
   const [reviewingId, setReviewingId] = useState<string | null>(null);
+  const [notice, setNotice] = useState('');
 
   // ON-DEMAND CLOUD HYDRATION: only pulled down when the Revision page is
   // actually opened, not upfront on sign-in. No-op if this device already
@@ -84,12 +84,23 @@ export default function Revision({ goals = [] }: RevisionProps) {
     }
   };
 
+  // "Done" always goes through an honest recall rating — a checkpoint is never
+  // advanced without the learner saying how well they remembered it.
   const handleReviewNow = (id: string) => {
-    setReviewingId(id);
+    setReviewingId((current) => (current === id ? null : id));
   };
 
   const handleRecallRating = (item: RevisionItem & { goalId?: string }, rating: RecallRating) => {
     saveRecallRating(item.topicId, item.day, rating);
+    if (rating === 'forgot') {
+      // Not remembered -> this checkpoint is NOT completed. It returns tomorrow.
+      snoozeCheckpointUntilTomorrow(item.topicId, item.day);
+      setItems(getRevisionDataForGoals(t.revisionTasks, goals));
+      setReviewingId(null);
+      setNotice(t.revision.recall.forgotNote);
+      window.setTimeout(() => setNotice(''), 5000);
+      return;
+    }
     handleMarkDone(item);
   };
 
@@ -134,6 +145,10 @@ export default function Revision({ goals = [] }: RevisionProps) {
       ) : (
         <>
       <NotesToRevise />
+      {notice && (
+        <p role="status" className="mb-3 rounded-xl border border-gray-200 dark:border-white/10 px-4 py-3 text-sm text-gray-600 dark:text-white/70">{notice}</p>
+      )}
+
       {/* Revision cards */}
       <div className="space-y-3">
         <AnimatePresence>
@@ -184,12 +199,12 @@ export default function Revision({ goals = [] }: RevisionProps) {
                       <p className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-white/60 mb-1"><PenLine className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.75} /><span className="min-w-0">{item.task}</span></p>
                     )}
                     {isReviewing && item.status !== 'mastered' && (
-                      <div className="mt-3 flex flex-wrap gap-2" aria-label="How well did you recall this topic?">
-                        <span className="w-full text-xs text-gray-500 dark:text-white/60">How well did you remember it?</span>
+                      <div className="mt-3 flex flex-wrap gap-2" aria-label={t.revision.recall.question}>
+                        <span className="w-full text-xs text-gray-500 dark:text-white/60">{t.revision.recall.question}</span>
                         {([
-                          ['forgot', 'Forgot'],
-                          ['partial', 'Some of it'],
-                          ['remembered', 'Remembered'],
+                          ['forgot', t.revision.recall.forgot],
+                          ['partial', t.revision.recall.partial],
+                          ['remembered', t.revision.recall.remembered],
                         ] as [RecallRating, string][]).map(([rating, label]) => (
                           <button key={rating} onClick={() => handleRecallRating(item, rating)} className="rounded-full border border-gray-200 dark:border-white/15 px-3 py-1.5 text-xs font-medium hover:bg-indigo-50 dark:hover:bg-indigo-500/15 transition">
                             {label}
@@ -199,17 +214,6 @@ export default function Revision({ goals = [] }: RevisionProps) {
                     )}
                     <div className="flex items-center gap-3 text-xs text-gray-400 dark:text-white/50">
                       <span className="inline-flex items-center gap-1"><CalendarDays className="w-3.5 h-3.5" strokeWidth={1.75} />{item.dueDate}</span>
-                      <span>•</span>
-                      <span>{format(t.revision.card.retentionLabel, item.retention)}</span>
-                    </div>
-
-                    <div className="mt-2 h-1 bg-gray-100 dark:bg-white/5 rounded-full overflow-hidden">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${item.retention}%` }}
-                        transition={{ delay: 0.2 + i * 0.05, duration: 0.8 }}
-                        className="h-full bg-black dark:bg-white rounded-full"
-                      />
                     </div>
                   </div>
 
@@ -222,22 +226,13 @@ export default function Revision({ goals = [] }: RevisionProps) {
                     ) : (
                       <>
                         <button
-                          onClick={() => handleMarkDone(item)}
+                          onClick={() => handleReviewNow(item.id)}
                           aria-label={t.revision.card.doneCta}
                           title={t.revision.card.doneCta}
                           className="w-11 h-11 md:w-auto md:h-auto md:px-3 md:py-1.5 flex items-center justify-center rounded-full md:rounded-lg text-xs font-medium transition-all border bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white border-transparent hover:opacity-80"
                         >
                           <Check className="w-5 h-5 md:hidden" strokeWidth={2.2} />
                           <span className="hidden md:inline">{t.revision.card.doneCta}</span>
-                        </button>
-                        <button
-                          onClick={() => handleReviewNow(item.id)}
-                          aria-label={isReviewing ? t.revision.card.reviewingCta : t.revision.card.reviewNowCta}
-                          title={isReviewing ? t.revision.card.reviewingCta : t.revision.card.reviewNowCta}
-                          className="w-11 h-11 md:w-auto md:h-auto md:px-3 md:py-1.5 flex items-center justify-center rounded-full md:rounded-lg border border-gray-200 dark:border-white/10 text-gray-600 dark:text-white/70 text-xs font-medium hover:bg-gray-100 dark:hover:bg-white/10 transition"
-                        >
-                          <Play className="w-5 h-5 md:hidden" strokeWidth={1.75} fill={isReviewing ? 'currentColor' : 'none'} />
-                          <span className="hidden md:inline">{isReviewing ? t.revision.card.reviewingCta : t.revision.card.reviewNowCta}</span>
                         </button>
                       </>
                     )}
