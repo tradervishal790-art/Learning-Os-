@@ -74,6 +74,7 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
   const modeBeforePresent = useRef<InkMode>('type');
   const [prefs, setPrefs, resetPrefs] = useInkPrefs();
   const [activePage, setActivePage] = useState<string | null>(null);
+  const [viewPage, setViewPage] = useState<string | null>(null);
   // Handwriting per page. The ref is the source of truth so two quick strokes never read stale data.
   const [ink, setInk] = useState<Record<string, InkStroke[]>>({});
   const inkRef = useRef<Record<string, InkStroke[]>>({});
@@ -304,22 +305,25 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
   };
 
   const undoInk = () => {
-    const h = activePage ? hist.current[activePage] : undefined;
-    if (!activePage || !h || h.undo.length === 0) return;
-    h.redo.push(inkRef.current[activePage] ?? []);
-    applyInk(activePage, h.undo.pop() as InkStroke[]);
+    const targetPage = viewPage ?? activePage;
+    const h = targetPage ? hist.current[targetPage] : undefined;
+    if (!targetPage || !h || h.undo.length === 0) return;
+    h.redo.push(inkRef.current[targetPage] ?? []);
+    applyInk(targetPage, h.undo.pop() as InkStroke[]);
   };
 
   const redoInk = () => {
-    const h = activePage ? hist.current[activePage] : undefined;
-    if (!activePage || !h || h.redo.length === 0) return;
-    h.undo.push(inkRef.current[activePage] ?? []);
-    applyInk(activePage, h.redo.pop() as InkStroke[]);
+    const targetPage = viewPage ?? activePage;
+    const h = targetPage ? hist.current[targetPage] : undefined;
+    if (!targetPage || !h || h.redo.length === 0) return;
+    h.undo.push(inkRef.current[targetPage] ?? []);
+    applyInk(targetPage, h.redo.pop() as InkStroke[]);
   };
 
   const eraseWholePage = () => {
-    if (!activePage || (inkRef.current[activePage] ?? []).length === 0) return;
-    if (window.confirm(t.ink.eraseAllConfirm)) commitInk(activePage, []);
+    const targetPage = viewPage ?? activePage;
+    if (!targetPage || (inkRef.current[targetPage] ?? []).length === 0) return;
+    if (window.confirm(t.ink.eraseAllConfirm)) commitInk(targetPage, []);
   };
 
   // ---------- selecting & editing handwriting ----------
@@ -349,7 +353,8 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
   };
 
   const selectAll = () => {
-    if (activePage) selectOn(activePage, (inkRef.current[activePage] ?? []).map((x) => x.id));
+    const targetPage = viewPage ?? activePage;
+    if (targetPage) selectOn(targetPage, (inkRef.current[targetPage] ?? []).map((x) => x.id));
   };
   const deleteSel = () =>
     withSelection((pg, ids, all) => {
@@ -368,7 +373,7 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
     selectOn(pg, copies.map((x) => x.id));
   };
   const pasteSel = () => {
-    const pg = activePage ?? latest.current.pages[0]?.id;
+    const pg = viewPage ?? activePage ?? latest.current.pages[0]?.id;
     if (pg && getClipboard().length > 0) pasteInto(pg, getClipboard());
   };
   const duplicateSel = () =>
@@ -447,9 +452,10 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
       const el = e.target as HTMLElement | null;
       if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT')) return;
       const photos = Array.from(e.clipboardData?.files ?? []).filter((f) => f.type.startsWith('image/'));
-      if (photos.length === 0 || !activePage) return;
+      const targetPage = viewPage ?? activePage;
+      if (photos.length === 0 || !targetPage) return;
       e.preventDefault();
-      requestAttach(activePage, 'photo', photos);
+      requestAttach(targetPage, 'photo', photos);
     };
     window.addEventListener('paste', onPaste);
     return () => window.removeEventListener('paste', onPaste);
@@ -1004,8 +1010,6 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
       if (document.fullscreenElement) void document.exitFullscreen().catch(() => {});
     };
   }, [focusMode, isDesktop]);
-  const [viewPage, setViewPage] = useState<string | null>(null);
-
   // Which page is on screen (for the thumbnail highlight). Separate from `activePage`, which is where
   // the student last wrote and which Undo applies to.
   useEffect(() => {
