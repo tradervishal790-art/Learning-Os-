@@ -143,7 +143,7 @@ const pageTitle = (p: NotePage, i: number, pages: NotePage[]) =>
   p.pdf ? `${p.pdf.name} · ${p.pdf.pageNumber}` : pages.length > 1 ? `Page ${i + 1}` : '';
 
 export function noteToMarkdown(title: string, pages: NotePage[]): string {
-  const safeTitle = (title.trim() || 'Untitled').replace(/([\\\\`*_{}\\[\\]()#+.!|>~-])/g, '\\\\$1');
+  const safeTitle = Array.from(title.trim() || 'Untitled').map((ch) => '\\`*_{}[]()#+.!|>~-'.includes(ch) ? '\\' + ch : ch).join('');
   const parts = [`# ${safeTitle}`];
   pages.forEach((p, i) => {
     const heading = pageTitle(p, i, pages);
