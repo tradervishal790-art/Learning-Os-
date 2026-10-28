@@ -53,7 +53,8 @@ function inline(node: Node): string {
       // Do not emit active javascript:/data: links into exported Markdown.
       const safeHref = /^(?:https?:|mailto:|tel:|\/|#|\.\.?\/)/i.test(href) ? href : '';
       const label = inner.trim();
-      return safeHref && label ? `[${label}](${safeHref.replace(/([()\\s])/g, '\\$1')})` : inner;
+      const markdownHref = safeHref.replace(/ /g, '%20').replace(/\(/g, '%28').replace(/\)/g, '%29');
+      return safeHref && label ? `[${label}](${markdownHref})` : inner;
     }
     case 'BR':
       return '  \n';
