@@ -51,6 +51,13 @@ Base: `main` (no changes made directly to `main`)
 - **Evidence:** deletion of an ink document depends on the in-memory `inkSigs` cache containing that page key. A session that has not populated the signature cache may skip deleting a cloud ink document when local content no longer has ink.
 - **Status:** code-path risk; needs a targeted mocked-cloud regression test before calling it a reproduced bug.
 
+### 8. Daily-test backups accepted malformed question objects — fixed on this branch
+- **Severity:** Medium (daily-test screen could fail on corrupted/imported data)
+- **Location:** `src/dailyTestStore.ts`
+- **Evidence:** the prior state guard checked only that `bank` was an array. A backup containing `null` or malformed question fields could pass import and later crash code that reads `question`, `options`, or `modelAnswer`.
+- **Change:** validate question/paper shape, state ranges, and queue IDs before accepting a backup; guard the ready-question predicate against malformed runtime values.
+- **Regression test:** `tests/daily-test-backup.test.mjs` covers malformed and valid backup imports.
+
 ## Validation and limits
 
 - The Notes font-preservation commit on PR #70 passed its GitHub Actions CI: install, lint, TypeScript/build, and test steps all succeeded.
