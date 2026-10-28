@@ -150,7 +150,12 @@ export function noteToMarkdown(title: string, pages: NotePage[]): string {
 }
 
 export function noteToText(title: string, pages: NotePage[]): string {
-  const body = pages.map((p) => p.text.trim()).filter(Boolean).join('\n\n');
+  const body = pages.map((p, i) => {
+    const heading = pageTitle(p, i, pages);
+    const text = p.text.trim();
+    // Keep PDF/page boundaries in plain-text exports, including pages with no extracted text.
+    return heading ? [heading, text].filter(Boolean).join('\n') : text;
+  }).filter(Boolean).join('\n\n');
   return `${title.trim() || 'Untitled'}\n\n${body}\n`;
 }
 
