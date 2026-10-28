@@ -29,7 +29,7 @@ export type ParseBackupResult =
   | { ok: true; notes: BackupNote[]; warnings: string[]; files: number }
   | { ok: false; error: BackupError };
 
-const INK_KINDS: readonly string[] = ['ballpoint', 'fountain', 'felt', 'pencil', 'brush', 'calligraphy', 'fineliner', 'marker', 'dotted', 'highlighter'];
+const INK_KINDS: readonly string[] = ['ballpoint', 'fountain', 'felt', 'pencil', 'brush', 'calligraphy', 'fineliner', 'marker', 'dotted', 'highlighter', 'calligraphyBrush', 'airbrush', 'oil', 'crayon', 'natural', 'watercolor'];
 const MOMENT_KINDS: readonly string[] = ['confusing', 'important', 'revisit'];
 const STATUSES: readonly string[] = ['not-started', 'learning', 'needs-revision', 'mastered'];
 const LIMIT = {
@@ -134,7 +134,7 @@ function parseStroke(raw: unknown, where: string, w: Warnings): InkStroke | null
     pts[i] = v;
   }
   if (arr.length > LIMIT.ptsValues) w.add(`${where}: stroke ${id} was shortened (too many points)`);
-  return { id, kind: raw.kind as InkKind, color: raw.color, width: raw.width, pts, sim: raw.sim === true, sm: raw.sm ?? 0 };
+  return { id, kind: raw.kind as InkKind, color: raw.color, width: raw.width, pts, sim: raw.sim === true, sm: isNum(raw.sm) ? Math.min(1, Math.max(0, raw.sm)) : 0 };
 }
 
 function parseAttachments(raw: unknown, where: string, w: Warnings): PageAttachment[] {
@@ -153,10 +153,10 @@ function parseAttachments(raw: unknown, where: string, w: Warnings): PageAttachm
     const num = (v: unknown): number | undefined => (typeof v === 'number' && Number.isFinite(v) ? v : undefined);
     const px = num(a.x), py = num(a.y), pw = num(a.w), par = num(a.ar);
     if (a.kind === 'image' && px !== undefined && py !== undefined && pw !== undefined && pw > 0) {
-      item.x = px;
-      item.y = py;
-      item.w = pw;
-      if (par !== undefined && par > 0) item.ar = par;
+      item.x = Math.min(1000, Math.max(0, px));
+      item.y = Math.min(1414, Math.max(0, py));
+      item.w = Math.min(1000, Math.max(1, pw));
+      if (par !== undefined && par > 0) item.ar = Math.min(10, Math.max(0.05, par));
     }
     out.push(item);
   }
@@ -242,7 +242,7 @@ function parseVideo(raw: unknown, where: string, w: Warnings): NoteVideo | undef
   const rawMoments: unknown[] = Array.isArray(raw.moments) ? (raw.moments as unknown[]) : [];
   for (const m of rawMoments.slice(0, LIMIT.moments)) {
     const id = isRecord(m) ? shortId(m.id) : null;
-    if (!isRecord(m) || id === null || !isNum(m.seconds) || m.seconds < 0 || typeof m.kind !== 'string' || !MOMENT_KINDS.includes(m.kind)) {
+    if (!isRecord(m) || id === null || !isNum(m.seconds) || m.seconds < 0 || m.seconds > 1_000_000 || typeof m.kind !== 'string' || !MOMENT_KINDS.includes(m.kind)) {
       w.add(`${where}: a video moment was dropped (bad data)`);
       continue;
     }
@@ -300,7 +300,8 @@ function parseNote(raw: unknown, where: string, w: Warnings, allowNoId: boolean)
   if (typeof raw.archived === 'boolean') note.archived = raw.archived;
   if (typeof raw.status === 'string' && STATUSES.includes(raw.status)) note.status = raw.status as StudyStatus;
   if (isNum(raw.confidence) && raw.confidence >= 1 && raw.confidence <= 5) note.confidence = Math.round(raw.confidence);
-  if (typeof raw.examDate === 'string' && DATE_RE.test(raw.examDate)) note.examDate = raw.examDate;
+  if (typeof raw.examDate === 'string' && DATE_RE.test(raw.examDate) && Number.isFinite(Date.parse(`${raw.examDate}T00:00:00Z`)) && new Date(`${raw.examDate}T00:00:00Z`).toISOString().slice(0, 10) === raw.examDate) note.examDate = raw.examDate;
+  else if (raw.examDate !== undefined) w.add(`${where}: exam date ignored (invalid calendar date)`);
   return note;
 }
 
@@ -392,7 +393,10 @@ export function planImport(
 
   const freshId = (): string => {
     let id = newId();
-    for (let i = 0; i < 20 && (used.has(id) || seenIncoming.has(id)); i++) id = newId();
+    let attempts = 0;
+    while (used.has(id) || seenIncoming.has(id)) {
+      id = `${newId()}_${++attempts}`;
+    }
     return id;
   };
 
