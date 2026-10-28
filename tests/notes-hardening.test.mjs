@@ -48,6 +48,10 @@ test('Markdown export uses safe fences around code containing triple backticks',
   const md = htmlToMarkdown('<pre><code>const fence = ' + ticks.repeat(3) + ';</code></pre>');
   assert.ok(md.startsWith(ticks.repeat(4) + String.fromCharCode(10)));
   assert.ok(md.endsWith(String.fromCharCode(10) + ticks.repeat(4)));
+  const { noteToMarkdown } = await loadTs('src/noteExport.ts');
+  const titleMd = noteToMarkdown('# *unsafe*', [{ id: 'p', text: 'ok', html: '<p>ok</p>' }]);
+  const slash = String.fromCharCode(92);
+  assert.ok(titleMd.startsWith('# ' + slash + '# ' + slash + '*unsafe' + slash + '*'));
 });
 
 test('manual versions saved in the same millisecond do not overwrite one another', async () => {
