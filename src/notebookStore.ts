@@ -440,6 +440,8 @@ async function pushIndex(): Promise<void> {
 }
 
 const contentTimers = new Map<string, ReturnType<typeof setTimeout>>();
+/** Serialize cloud writes per note so a slow older upload cannot overwrite a newer save. */
+const contentPushQueues = new Map<string, Promise<boolean>>();
 
 /** Page ids each note had the last time we saw it, so a deleted page can be spotted on the next save. */
 const knownPageIds = new Map<string, string[]>();
@@ -477,15 +479,25 @@ function scheduleContentPush(id: string, content: NoteContent): void {
     id,
     setTimeout(async () => {
       contentTimers.delete(id);
-      const ok = await pushContent(content);
+      // Queue per note: saves can arrive while a cloud write is in flight. Never allow
+      // an older, slower write to finish after and overwrite a newer snapshot.
+      const previousPush = contentPushQueues.get(id) ?? Promise.resolve(true);
+      const pushTask = previousPush.catch(() => false).then(() => pushContent(content));
+      contentPushQueues.set(id, pushTask);
+      const ok = await pushTask;
+      const isLatestPush = contentPushQueues.get(id) === pushTask;
+      if (isLatestPush) contentPushQueues.delete(id);
       if (ok) cleanRemovedPages(id);
-      pendingContent.delete(id);
-      if (ok) {
-        // Index goes AFTER the note itself, so another device that sees the new index can always fetch the new content.
-        clearTimeout(indexPushTimer);
-        indexPushTimer = undefined;
-        await pushIndex();
-      } else settleStatus(false);
+      // A newer save may already be queued or waiting for its debounce timer.
+      if (isLatestPush && !contentTimers.has(id)) {
+        pendingContent.delete(id);
+        if (ok) {
+          // Publish the index only after the latest content snapshot is in the cloud.
+          clearTimeout(indexPushTimer);
+          indexPushTimer = undefined;
+          await pushIndex();
+        } else settleStatus(false);
+      }
     }, 2500)
   );
 }
