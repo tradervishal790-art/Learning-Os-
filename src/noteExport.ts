@@ -16,7 +16,7 @@ const BLOCK = new Set(['P', 'DIV', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'UL', 'OL
 function inline(node: Node): string {
   if (node.nodeType === Node.TEXT_NODE) return (node.textContent ?? '').replace(/\s+/g, ' ');
   if (node.nodeType !== Node.ELEMENT_NODE) return '';
-  const el = node as Element;
+  const el = node as HTMLElement;
   if (el.hasAttribute('data-video-ts')) return `[${(el.textContent ?? '').replace(/[▶\s]+/g, ' ').trim()}]`;
   const inner = Array.from(el.childNodes).map(inline).join('');
   switch (el.tagName) {
