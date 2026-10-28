@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { RotateCcw, Route, FileText, Flame, TriangleAlert, CalendarDays, Star, LayoutGrid, Target, PenLine, Check, Play, Sprout, PartyPopper, Gauge } from 'lucide-react';
+import { RotateCcw, Route, FileText, Flame, TriangleAlert, CalendarDays, Star, Target, PenLine, Check, Play, Sprout, PartyPopper } from 'lucide-react';
 import type { ReactNode } from 'react';
 import NotesToRevise from './NotesToRevise';
-import { getRevisionStats, getRevisionDataForGoals } from './revisionData';
+import { getRevisionDataForGoals } from './revisionData';
 import { markDayReviewed, hydrateRevisionFromCloud } from './revisionstore';
-import { getRecallAccuracy, getRecallTrend, hydrateRecallScoresFromCloud, saveRecallRating, type RecallRating, type RecallTrendPoint } from './revisionRecallStore';
+import { hydrateRecallScoresFromCloud, saveRecallRating, type RecallRating } from './revisionRecallStore';
 import { markTopicFinished } from './roadmapData';
 import type { RevisionStatus, RevisionDifficulty, RevisionItem, Goal } from './types';
 import { useTranslation } from './i18n/LanguageContext';
@@ -21,21 +21,11 @@ const statusIcons: Record<RevisionStatus, ReactNode> = {
   mastered: <Star className="w-3 h-3" strokeWidth={2} fill="currentColor" />,
 };
 
-const FILTER_ICONS: Record<FilterId, typeof Flame> = {
-  all: LayoutGrid,
-  'due-today': Flame,
-  overdue: TriangleAlert,
-  upcoming: CalendarDays,
-  mastered: Star,
-};
-
 const difficultyConfig: Record<RevisionDifficulty, string> = {
   Easy: 'text-gray-500 dark:text-white/60',
   Medium: 'text-gray-600 dark:text-white/70',
   Hard: 'text-gray-700 dark:text-white/80',
 };
-
-type FilterId = 'all' | RevisionStatus;
 
 interface RevisionProps {
   /** All goals — used to pull spaced-repetition items from EVERY active
@@ -60,14 +50,11 @@ export default function Revision({ goals = [] }: RevisionProps) {
     Medium: t.revision.difficultyLabels.medium,
     Hard: t.revision.difficultyLabels.hard,
   };
-  const [filter, setFilter] = useState<FilterId>('all');
   // Live-computed from the actual roadmap(s) (see revisionData.ts) — held in
   // state (not recomputed on every render) so "Mark Done" can trigger a
   // real refresh after persisting to revisionStore.
   const [items, setItems] = useState<(RevisionItem & { goalTitle?: string })[]>(() => getRevisionDataForGoals(t.revisionTasks, goals));
   const [reviewingId, setReviewingId] = useState<string | null>(null);
-  const [recallAccuracy, setRecallAccuracy] = useState<number | null>(() => getRecallAccuracy());
-  const [recallTrend, setRecallTrend] = useState<RecallTrendPoint[]>(() => getRecallTrend());
 
   // ON-DEMAND CLOUD HYDRATION: only pulled down when the Revision page is
   // actually opened, not upfront on sign-in. No-op if this device already
@@ -75,8 +62,6 @@ export default function Revision({ goals = [] }: RevisionProps) {
   useEffect(() => {
     void Promise.all([hydrateRevisionFromCloud(), hydrateRecallScoresFromCloud()]).then(() => {
       setItems(getRevisionDataForGoals(t.revisionTasks, goals));
-      setRecallAccuracy(getRecallAccuracy());
-      setRecallTrend(getRecallTrend());
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -105,14 +90,12 @@ export default function Revision({ goals = [] }: RevisionProps) {
 
   const handleRecallRating = (item: RevisionItem & { goalId?: string }, rating: RecallRating) => {
     saveRecallRating(item.topicId, item.day, rating);
-    setRecallAccuracy(getRecallAccuracy());
-    setRecallTrend(getRecallTrend());
     handleMarkDone(item);
   };
 
-  const stats = getRevisionStats(items);
-
-  const filteredItems = filter === 'all' ? items : items.filter((i) => i.status === filter);
+  // Only what the learner has to revise NOW (already sorted overdue first).
+  // Upcoming and mastered checkpoints are deliberately not shown here.
+  const dueItems = items.filter((i) => i.status === 'overdue' || i.status === 'due-today');
 
   return (
     <div className="p-4 md:p-8 max-w-6xl mx-auto text-black dark:text-white">
@@ -151,82 +134,10 @@ export default function Revision({ goals = [] }: RevisionProps) {
       ) : (
         <>
       <NotesToRevise />
-      {/* Top stats — one surface, icon-first on phones */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.5 }} className="rounded-2xl card overflow-hidden grid grid-cols-4 divide-x divide-gray-200 dark:divide-white/10 mb-5 md:mb-8">
-        {[
-          { label: t.revision.stats.dueToday, value: String(stats.dueToday), Icon: Flame },
-          { label: t.revision.stats.overdue, value: String(stats.overdue), Icon: TriangleAlert },
-          { label: t.revision.stats.mastered, value: String(stats.mastered), Icon: Star },
-          { label: 'Recall accuracy', value: recallAccuracy === null ? '—' : `${recallAccuracy}%`, Icon: Gauge },
-        ].map(({ label, value, Icon }) => (
-          <div key={label} title={label} aria-label={`${label}: ${value}`} className="px-2 md:px-4 py-3 md:py-4 text-center md:text-left min-w-0">
-            <Icon className="md:hidden w-5 h-5 mx-auto mb-1 text-gray-500 dark:text-white/50" strokeWidth={1.75} />
-            <div className="hidden md:block text-xs text-gray-400 dark:text-white/40 uppercase tracking-wider mb-1">{label}</div>
-            <div className="text-xl md:text-3xl font-bold tabular-nums">{value}</div>
-          </div>
-        ))}
-      </motion.div>
-
-      {/* Observed recall trend — blank days are intentionally not treated as failures. */}
-      <section className="rounded-2xl card border border-gray-200 dark:border-white/10 p-4 mb-5 md:mb-6" aria-label="Seven-day recall trend">
-        <div className="flex items-center justify-between gap-3 mb-3">
-          <h2 className="text-sm font-semibold">7-day recall trend</h2>
-          <span className="text-xs text-gray-400 dark:text-white/50">Based on your ratings</span>
-        </div>
-        <div className="grid grid-cols-7 gap-2 items-end">
-          {recallTrend.map((point) => (
-            <div key={point.date} className="min-w-0 text-center">
-              <div className="h-12 flex items-end justify-center mb-1">
-                <div
-                  title={point.accuracy === null ? 'No ratings' : `${point.accuracy}% recall accuracy · ${point.attempts} rating(s)`}
-                  className={`w-full max-w-8 rounded-t-md ${point.accuracy === null ? 'bg-gray-200 dark:bg-white/10' : 'bg-indigo-500 dark:bg-indigo-400'}`}
-                  style={{ height: point.accuracy === null ? '4px' : `${Math.max(6, Math.round(point.accuracy * 0.44))}px` }}
-                />
-              </div>
-              <div className="text-[10px] text-gray-500 dark:text-white/50">{point.label}</div>
-              <div className="text-[10px] font-medium tabular-nums">{point.accuracy === null ? '—' : `${point.accuracy}%`}</div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Filter tabs */}
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2, duration: 0.5 }} className="flex gap-2 mb-4 md:mb-6 overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {(
-          [
-            { id: 'all', label: t.revision.filters.all, count: stats.total },
-            { id: 'due-today', label: t.revision.filters.dueToday, count: stats.dueToday },
-            { id: 'overdue', label: t.revision.filters.overdue, count: stats.overdue },
-            { id: 'upcoming', label: t.revision.filters.upcoming, count: stats.upcoming },
-            { id: 'mastered', label: t.revision.filters.mastered, count: stats.mastered },
-          ] as { id: FilterId; label: string; count: number }[]
-        ).map((tab) => {
-          const FilterIcon = FILTER_ICONS[tab.id];
-          return (
-          <button
-            key={tab.id}
-            onClick={() => setFilter(tab.id)}
-            aria-label={tab.label}
-            title={tab.label}
-            aria-pressed={filter === tab.id}
-            className={`flex-shrink-0 h-11 px-4 inline-flex items-center gap-2 rounded-full text-sm font-medium whitespace-nowrap transition-all border ${
-              filter === tab.id
-                ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white border-transparent'
-                : 'card border-transparent text-gray-500 dark:text-white/60 hover:bg-gray-50 dark:hover:bg-white/10'
-            }`}
-          >
-            <FilterIcon className="w-4 h-4" strokeWidth={1.75} />
-            <span className="hidden md:inline">{tab.label}</span>
-            <span className="opacity-60 tabular-nums">{tab.count}</span>
-          </button>
-          );
-        })}
-      </motion.div>
-
       {/* Revision cards */}
       <div className="space-y-3">
         <AnimatePresence>
-          {filteredItems.map((item, i) => {
+          {dueItems.map((item, i) => {
             const statusIcon = statusIcons[item.status];
             const statusLabel = statusLabels[item.status];
             const isReviewing = reviewingId === item.id;
@@ -338,14 +249,14 @@ export default function Revision({ goals = [] }: RevisionProps) {
         </AnimatePresence>
       </div>
 
-      {filteredItems.length === 0 && items.length === 0 && (
+      {dueItems.length === 0 && items.length === 0 && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-8 md:p-12 text-center">
           <Sprout className="w-12 h-12 mx-auto mb-4 text-gray-400 dark:text-white/40" strokeWidth={1.5} />
           <h3 className="text-xl font-semibold mb-2">{t.revision.emptyState.noRevisionTitle}</h3>
           <p className="text-gray-400 dark:text-white/60">{t.revision.emptyState.noRevisionBody}</p>
         </motion.div>
       )}
-      {filteredItems.length === 0 && items.length > 0 && (
+      {dueItems.length === 0 && items.length > 0 && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-8 md:p-12 text-center">
           <PartyPopper className="w-12 h-12 mx-auto mb-4 text-gray-400 dark:text-white/40" strokeWidth={1.5} />
           <h3 className="text-xl font-semibold mb-2">{t.revision.emptyState.allCaughtUpTitle}</h3>
