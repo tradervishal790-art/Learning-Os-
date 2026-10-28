@@ -646,16 +646,20 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
       const count = Math.min(total, MAX_PDF_PAGES);
       const fileId = newAttachId('pd');
       const added: NotePage[] = [];
-      for (let n = 1; n <= count; n++) {
-        let text = '';
-        try {
-          text = (await doc.getText(n)).slice(0, 20000); // so search and the AI tools can read the PDF too
-        } catch {
-          // a page without readable text is still a fine page
+      try {
+        for (let n = 1; n <= count; n++) {
+          let text = '';
+          try {
+            text = (await doc.getText(n)).slice(0, 20000); // so search and the AI tools can read the PDF too
+          } catch {
+            // a page without readable text is still a fine page
+          }
+          added.push({ id: newPageId(), text, html: '<p></p>', ink: [], pdf: { fileId, pageNumber: n, name: file.name } });
         }
-        added.push({ id: newPageId(), text, html: '<p></p>', ink: [], pdf: { fileId, pageNumber: n, name: file.name } });
+      } finally {
+        // Release PDF.js workers and buffers even if text extraction unexpectedly fails.
+        doc.destroy();
       }
-      doc.destroy();
       await putPdf(fileId, file, file.name);
       const cur = latest.current.pages;
       const onlyEmpty = cur.length === 1 && !cur[0].text.trim() && !(inkRef.current[cur[0].id]?.length) && !(cur[0].attachments?.length) && !cur[0].pdf;
