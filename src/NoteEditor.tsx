@@ -249,7 +249,8 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
   // Ctrl/Cmd+S saves — also while typing in the note (the old shortcut ignored text fields).
   useEffect(() => {
     const onSave = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+      // Ctrl/Cmd+Shift+S belongs to the editor's strikethrough shortcut, not cloud save.
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 's') {
         e.preventDefault();
         void save();
       }
