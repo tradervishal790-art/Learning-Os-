@@ -23,11 +23,14 @@ const PreserveTypingMarks = Extension.create({
         appendTransaction(transactions, oldState, newState) {
           if (!newState.selection.empty || newState.storedMarks?.length) return null;
           const changedDocument = transactions.some((tr) => tr.docChanged);
-          // Preserve formatting after deleting selected text, or when moving into an empty line.
-          // Do not carry stale marks into an existing paragraph with its own content.
-          const movedToEmptyLine = !changedDocument && newState.selection.$from.parent.content.size === 0;
-          if (!changedDocument && !movedToEmptyLine) return null;
           const oldSelection = oldState.selection;
+          // Preserve marks after deleting a non-empty selection, not after arbitrary document edits.
+          const deletedSelection = changedDocument && !oldSelection.empty;
+          // Moving the caret into an empty line is a separate, intentional preservation case.
+          const movedToEmptyLine = !changedDocument
+            && transactions.some((tr) => tr.selectionSet)
+            && newState.selection.$from.parent.content.size === 0;
+          if (!deletedSelection && !movedToEmptyLine) return null;
           const previousMarks = oldState.storedMarks
             ?? (oldSelection.empty
               ? oldSelection.$from.marks()
