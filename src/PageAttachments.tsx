@@ -2,8 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { RotateCw, Trash2 } from 'lucide-react';
 import type { PageAttachment } from './notebookStore';
 import { PAGE_UNITS } from './inkEngine';
-import { deleteImage, getImage, newAttachId, putImage } from './attachStore';
-import { deleteAudio, getAudio, putAudio, updateBookmarks, type AudioMeta } from './audioStore';
+import { getImage, newAttachId, putImage } from './attachStore';
+import { getAudio, putAudio, updateBookmarks, type AudioMeta } from './audioStore';
 import ScreenCrop from './ScreenCrop';
 import { ImageError, compressImage, cropRotateFlip, scanFilter } from './imageTools';
 import AudioRecorder from './AudioRecorder';
@@ -156,7 +156,8 @@ export default function PageAttachments({
     if (!window.confirm(t('removeConfirm'))) return;
     listRef.current = listRef.current.filter((x) => x.id !== a.id);
     onChange(listRef.current);
-    void (a.kind === 'image' ? deleteImage(a.id) : deleteAudio(a.id)).catch(() => undefined);
+    // Remove only the note reference. A copied page or note may still reference this blob;
+    // deleting it here would silently break that other attachment. Orphan cleanup can be done safely by a ref-counted sweep.
   };
 
   const saveRecording = async (r: { blob: Blob; mime: string; durationSec: number; bookmarks: number[] }) => {
@@ -246,6 +247,8 @@ function ImageCard({ a, labels, onRemove }: { a: PageAttachment; labels: Record<
   useEffect(() => {
     let alive = true;
     let made: string | null = null;
+    setUrl(null);
+    setMissing(false);
     void getImage(a.id)
       .then((blob) => {
         if (!alive) return;
@@ -349,12 +352,14 @@ function AudioCard({ a, labels, onRemove }: { a: PageAttachment; labels: Record<
           labels={labels}
           onBookmarksChange={(next) => {
             setClip({ ...clip, meta: { ...clip.meta, bookmarks: next } });
-            void updateBookmarks(a.id, next).catch(() => undefined);
+            setBookmarkError(false);
+            void updateBookmarks(a.id, next).catch(() => setBookmarkError(true));
           }}
         />
       ) : (
         <div className="h-14 animate-pulse rounded-lg bg-gray-100 dark:bg-white/5" />
       )}
+      {bookmarkError && <p role="alert" className="mt-1 text-xs text-red-600 dark:text-red-400">{t('errStorage')}</p>}
       <div className="mt-2 flex justify-end">
         <button type="button" className={BTN} onClick={onRemove} aria-label={t('remove')} title={t('remove')}>
           <Trash2 size={14} />
