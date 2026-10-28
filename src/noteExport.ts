@@ -29,8 +29,20 @@ function inline(node: Node): string {
     case 'S':
     case 'DEL':
       return inner.trim() ? `~~${inner.trim()}~~` : '';
+    case 'U':
+    case 'INS':
+      return inner.trim() ? `<u>${inner.trim()}</u>` : '';
+    case 'SUB':
+      return inner.trim() ? `<sub>${inner.trim()}</sub>` : '';
+    case 'SUP':
+      return inner.trim() ? `<sup>${inner.trim()}</sup>` : '';
     case 'MARK':
       return inner.trim() ? `==${inner.trim()}==` : '';
+    case 'SPAN': {
+      const color = el.style.color.trim();
+      const hex = /^#[0-9a-f]{3}(?:[0-9a-f]{3})?$/i.test(color) ? color : '';
+      return inner.trim() && hex ? `<span style="color: ${hex}">${inner.trim()}</span>` : inner;
+    }
     case 'CODE':
       return inner ? `\`${inner}\`` : '';
     case 'A': {
