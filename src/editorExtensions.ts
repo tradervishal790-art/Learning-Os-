@@ -21,9 +21,12 @@ const PreserveTypingMarks = Extension.create({
     return [
       new Plugin({
         appendTransaction(transactions, oldState, newState) {
-          if (!transactions.some((tr) => tr.docChanged) || !newState.selection.empty || newState.storedMarks?.length) {
-            return null;
-          }
+          if (!newState.selection.empty || newState.storedMarks?.length) return null;
+          const changedDocument = transactions.some((tr) => tr.docChanged);
+          // Preserve formatting after deleting selected text, or when moving into an empty line.
+          // Do not carry stale marks into an existing paragraph with its own content.
+          const movedToEmptyLine = !changedDocument && newState.selection.$from.parent.content.size === 0;
+          if (!changedDocument && !movedToEmptyLine) return null;
           const oldSelection = oldState.selection;
           const previousMarks = oldState.storedMarks
             ?? (oldSelection.empty
