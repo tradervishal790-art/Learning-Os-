@@ -688,10 +688,12 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
         g.pages.push({ pageNumber: p.pdf.pageNumber, strokes: inkRef.current[p.id] ?? [] });
         groups.set(p.pdf.fileId, g);
       }
+      let missingFile = false;
+      let exportedCount = 0;
       for (const [fileId, g] of groups) {
         const blob = await getPdf(fileId);
         if (!blob) {
-          flash(t.attach.pdfMissing);
+          missingFile = true;
           continue;
         }
         const bytes = await exportAnnotatedPdf(await blob.arrayBuffer(), g.pages);
@@ -702,9 +704,12 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
         document.body.appendChild(a);
         a.click();
         a.remove();
+        exportedCount += 1;
         setTimeout(() => URL.revokeObjectURL(url), 10_000);
       }
-      flash(t.attach.pdfExportDone);
+      if (missingFile) flash(t.attach.pdfMissing);
+      else if (exportedCount > 0) flash(t.attach.pdfExportDone);
+      else flash(t.attach.pdfExportFail);
     } catch {
       flash(t.attach.pdfExportFail);
     }
