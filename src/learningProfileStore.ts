@@ -36,6 +36,30 @@ export function getLearningProfile(): LearningProfile | null {
   }
 }
 
+/**
+ * Midpoint profile used ONLY to pick a lecture when the learner skipped the
+ * style quiz — so "Watch" never dead-ends on a quiz. It is never saved, so the
+ * quiz still shows as not done. `declined` keeps downstream AI from treating it
+ * as a real self-report.
+ */
+export const NEUTRAL_LEARNING_PROFILE: LearningProfile = {
+  pace: 5,
+  theoryVsPractical: 5,
+  structureNeed: 5,
+  depth: 5,
+  languageComplexity: 5,
+  storytelling: 5,
+  repetitionNeed: 5,
+  priorKnowledgeComfort: 5,
+  reliabilityScore: 0,
+  selfReportedHonesty: 'declined',
+  completedAt: '',
+};
+
+export function getLearningProfileOrNeutral(): LearningProfile {
+  return getLearningProfile() ?? NEUTRAL_LEARNING_PROFILE;
+}
+
 export function saveLearningProfile(profile: LearningProfile): void {
   try {
     localStorage.setItem(LEARNING_PROFILE_STORAGE_KEY, JSON.stringify(profile));

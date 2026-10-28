@@ -19,7 +19,7 @@ import CurrentAffairsChip from './CurrentAffairsChip';
 import DailyHabit from './DailyHabit';
 import { analyzeAttempt, analyzeHistory } from './testAnalytics';
 import { getTestAttempts } from './testStore';
-import { getLearningProfile, saveLearningProfile, clearLearningProfile } from './learningProfileStore';
+import { getLearningProfile, getLearningProfileOrNeutral, saveLearningProfile, clearLearningProfile } from './learningProfileStore';
 import { getEngagementSessions } from './engagementStore';
 import { pushToCloud, pullFromCloud } from './cloudSync';
 import { buildCandidatePoolForConcept } from './conceptVideoPool';
@@ -500,11 +500,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
       return;
     }
 
-    const profile = getLearningProfile();
-    if (!profile) {
-      setCustomError('Complete the Learning Style Quiz first.');
-      return;
-    }
+    const profile = getLearningProfileOrNeutral();
 
     setCustomError('');
     setCustomLoading(true);

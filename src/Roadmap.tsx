@@ -8,7 +8,7 @@ import { MAX_ACTIVE_GOALS } from './goalsStore';
 import type { Topic, Video, UserOnboardingData, Goal, TopicBridge } from './types';
 import { buildCandidatePoolForConcept } from './conceptVideoPool';
 import { selectPlaylistForConceptV2, analyzedVideoToVideo, getLastTeacherForConcept } from './PlaylistBuilder';
-import { getLearningProfile } from './learningProfileStore';
+import { getLearningProfileOrNeutral } from './learningProfileStore';
 import { expandSearchQuery } from './queryExpander';
 import DeepDiveChat from './DeepDiveChat';
 import HintBubble from './HintBubble';
@@ -281,11 +281,8 @@ export default function Roadmap({
     const topic = topicArg ?? selectedTopic;
     if (!topic) return false;
 
-    const learnerProfile = getLearningProfile();
-    if (!learnerProfile) {
-      setPlaylistError('Complete the Learning Style Quiz first.');
-      return false;
-    }
+    // No quiz yet? A neutral profile still finds a good lecture — never a dead end.
+    const learnerProfile = getLearningProfileOrNeutral();
 
     setPlaylistError('');
     setPlaylistLoading(true);
