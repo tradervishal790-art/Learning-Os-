@@ -31,10 +31,13 @@ const PreserveTypingMarks = Extension.create({
             && transactions.some((tr) => tr.selectionSet)
             && newState.selection.$from.parent.content.size === 0;
           if (!deletedSelection && !movedToEmptyLine) return null;
+          // marksAcross can be empty when a deletion spans a block boundary, even
+          // though the first selected character has the user's chosen font/size/colour.
+          // Fall back to the marks at the selection start so deleting selected text keeps
+          // that formatting as the next typing style.
+          const marksAcross = oldSelection.empty ? null : oldSelection.$from.marksAcross(oldSelection.$to);
           const previousMarks = oldState.storedMarks
-            ?? (oldSelection.empty
-              ? oldSelection.$from.marks()
-              : oldSelection.$from.marksAcross(oldSelection.$to) ?? []);
+            ?? (marksAcross && marksAcross.length > 0 ? marksAcross : oldSelection.$from.marks());
           if (!previousMarks.length) return null;
           return newState.tr.setStoredMarks(previousMarks);
         },
