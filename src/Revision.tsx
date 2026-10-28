@@ -102,6 +102,8 @@ export default function Revision({ goals = [] }: RevisionProps) {
       return;
     }
     handleMarkDone(item);
+    setNotice(t.revision.recall.doneNote);
+    window.setTimeout(() => setNotice(''), 3500);
   };
 
   // Only what the learner has to revise NOW (already sorted overdue first).

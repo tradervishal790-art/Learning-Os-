@@ -44,3 +44,14 @@ test('#9 student-facing moments and playlist errors come from translations, not 
   }
   assert.ok(!read('Dashboard.tsx').includes("'Review what you learned'"));
 });
+
+test('#10 "Clear my profile" is no longer next to the home buttons; Settings asks to confirm', () => {
+  const dash = read('Dashboard.tsx');
+  assert.ok(!dash.includes('>\n                    Clear my profile'));
+  assert.match(dash, /setConfirmClearProfile\(true\)/);
+  assert.match(dash, /<ConfirmDialog[\s\S]{0,200}learningProfileSection\.clearConfirm/);
+});
+
+test('#8 finishing a checkpoint shows a small win message', () => {
+  assert.match(read('Revision.tsx'), /setNotice\(t\.revision\.recall\.doneNote\)/);
+});

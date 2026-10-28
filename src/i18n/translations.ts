@@ -133,6 +133,10 @@ export interface TranslationShape {
       hint: string;
       viewCta: string;
       hideCta: string;
+      clearCta: string;
+      clearConfirm: string;
+      clearConfirmCta: string;
+      cancelCta: string;
       dims: {
         pace: string;
         practical: string;
@@ -351,7 +355,7 @@ export interface TranslationShape {
       reviewNowCta: string;
       reviewingCta: string;
     };
-    recall: { question: string; forgot: string; partial: string; remembered: string; forgotNote: string };
+    recall: { question: string; forgot: string; partial: string; remembered: string; forgotNote: string; doneNote: string };
     emptyState: {
       noRevisionTitle: string;
       noRevisionBody: string;
@@ -1057,6 +1061,10 @@ export const translations: Record<Locale, TranslationShape> = {
         hint: 'This only shows when requested — the home page just has a short summary.',
         viewCta: 'View Full Report',
         hideCta: 'Hide Report',
+        clearCta: 'Clear my profile',
+        clearConfirm: 'Clear your learning profile? Your video picks will use a neutral style until you retake it.',
+        clearConfirmCta: 'Clear',
+        cancelCta: 'Cancel',
         dims: {
           pace: 'Pace',
           practical: 'Practical',
@@ -1606,6 +1614,7 @@ export const translations: Record<Locale, TranslationShape> = {
         partial: 'Some of it',
         remembered: 'Remembered',
         forgotNote: 'No problem — this topic comes back tomorrow.',
+        doneNote: 'Nice — checkpoint done. One step closer.',
       },
       emptyState: {
         noRevisionTitle: 'No revisions yet',
@@ -2687,6 +2696,10 @@ export const translations: Record<Locale, TranslationShape> = {
         hint: 'यह सिर्फ मांगने पर दिखती है — होम पेज पर सिर्फ छोटा सारांश होता है।',
         viewCta: 'पूरी रिपोर्ट देखें',
         hideCta: 'रिपोर्ट छुपाएं',
+        clearCta: 'मेरी प्रोफ़ाइल हटाएँ',
+        clearConfirm: 'अपनी लर्निंग प्रोफ़ाइल हटाएँ? दोबारा बनाने तक वीडियो के सुझाव सामान्य स्टाइल पर रहेंगे।',
+        clearConfirmCta: 'हटाएँ',
+        cancelCta: 'रद्द करें',
         dims: {
           pace: 'गति',
           practical: 'व्यावहारिक',
@@ -3232,6 +3245,7 @@ export const translations: Record<Locale, TranslationShape> = {
         partial: 'थोड़ा याद रहा',
         remembered: 'याद रहा',
         forgotNote: 'कोई बात नहीं — यह टॉपिक कल फिर आएगा।',
+        doneNote: 'शाबाश — चेकपॉइंट पूरा। एक कदम और आगे।',
       },
       emptyState: {
         noRevisionTitle: 'अभी कोई रिवीज़न नहीं',
@@ -4311,6 +4325,10 @@ export const translations: Record<Locale, TranslationShape> = {
         hint: 'Yeh sirf request karne par dikhta hai — home page pe sirf ek short summary hoti hai.',
         viewCta: 'View Full Report',
         hideCta: 'Hide Report',
+        clearCta: 'Meri profile hatao',
+        clearConfirm: 'Learning profile hata dein? Dobara banane tak video suggestions neutral style pe rahenge.',
+        clearConfirmCta: 'Hatao',
+        cancelCta: 'Cancel',
         dims: {
           pace: 'Pace',
           practical: 'Practical',
@@ -4857,6 +4875,7 @@ export const translations: Record<Locale, TranslationShape> = {
         partial: 'Thoda yaad raha',
         remembered: 'Yaad raha',
         forgotNote: 'Koi baat nahi — ye topic kal phir aayega.',
+        doneNote: 'Shabash — checkpoint ho gaya. Ek kadam aur aage.',
       },
       emptyState: {
         noRevisionTitle: 'Abhi koi revision nahi',

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, lazy, Suspense } from 'react';
 import type { ComponentType } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import ConfirmDialog from './ConfirmDialog';
 import { Search, Film, BookOpen, ClipboardCheck, Newspaper, Lock, Settings as SettingsIcon, Target, RotateCcw, Flame, Check, ChevronRight, ArrowLeft } from 'lucide-react';
 import PagePlaceholder from './PagePlaceholder';
 import BottomNav from './BottomNav';
@@ -417,6 +418,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
     setLearningProfile(profile);
   };
 
+  const [confirmClearProfile, setConfirmClearProfile] = useState(false);
   const handleClearProfile = () => {
     clearLearningProfile();
     setLearningProfile(null);
@@ -992,14 +994,6 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                   <Film className="w-4 h-4" strokeWidth={1.75} />
                   {t.dashboard.home.learningStyleCard.analyzeVideosCta}
                 </button>
-                {learningProfile && (
-                  <button
-                    onClick={handleClearProfile}
-                    className="text-sm text-gray-400 dark:text-white/40 hover:text-red-500 dark:hover:text-red-400 transition-colors"
-                  >
-                    Clear my profile
-                  </button>
-                )}
               </div>
             </section>
           </div>
@@ -1180,6 +1174,22 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                     >
                       {showFullProfileReport ? t.settingsModal.learningProfileSection.hideCta : t.settingsModal.learningProfileSection.viewCta}
                     </button>
+                    <button
+                      onClick={() => setConfirmClearProfile(true)}
+                      className="mt-2 text-xs text-gray-400 dark:text-white/40 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+                    >
+                      {t.settingsModal.learningProfileSection.clearCta}
+                    </button>
+                    {confirmClearProfile && (
+                      <ConfirmDialog
+                        danger
+                        message={t.settingsModal.learningProfileSection.clearConfirm}
+                        confirmLabel={t.settingsModal.learningProfileSection.clearConfirmCta}
+                        cancelLabel={t.settingsModal.learningProfileSection.cancelCta}
+                        onConfirm={() => { handleClearProfile(); setConfirmClearProfile(false); }}
+                        onCancel={() => setConfirmClearProfile(false)}
+                      />
+                    )}
                     {showFullProfileReport && (
                       <div className="mt-3">
                         <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-500 dark:text-white/60 mb-3">
