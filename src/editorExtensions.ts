@@ -1,4 +1,6 @@
 import StarterKit from '@tiptap/starter-kit';
+import { Extension } from '@tiptap/core';
+import { Plugin } from '@tiptap/pm/state';
 import { TaskList, TaskItem } from '@tiptap/extension-list';
 import { TableKit } from '@tiptap/extension-table';
 import { TextStyleKit } from '@tiptap/extension-text-style';
@@ -9,10 +11,37 @@ import TextAlign from '@tiptap/extension-text-align';
 import { Placeholder } from '@tiptap/extensions';
 import { VideoTimestamp } from './timestampNode';
 
+/**
+ * Keep the previous typing marks when a selection is deleted and leaves an empty cursor.
+ * ProseMirror clears stored marks on deletion, which made font/size/colour reset on the next keystroke.
+ */
+const PreserveTypingMarks = Extension.create({
+  name: 'preserveTypingMarks',
+  addProseMirrorPlugins() {
+    return [
+      new Plugin({
+        appendTransaction(transactions, oldState, newState) {
+          if (!transactions.some((tr) => tr.docChanged) || !newState.selection.empty || newState.storedMarks?.length) {
+            return null;
+          }
+          const oldSelection = oldState.selection;
+          const previousMarks = oldState.storedMarks
+            ?? (oldSelection.empty
+              ? oldSelection.$from.marks()
+              : oldSelection.$from.marksAcross(oldSelection.$to) ?? []);
+          if (!previousMarks.length) return null;
+          return newState.tr.setStoredMarks(previousMarks);
+        },
+      }),
+    ];
+  },
+});
+
 /** Everything the typed editor supports. Content is parsed through this
  *  schema on load, so HTML coming from the cloud can't smuggle in scripts. */
 export function buildExtensions(placeholder: string, onSeek?: (seconds: number, videoId: string | null) => void) {
   return [
+    PreserveTypingMarks,
     StarterKit.configure({
       heading: { levels: [1, 2, 3] },
       link: { openOnClick: false, autolink: true, HTMLAttributes: { rel: 'noopener noreferrer', target: '_blank' } },
