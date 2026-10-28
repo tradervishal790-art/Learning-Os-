@@ -31,7 +31,7 @@ Base: `main` (no changes made directly to `main`)
 ### 4. Live-test allow-list documents can be read by any signed-in session that knows a session code
 - **Severity:** High (participant privacy)
 - **Location:** `firestore.rules`, `liveTests/{code}/allowed/{phone}` (current rule: `allow get: if signedIn();`)
-- **Evidence:** the rule does not check that the requester owns the phone number/document. The allow-list documents contain phone and name fields, and the rule permits direct document reads to any signed-in account. Listing is host-only, but document IDs can still be queried when known/guessed.
+- **Evidence:** the rule does not check that the requester owns the phone number/document. The allow-list documents contain phone and name fields, and the rule permits direct document reads to any signed-in account. Listing is host-only, but document IDs can still be queried when known/guessed. The related `done/{phone}` rule also permits any signed-in account to read a marker containing `uid` and `phone`.
 - **Not changed here:** simply restricting reads to the host would break student joining, because the current client checks eligibility by reading this document directly. The safe fix is to move eligibility verification behind a trusted server endpoint or redesign the document so clients cannot retrieve other participants' PII, then tighten the rules. Do not deploy the current rules as if the list were private.
 
 ### 5. Several local-first stores cannot tell the user when cloud sync failed
