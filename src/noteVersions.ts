@@ -26,7 +26,6 @@ export interface VersionData {
 }
 
 export const KEEP_VERSIONS = 20;
-const MAX_BYTES = 4_000_000; // a note with a lot of handwriting can be big: skip rather than fill the device
 
 const DB = 'learning_os_versions';
 let dbp: Promise<IDBDatabase> | null = null;
@@ -74,10 +73,9 @@ export async function listVersions(noteId: string): Promise<VersionMeta[]> {
   return all.sort((a, b) => b.at.localeCompare(a.at));
 }
 
-/** Returns the saved version, or null when nothing changed since the last one (or the note is too big). */
+/** Returns the saved version, or null when an automatic snapshot duplicates the latest version. IndexedDB decides whether the device has room; do not silently discard snapshots at an arbitrary 4 MB cutoff. */
 export async function saveVersion(noteId: string, snap: VersionData, kind: VersionKind, now = new Date()): Promise<VersionMeta | null> {
   const data = JSON.stringify(snap);
-  if (data.length > MAX_BYTES) return null;
   const hash = hashOf(data);
   const existing = await listVersions(noteId);
   if (existing[0]?.hash === hash && kind === 'auto') return null;
