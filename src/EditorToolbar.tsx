@@ -220,7 +220,9 @@ export default function EditorToolbar({
       right: !!e?.isActive({ textAlign: 'right' }),
       justify: !!e?.isActive({ textAlign: 'justify' }),
       heading: e?.isActive('heading', { level: 1 }) ? '1' : e?.isActive('heading', { level: 2 }) ? '2' : e?.isActive('heading', { level: 3 }) ? '3' : 'p',
-      size: cssToSize(e?.getAttributes('textStyle').fontSize as string | undefined),
+      // When a heading has no explicit text-size mark, show its actual CSS size rather than the body default.
+      size: cssToSize(e?.getAttributes('textStyle').fontSize as string | undefined)
+        ?? (e?.isActive('heading', { level: 1 }) ? 27.2 : e?.isActive('heading', { level: 2 }) ? 22.4 : e?.isActive('heading', { level: 3 }) ? 19.2 : null),
       font: (e?.getAttributes('textStyle').fontFamily as string | undefined) ?? '',
       canUndo: !!e?.can().undo(),
       canRedo: !!e?.can().redo(),
