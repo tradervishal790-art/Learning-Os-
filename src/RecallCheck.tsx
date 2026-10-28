@@ -3,6 +3,7 @@
 // "I can actually say it". Always skippable; saved on-device only.
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { useTranslation } from './i18n/LanguageContext';
 
 const KEY = 'learning_os_recall_checks';
 
@@ -27,6 +28,7 @@ function saveRecall(entry: RecallEntry) {
 }
 
 export default function RecallCheck({ videoId, onDone }: { videoId: string; onDone: () => void }) {
+  const t = useTranslation().moments.recallCheck;
   const [text, setText] = useState('');
   const ready = text.trim().length >= 15;
 
@@ -36,15 +38,15 @@ export default function RecallCheck({ videoId, onDone }: { videoId: string; onDo
       animate={{ opacity: 1, y: 0 }}
       className="p-5 rounded-2xl card"
     >
-      <h3 className="font-semibold mb-1">Quick recall — before the next video</h3>
+      <h3 className="font-semibold mb-1">{t.title}</h3>
       <p className="text-sm text-gray-500 dark:text-white/60 mb-3">
-        Without scrolling back, write the 2–3 main things you remember. Even half-right is fine — this is what makes it stick.
+        {t.body}
       </p>
       <textarea
         value={text}
         onChange={(e) => setText(e.target.value)}
         rows={3}
-        placeholder="What I remember…"
+        placeholder={t.placeholder}
         className="w-full rounded-xl border border-gray-300 dark:border-white/20 bg-transparent p-3 text-sm outline-none focus:border-black dark:focus:border-white"
       />
       <div className="flex gap-2 mt-3">
@@ -56,10 +58,10 @@ export default function RecallCheck({ videoId, onDone }: { videoId: string; onDo
           }}
           className="px-4 py-2 rounded-xl text-sm font-medium bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white disabled:opacity-40"
         >
-          Done — next video
+          {t.doneCta}
         </button>
         <button onClick={onDone} className="px-4 py-2 rounded-xl text-sm text-gray-500 dark:text-white/50">
-          Skip
+          {t.skip}
         </button>
       </div>
     </motion.div>

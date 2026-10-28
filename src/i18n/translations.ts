@@ -359,6 +359,13 @@ export interface TranslationShape {
       allCaughtUpBody: string;
     };
   };
+  // Small student-facing moments that used to be hardcoded English.
+  moments: {
+    welcomeBack: { title: string; withTopic: string; noTopic: string; startRevision: string; openRoadmap: string; notNow: string };
+    dailyHabit: { title: string; done: string; doneCta: string; notToday: string };
+    recallCheck: { title: string; body: string; placeholder: string; doneCta: string; skip: string };
+    playlistErrors: { enterTopic: string; noVideo: string; noGoodVideo: string; buildFailed: string; generic: string };
+  };
   notebook: {
     tabNotebook: string;
     tabAi: string;
@@ -1552,6 +1559,31 @@ export const translations: Record<Locale, TranslationShape> = {
           system: 'What system does it belong to?',
           risk: "What if you don't learn it?",
         },
+      },
+    },
+    moments: {
+      welcomeBack: {
+        title: 'Welcome back',
+        withTopic: 'No pressure. Just one small thing: a quick revision of “{0}”. Five minutes is enough.',
+        noTopic: 'No pressure. Pick one topic from your roadmap and do just a little today.',
+        startRevision: 'Start 5-min revision',
+        openRoadmap: 'Open roadmap',
+        notNow: 'Not now',
+      },
+      dailyHabit: { title: "Today's habit", done: 'Nice one. See you tomorrow.', doneCta: 'Done', notToday: 'Not today' },
+      recallCheck: {
+        title: 'Quick recall — before the next video',
+        body: 'Without scrolling back, write the 2–3 main things you remember. Even half-right is fine — this is what makes it stick.',
+        placeholder: 'What I remember…',
+        doneCta: 'Done — next video',
+        skip: 'Skip',
+      },
+      playlistErrors: {
+        enterTopic: 'Enter a topic first',
+        noVideo: 'No video found. Try different words.',
+        noGoodVideo: 'No good video found. Please try again in a bit.',
+        buildFailed: 'Playlist could not be built, please try again.',
+        generic: 'Something went wrong.',
       },
     },
     revision: {
@@ -3155,6 +3187,31 @@ export const translations: Record<Locale, TranslationShape> = {
         },
       },
     },
+    moments: {
+      welcomeBack: {
+        title: 'फिर से स्वागत है',
+        withTopic: 'कोई दबाव नहीं। बस एक छोटा काम: “{0}” का एक छोटा रिवीजन। पाँच मिनट काफ़ी हैं।',
+        noTopic: 'कोई दबाव नहीं। अपने रोडमैप से एक टॉपिक चुनें और आज बस थोड़ा सा करें।',
+        startRevision: '5 मिनट का रिवीजन शुरू करें',
+        openRoadmap: 'रोडमैप खोलें',
+        notNow: 'अभी नहीं',
+      },
+      dailyHabit: { title: 'आज की आदत', done: 'शाबाश! कल मिलते हैं।', doneCta: 'हो गया', notToday: 'आज नहीं' },
+      recallCheck: {
+        title: 'जल्दी याद करें — अगले वीडियो से पहले',
+        body: 'पीछे गए बिना, जो 2–3 मुख्य बातें याद हैं वो लिखें। आधा सही भी चलेगा — इसी से याद पक्की होती है।',
+        placeholder: 'मुझे जो याद है…',
+        doneCta: 'हो गया — अगला वीडियो',
+        skip: 'छोड़ें',
+      },
+      playlistErrors: {
+        enterTopic: 'पहले कोई टॉपिक लिखें',
+        noVideo: 'कोई वीडियो नहीं मिला। दूसरे शब्द आज़माएँ।',
+        noGoodVideo: 'अच्छा वीडियो नहीं मिला। थोड़ी देर बाद फिर कोशिश करें।',
+        buildFailed: 'प्लेलिस्ट नहीं बन पाई, फिर कोशिश करें।',
+        generic: 'कुछ गड़बड़ हो गई।',
+      },
+    },
     revision: {
       header: { title: 'रिवीज़न', subtitle: '1, 3, 7, 15, 30, 60 दिन के शेड्यूल पर वापस आता है' },
       stats: { dueToday: 'आज देय', overdue: 'बकाया', mastered: 'महारत', retention: 'रिटेंशन' },
@@ -4753,6 +4810,31 @@ export const translations: Record<Locale, TranslationShape> = {
           system: 'What system does it belong to?',
           risk: "What if you don't learn it?",
         },
+      },
+    },
+    moments: {
+      welcomeBack: {
+        title: 'Wapas swagat hai',
+        withTopic: 'Koi pressure nahi. Bas ek chhota kaam: “{0}” ka quick revision. Paanch minute kaafi hain.',
+        noTopic: 'Koi pressure nahi. Roadmap se ek topic chuno aur aaj bas thoda sa karo.',
+        startRevision: '5 minute ka revision shuru karo',
+        openRoadmap: 'Roadmap kholo',
+        notNow: 'Abhi nahi',
+      },
+      dailyHabit: { title: 'Aaj ki aadat', done: 'Shabash! Kal milte hain.', doneCta: 'Ho gaya', notToday: 'Aaj nahi' },
+      recallCheck: {
+        title: 'Quick recall — agle video se pehle',
+        body: 'Peeche scroll kiye bina, jo 2–3 main baatein yaad hain wo likho. Aadha sahi bhi chalega — isi se yaad pakki hoti hai.',
+        placeholder: 'Mujhe jo yaad hai…',
+        doneCta: 'Ho gaya — agla video',
+        skip: 'Skip karo',
+      },
+      playlistErrors: {
+        enterTopic: 'Pehle ek topic likho',
+        noVideo: 'Koi video nahi mila. Alag words try karo.',
+        noGoodVideo: 'Achha video nahi mila. Thodi der baad phir try karo.',
+        buildFailed: 'Playlist nahi ban payi, phir try karo.',
+        generic: 'Kuch gadbad ho gayi.',
       },
     },
     revision: {

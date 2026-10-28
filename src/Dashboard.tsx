@@ -496,7 +496,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   const handleCustomPlaylist = async () => {
     const trimmed = customTopic.trim();
     if (!trimmed) {
-      setCustomError('Enter a topic first');
+      setCustomError(t.moments.playlistErrors.enterTopic);
       return;
     }
 
@@ -551,13 +551,13 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
     try {
       const candidates = await buildCandidatePoolForConcept(adhocTopic, queries, userData?.language);
       if (candidates.length === 0) {
-        setCustomError('No video found. Try different words.');
+        setCustomError(t.moments.playlistErrors.noVideo);
         return;
       }
 
       const result = selectPlaylistForConcept(candidates, profile, undefined);
       if (!result) {
-        setCustomError('Playlist could not be built, please try again.');
+        setCustomError(t.moments.playlistErrors.buildFailed);
         return;
       }
 
@@ -571,7 +571,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
       setCustomHours(0);
       setCustomDeadline('');
     } catch (err: any) {
-      setCustomError(err.message || 'Something went wrong.');
+      setCustomError(err.message || t.moments.playlistErrors.generic);
     } finally {
       setCustomLoading(false);
     }
@@ -855,7 +855,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
               {(() => {
                 const shortcuts = [
                   { id: 'roadmap' as DashboardPageId, icon: Target, hint: statsCards[0].subtitle },
-                  { id: 'revision' as DashboardPageId, icon: RotateCcw, hint: isReturning ? format(t.dashboard.home.statsCards.dueSuffix, dueCount) : revisionStats.overdue > 0 ? `${revisionStats.overdue} overdue` : revisionStats.dueToday > 0 ? `${revisionStats.dueToday} due today` : 'Review what you learned' },
+                  { id: 'revision' as DashboardPageId, icon: RotateCcw, hint: dueCount > 0 ? format(t.dashboard.home.statsCards.dueSuffix, dueCount) : t.dashboard.home.statsCards.caughtUp },
                   { id: 'test' as DashboardPageId, icon: ClipboardCheck, hint: t.dashboard.sidebar.test },
                 ];
                 // Returning learners see one calm line at most (revision, if any) —

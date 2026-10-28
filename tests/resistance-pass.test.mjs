@@ -30,3 +30,17 @@ test('#3 Done opens the recall rating instead of marking the checkpoint directly
   assert.match(doneBtn, /handleReviewNow\(item\.id\)/);
   assert.ok(!src.includes('onClick={() => handleMarkDone(item)}'));
 });
+
+test('#9 student-facing moments and playlist errors come from translations, not hardcoded English', () => {
+  const welcome = read('WelcomeBack.tsx');
+  assert.ok(!welcome.includes('>Welcome back<'));
+  assert.match(welcome, /moments\.welcomeBack/);
+  assert.match(read('DailyHabit.tsx'), /moments\.dailyHabit/);
+  assert.match(read('RecallCheck.tsx'), /moments\.recallCheck/);
+  for (const f of ['Dashboard.tsx', 'Roadmap.tsx']) {
+    const src = read(f);
+    assert.ok(!src.includes("'Playlist could not be built, please try again.'"), f);
+    assert.ok(!src.includes("'Something went wrong.'"), f);
+  }
+  assert.ok(!read('Dashboard.tsx').includes("'Review what you learned'"));
+});

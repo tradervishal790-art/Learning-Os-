@@ -349,7 +349,7 @@ export default function Roadmap({
 
       const candidates = await buildCandidatePoolForConcept(topic, queries, userData?.language, true);
       if (candidates.length === 0) {
-        setPlaylistError('No good video found. Please try again in a bit.');
+        setPlaylistError(t.moments.playlistErrors.noGoodVideo);
         return false;
       }
 
@@ -359,7 +359,7 @@ export default function Roadmap({
         deadline: topicDeadline,
       });
       if (!result) {
-        setPlaylistError('Playlist could not be built, please try again.');
+        setPlaylistError(t.moments.playlistErrors.buildFailed);
         return false;
       }
 
@@ -385,7 +385,7 @@ export default function Roadmap({
       setSelectedTopic(null);
       return true;
     } catch (err: any) {
-      setPlaylistError(err.message || 'Something went wrong.');
+      setPlaylistError(err.message || t.moments.playlistErrors.generic);
       return false;
     } finally {
       setPlaylistLoading(false);
