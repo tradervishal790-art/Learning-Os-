@@ -482,7 +482,13 @@ function scheduleContentPush(id: string, content: NoteContent): void {
       // Queue per note: saves can arrive while a cloud write is in flight. Never allow
       // an older, slower write to finish after and overwrite a newer snapshot.
       const previousPush = contentPushQueues.get(id) ?? Promise.resolve(true);
-      const pushTask = previousPush.catch(() => false).then(() => pushContent(content));
+      const pushTask = previousPush.catch(() => false).then(async () => {
+        try {
+          return await pushContent(content);
+        } catch {
+          return false; // keep the queue usable after a transient cloud exception
+        }
+      });
       contentPushQueues.set(id, pushTask);
       const ok = await pushTask;
       const isLatestPush = contentPushQueues.get(id) === pushTask;
