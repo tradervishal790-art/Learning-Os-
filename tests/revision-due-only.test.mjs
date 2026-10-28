@@ -11,7 +11,8 @@ test('revision page lists only overdue and due-today items', () => {
 });
 
 test('revision page no longer renders the filter tabs, stats strip or recall trend', () => {
-  assert.ok(!src.includes('t.revision.filters.upcoming'));
+  assert.ok(!src.includes('setFilter'), 'no filter tabs');
+  assert.ok(!src.includes('aria-pressed={filter'), 'no filter tab buttons');
   assert.ok(!src.includes('7-day recall trend'));
   assert.ok(!src.includes('Recall accuracy'));
 });
