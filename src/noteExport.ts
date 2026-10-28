@@ -46,15 +46,20 @@ function inline(node: Node): string {
         : '';
       return inner.trim() && safeColor ? `<span style="color: ${safeColor}">${inner.trim()}</span>` : inner;
     }
-    case 'CODE':
-      return inner ? `\`${inner}\`` : '';
+    case 'CODE': {
+      const code = el.textContent ?? '';
+      if (!code) return '';
+      const fence = code.includes('`') ? '``' : '`';
+      return `${fence}${code}${fence}`;
+    }
     case 'A': {
       const href = el.getAttribute('href')?.trim() ?? '';
       // Do not emit active javascript:/data: links into exported Markdown.
       const safeHref = /^(?:https?:|mailto:|tel:|\/|#|\.\.?\/)/i.test(href) ? href : '';
       const label = inner.trim();
-      const markdownHref = safeHref.replace(/ /g, '%20').replace(/\(/g, '%28').replace(/\)/g, '%29');
-      return safeHref && label ? `[${label}](${markdownHref})` : inner;
+      const markdownHref = safeHref.replace(/ /g, '%20').replace(/\(/g, '%28').replace(/\)/g, '%29').replace(/\\/g, '%5C');
+      const markdownLabel = label.replace(/\\/g, '\\\\').replace(/\]/g, '\\]');
+      return safeHref && label ? `[${markdownLabel}](${markdownHref})` : inner;
     }
     case 'BR':
       return '  \n';
@@ -86,7 +91,7 @@ function list(el: Element, depth: number): string {
 }
 
 function table(el: Element): string {
-  const rows = Array.from(el.querySelectorAll('tr')).map((tr) =>
+  const rows = Array.from(el.querySelectorAll('tr')).filter((tr) => tr.closest('table') === el).map((tr) =>
     Array.from(tr.children).map((c) => inline(c).replace(/\s+/g, ' ').replace(/\|/g, '\\|').trim())
   );
   if (rows.length === 0) return '';
@@ -159,7 +164,16 @@ export function noteToHtml(title: string, pages: NotePage[], opts: { ink?: boole
     const doc = new DOMParser().parseFromString(html, 'text/html');
     doc.querySelectorAll('script,style,iframe,object,embed,link').forEach((n) => n.remove());
     doc.querySelectorAll('*').forEach((n) => {
-      for (const a of Array.from(n.attributes)) if (a.name.startsWith('on')) n.removeAttribute(a.name);
+      for (const a of Array.from(n.attributes)) {
+        if (a.name.toLowerCase().startsWith('on')) {
+          n.removeAttribute(a.name);
+          continue;
+        }
+        if (['href', 'src', 'xlink:href'].includes(a.name.toLowerCase())) {
+          const value = a.value.trim();
+          if (!/^(?:https?:|mailto:|tel:|\/|#|\.\.?\/)/i.test(value) || /^[\u0000-\u0020]*javascript:/i.test(value)) n.removeAttribute(a.name);
+        }
+      }
     });
     return doc.body.innerHTML;
   };
