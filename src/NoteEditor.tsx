@@ -98,7 +98,9 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
   const [linking, setLinking] = useState(false);
   const [linkUrl, setLinkUrl] = useState('');
   const [linkError, setLinkError] = useState(false);
-  const [deletedPage, setDeletedPage] = useState<{ page: NotePage; ink: InkStroke[]; index: number } | null>(null);
+  // Keep a short undo stack so consecutive page deletions can each be reversed.
+  const [deletedPages, setDeletedPages] = useState<{ page: NotePage; ink: InkStroke[]; index: number }[]>([]);
+  const deletedPage = deletedPages[deletedPages.length - 1] ?? null;
   const deletedTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   // Latest values for the unmount / pagehide flush (state would be stale there).
@@ -913,15 +915,16 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
     setAllPages(r.pages);
     // keep it for a moment so Undo can bring it back (text, handwriting and position)
     clearTimeout(deletedTimer.current);
-    setDeletedPage({ page: r.removed, ink: gone ?? [], index: r.index });
-    deletedTimer.current = setTimeout(() => setDeletedPage(null), 8000);
+    setDeletedPages((current) => [...current, { page: r.removed, ink: gone ?? [], index: r.index }].slice(-20));
+    deletedTimer.current = setTimeout(() => setDeletedPages([]), 8000);
   };
 
   const undoDeletePage = () => {
     if (!deletedPage) return;
     const { page, ink: strokes, index } = deletedPage;
     clearTimeout(deletedTimer.current);
-    setDeletedPage(null);
+    setDeletedPages((current) => current.slice(0, -1));
+    if (deletedPages.length > 1) deletedTimer.current = setTimeout(() => setDeletedPages([]), 8000);
     inkRef.current = { ...inkRef.current, [page.id]: strokes };
     setInk(inkRef.current);
     setAllPages(restorePage(latest.current.pages, { ...page, ink: strokes }, index));
