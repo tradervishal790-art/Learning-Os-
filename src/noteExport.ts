@@ -39,9 +39,12 @@ function inline(node: Node): string {
     case 'MARK':
       return inner.trim() ? `==${inner.trim()}==` : '';
     case 'SPAN': {
+      // Browsers canonicalize inline hex colours to rgb(...), so accept both safe CSS forms.
       const color = el.style.color.trim();
-      const hex = /^#[0-9a-f]{3}(?:[0-9a-f]{3})?$/i.test(color) ? color : '';
-      return inner.trim() && hex ? `<span style="color: ${hex}">${inner.trim()}</span>` : inner;
+      const safeColor = /^(?:#[0-9a-f]{3}(?:[0-9a-f]{3})?|rgba?\(\s*[\d.]+\s*,\s*[\d.]+\s*,\s*[\d.]+(?:\s*,\s*[\d.]+)?\s*\))$/i.test(color)
+        ? color
+        : '';
+      return inner.trim() && safeColor ? `<span style="color: ${safeColor}">${inner.trim()}</span>` : inner;
     }
     case 'CODE':
       return inner ? `\`${inner}\`` : '';
