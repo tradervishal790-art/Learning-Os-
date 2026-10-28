@@ -49,7 +49,8 @@ function inline(node: Node): string {
     case 'CODE': {
       const code = el.textContent ?? '';
       if (!code) return '';
-      const fence = code.includes('`') ? '``' : '`';
+      const longestTicks = Math.max(0, ...Array.from(code.matchAll(/`+/g), (m) => m[0].length));
+      const fence = '`'.repeat(Math.max(1, longestTicks + 1));
       return `${fence}${code}${fence}`;
     }
     case 'A': {
@@ -58,7 +59,7 @@ function inline(node: Node): string {
       const safeHref = /^(?:https?:|mailto:|tel:|\/|#|\.\.?\/)/i.test(href) ? href : '';
       const label = inner.trim();
       const markdownHref = safeHref.replace(/ /g, '%20').replace(/\(/g, '%28').replace(/\)/g, '%29').replace(/\\/g, '%5C');
-      const markdownLabel = label.replace(/\\/g, '\\\\').replace(/\]/g, '\\]');
+      const markdownLabel = label.replace(/\\/g, '\\\\').replace(/\[/g, '\\[').replace(/\]/g, '\\]');
       return safeHref && label ? `[${markdownLabel}](${markdownHref})` : inner;
     }
     case 'BR':
@@ -165,11 +166,16 @@ export function noteToHtml(title: string, pages: NotePage[], opts: { ink?: boole
     doc.querySelectorAll('script,style,iframe,object,embed,link').forEach((n) => n.remove());
     doc.querySelectorAll('*').forEach((n) => {
       for (const a of Array.from(n.attributes)) {
-        if (a.name.toLowerCase().startsWith('on')) {
+        const attr = a.name.toLowerCase();
+        if (attr.startsWith('on') || ['srcdoc', 'srcset', 'action', 'formaction'].includes(attr)) {
           n.removeAttribute(a.name);
           continue;
         }
-        if (['href', 'src', 'xlink:href'].includes(a.name.toLowerCase())) {
+        if (attr === 'style' && /(?:url\s*\(|expression\s*\(|@import)/i.test(a.value)) {
+          n.removeAttribute(a.name);
+          continue;
+        }
+        if (['href', 'src', 'xlink:href'].includes(attr)) {
           const value = a.value.trim();
           if (!/^(?:https?:|mailto:|tel:|\/|#|\.\.?\/)/i.test(value) || /^[\u0000-\u0020]*javascript:/i.test(value)) n.removeAttribute(a.name);
         }
