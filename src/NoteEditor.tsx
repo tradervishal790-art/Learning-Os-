@@ -71,6 +71,7 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
   const [present, setPresent] = useState(false);
   const [focusNew, setFocusNew] = useState<string | null>(null);
   const [mode, setMode] = useState<InkMode>('type');
+  const modeBeforePresent = useRef<InkMode>('type');
   const [prefs, setPrefs, resetPrefs] = useInkPrefs();
   const [activePage, setActivePage] = useState<string | null>(null);
   // Handwriting per page. The ref is the source of truth so two quick strokes never read stale data.
@@ -454,6 +455,7 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
   }, [activePage]);
 
   const startPresent = () => {
+    modeBeforePresent.current = mode;
     setPresent(true);
     setFocusMode(true);
     chooseMode('laser');
@@ -461,6 +463,7 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
   const endPresent = () => {
     setPresent(false);
     setFocusMode(false);
+    chooseMode(modeBeforePresent.current);
   };
 
   // Keyboard in a pen mode: Ctrl/Cmd+Z undo, +Shift+Z / +Y redo; in Select: Delete, Ctrl+C / X / V / D.
