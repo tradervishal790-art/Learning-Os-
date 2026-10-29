@@ -1,6 +1,6 @@
 import { motion, useReducedMotion } from 'framer-motion';
 import { ChartNoAxesColumn, Flame, Clock, Brain, Sprout, Target, Star, Check, ArrowRight } from 'lucide-react';
-import { useState, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import type { Goal } from './types';
 import {
   getStreakStats,
@@ -34,21 +34,6 @@ const statusIcon: Record<string, ReactNode> = {
 export default function Progress({ goals = [], onNavigateToRoadmap }: ProgressProps) {
   const t = useTranslation();
   const prefersReducedMotion = useReducedMotion();
-  const [activeSection, setActiveSection] = useState('overview');
-  const progressSections = [
-    { id: 'overview', label: 'Overview', target: 'progress-overview' },
-    { id: 'activity', label: 'Activity', target: 'progress-activity' },
-    { id: 'mastery', label: 'Mastery', target: 'progress-mastery' },
-    { id: 'retention', label: 'Retention', target: 'progress-retention' },
-    { id: 'focus', label: 'Focus areas', target: 'progress-focus' },
-  ];
-  const goToSection = (section: typeof progressSections[number]) => {
-    setActiveSection(section.id);
-    document.getElementById(section.target)?.scrollIntoView({
-      behavior: prefersReducedMotion ? 'auto' : 'smooth',
-      block: 'start',
-    });
-  };
   const streak = getStreakStats();
   const completion = getCompletionStats(goals);
   const time = getTimeStats();
@@ -70,80 +55,81 @@ export default function Progress({ goals = [], onNavigateToRoadmap }: ProgressPr
         <p className="text-sm text-gray-500 dark:text-white/60 mt-1">{t.progress.header.subtitle}</p>
       </motion.div>
 
-      {/* Section tabs only help once there is real progress data to navigate. */}
-      {hasAnyTopics && <nav aria-label="Progress sections" className="sticky top-0 z-20 -mx-1 mb-3 flex gap-1 overflow-x-auto rounded-2xl border border-gray-200/80 bg-white/90 p-1 shadow-sm backdrop-blur dark:border-white/10 dark:bg-[#09090b]/90">
-        {progressSections.map((section) => (
-          <button
-            key={section.id}
-            type="button"
-            onClick={() => goToSection(section)}
-            aria-current={activeSection === section.id ? 'location' : undefined}
-            className={`relative shrink-0 rounded-xl px-3 py-2 text-xs font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-indigo-500 sm:px-4 sm:text-sm ${activeSection === section.id ? 'text-indigo-700 dark:text-indigo-200' : 'text-gray-500 hover:text-gray-900 dark:text-white/55 dark:hover:text-white'}`}
-          >
-            {activeSection === section.id && <motion.span layoutId="progress-active-tab" transition={prefersReducedMotion ? { duration: 0 } : { type: 'spring', stiffness: 420, damping: 34 }} className="absolute inset-0 rounded-xl bg-indigo-100/90 dark:bg-indigo-400/15" />}
-            <span className="relative z-10">{section.label}</span>
-          </button>
-        ))}
-      </nav>}
-
-      {/* Hero: completion ring + key numbers */}
-      <motion.div id="progress-overview" initial={prefersReducedMotion ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.18 }} className="scroll-mt-24 rounded-2xl card p-4 md:p-6 flex items-center gap-5 md:gap-10 mb-5 md:mb-6">
-        <div className="relative w-28 h-28 md:w-36 md:h-36 flex-shrink-0" role="img" aria-label={`${t.progress.stats.completion}: ${completion.percent}%`}>
-          <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
-            <circle cx="50" cy="50" r="42" fill="none" strokeWidth="8" className="stroke-indigo-100 dark:stroke-white/10" />
-            <motion.circle
-              cx="50" cy="50" r="42" fill="none" strokeWidth="8" strokeLinecap="round"
-              className="stroke-indigo-600 dark:stroke-indigo-400"
-              strokeDasharray={2 * Math.PI * 42}
-              initial={{ strokeDashoffset: 2 * Math.PI * 42 }}
-              animate={{ strokeDashoffset: 2 * Math.PI * 42 * (1 - completion.percent / 100) }}
-              transition={{ delay: 0.3, duration: 1, ease: 'easeOut' }}
-            />
-          </svg>
-          <div className="absolute inset-0 flex items-center justify-center text-2xl md:text-3xl font-bold">{completion.percent}%</div>
-        </div>
-        <div className="flex-1 min-w-0 grid gap-3 md:gap-4">
-          {[
-            { label: t.progress.stats.streak, value: `${streak.currentStreak}d`, Icon: Flame },
-            { label: t.progress.stats.totalWatchTime, value: `${time.totalHours}h`, Icon: Clock },
-            { label: t.progress.stats.retention, value: `${retention.avgRetention}%`, Icon: Brain },
-          ].map(({ label, value, Icon }) => (
-            <div key={label} title={label} aria-label={`${label}: ${value}`} className="flex items-center gap-3 min-w-0">
-              <Icon className="w-5 h-5 flex-shrink-0 text-gray-500 dark:text-white/50" strokeWidth={1.75} />
-              <span className="text-lg md:text-xl font-bold tabular-nums">{value}</span>
-              <span className="text-xs text-gray-500 dark:text-white/55 truncate">{label}</span>
-            </div>
-          ))}
-        </div>
-      </motion.div>
-
-      {/* A 0/0 progress bar is noise before the learner starts a topic. */}
-      {hasAnyTopics && <motion.div initial={false} animate={{ opacity: 1 }} transition={{ duration: 0.18 }} className="mb-6 md:mb-10">
-        <div className="flex justify-between text-xs text-gray-400 dark:text-white/40 mb-2">
-          <span>{format(t.progress.completionBar.topicsDone, completion.completed, completion.total)}</span>
-          <span>{format(t.progress.completionBar.inProgress, completion.learning)}</span>
-        </div>
-        <div className="h-2 bg-indigo-100 dark:bg-white/5 rounded-full overflow-hidden">
-          <motion.div
-            initial={{ width: 0 }}
-            animate={{ width: `${completion.percent}%` }}
-            transition={{ delay: 0.3, duration: 1, ease: 'easeOut' }}
-            className="h-full bg-gradient-to-r from-indigo-500 to-violet-500 rounded-full"
-          />
-        </div>
-      </motion.div>}
-
       {!hasAnyTopics ? (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-8 md:p-12 text-center rounded-2xl card">
-          <Sprout className="w-12 h-12 mx-auto mb-4 text-gray-400 dark:text-white/40" strokeWidth={1.5} />
-          <h3 className="text-xl font-semibold mb-2">{t.progress.emptyState.title}</h3>
-          <p className="mx-auto max-w-md text-sm text-gray-500 dark:text-white/60">{t.progress.emptyState.body}</p>
-          {onNavigateToRoadmap && <button type="button" onClick={onNavigateToRoadmap} className="mt-5 inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 active:bg-indigo-800">
-            Start learning <ArrowRight className="h-4 w-4" />
-          </button>}
-        </motion.div>
+        <motion.section
+          initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.2 }}
+          className="relative overflow-hidden rounded-3xl border border-indigo-100 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-zinc-950 sm:p-9"
+        >
+          <div aria-hidden="true" className="pointer-events-none absolute -right-12 -top-16 h-48 w-48 rounded-full bg-indigo-100/70 blur-3xl dark:bg-indigo-500/10" />
+          <div className="relative mx-auto flex max-w-xl flex-col items-start">
+            <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 dark:bg-indigo-400/10 dark:text-indigo-300">
+              <Sprout className="h-6 w-6" strokeWidth={1.7} />
+            </div>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-indigo-600 dark:text-indigo-300">Your learning journey</p>
+            <h2 className="max-w-lg text-2xl font-semibold tracking-tight text-gray-950 dark:text-white sm:text-3xl">Your progress starts with one topic.</h2>
+            <p className="mt-3 max-w-lg text-sm leading-6 text-gray-600 dark:text-white/60">
+              Choose something to learn. Your study time, consistency, and topics you master will appear here as you go.
+            </p>
+            {onNavigateToRoadmap && (
+              <button type="button" onClick={onNavigateToRoadmap} className="mt-6 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 active:bg-indigo-800">
+                Choose a learning topic <ArrowRight className="h-4 w-4" />
+              </button>
+            )}
+            <div className="mt-8 grid w-full grid-cols-1 gap-3 border-t border-gray-100 pt-5 dark:border-white/10 sm:grid-cols-3">
+              {[
+                { Icon: Clock, title: 'Study time', detail: 'Track your sessions' },
+                { Icon: Flame, title: 'Consistency', detail: 'Build a steady habit' },
+                { Icon: Brain, title: 'Mastery', detail: 'See what you retain' },
+              ].map(({ Icon, title, detail }) => (
+                <div key={title} className="flex items-start gap-3 rounded-xl bg-gray-50/80 p-3 dark:bg-white/[0.035] sm:flex-col sm:gap-2">
+                  <Icon className="mt-0.5 h-4 w-4 shrink-0 text-gray-500 dark:text-white/50" strokeWidth={1.8} />
+                  <div>
+                    <p className="text-sm font-medium text-gray-800 dark:text-white/85">{title}</p>
+                    <p className="mt-0.5 text-xs text-gray-500 dark:text-white/45">{detail}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </motion.section>
       ) : (
         <>
+          {/* Progress overview: real metrics, with labels visible on every screen size. */}
+          <motion.div id="progress-overview" initial={prefersReducedMotion ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.18 }} className="rounded-2xl card p-4 md:p-6 flex items-center gap-4 md:gap-8 mb-5 md:mb-6">
+            <div className="relative h-24 w-24 flex-shrink-0 md:h-32 md:w-32" role="img" aria-label={`${t.progress.stats.completion}: ${completion.percent}%`}>
+              <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90">
+                <circle cx="50" cy="50" r="42" fill="none" strokeWidth="8" className="stroke-indigo-100 dark:stroke-white/10" />
+                <motion.circle cx="50" cy="50" r="42" fill="none" strokeWidth="8" strokeLinecap="round" className="stroke-indigo-600 dark:stroke-indigo-400" strokeDasharray={2 * Math.PI * 42} initial={prefersReducedMotion ? false : { strokeDashoffset: 2 * Math.PI * 42 }} animate={{ strokeDashoffset: 2 * Math.PI * 42 * (1 - completion.percent / 100) }} transition={{ duration: prefersReducedMotion ? 0 : 0.45, ease: 'easeOut' }} />
+              </svg>
+              <div className="absolute inset-0 flex items-center justify-center text-2xl font-bold">{completion.percent}%</div>
+            </div>
+            <div className="grid min-w-0 flex-1 grid-cols-1 gap-2 sm:grid-cols-3 sm:gap-3">
+              {[
+                { label: t.progress.stats.streak, value: `${streak.currentStreak}d`, Icon: Flame },
+                { label: t.progress.stats.totalWatchTime, value: `${time.totalHours}h`, Icon: Clock },
+                { label: t.progress.stats.retention, value: `${retention.avgRetention}%`, Icon: Brain },
+              ].map(({ label, value, Icon }) => (
+                <div key={label} className="flex min-w-0 items-center gap-3 rounded-xl bg-gray-50 p-3 dark:bg-white/[0.035] sm:flex-col sm:items-start">
+                  <Icon className="h-4 w-4 shrink-0 text-indigo-500 dark:text-indigo-300" strokeWidth={1.8} />
+                  <div className="min-w-0">
+                    <div className="text-xl font-semibold tabular-nums">{value}</div>
+                    <div className="mt-0.5 truncate text-xs text-gray-500 dark:text-white/55">{label}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+          <div className="mb-6 md:mb-8">
+            <div className="mb-2 flex justify-between gap-3 text-xs text-gray-500 dark:text-white/50">
+              <span>{format(t.progress.completionBar.topicsDone, completion.completed, completion.total)}</span>
+              <span>{format(t.progress.completionBar.inProgress, completion.learning)}</span>
+            </div>
+            <div className="h-2 overflow-hidden rounded-full bg-indigo-100 dark:bg-white/5">
+              <motion.div initial={prefersReducedMotion ? false : { width: 0 }} animate={{ width: `${completion.percent}%` }} transition={{ duration: prefersReducedMotion ? 0 : 0.45, ease: 'easeOut' }} className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-violet-500" />
+            </div>
+          </div>
           {/* Time tracking — last 7 days */}
           <motion.div id="progress-activity" initial={prefersReducedMotion ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.18 }} className="scroll-mt-24 p-4 md:p-6 rounded-2xl card mb-4 md:mb-6">
             <div className="flex items-center justify-between mb-3 md:mb-5">
