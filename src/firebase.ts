@@ -53,7 +53,6 @@ export function trackOnboardingComplete(data: {
   language?: string;
 }) {
   track("onboarding_complete", {
-    user_name: data.name,
     role: data.role,
     goal: data.goal,
     language: data.language,

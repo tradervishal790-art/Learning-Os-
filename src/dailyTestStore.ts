@@ -58,9 +58,53 @@ export function todayKey(d = new Date()): string {
   return `${d.getFullYear()}-${m}-${day}`;
 }
 
+function isQuestionShape(value: unknown): value is TestQuestion {
+  if (!value || typeof value !== 'object') return false;
+  const q = value as Partial<TestQuestion>;
+  if (typeof q.id !== 'string' || !q.id.trim() || typeof q.question !== 'string') return false;
+  if (q.type === 'mcq') {
+    return Array.isArray(q.options)
+      && q.options.every((option) => typeof option === 'string')
+      && typeof q.correctIndex === 'number'
+      && typeof q.explanation === 'string'
+      && typeof q.marks === 'number'
+      && typeof q.negativeMarks === 'number';
+  }
+  if (q.type === 'subjective') {
+    return typeof q.modelAnswer === 'string'
+      && typeof q.explanation === 'string'
+      && typeof q.marks === 'number'
+      && (q.acceptedAnswers === undefined
+        || (Array.isArray(q.acceptedAnswers) && q.acceptedAnswers.every((answer) => typeof answer === 'string')));
+  }
+  return false;
+}
+
+function isPaperShape(value: unknown): value is TestPaper {
+  if (!value || typeof value !== 'object') return false;
+  const paper = value as Partial<TestPaper>;
+  return typeof paper.id === 'string'
+    && typeof paper.title === 'string'
+    && typeof paper.topic === 'string'
+    && typeof paper.durationMinutes === 'number'
+    && Array.isArray(paper.questions)
+    && paper.questions.every(isQuestionShape)
+    && typeof paper.createdAt === 'string'
+    && typeof paper.updatedAt === 'string';
+}
+
 function isState(x: unknown): x is DailyTestState {
-  const s = x as DailyTestState;
-  return !!s && typeof s === 'object' && Array.isArray(s.bank) && Array.isArray(s.queue) && Array.isArray(s.wrongIds) && typeof s.perDay === 'number';
+  if (!x || typeof x !== 'object') return false;
+  const s = x as Partial<DailyTestState>;
+  return s.version === 1
+    && Array.isArray(s.bank) && s.bank.every(isQuestionShape)
+    && Array.isArray(s.queue) && s.queue.every((id) => typeof id === 'string')
+    && Array.isArray(s.wrongIds) && s.wrongIds.every((id) => typeof id === 'string')
+    && typeof s.perDay === 'number' && Number.isFinite(s.perDay) && s.perDay >= 1 && s.perDay <= MAX_PER_DAY
+    && typeof s.minutesPerQuestion === 'number' && Number.isFinite(s.minutesPerQuestion) && s.minutesPerQuestion >= 0 && s.minutesPerQuestion <= 10
+    && (s.pending === null || isPaperShape(s.pending))
+    && (s.lastCompletedDate === null || (typeof s.lastCompletedDate === 'string' && /^\\d{4}-\\d{2}-\\d{2}$/.test(s.lastCompletedDate)))
+    && typeof s.daysCompleted === 'number' && Number.isInteger(s.daysCompleted) && s.daysCompleted >= 0;
 }
 
 export function loadDaily(): DailyTestState {
@@ -101,7 +145,7 @@ function newRoundOrder(bank: TestQuestion[], wrongIds: string[]): string[] {
 }
 
 function isReadyQuestion(q: TestQuestion): boolean {
-  if (!q.question.trim()) return false;
+  if (!isQuestionShape(q) || !q.question.trim()) return false;
   if (q.type === 'mcq') return q.correctIndex >= 0 && q.options.filter((o) => o.trim()).length >= 2;
   return !!q.modelAnswer.trim();
 }
