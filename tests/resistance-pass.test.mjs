@@ -88,3 +88,13 @@ test('#5b a topic keeps its lecture attached until completion, then the NEXT top
   assert.match(lb, /export function clearAttachedLecture/);
   assert.match(read('Dashboard.tsx'), /min-h-dvh[^\n]*\n\s*\{isReturning && !isGuest && currentTopic && \(\s*<LecturePrefetch/);
 });
+
+test('#9b Test page text comes from translations (en/hi/hinglish), not hardcoded English', () => {
+  const src = read('Test.tsx');
+  for (const lit of ['Take official tests', 'Create New Test', 'Question Palette', 'Mark for Review & Next', 'Download PDF', 'I got this right', 'Submit the test now?', 'Start Test', 'Keep working']) {
+    assert.ok(!src.includes(lit), `hardcoded: ${lit}`);
+  }
+  assert.ok((src.match(/useTranslation\(\)\.testPage/g) ?? []).length >= 5, 'every Test screen reads translations');
+  const tr = read('i18n/translations.ts');
+  assert.equal((tr.match(/\n    testPage: \{/g) ?? []).length, 3, 'testPage exists in all three locales');
+});

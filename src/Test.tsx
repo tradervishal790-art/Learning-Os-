@@ -13,6 +13,8 @@ import LiveHost from './LiveHost';
 import { loadDraft, saveDraft, clearDraft } from './testDraft';
 import DailyTest from './DailyTest';
 import ConfirmDialog from './ConfirmDialog';
+import { useTranslation } from './i18n/LanguageContext';
+import { format } from './i18n/format';
 import { setImmersive } from './immersive';
 import { completeDailyTest, isDailyPaper, getDailyStatus } from './dailyTestStore';
 
@@ -40,6 +42,7 @@ function formatClock(totalSeconds: number): string {
 }
 
 export default function Test() {
+  const tp = useTranslation().testPage;
   // Resume an unfinished test after refresh / tab close (see testDraft.ts).
   const [draft] = useState(() => loadDraft());
   const [stage, setStage] = useState<Stage>(draft ? 'taking' : 'list');
@@ -251,7 +254,7 @@ export default function Test() {
 
   const confirmSubmit = () => {
     const unanswered = activePaper ? activePaper.questions.length - answers.filter((a) => isAnswered(a)).length : 0;
-    const msg = unanswered > 0 ? `${unanswered} question(s) unanswered. Submit anyway?` : 'Submit the test now?';
+    const msg = unanswered > 0 ? format(tp.dialogs.unanswered, unanswered) : tp.dialogs.submitNow;
     setSubmitPrompt(msg);
   };
 
@@ -286,8 +289,8 @@ export default function Test() {
     <div className="min-h-dvh text-black dark:text-white p-4 md:p-8">
       {stage !== 'taking' && (
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-5 md:mb-8">
-          <h1 className="text-2xl md:text-4xl font-bold mb-1 md:mb-2">Tests</h1>
-          <p className="text-gray-500 dark:text-white/60">Take official tests, or build your own for practice.</p>
+          <h1 className="text-2xl md:text-4xl font-bold mb-1 md:mb-2">{tp.title}</h1>
+          <p className="text-gray-500 dark:text-white/60">{tp.subtitle}</p>
         </motion.div>
       )}
 
@@ -340,17 +343,17 @@ export default function Test() {
       {submitPrompt && (
         <ConfirmDialog
           message={submitPrompt}
-          confirmLabel="Submit"
-          cancelLabel="Keep working"
+          confirmLabel={tp.dialogs.submit}
+          cancelLabel={tp.dialogs.keepWorking}
           onConfirm={() => { setSubmitPrompt(null); submitTest(); }}
           onCancel={() => setSubmitPrompt(null)}
         />
       )}
       {deletePrompt && (
         <ConfirmDialog
-          message="Delete this test? This cannot be undone."
-          confirmLabel="Delete"
-          cancelLabel="Cancel"
+          message={tp.dialogs.deleteMsg}
+          confirmLabel={tp.dialogs.deleteCta}
+          cancelLabel={tp.dialogs.cancel}
           danger
           onConfirm={() => { deleteTestPaper(deletePrompt); setDeletePrompt(null); refresh(); }}
           onCancel={() => setDeletePrompt(null)}
@@ -384,8 +387,12 @@ function TestList({
   onDaily: () => void;
   onOpenAttempt: (a: TestAttempt) => void;
 }) {
+  const tp = useTranslation().testPage;
+  const meta = (p: TestPaper) =>
+    `${p.topic} · ${p.questions.length === 1 ? tp.card.oneQuestion : format(tp.card.questionsCount, p.questions.length)}` +
+    (p.durationMinutes > 0 ? ` · ${format(tp.card.minutes, p.durationMinutes)}` : ` · ${tp.card.noTimer}`);
   const dailyStatus = getDailyStatus();
-  const dailyLabel = { empty: 'Set up once — a new test every day', pending: "Today's test is waiting", ready: "Today's test is ready", done: "Done for today" }[dailyStatus];
+  const dailyLabel = tp.daily[dailyStatus];
   return (
     <div className="max-w-3xl mx-auto">
       <button
@@ -395,16 +402,16 @@ function TestList({
         <div className="flex items-center gap-3 min-w-0">
           <span className="w-11 h-11 rounded-xl bg-white dark:bg-white/10 text-indigo-600 dark:text-indigo-300 shadow-card flex items-center justify-center flex-shrink-0"><CalendarCheck className="w-6 h-6" strokeWidth={1.75} /></span>
           <div className="min-w-0">
-            <p className="font-semibold">Daily Test</p>
+            <p className="font-semibold">{tp.daily.title}</p>
             <p className="text-xs text-gray-500 dark:text-white/50">{dailyLabel}</p>
           </div>
         </div>
-        <ChevronRight className="w-5 h-5 flex-shrink-0 text-indigo-500" aria-label="Open" />
+        <ChevronRight className="w-5 h-5 flex-shrink-0 text-indigo-500" aria-label={tp.daily.openAria} />
       </button>
 
       {OFFICIAL_TESTS.length > 0 && (
         <div className="mb-10">
-          <h2 className="text-sm font-semibold text-gray-500 dark:text-white/50 mb-3">Official tests</h2>
+          <h2 className="text-sm font-semibold text-gray-500 dark:text-white/50 mb-3">{tp.officialTitle}</h2>
           <div className="space-y-3">
             {OFFICIAL_TESTS.map((p) => (
               <div
@@ -414,16 +421,15 @@ function TestList({
                 <div className="min-w-0">
                   <p className="font-semibold truncate">{p.title}</p>
                   <p className="text-xs text-gray-400 dark:text-white/40">
-                    {p.topic} · {p.questions.length} questions
-                    {p.durationMinutes > 0 ? ` · ${p.durationMinutes} min` : ' · no timer'}
+                    {meta(p)}
                   </p>
                 </div>
                 <div className="flex items-center justify-end gap-2 flex-shrink-0">
-                  <button onClick={() => onLive(p)} className="h-11 md:h-auto min-w-11 flex items-center justify-center gap-1.5 md:px-3 md:py-2 rounded-full md:rounded-lg border border-gray-300 dark:border-white/20 text-sm font-semibold transition" title="Run live" aria-label="Run live">
-                    <Users className="w-4 h-4" /><span className="hidden md:inline">Live</span>
+                  <button onClick={() => onLive(p)} className="h-11 md:h-auto min-w-11 flex items-center justify-center gap-1.5 md:px-3 md:py-2 rounded-full md:rounded-lg border border-gray-300 dark:border-white/20 text-sm font-semibold transition" title={tp.card.runLive} aria-label={tp.card.runLive}>
+                    <Users className="w-4 h-4" /><span className="hidden md:inline">{tp.card.live}</span>
                   </button>
-                  <button onClick={() => onTake(p)} className="h-11 md:h-auto min-w-11 flex items-center justify-center gap-1.5 md:px-4 md:py-2 rounded-full md:rounded-lg bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white text-sm font-semibold transition" title="Take test" aria-label="Take test">
-                    <Play className="w-4 h-4" fill="currentColor" /><span className="hidden md:inline">Take Test</span>
+                  <button onClick={() => onTake(p)} className="h-11 md:h-auto min-w-11 flex items-center justify-center gap-1.5 md:px-4 md:py-2 rounded-full md:rounded-lg bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white text-sm font-semibold transition" title={tp.card.takeAria} aria-label={tp.card.takeAria}>
+                    <Play className="w-4 h-4" fill="currentColor" /><span className="hidden md:inline">{tp.card.take}</span>
                   </button>
                 </div>
               </div>
@@ -432,16 +438,16 @@ function TestList({
         </div>
       )}
 
-      <h2 className="text-sm font-semibold text-gray-500 dark:text-white/50 mb-3">My tests</h2>
+      <h2 className="text-sm font-semibold text-gray-500 dark:text-white/50 mb-3">{tp.myTests}</h2>
       <button
         onClick={onCreate}
         className="w-full flex items-center justify-center gap-2 py-3.5 mb-6 md:mb-8 rounded-xl bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white font-semibold transition"
       >
-        <Plus className="w-4 h-4" /> Create New Test
+        <Plus className="w-4 h-4" /> {tp.create}
       </button>
 
       {papers.length === 0 ? (
-        <p className="text-center text-gray-400 dark:text-white/40 mb-10">You haven't created any tests yet — add your own questions above.</p>
+        <p className="text-center text-gray-400 dark:text-white/40 mb-10">{tp.emptyMine}</p>
       ) : (
         <div className="space-y-3 mb-10">
           {papers.map((p) => (
@@ -452,22 +458,21 @@ function TestList({
               <div className="min-w-0">
                 <p className="font-semibold truncate">{p.title}</p>
                 <p className="text-xs text-gray-400 dark:text-white/40">
-                  {p.topic} · {p.questions.length} question{p.questions.length !== 1 ? 's' : ''}
-                  {p.durationMinutes > 0 ? ` · ${p.durationMinutes} min` : ' · no timer'}
+                  {meta(p)}
                 </p>
               </div>
               <div className="flex items-center justify-end gap-1.5 md:gap-2 flex-shrink-0">
-                <button onClick={() => onEdit(p)} className="w-11 h-11 md:w-auto md:h-auto md:p-2 flex items-center justify-center rounded-full md:rounded-lg hover:bg-gray-100 dark:hover:bg-white/10" aria-label="Edit test" title="Edit test">
+                <button onClick={() => onEdit(p)} className="w-11 h-11 md:w-auto md:h-auto md:p-2 flex items-center justify-center rounded-full md:rounded-lg hover:bg-gray-100 dark:hover:bg-white/10" aria-label={tp.card.edit} title={tp.card.edit}>
                   <Pencil className="w-4 h-4" />
                 </button>
-                <button onClick={() => onDelete(p.id)} className="w-11 h-11 md:w-auto md:h-auto md:p-2 flex items-center justify-center rounded-full md:rounded-lg hover:bg-red-100 dark:hover:bg-red-500/10 text-red-500" aria-label="Delete test" title="Delete test">
+                <button onClick={() => onDelete(p.id)} className="w-11 h-11 md:w-auto md:h-auto md:p-2 flex items-center justify-center rounded-full md:rounded-lg hover:bg-red-100 dark:hover:bg-red-500/10 text-red-500" aria-label={tp.card.delete} title={tp.card.delete}>
                   <Trash2 className="w-4 h-4" />
                 </button>
-                <button onClick={() => onLive(p)} className="h-11 md:h-auto min-w-11 flex items-center justify-center gap-1.5 md:px-3 md:py-2 rounded-full md:rounded-lg border border-gray-300 dark:border-white/20 text-sm font-semibold transition" title="Run live" aria-label="Run live">
-                  <Users className="w-4 h-4" /><span className="hidden md:inline">Live</span>
+                <button onClick={() => onLive(p)} className="h-11 md:h-auto min-w-11 flex items-center justify-center gap-1.5 md:px-3 md:py-2 rounded-full md:rounded-lg border border-gray-300 dark:border-white/20 text-sm font-semibold transition" title={tp.card.runLive} aria-label={tp.card.runLive}>
+                  <Users className="w-4 h-4" /><span className="hidden md:inline">{tp.card.live}</span>
                 </button>
-                <button onClick={() => onTake(p)} className="h-11 md:h-auto min-w-11 flex items-center justify-center gap-1.5 md:px-4 md:py-2 rounded-full md:rounded-lg bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white text-sm font-semibold transition" title="Take test" aria-label="Take test">
-                  <Play className="w-4 h-4" fill="currentColor" /><span className="hidden md:inline">Take Test</span>
+                <button onClick={() => onTake(p)} className="h-11 md:h-auto min-w-11 flex items-center justify-center gap-1.5 md:px-4 md:py-2 rounded-full md:rounded-lg bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white text-sm font-semibold transition" title={tp.card.takeAria} aria-label={tp.card.takeAria}>
+                  <Play className="w-4 h-4" fill="currentColor" /><span className="hidden md:inline">{tp.card.take}</span>
                 </button>
               </div>
             </div>
@@ -478,7 +483,7 @@ function TestList({
       {history.length > 0 && (
         <div>
           <h2 className="flex items-center gap-2 text-sm font-semibold text-gray-500 dark:text-white/50 mb-3">
-            <History className="w-4 h-4" /> Past attempts
+            <History className="w-4 h-4" /> {tp.pastAttempts}
           </h2>
           <div className="space-y-2">
             {history.slice(0, 8).map((a) => (
@@ -507,6 +512,7 @@ function TestList({
 // Instructions screen — shown once, before the timer starts
 // ============================================================
 function Instructions({ paper, onStart, onBack }: { paper: TestPaper; onStart: () => void; onBack: () => void }) {
+  const tp = useTranslation().testPage;
   const totalMarks = computeTotalMarks(paper.questions);
   const mcqCount = paper.questions.filter((q) => q.type === 'mcq').length;
   const subjCount = paper.questions.length - mcqCount;
@@ -519,38 +525,38 @@ function Instructions({ paper, onStart, onBack }: { paper: TestPaper; onStart: (
 
         <div className="grid grid-cols-2 gap-4 mb-6 text-sm">
           <div className="bg-white dark:bg-white/5 rounded-xl p-4 border border-gray-200 dark:border-white/10">
-            <p className="text-gray-400 dark:text-white/40">Duration</p>
-            <p className="font-semibold text-lg">{paper.durationMinutes > 0 ? `${paper.durationMinutes} min` : 'No limit'}</p>
+            <p className="text-gray-400 dark:text-white/40">{tp.instructions.duration}</p>
+            <p className="font-semibold text-lg">{paper.durationMinutes > 0 ? format(tp.card.minutes, paper.durationMinutes) : tp.instructions.noLimit}</p>
           </div>
           <div className="bg-white dark:bg-white/5 rounded-xl p-4 border border-gray-200 dark:border-white/10">
-            <p className="text-gray-400 dark:text-white/40">Total marks</p>
+            <p className="text-gray-400 dark:text-white/40">{tp.instructions.totalMarks}</p>
             <p className="font-semibold text-lg">{totalMarks}</p>
           </div>
           <div className="bg-white dark:bg-white/5 rounded-xl p-4 border border-gray-200 dark:border-white/10">
-            <p className="text-gray-400 dark:text-white/40">MCQ questions</p>
+            <p className="text-gray-400 dark:text-white/40">{tp.instructions.mcqQuestions}</p>
             <p className="font-semibold text-lg">{mcqCount}</p>
           </div>
           <div className="bg-white dark:bg-white/5 rounded-xl p-4 border border-gray-200 dark:border-white/10">
-            <p className="text-gray-400 dark:text-white/40">Subjective questions</p>
+            <p className="text-gray-400 dark:text-white/40">{tp.instructions.subjectiveQuestions}</p>
             <p className="font-semibold text-lg">{subjCount}</p>
           </div>
         </div>
 
-        <h3 className="font-semibold mb-3 text-sm text-gray-600 dark:text-white/70">Question palette legend</h3>
+        <h3 className="font-semibold mb-3 text-sm text-gray-600 dark:text-white/70">{tp.instructions.legendTitle}</h3>
         <div className="space-y-2 mb-8 text-sm">
-          <LegendRow color="bg-gray-300 dark:bg-white/20" label="Not visited yet" />
-          <LegendRow color="bg-orange-400" label="Visited, not answered" />
-          <LegendRow color="bg-emerald-500" label="Answered" />
-          <LegendRow color="bg-purple-500" label="Marked for review (not scored)" />
-          <LegendRow color="bg-purple-500" label="Answered & marked for review (scored)" dot />
+          <LegendRow color="bg-gray-300 dark:bg-white/20" label={tp.instructions.notVisited} />
+          <LegendRow color="bg-orange-400" label={tp.instructions.visitedNotAnswered} />
+          <LegendRow color="bg-emerald-500" label={tp.instructions.answered} />
+          <LegendRow color="bg-purple-500" label={tp.instructions.marked} />
+          <LegendRow color="bg-purple-500" label={tp.instructions.answeredMarked} dot />
         </div>
 
         <div className="flex gap-3">
           <button onClick={onStart} className="flex-1 py-3 rounded-xl bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white font-semibold transition">
-            Start Test
+            {tp.instructions.start}
           </button>
           <button onClick={onBack} className="px-6 py-3 rounded-xl border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10 font-medium transition">
-            Back
+            {tp.instructions.back}
           </button>
         </div>
       </div>
@@ -605,6 +611,7 @@ export function TakingScreen({
   onClearResponse: () => void;
   onSubmit: () => void;
 }) {
+  const tp = useTranslation().testPage;
   const statusColor: Record<QuestionStatus, string> = {
     'not-visited': 'bg-gray-200 dark:bg-white/10 text-gray-500 dark:text-white/50',
     'not-answered': 'bg-orange-400 text-white',
@@ -621,14 +628,14 @@ export function TakingScreen({
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
           <p className="font-semibold">{paper.title}</p>
-          <p className="text-xs text-gray-400 dark:text-white/40">Question {step + 1} of {paper.questions.length}</p>
+          <p className="text-xs text-gray-400 dark:text-white/40">{format(tp.taking.questionOf, step + 1, paper.questions.length)}</p>
         </div>
         <div className="flex items-center gap-3">
           <span className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-mono font-semibold ${lowTime ? 'bg-red-100 dark:bg-red-500/10 text-red-600 dark:text-red-400' : 'bg-gray-100 dark:bg-white/10'}`}>
             <Clock className="w-4 h-4" /> {timeLeft !== null ? formatClock(timeLeft) : formatClock(secondsElapsed)}
           </span>
           <button onClick={onSubmit} className="px-4 py-2 rounded-xl bg-red-500 text-white text-sm font-semibold transition">
-            Submit Test
+            {tp.taking.submit}
           </button>
         </div>
       </div>
@@ -646,7 +653,7 @@ export function TakingScreen({
             >
               <div className="flex items-center justify-between mb-4">
                 <span className="text-xs font-medium tracking-wide uppercase text-purple-500 dark:text-purple-300/70 bg-purple-100 dark:bg-purple-500/10 border border-purple-300/40 dark:border-purple-500/20 rounded-full px-3 py-1">
-                  {currentQuestion.type === 'mcq' ? 'Multiple Choice' : 'Short Answer'}
+                  {currentQuestion.type === 'mcq' ? tp.taking.multipleChoice : tp.taking.shortAnswer}
                 </span>
                 <span className="text-xs text-gray-400 dark:text-white/40">
                   +{currentQuestion.marks}{currentQuestion.type === 'mcq' ? ` / -${(currentQuestion as MCQQuestion).negativeMarks}` : ''} marks
@@ -677,7 +684,7 @@ export function TakingScreen({
                 <textarea
                   value={currentAnswer && currentAnswer.type === 'subjective' ? currentAnswer.text : ''}
                   onChange={(e) => onSubjectiveText(e.target.value)}
-                  placeholder="Type your answer here..."
+                  placeholder={tp.taking.placeholder}
                   rows={6}
                   className="w-full bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-black dark:focus:border-white resize-none"
                 />
@@ -687,19 +694,19 @@ export function TakingScreen({
 
           <div className="flex items-center flex-wrap gap-3 mt-6">
             <button onClick={onClearResponse} className="px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10 text-sm font-medium transition">
-              Clear Response
+              {tp.taking.clear}
             </button>
             <button onClick={onMarkForReview} className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-purple-300 dark:border-purple-500/30 text-purple-600 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-500/10 text-sm font-medium transition">
-              <Flag className="w-4 h-4" /> Mark for Review & Next
+              <Flag className="w-4 h-4" /> {tp.taking.markNext}
             </button>
             <button onClick={onSaveAndNext} disabled={isLast} className="ml-auto px-5 py-2.5 rounded-xl bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white disabled:opacity-30 text-sm font-semibold transition">
-              Save & Next
+              {tp.taking.saveNext}
             </button>
           </div>
         </div>
 
         <div className="card rounded-2xl p-4 h-fit">
-          <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-white/40 mb-3">Question Palette</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-white/40 mb-3">{tp.taking.palette}</p>
           <div className="grid grid-cols-5 gap-2">
             {paper.questions.map((q, i) => (
               <button
@@ -712,7 +719,7 @@ export function TakingScreen({
             ))}
           </div>
           <p className="text-xs text-gray-400 dark:text-white/40 mt-4">
-            {answers.filter((a) => isAnswered(a)).length}/{paper.questions.length} answered
+            {format(tp.taking.answeredCount, answers.filter((a) => isAnswered(a)).length, paper.questions.length)}
           </p>
         </div>
       </div>
@@ -736,6 +743,7 @@ function ResultsDashboard({
   onSelfGrade: (questionId: string, isCorrect: boolean, marks: number) => void;
   onRetake: () => void;
 }) {
+  const tp = useTranslation().testPage;
   const resultsById = new Map(attempt.results.map((r) => [r.questionId, r]));
   const answersById = new Map(attempt.answers.map((a) => [a.questionId, a]));
   const correctCount = attempt.results.filter((r) => r.isCorrect === true).length;
@@ -748,20 +756,20 @@ function ResultsDashboard({
       <div className="card rounded-2xl p-6 md:p-8 mb-8 text-center">
         <p className="text-sm text-gray-500 dark:text-white/50 mb-1">{attempt.testTitle}</p>
         <p className={`text-5xl font-bold mb-2 ${scoreColor}`}>{attempt.obtainedMarks}/{attempt.totalMarks}</p>
-        <p className="text-gray-500 dark:text-white/60 mb-1">{attempt.scorePercent}% · {correctCount} correct</p>
+        <p className="text-gray-500 dark:text-white/60 mb-1">{attempt.scorePercent}% · {format(tp.results.correctCount, correctCount)}</p>
         {pending > 0 && (
           <div className="mb-4">
             <p className="flex items-center justify-center gap-1.5 text-sm text-amber-600 dark:text-amber-400 mb-2">
-              <HelpCircle className="w-4 h-4" /> {pending} subjective answer{pending !== 1 ? 's' : ''} awaiting grading
+              <HelpCircle className="w-4 h-4" /> {pending === 1 ? tp.results.awaitingOne : format(tp.results.awaitingMany, pending)}
             </p>
           </div>
         )}
         <div className="flex flex-wrap justify-center gap-3 mt-4">
           <button onClick={() => downloadTestResultPdf(attempt)} className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white text-sm font-semibold transition">
-            <Download className="w-4 h-4" /> Download PDF
+            <Download className="w-4 h-4" /> {tp.results.downloadPdf}
           </button>
           <button onClick={onRetake} className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10 text-sm font-semibold transition">
-            <RotateCcw className="w-4 h-4" /> Back to Tests
+            <RotateCcw className="w-4 h-4" /> {tp.results.backToTests}
           </button>
         </div>
       </div>
@@ -802,7 +810,7 @@ function ResultsDashboard({
                     return (
                       <p key={oi} className={`text-sm ${correct ? 'text-emerald-600 dark:text-emerald-400 font-medium' : selected ? 'text-red-600 dark:text-red-400 font-medium' : 'text-gray-500 dark:text-white/50'}`}>
                         {String.fromCharCode(65 + oi)}. {opt}
-                        {correct ? ' (correct)' : selected ? ' (your answer)' : ''}
+                        {correct ? tp.results.correctTag : selected ? tp.results.yourAnswerTag : ''}
                       </p>
                     );
                   })}
@@ -810,22 +818,22 @@ function ResultsDashboard({
               ) : (
                 <div className="ml-8 mb-3 space-y-2 text-sm">
                   <p className="text-gray-600 dark:text-white/70">
-                    <span className="font-medium">Your answer: </span>
-                    {answer && answer.type === 'subjective' && answer.text.trim() ? answer.text.trim() : <em>left blank</em>}
+                    <span className="font-medium">{tp.results.yourAnswer}</span>
+                    {answer && answer.type === 'subjective' && answer.text.trim() ? answer.text.trim() : <em>{tp.results.leftBlank}</em>}
                   </p>
                   {(q as SubjectiveQuestion).modelAnswer && (
                     <p className="text-emerald-600 dark:text-emerald-400">
-                      <span className="font-medium">Model answer: </span>
+                      <span className="font-medium">{tp.results.modelAnswer}</span>
                       {(q as SubjectiveQuestion).modelAnswer}
                     </p>
                   )}
                   {isCorrect === null && (
                     <div className="flex gap-2 pt-1">
                       <button onClick={() => onSelfGrade(q.id, true, q.marks)} className="px-3 py-1.5 rounded-lg bg-emerald-500 text-white text-xs font-semibold transition">
-                        I got this right
+                        {tp.results.gotRight}
                       </button>
                       <button onClick={() => onSelfGrade(q.id, false, q.marks)} className="px-3 py-1.5 rounded-lg bg-red-500 text-white text-xs font-semibold transition">
-                        I got this wrong
+                        {tp.results.gotWrong}
                       </button>
                     </div>
                   )}
@@ -834,7 +842,7 @@ function ResultsDashboard({
 
               {q.explanation && (
                 <p className="ml-8 text-sm text-gray-500 dark:text-white/60">
-                  <span className="font-medium text-gray-700 dark:text-white/80">Why: </span>
+                  <span className="font-medium text-gray-700 dark:text-white/80">{tp.results.why}</span>
                   {q.explanation}
                 </p>
               )}

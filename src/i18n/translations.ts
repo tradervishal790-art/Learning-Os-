@@ -364,6 +364,17 @@ export interface TranslationShape {
       allCaughtUpBody: string;
     };
   };
+  // Test page (list, instructions, taking screen, results, dialogs).
+  testPage: {
+    title: string; subtitle: string;
+    daily: { title: string; empty: string; pending: string; ready: string; done: string; openAria: string };
+    officialTitle: string; myTests: string; create: string; emptyMine: string; pastAttempts: string;
+    card: { questionsCount: string; oneQuestion: string; minutes: string; noTimer: string; live: string; runLive: string; take: string; takeAria: string; edit: string; delete: string };
+    instructions: { duration: string; noLimit: string; totalMarks: string; mcqQuestions: string; subjectiveQuestions: string; legendTitle: string; notVisited: string; visitedNotAnswered: string; answered: string; marked: string; answeredMarked: string; start: string; back: string };
+    taking: { questionOf: string; submit: string; multipleChoice: string; shortAnswer: string; placeholder: string; clear: string; markNext: string; saveNext: string; palette: string; answeredCount: string };
+    results: { correctCount: string; awaitingOne: string; awaitingMany: string; downloadPdf: string; backToTests: string; correctTag: string; yourAnswerTag: string; yourAnswer: string; leftBlank: string; modelAnswer: string; gotRight: string; gotWrong: string; why: string };
+    dialogs: { unanswered: string; submitNow: string; submit: string; keepWorking: string; deleteMsg: string; deleteCta: string; cancel: string };
+  };
   // Small student-facing moments that used to be hardcoded English.
   moments: {
     welcomeBack: { title: string; withTopic: string; noTopic: string; startRevision: string; openRoadmap: string; notNow: string };
@@ -1569,6 +1580,37 @@ export const translations: Record<Locale, TranslationShape> = {
           system: 'What system does it belong to?',
           risk: "What if you don't learn it?",
         },
+      },
+    },
+    testPage: {
+      title: 'Tests',
+      subtitle: 'Take official tests, or build your own for practice.',
+      daily: { title: 'Daily Test', empty: 'Set up once — a new test every day', pending: "Today's test is waiting", ready: "Today's test is ready", done: 'Done for today', openAria: 'Open' },
+      officialTitle: 'Official tests',
+      myTests: 'My tests',
+      create: 'Create New Test',
+      emptyMine: "You haven't created any tests yet — add your own questions above.",
+      pastAttempts: 'Past attempts',
+      card: {
+        questionsCount: '{0} questions', oneQuestion: '1 question', minutes: '{0} min', noTimer: 'no timer',
+        live: 'Live', runLive: 'Run live', take: 'Take Test', takeAria: 'Take test', edit: 'Edit test', delete: 'Delete test',
+      },
+      instructions: {
+        duration: 'Duration', noLimit: 'No limit', totalMarks: 'Total marks', mcqQuestions: 'MCQ questions', subjectiveQuestions: 'Subjective questions',
+        legendTitle: 'Question palette legend', notVisited: 'Not visited yet', visitedNotAnswered: 'Visited, not answered', answered: 'Answered',
+        marked: 'Marked for review (not scored)', answeredMarked: 'Answered & marked for review (scored)', start: 'Start Test', back: 'Back',
+      },
+      taking: {
+        questionOf: 'Question {0} of {1}', submit: 'Submit Test', multipleChoice: 'Multiple Choice', shortAnswer: 'Short Answer', placeholder: 'Type your answer here...',
+        clear: 'Clear Response', markNext: 'Mark for Review & Next', saveNext: 'Save & Next', palette: 'Question Palette', answeredCount: '{0}/{1} answered',
+      },
+      results: {
+        correctCount: '{0} correct', awaitingOne: '1 subjective answer awaiting grading', awaitingMany: '{0} subjective answers awaiting grading', downloadPdf: 'Download PDF', backToTests: 'Back to Tests',
+        correctTag: ' (correct)', yourAnswerTag: ' (your answer)', yourAnswer: 'Your answer: ', leftBlank: 'left blank', modelAnswer: 'Model answer: ',
+        gotRight: 'I got this right', gotWrong: 'I got this wrong', why: 'Why: ',
+      },
+      dialogs: {
+        unanswered: '{0} question(s) unanswered. Submit anyway?', submitNow: 'Submit the test now?', submit: 'Submit', keepWorking: 'Keep working', deleteMsg: 'Delete this test? This cannot be undone.', deleteCta: 'Delete', cancel: 'Cancel',
       },
     },
     moments: {
@@ -3203,6 +3245,37 @@ export const translations: Record<Locale, TranslationShape> = {
         },
       },
     },
+    testPage: {
+      title: 'टेस्ट',
+      subtitle: 'आधिकारिक टेस्ट दें, या अभ्यास के लिए अपना टेस्ट बनाएँ।',
+      daily: { title: 'डेली टेस्ट', empty: 'एक बार सेट करें — हर दिन नया टेस्ट', pending: 'आज का टेस्ट इंत़ार कर रहा है', ready: 'आज का टेस्ट तैयार है', done: 'आज का हो गया', openAria: 'खोलें' },
+      officialTitle: 'आधिकारिक टेस्ट',
+      myTests: 'मेरे टेस्ट',
+      create: 'नया टेस्ट बनाएँ',
+      emptyMine: 'आपने अभी तक कोई टेस्ट नहीं बनाया — ऊपर से अपने प्रश्न जोड़ें।',
+      pastAttempts: 'पिछले प्रयास',
+      card: {
+        questionsCount: '{0} प्रश्न', oneQuestion: '1 प्रश्न', minutes: '{0} मिनट', noTimer: 'कोई टाइमर नहीं',
+        live: 'लाइव', runLive: 'लाइव चलाएँ', take: 'टेस्ट दें', takeAria: 'टेस्ट दें', edit: 'टेस्ट बदलें', delete: 'टेस्ट हटाएँ',
+      },
+      instructions: {
+        duration: 'अवधि', noLimit: 'कोई सीमा नहीं', totalMarks: 'कुल अंक', mcqQuestions: 'MCQ प्रश्न', subjectiveQuestions: 'विषयपरक प्रश्न',
+        legendTitle: 'प्रश्न पैलेट का मतलब', notVisited: 'अभी देखा नहीं', visitedNotAnswered: 'देखा, जवाब नहीं दिया', answered: 'जवाब दिया',
+        marked: 'रिव्यू के लिए चिह्नित (अंक नहीं जुड़ेंगे)', answeredMarked: 'जवाब दिया और रिव्यू के लिए चिह्नित (अंक जुड़ेंगे)', start: 'टेस्ट शुरू करें', back: 'वापस',
+      },
+      taking: {
+        questionOf: 'प्रश्न {0} / {1}', submit: 'टेस्ट जमा करें', multipleChoice: 'बहुविकल्पीय', shortAnswer: 'छोटा उत्तर', placeholder: 'अपना उत्तर यहाँ लिखें...',
+        clear: 'उत्तर हटाएँ', markNext: 'रिव्यू के लिए चिह्नित करें और आगे', saveNext: 'सेव करें और आगे', palette: 'प्रश्न पैलेट', answeredCount: '{0}/{1} के जवाब दिए',
+      },
+      results: {
+        correctCount: '{0} सही', awaitingOne: '1 विषयपरक उत्तर जाँच का इंत़ार कर रहा है', awaitingMany: '{0} विषयपरक उत्तर जाँच का इंत़ार कर रहे हैं', downloadPdf: 'PDF डाउनलोड करें', backToTests: 'टेस्ट पर वापस',
+        correctTag: ' (सही)', yourAnswerTag: ' (आपका उत्तर)', yourAnswer: 'आपका उत्तर: ', leftBlank: 'खाली छोड़ा', modelAnswer: 'आदर्श उत्तर: ',
+        gotRight: 'मेरा सही था', gotWrong: 'मेरा गलत था', why: 'क्यों: ',
+      },
+      dialogs: {
+        unanswered: '{0} प्रश्न बिना जवाब के हैं। फिर भी जमा करें?', submitNow: 'अभी टेस्ट जमा करें?', submit: 'जमा करें', keepWorking: 'जारी रखें', deleteMsg: 'यह टेस्ट हटाएँ? इसे वापस नहीं लाया जा सकेगा।', deleteCta: 'हटाएँ', cancel: 'रद्द करें',
+      },
+    },
     moments: {
       welcomeBack: {
         title: 'फिर से स्वागत है',
@@ -4832,6 +4905,37 @@ export const translations: Record<Locale, TranslationShape> = {
           system: 'What system does it belong to?',
           risk: "What if you don't learn it?",
         },
+      },
+    },
+    testPage: {
+      title: 'Tests',
+      subtitle: 'Official tests do, ya practice ke liye apna test banao.',
+      daily: { title: 'Daily Test', empty: 'Ek baar set karo — roz naya test', pending: 'Aaj ka test intezaar kar raha hai', ready: 'Aaj ka test ready hai', done: 'Aaj ka ho gaya', openAria: 'Kholo' },
+      officialTitle: 'Official tests',
+      myTests: 'Mere tests',
+      create: 'Naya Test Banao',
+      emptyMine: 'Tumne abhi tak koi test nahi banaya — upar se apne sawaal add karo.',
+      pastAttempts: 'Pichhle attempts',
+      card: {
+        questionsCount: '{0} sawaal', oneQuestion: '1 sawaal', minutes: '{0} min', noTimer: 'timer nahi',
+        live: 'Live', runLive: 'Live chalao', take: 'Test Do', takeAria: 'Test do', edit: 'Test badlo', delete: 'Test hatao',
+      },
+      instructions: {
+        duration: 'Time', noLimit: 'Koi limit nahi', totalMarks: 'Total marks', mcqQuestions: 'MCQ sawaal', subjectiveQuestions: 'Subjective sawaal',
+        legendTitle: 'Question palette ka matlab', notVisited: 'Abhi dekha nahi', visitedNotAnswered: 'Dekha, jawab nahi diya', answered: 'Jawab diya',
+        marked: 'Review ke liye mark kiya (marks nahi judenge)', answeredMarked: 'Jawab diya aur review ke liye mark kiya (marks judenge)', start: 'Test Shuru Karo', back: 'Wapas',
+      },
+      taking: {
+        questionOf: 'Sawaal {0} / {1}', submit: 'Test Submit Karo', multipleChoice: 'Multiple Choice', shortAnswer: 'Short Answer', placeholder: 'Apna jawab yahan likho...',
+        clear: 'Jawab hatao', markNext: 'Review ke liye mark karo aur aage', saveNext: 'Save karo aur aage', palette: 'Question Palette', answeredCount: '{0}/{1} ke jawab diye',
+      },
+      results: {
+        correctCount: '{0} sahi', awaitingOne: '1 subjective jawab check hone ka intezaar kar raha hai', awaitingMany: '{0} subjective jawab check hone ka intezaar kar rahe hain', downloadPdf: 'PDF download karo', backToTests: 'Tests pe wapas',
+        correctTag: ' (sahi)', yourAnswerTag: ' (tumhara jawab)', yourAnswer: 'Tumhara jawab: ', leftBlank: 'khali chhoda', modelAnswer: 'Model answer: ',
+        gotRight: 'Mera sahi tha', gotWrong: 'Mera galat tha', why: 'Kyun: ',
+      },
+      dialogs: {
+        unanswered: '{0} sawaal bina jawab ke hain. Phir bhi submit karein?', submitNow: 'Abhi test submit karein?', submit: 'Submit', keepWorking: 'Jaari rakho', deleteMsg: 'Ye test hatayein? Ise wapas nahi laya ja sakta.', deleteCta: 'Hatao', cancel: 'Cancel',
       },
     },
     moments: {
