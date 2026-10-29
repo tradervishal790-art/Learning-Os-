@@ -1048,7 +1048,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
         {activePage === 'mentor' && <Mentor />}
         {activePage === 'notes' && <Notes />}
         {activePage === 'test' && <Test />}
-        {activePage === 'progress' && <Progress goals={goals} />}
+        {activePage === 'progress' && <Progress goals={goals} onNavigateToRoadmap={() => setActivePage('roadmap')} />}
         {activePage === 'research' && <Research />}
         {activePage === 'dictionary' && <Dictionary />}
         {activePage === 'current-affairs' && <CurrentAffairs />}
