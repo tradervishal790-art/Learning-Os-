@@ -364,6 +364,14 @@ export interface TranslationShape {
       allCaughtUpBody: string;
     };
   };
+  // Test builder (create / edit a test, bulk import, question cards).
+  testBuilder: {
+    titleLabel: string; titlePh: string; durationLabel: string; topicLabel: string; topicPh: string;
+    addMcq: string; addSubjective: string; bulkImport: string; saveBank: string; saveChanges: string; saveTest: string;
+    errors: { needTitle: string; needTopic: string; needQuestion: string; emptyQ: string; fillOptions: string; pickCorrect: string; needModel: string };
+    bulk: { title: string; closeAria: string; intro: string; introEnd: string; showExample: string; hideExample: string; placeholder: string; importCta: string; cancel: string };
+    card: { subjective: string; moveUp: string; moveDown: string; remove: string; questionPh: string; markCorrect: string; removeOption: string; addOption: string; optionPh: string; hint: string; modelPh: string; explainPh: string; marks: string };
+  };
   // Test page (list, instructions, taking screen, results, dialogs).
   testPage: {
     title: string; subtitle: string;
@@ -1580,6 +1588,21 @@ export const translations: Record<Locale, TranslationShape> = {
           system: 'What system does it belong to?',
           risk: "What if you don't learn it?",
         },
+      },
+    },
+    testBuilder: {
+      titleLabel: 'Test title', titlePh: 'e.g. Unit 3 Mock Test', durationLabel: 'Duration (min, 0 = no timer)', topicLabel: 'Topic / Subject', topicPh: 'e.g. Organic Chemistry',
+      addMcq: 'Add MCQ Question', addSubjective: 'Add Subjective Question', bulkImport: 'Bulk Import', saveBank: 'Save Question Bank', saveChanges: 'Save Changes', saveTest: 'Save Test',
+      errors: {
+        needTitle: 'Give the test a title.', needTopic: 'Give the test a topic/subject.', needQuestion: 'Add at least one question.', emptyQ: 'Question {0} is empty.', fillOptions: 'Question {0}: fill at least {1} options.', pickCorrect: 'Question {0}: select the correct option (it must be one of the filled options), or add the answer sheet.', needModel: 'Question {0}: add a model answer.',
+      },
+      bulk: {
+        title: 'Bulk Import', closeAria: 'Close bulk import', intro: 'Paste as many questions as you want, one after another, separated by a line with just ', introEnd: '.', showExample: 'Show format example', hideExample: 'Hide format example',
+        placeholder: 'Paste your questions here...', importCta: 'Import Questions', cancel: 'Cancel',
+      },
+      card: {
+        subjective: 'Subjective', moveUp: 'Move up', moveDown: 'Move down', remove: 'Remove question', questionPh: 'Question text', markCorrect: 'Mark option {0} correct',
+        removeOption: 'Remove option {0}', addOption: 'Add option', optionPh: 'Option {0}', hint: 'Select the radio button next to the correct option. {0}–{1} options allowed; empty options are dropped when you save.', modelPh: 'Model answer (shown to you after you submit, for self-grading)', explainPh: 'Explanation (optional, shown in results)', marks: 'Marks',
       },
     },
     testPage: {
@@ -3245,6 +3268,21 @@ export const translations: Record<Locale, TranslationShape> = {
         },
       },
     },
+    testBuilder: {
+      titleLabel: 'टेस्ट का नाम', titlePh: 'जैसे: यूनिट 3 मॉक टेस्ट', durationLabel: 'अवधि (मिनट, 0 = कोई टाइमर नहीं)', topicLabel: 'टॉपिक / विषय', topicPh: 'जैसे: ऑर्गेनिक केमिस्ट्री',
+      addMcq: 'MCQ प्रश्न जोड़ें', addSubjective: 'विषयपरक प्रश्न जोड़ें', bulkImport: 'एक साथ इम्पोर्ट', saveBank: 'प्रश्न बैंक सेव करें', saveChanges: 'बदलाव सेव करें', saveTest: 'टेस्ट सेव करें',
+      errors: {
+        needTitle: 'टेस्ट को एक नाम दें।', needTopic: 'टेस्ट का टॉपिक/विषय लिखें।', needQuestion: 'कम से कम एक प्रश्न जोड़ें।', emptyQ: 'प्रश्न {0} खाली है।', fillOptions: 'प्रश्न {0}: कम से कम {1} विकल्प भरें।', pickCorrect: 'प्रश्न {0}: सही विकल्प चुनें (वह भरे हुए विकल्पों में से एक होना चाहिए), या उत्तर-पत्र जोड़ें।', needModel: 'प्रश्न {0}: आदर्श उत्तर जोड़ें।',
+      },
+      bulk: {
+        title: 'एक साथ इम्पोर्ट', closeAria: 'बल्क इम्पोर्ट बंद करें', intro: 'जितने चाहें प्रश्न एक के बाद एक चिपकाएँ, हर प्रश्न के बीच सिर्फ़ ', introEnd: ' वाली एक लाइन रखें।', showExample: 'फ़ॉर्मैट का उदाहरण दिखाएँ', hideExample: 'फ़ॉर्मैट का उदाहरण छिपाएँ',
+        placeholder: 'अपने प्रश्न यहाँ चिपकाएँ...', importCta: 'प्रश्न इम्पोर्ट करें', cancel: 'रद्द करें',
+      },
+      card: {
+        subjective: 'विषयपरक', moveUp: 'ऊपर ले जाएँ', moveDown: 'नीचे ले जाएँ', remove: 'प्रश्न हटाएँ', questionPh: 'प्रश्न का टेक्स्ट', markCorrect: 'विकल्प {0} को सही चिह्नित करें',
+        removeOption: 'विकल्प {0} हटाएँ', addOption: 'विकल्प जोड़ें', optionPh: 'विकल्प {0}', hint: 'सही विकल्प के बगल का रेडियो बटन चुनें। {0}–{1} विकल्प रख सकते हैं; खाली विकल्प सेव करते समय हट जाएँगे।', modelPh: 'आदर्श उत्तर (सबमिट के बाद आपको दिखेगा, खुद जाँचने के लिए)', explainPh: 'व्याख्या (वैकल्पिक, नतीजों में दिखेगी)', marks: 'अंक',
+      },
+    },
     testPage: {
       title: 'टेस्ट',
       subtitle: 'आधिकारिक टेस्ट दें, या अभ्यास के लिए अपना टेस्ट बनाएँ।',
@@ -4905,6 +4943,21 @@ export const translations: Record<Locale, TranslationShape> = {
           system: 'What system does it belong to?',
           risk: "What if you don't learn it?",
         },
+      },
+    },
+    testBuilder: {
+      titleLabel: 'Test ka naam', titlePh: 'jaise: Unit 3 Mock Test', durationLabel: 'Time (min, 0 = timer nahi)', topicLabel: 'Topic / Subject', topicPh: 'jaise: Organic Chemistry',
+      addMcq: 'MCQ Sawaal Jodo', addSubjective: 'Subjective Sawaal Jodo', bulkImport: 'Bulk Import', saveBank: 'Question Bank Save Karo', saveChanges: 'Badlav Save Karo', saveTest: 'Test Save Karo',
+      errors: {
+        needTitle: 'Test ko ek naam do.', needTopic: 'Test ka topic/subject likho.', needQuestion: 'Kam se kam ek sawaal jodo.', emptyQ: 'Sawaal {0} khali hai.', fillOptions: 'Sawaal {0}: kam se kam {1} options bharo.', pickCorrect: 'Sawaal {0}: sahi option chuno (wo bhare hue options mein se ek hona chahiye), ya answer sheet jodo.', needModel: 'Sawaal {0}: model answer jodo.',
+      },
+      bulk: {
+        title: 'Bulk Import', closeAria: 'Bulk import band karo', intro: 'Jitne chaho sawaal ek ke baad ek paste karo, har sawaal ke beech sirf ', introEnd: ' wali ek line rakho.', showExample: 'Format example dikhao', hideExample: 'Format example chhupao',
+        placeholder: 'Apne sawaal yahan paste karo...', importCta: 'Sawaal Import Karo', cancel: 'Cancel',
+      },
+      card: {
+        subjective: 'Subjective', moveUp: 'Upar karo', moveDown: 'Neeche karo', remove: 'Sawaal hatao', questionPh: 'Sawaal ka text', markCorrect: 'Option {0} ko sahi mark karo',
+        removeOption: 'Option {0} hatao', addOption: 'Option jodo', optionPh: 'Option {0}', hint: 'Sahi option ke bagal ka radio button chuno. {0}–{1} options rakh sakte ho; khali options save karte waqt hat jayenge.', modelPh: 'Model answer (submit ke baad tumhe dikhega, khud check karne ke liye)', explainPh: 'Explanation (optional, results mein dikhega)', marks: 'Marks',
       },
     },
     testPage: {

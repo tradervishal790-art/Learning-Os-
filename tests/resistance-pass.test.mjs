@@ -98,3 +98,12 @@ test('#9b Test page text comes from translations (en/hi/hinglish), not hardcoded
   const tr = read('i18n/translations.ts');
   assert.equal((tr.match(/\n    testPage: \{/g) ?? []).length, 3, 'testPage exists in all three locales');
 });
+
+test('#9c Test builder form text comes from translations, not hardcoded English', () => {
+  const src = read('TestBuilder.tsx');
+  for (const lit of ['Give the test a title.', 'Add Subjective Question', 'Save Question Bank', 'Import Questions', 'Paste your questions here...', 'Explanation (optional, shown in results)', 'Remove question']) {
+    assert.ok(!src.includes(lit), `hardcoded: ${lit}`);
+  }
+  assert.ok((src.match(/useTranslation\(\)\.testBuilder/g) ?? []).length >= 3);
+  assert.equal((read('i18n/translations.ts').match(/\n    testBuilder: \{/g) ?? []).length, 3);
+});

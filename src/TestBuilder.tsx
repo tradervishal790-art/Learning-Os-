@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { useTranslation } from './i18n/LanguageContext';
+import { format } from './i18n/format';
 import { motion } from 'framer-motion';
 import { Trash2, ChevronUp, ChevronDown, ListChecks, PenLine, ClipboardPaste, X, Plus } from 'lucide-react';
 import type { TestPaper, TestQuestion, MCQQuestion, SubjectiveQuestion } from './types';
@@ -60,6 +62,7 @@ interface TestBuilderProps {
 }
 
 export default function TestBuilder({ initialPaper, onSave, onCancel, variant }: TestBuilderProps) {
+  const tb = useTranslation().testBuilder;
   const isDaily = variant === 'daily';
   const [title, setTitle] = useState(initialPaper?.title ?? (isDaily ? 'Daily Test question bank' : ''));
   const [topic, setTopic] = useState(initialPaper?.topic ?? (isDaily ? 'Daily Test' : ''));
@@ -90,14 +93,14 @@ export default function TestBuilder({ initialPaper, onSave, onCancel, variant }:
   };
 
   const handleSave = () => {
-    if (!title.trim()) return setError('Give the test a title.');
-    if (!topic.trim()) return setError('Give the test a topic/subject.');
-    if (questions.length === 0 && !isDaily) return setError('Add at least one question.');
+    if (!title.trim()) return setError(tb.errors.needTitle);
+    if (!topic.trim()) return setError(tb.errors.needTopic);
+    if (questions.length === 0 && !isDaily) return setError(tb.errors.needQuestion);
     for (const [i, q] of questions.entries()) {
-      if (!q.question.trim()) return setError(`Question ${i + 1} is empty.`);
-      if (q.type === 'mcq' && filledOptionCount(q.options) < MIN_OPTIONS) return setError(`Question ${i + 1}: fill at least ${MIN_OPTIONS} options.`);
-      if (q.type === 'mcq' && compactMcq(q).correctIndex < 0) return setError(`Question ${i + 1}: select the correct option (it must be one of the filled options), or add the answer sheet.`);
-      if (q.type === 'subjective' && !q.modelAnswer.trim()) return setError(`Question ${i + 1}: add a model answer.`);
+      if (!q.question.trim()) return setError(format(tb.errors.emptyQ, i + 1));
+      if (q.type === 'mcq' && filledOptionCount(q.options) < MIN_OPTIONS) return setError(format(tb.errors.fillOptions, i + 1, MIN_OPTIONS));
+      if (q.type === 'mcq' && compactMcq(q).correctIndex < 0) return setError(format(tb.errors.pickCorrect, i + 1));
+      if (q.type === 'subjective' && !q.modelAnswer.trim()) return setError(format(tb.errors.needModel, i + 1));
     }
 
     const now = new Date().toISOString();
@@ -118,16 +121,16 @@ export default function TestBuilder({ initialPaper, onSave, onCancel, variant }:
       <div className="card rounded-2xl p-6 mb-6">
         <div className="grid md:grid-cols-3 gap-4 mb-1">
           <div className="md:col-span-2">
-            <label className="block text-sm font-medium mb-1.5 text-gray-600 dark:text-white/70">Test title</label>
+            <label className="block text-sm font-medium mb-1.5 text-gray-600 dark:text-white/70">{tb.titleLabel}</label>
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. Unit 3 Mock Test"
+              placeholder={tb.titlePh}
               className="w-full bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-2.5 focus:outline-none focus:border-black dark:focus:border-white"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1.5 text-gray-600 dark:text-white/70">Duration (min, 0 = no timer)</label>
+            <label className="block text-sm font-medium mb-1.5 text-gray-600 dark:text-white/70">{tb.durationLabel}</label>
             <input
               type="number"
               min={0}
@@ -138,11 +141,11 @@ export default function TestBuilder({ initialPaper, onSave, onCancel, variant }:
           </div>
         </div>
         <div className="mt-3">
-          <label className="block text-sm font-medium mb-1.5 text-gray-600 dark:text-white/70">Topic / Subject</label>
+          <label className="block text-sm font-medium mb-1.5 text-gray-600 dark:text-white/70">{tb.topicLabel}</label>
           <input
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
-            placeholder="e.g. Organic Chemistry"
+            placeholder={tb.topicPh}
             className="w-full bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-2.5 focus:outline-none focus:border-black dark:focus:border-white"
           />
         </div>
@@ -175,19 +178,19 @@ export default function TestBuilder({ initialPaper, onSave, onCancel, variant }:
           onClick={addMCQ}
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10 text-sm font-medium transition"
         >
-          <ListChecks className="w-4 h-4" /> Add MCQ Question
+          <ListChecks className="w-4 h-4" /> {tb.addMcq}
         </button>
         <button
           onClick={addSubjective}
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10 text-sm font-medium transition"
         >
-          <PenLine className="w-4 h-4" /> Add Subjective Question
+          <PenLine className="w-4 h-4" /> {tb.addSubjective}
         </button>
         <button
           onClick={() => setShowBulkImport(true)}
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10 text-sm font-medium transition"
         >
-          <ClipboardPaste className="w-4 h-4" /> Bulk Import
+          <ClipboardPaste className="w-4 h-4" /> {tb.bulkImport}
         </button>
       </div>
 
@@ -197,7 +200,7 @@ export default function TestBuilder({ initialPaper, onSave, onCancel, variant }:
 
       <div className="flex gap-3">
         <button onClick={handleSave} className="px-6 py-3 rounded-xl bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white font-semibold transition">
-          {isDaily ? 'Save Question Bank' : initialPaper ? 'Save Changes' : 'Save Test'}
+          {isDaily ? tb.saveBank : initialPaper ? tb.saveChanges : tb.saveTest}
         </button>
         <button onClick={onCancel} className="px-6 py-3 rounded-xl border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10 font-medium transition">
           Cancel
@@ -208,6 +211,7 @@ export default function TestBuilder({ initialPaper, onSave, onCancel, variant }:
 }
 
 function BulkImportPanel({ onImport, onClose }: { onImport: (questions: TestQuestion[]) => void; onClose: () => void }) {
+  const tb = useTranslation().testBuilder;
   const [text, setText] = useState('');
   const [errors, setErrors] = useState<string[]>([]);
   const [showExample, setShowExample] = useState(false);
@@ -221,15 +225,15 @@ function BulkImportPanel({ onImport, onClose }: { onImport: (questions: TestQues
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="card rounded-2xl p-5 mb-6">
       <div className="flex items-center justify-between mb-3">
-        <p className="font-semibold">Bulk Import</p>
-        <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10" aria-label="Close bulk import">
+        <p className="font-semibold">{tb.bulk.title}</p>
+        <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10" aria-label={tb.bulk.closeAria}>
           <X className="w-4 h-4" />
         </button>
       </div>
       <p className="text-sm text-gray-500 dark:text-white/60 mb-3">
-        Paste as many questions as you want, one after another, separated by a line with just <code className="px-1 py-0.5 rounded bg-gray-200 dark:bg-white/10">---</code>.{' '}
+        {tb.bulk.intro}<code className="px-1 py-0.5 rounded bg-gray-200 dark:bg-white/10">---</code>{tb.bulk.introEnd}{' '}
         <button onClick={() => setShowExample((s) => !s)} className="underline">
-          {showExample ? 'Hide' : 'Show'} format example
+          {showExample ? tb.bulk.hideExample : tb.bulk.showExample}
         </button>
       </p>
       {showExample && (
@@ -238,7 +242,7 @@ function BulkImportPanel({ onImport, onClose }: { onImport: (questions: TestQues
       <textarea
         value={text}
         onChange={(e) => setText(e.target.value)}
-        placeholder="Paste your questions here..."
+        placeholder={tb.bulk.placeholder}
         rows={10}
         className="w-full bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 mb-3 font-mono text-sm resize-none focus:outline-none focus:border-black dark:focus:border-white"
       />
@@ -251,10 +255,10 @@ function BulkImportPanel({ onImport, onClose }: { onImport: (questions: TestQues
       )}
       <div className="flex gap-3">
         <button onClick={handleImport} disabled={!text.trim()} className="px-5 py-2.5 rounded-xl bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white disabled:opacity-30 text-sm font-semibold transition">
-          Import Questions
+          {tb.bulk.importCta}
         </button>
         <button onClick={onClose} className="px-5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10 text-sm font-medium transition">
-          Cancel
+          {tb.bulk.cancel}
         </button>
       </div>
     </motion.div>
@@ -276,6 +280,7 @@ function QuestionCard({
   onRemove: () => void;
   onMove: (dir: -1 | 1) => void;
 }) {
+  const tb = useTranslation().testBuilder;
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
@@ -284,16 +289,16 @@ function QuestionCard({
     >
       <div className="flex items-center justify-between mb-3">
         <span className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-white/40">
-          Q{index + 1} · {question.type === 'mcq' ? 'MCQ' : 'Subjective'}
+          Q{index + 1} · {question.type === 'mcq' ? 'MCQ' : tb.card.subjective}
         </span>
         <div className="flex items-center gap-1">
-          <button onClick={() => onMove(-1)} disabled={index === 0} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 disabled:opacity-30" aria-label="Move up">
+          <button onClick={() => onMove(-1)} disabled={index === 0} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 disabled:opacity-30" aria-label={tb.card.moveUp}>
             <ChevronUp className="w-4 h-4" />
           </button>
-          <button onClick={() => onMove(1)} disabled={index === total - 1} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 disabled:opacity-30" aria-label="Move down">
+          <button onClick={() => onMove(1)} disabled={index === total - 1} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 disabled:opacity-30" aria-label={tb.card.moveDown}>
             <ChevronDown className="w-4 h-4" />
           </button>
-          <button onClick={onRemove} className="p-1.5 rounded-lg hover:bg-red-100 dark:hover:bg-red-500/10 text-red-500" aria-label="Remove question">
+          <button onClick={onRemove} className="p-1.5 rounded-lg hover:bg-red-100 dark:hover:bg-red-500/10 text-red-500" aria-label={tb.card.remove}>
             <Trash2 className="w-4 h-4" />
           </button>
         </div>
@@ -302,7 +307,7 @@ function QuestionCard({
       <textarea
         value={question.question}
         onChange={(e) => onChange({ question: e.target.value })}
-        placeholder="Question text"
+        placeholder={tb.card.questionPh}
         rows={2}
         className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-2.5 mb-3 resize-none focus:outline-none focus:border-black dark:focus:border-white"
       />
@@ -315,7 +320,7 @@ function QuestionCard({
                 type="radio"
                 checked={(question as MCQQuestion).correctIndex === oi}
                 onChange={() => onChange({ correctIndex: oi })}
-                aria-label={`Mark option ${oi + 1} correct`}
+                aria-label={format(tb.card.markCorrect, oi + 1)}
               />
               <input
                 value={opt}
@@ -324,7 +329,7 @@ function QuestionCard({
                   options[oi] = e.target.value;
                   onChange({ options });
                 }}
-                placeholder={`Option ${optionLabel(oi)}`}
+                placeholder={format(tb.card.optionPh, optionLabel(oi))}
                 className="flex-1 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-black dark:focus:border-white"
               />
               {(question as MCQQuestion).options.length > MIN_OPTIONS && (
@@ -336,7 +341,7 @@ function QuestionCard({
                     onChange({ options, correctIndex });
                   }}
                   className="p-1.5 rounded-lg hover:bg-red-100 dark:hover:bg-red-500/10 text-red-500"
-                  aria-label={`Remove option ${optionLabel(oi)}`}
+                  aria-label={format(tb.card.removeOption, optionLabel(oi))}
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -348,16 +353,16 @@ function QuestionCard({
               onClick={() => onChange({ options: [...(question as MCQQuestion).options, ''] })}
               className="flex items-center gap-1.5 ml-6 px-3 py-1.5 rounded-lg border border-dashed border-gray-300 dark:border-white/20 text-xs font-medium text-gray-500 dark:text-white/60 hover:bg-gray-100 dark:hover:bg-white/10 transition"
             >
-              <Plus className="w-3.5 h-3.5" /> Add option
+              <Plus className="w-3.5 h-3.5" /> {tb.card.addOption}
             </button>
           )}
-          <p className="text-xs text-gray-400 dark:text-white/40 pl-6">Select the radio button next to the correct option. {MIN_OPTIONS}–{MAX_OPTIONS} options allowed; empty options are dropped when you save.</p>
+          <p className="text-xs text-gray-400 dark:text-white/40 pl-6">{format(tb.card.hint, MIN_OPTIONS, MAX_OPTIONS)}</p>
         </div>
       ) : (
         <textarea
           value={(question as SubjectiveQuestion).modelAnswer}
           onChange={(e) => onChange({ modelAnswer: e.target.value })}
-          placeholder="Model answer (shown to you after you submit, for self-grading)"
+          placeholder={tb.card.modelPh}
           rows={3}
           className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-2.5 mb-3 resize-none focus:outline-none focus:border-black dark:focus:border-white"
         />
@@ -366,14 +371,14 @@ function QuestionCard({
       <textarea
         value={question.explanation}
         onChange={(e) => onChange({ explanation: e.target.value })}
-        placeholder="Explanation (optional, shown in results)"
+        placeholder={tb.card.explainPh}
         rows={2}
         className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-2.5 mb-3 resize-none focus:outline-none focus:border-black dark:focus:border-white text-sm"
       />
 
       <div className="flex items-center gap-4">
         <label className="flex items-center gap-2 text-sm text-gray-500 dark:text-white/60">
-          Marks
+          {tb.card.marks}
           <input
             type="number"
             value={question.marks}
