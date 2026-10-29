@@ -8,7 +8,7 @@ const liveJoin = readFileSync('src/LiveJoin.tsx', 'utf8');
 const liveHost = readFileSync('src/LiveHost.tsx', 'utf8');
 
 test('new allow-list entries get cryptographically random 8-character access codes', () => {
-  assert.match(liveTest, /ACCESS_CODE_LENGTH = 8/);
+  assert.match(liveTest, /ACCESS_CODE_LENGTH = 12/);
   assert.match(liveTest, /crypto\.getRandomValues\(values\)/);
   assert.match(liveTest, /const oldCode = typeof old\.accessCode === 'string'/);
   assert.match(liveTest, /accessCode: oldCode/);
@@ -17,7 +17,7 @@ test('new allow-list entries get cryptographically random 8-character access cod
 test('Firestore validates access-code shape and keeps allow-list listing host-only', () => {
   const allowed = rules.match(/match \/allowed\/\{phone\} \{([\s\S]*?)\n      \}/)?.[1] ?? '';
   assert.match(allowed, /allow list: if isHost\(\)/);
-  assert.match(allowed, /request\.resource\.data\.accessCode\.matches\('\[A-HJ-NP-Z2-9\]\{8\}'\)/);
+  assert.match(allowed, /request\.resource\.data\.accessCode\.matches\('\[A-HJ-NP-Z2-9\]\{12\}'\)/);
   assert.doesNotMatch(allowed, /allow get: if signedIn\(\);/);
 });
 
@@ -35,7 +35,7 @@ test('participant access code is required, normalized and persisted for refresh'
   assert.match(liveJoin, /value=\{accessCodeInput\}/);
   assert.match(liveJoin, /player\.accessCode \?\? ''/);
   assert.match(liveJoin, /joinLiveSession\(code, n, phone, accessCode\)/);
-  assert.match(liveJoin, /\^\[A-HJ-NP-Z2-9\]\{8\}\$/);
+  assert.match(liveJoin, /\^\[A-HJ-NP-Z2-9\]\{12\}\$/);
 });
 
 test('host UI displays and can copy the participant-specific access code', () => {
