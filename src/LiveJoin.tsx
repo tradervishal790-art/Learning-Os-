@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import type { TestPaper, TestUserAnswer } from './types';
 import { isAnswered } from './testGrading';
 import { TakingScreen, type QuestionStatus } from './Test';
-import { JoinError, beginLiveAttempt, joinLiveSession, normalizeAccessCode, normalizeCode, normalizePhone, submitLiveAnswers, subscribeSession, type LiveSession } from './liveTest';
+import { JoinError, beginLiveAttempt, ensureSignedIn, joinLiveSession, normalizeAccessCode, normalizeCode, normalizePhone, submitLiveAnswers, subscribeSession, type LiveSession } from './liveTest';
 import { loadSavedTheme } from './ThemeContext';
 import ConfirmDialog from './ConfirmDialog';
 
@@ -87,7 +87,21 @@ export default function LiveJoin() {
       setSession(null);
       return;
     }
-    return subscribeSession(code, setSession);
+    let active = true;
+    let unsubscribe: (() => void) | undefined;
+    // This route deliberately sits outside AuthGate. Establish the anonymous
+    // session first because Firestore only permits authenticated session reads.
+    void ensureSignedIn()
+      .then(() => {
+        if (active) unsubscribe = subscribeSession(code, setSession);
+      })
+      .catch(() => {
+        if (active) setSession(null);
+      });
+    return () => {
+      active = false;
+      unsubscribe?.();
+    };
   }, [code]);
 
   useEffect(() => {
