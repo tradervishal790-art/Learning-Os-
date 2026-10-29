@@ -141,7 +141,7 @@ export default function LiveJoin() {
     if (n.length < 2) return setFormError('Please enter your full name.');
     if (!phone) return setFormError('Please enter a valid 10-digit phone number.');
     const accessCode = normalizeAccessCode(accessCodeInput);
-    if (!/^[A-HJ-NP-Z2-9]{8}$/.test(accessCode)) return setFormError('Enter the 8-character access code given to you by the host.');
+    if (!/^[A-HJ-NP-Z2-9]{12}$/.test(accessCode)) return setFormError('Enter the 8-character access code given to you by the host.');
     void join(n, phone, accessCode);
   };
 
@@ -357,11 +357,11 @@ export default function LiveJoin() {
           onChange={(e) => setAccessCodeInput(e.target.value.toUpperCase())}
           autoCapitalize="characters"
           autoComplete="one-time-code"
-          maxLength={8}
-          placeholder="8-character access code from host"
+          maxLength={12}
+          placeholder="12-character access code from host"
           className="w-full mb-3 px-4 py-3 rounded-xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 focus:outline-none focus:border-black dark:focus:border-white font-mono tracking-widest"
         />
-        <p className="text-xs text-gray-500 dark:text-white/60 mb-3">Your host must share your private access code. A phone number alone is not enough.</p>
+        <p className="text-xs text-gray-500 dark:text-white/60 mb-3">Your host must share your private 12-character access code. A phone number alone is not enough.</p>
         {formError && <p className="text-sm text-red-500 mb-3">{formError}</p>}
         <button onClick={handleJoin} disabled={busy} className="w-full py-3 rounded-xl bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white font-semibold disabled:opacity-40">
           {busy ? 'Joining...' : 'Join test'}
