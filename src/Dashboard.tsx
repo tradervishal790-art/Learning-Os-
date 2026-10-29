@@ -3,6 +3,7 @@ import type { ComponentType } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import ConfirmDialog from './ConfirmDialog';
+import LecturePrefetch from './LecturePrefetch';
 import { Search, Film, BookOpen, ClipboardCheck, Newspaper, Lock, Settings as SettingsIcon, Target, RotateCcw, Flame, Check, ChevronRight, ArrowLeft } from 'lucide-react';
 import PagePlaceholder from './PagePlaceholder';
 import BottomNav from './BottomNav';
@@ -666,22 +667,6 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   // Roadmap times come from the AI as free text ("1 hours").
   const tidyTime = (v: string) => v.replace(/\b1 hours\b/gi, '1 hour');
 
-  // Warm the NEXT lecture in the background so Start opens instantly. Runs once per
-  // topic (cached 7 days), only for signed-in returning learners, after the page has
-  // settled. See lectureBuilder.ts for the full list of cost guards.
-  useEffect(() => {
-    if (!isReturning || isGuest || !currentTopic) return;
-    const topic = currentTopic;
-    const goalTitle = goals.find((g) => g.id === activeGoalId)?.title ?? userData?.goal;
-    const timer = window.setTimeout(() => {
-      void import('./lectureBuilder')
-        .then((m) => m.prefetchNextLecture({ topic, userData, goalTitle, goalId: activeGoalId }))
-        .catch(() => {});
-    }, 3000);
-    return () => window.clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isReturning, isGuest, currentTopic?.id, activeGoalId]);
-
   const getGreeting = () => {
     const hour = new Date().getHours();
     if (hour < 5) return t.dashboard.greeting.night;
@@ -836,6 +821,14 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
         <Suspense fallback={<PageLoading />}>
                 {activePage === 'dashboard' && (
           <div className="p-4 md:p-8 flex flex-col gap-4 md:gap-6">
+            {isReturning && !isGuest && currentTopic && (
+              <LecturePrefetch
+                topic={currentTopic}
+                userData={userData}
+                goalTitle={goals.find((g) => g.id === activeGoalId)?.title ?? userData?.goal}
+                goalId={activeGoalId}
+              />
+            )}
             <section className="relative isolate overflow-hidden rounded-[28px] border border-indigo-200/60 bg-gradient-to-br from-white via-indigo-50 to-violet-100 p-5 shadow-[0_18px_55px_rgba(79,70,229,0.10)] dark:border-white/[0.09] dark:from-[#17171f] dark:via-[#11111a] dark:to-[#211735] dark:shadow-[0_20px_60px_rgba(0,0,0,0.22)] md:p-7">
               <div aria-hidden="true" className="pointer-events-none absolute -right-12 -top-20 -z-10 h-56 w-56 rounded-full bg-violet-400/20 blur-3xl dark:bg-violet-500/20" />
               <div aria-hidden="true" className="pointer-events-none absolute -bottom-24 left-1/3 -z-10 h-48 w-48 rounded-full bg-blue-400/15 blur-3xl dark:bg-blue-500/10" />

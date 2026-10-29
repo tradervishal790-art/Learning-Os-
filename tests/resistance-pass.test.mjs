@@ -58,8 +58,8 @@ test('#8 finishing a checkpoint shows a small win message', () => {
 
 test('#5 next lecture is prefetched once, only for signed-in returning learners, and Watch uses it', () => {
   const dash = read('Dashboard.tsx');
-  assert.match(dash, /if \(!isReturning \|\| isGuest \|\| !currentTopic\) return;/);
-  assert.match(dash, /import\('\.\/lectureBuilder'\)/);
+  assert.match(dash, /isReturning && !isGuest && currentTopic && \(\s*<LecturePrefetch/);
+  assert.match(read('LecturePrefetch.tsx'), /import\('\.\/lectureBuilder'\)/);
   const lb = read('lectureBuilder.ts');
   for (const guard of ['navigator.onLine === false', 'saveData', 'failedRecently()', 'hasSavedVideoForTopic', 'inFlight.has', 'forceRefresh: false']) {
     assert.ok(lb.includes(guard), guard);
