@@ -8,7 +8,7 @@ test('#4 Watch never dead-ends on the learning-style quiz', () => {
   assert.ok(!read('Roadmap.tsx').includes('Complete the Learning Style Quiz first.'));
   assert.ok(!read('Dashboard.tsx').includes('Complete the Learning Style Quiz first.'));
   assert.match(read('learningProfileStore.ts'), /getLearningProfileOrNeutral/);
-  assert.match(read('Roadmap.tsx'), /getLearningProfileOrNeutral\(\)/);
+  assert.match(read('lectureBuilder.ts'), /getLearningProfileOrNeutral\(\)/);
 });
 
 test('#1 revision cards no longer show an invented retention number', () => {
@@ -54,4 +54,15 @@ test('#10 "Clear my profile" is no longer next to the home buttons; Settings ask
 
 test('#8 finishing a checkpoint shows a small win message', () => {
   assert.match(read('Revision.tsx'), /setNotice\(t\.revision\.recall\.doneNote\)/);
+});
+
+test('#5 next lecture is prefetched once, only for signed-in returning learners, and Watch uses it', () => {
+  const dash = read('Dashboard.tsx');
+  assert.match(dash, /if \(!isReturning \|\| isGuest \|\| !currentTopic\) return;/);
+  assert.match(dash, /import\('\.\/lectureBuilder'\)/);
+  const lb = read('lectureBuilder.ts');
+  for (const guard of ['navigator.onLine === false', 'saveData', 'failedRecently()', 'hasSavedVideoForTopic', 'inFlight.has', 'forceRefresh: false']) {
+    assert.ok(lb.includes(guard), guard);
+  }
+  assert.match(read('Roadmap.tsx'), /takePrefetchedLecture\(topic\.id, lectureSignature\(lectureInput\)\)/);
 });

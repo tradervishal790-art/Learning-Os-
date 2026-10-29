@@ -6,10 +6,7 @@ import { getRoadmapData, getRoadmapProgress, markTopicFinished, hydrateRoadmapDa
 import { hasSavedVideoForTopic, getSavedVideoIdForTopic } from './VideoIntel';
 import { MAX_ACTIVE_GOALS } from './goalsStore';
 import type { Topic, Video, UserOnboardingData, Goal, TopicBridge } from './types';
-import { buildCandidatePoolForConcept } from './conceptVideoPool';
-import { selectPlaylistForConceptV2, analyzedVideoToVideo, getLastTeacherForConcept } from './PlaylistBuilder';
-import { getLearningProfileOrNeutral } from './learningProfileStore';
-import { expandSearchQuery } from './queryExpander';
+import { buildLecture, lectureSignature, takePrefetchedLecture, type LectureResult } from './lectureBuilder';
 import DeepDiveChat from './DeepDiveChat';
 import HintBubble from './HintBubble';
 import { useTranslation } from './i18n/LanguageContext';
@@ -281,9 +278,6 @@ export default function Roadmap({
     const topic = topicArg ?? selectedTopic;
     if (!topic) return false;
 
-    // No quiz yet? A neutral profile still finds a good lecture — never a dead end.
-    const learnerProfile = getLearningProfileOrNeutral();
-
     setPlaylistError('');
     setPlaylistLoading(true);
     try {
@@ -301,72 +295,24 @@ export default function Roadmap({
         }
       }
 
-      // FIX: pehle yahan buildCandidatePoolForConcept() bina expandedQueries
-      // ke call ho raha tha, jisse ye silently buildFallbackQueries() (sirf
-      // topic-title cleaning) pe gir jaata tha — na learner ka style (pace,
-      // depth, practical) use hota tha, na hi time-pressure. Ab Custom
-      // Playlist flow (Dashboard.tsx) jaisa hi expand-query call karte hain,
-      // taaki roadmap ke topics ke liye bhi personalized queries banein.
-      //
-      // FIX 2: `goal` yahan userData.goal (ek hi global onboarding field)
-      // se nahi, balki CURRENTLY ACTIVE goal ke title se lena chahiye —
-      // multi-goal setup (n8n + Agwentic AI) mein userData.goal sirf ek hi
-      // goal ko reflect karta hai, chahe koi bhi tab open ho. Isse dusre
-      // goal ka topic search karte waqt AI ko galat "overall goal" context
-      // milta tha, jisse query expansion generic/irrelevant results deta
-      // tha (e.g. n8n ke "Data Structure" topic ke liye generic DSA video).
       const activeGoalTitle = goals.find((g) => g.id === activeGoalId)?.title ?? userData?.goal;
+      const lectureInput = { topic, userData, goalTitle: activeGoalTitle, hours: topicHours, deadline: topicDeadline };
 
-      let queries: string[] | undefined;
-      if (userData) {
-        const blueprint = {
-          role: userData.role,
-          goal: activeGoalTitle ?? userData.goal,
-          language: userData.language,
-          // Is topic ke liye explicitly chuna gaya hours/week agar hai to
-          // use karo (onboarding ke weekly hours se zyada relevant hai
-          // is specific topic ke liye), warna onboarding wala fallback.
-          hours: topicHours || userData.hours,
-          style: {
-            pace: learnerProfile.pace,
-            practical: learnerProfile.theoryVsPractical,
-            depth: learnerProfile.depth,
-            structure: learnerProfile.structureNeed,
-            storytelling: learnerProfile.storytelling,
-            languageComplexity: learnerProfile.languageComplexity,
-          },
-        };
-        try {
-          const expansion = await expandSearchQuery(topic.title, blueprint);
-          if (expansion?.queries && expansion.queries.length > 0) {
-            queries = expansion.queries;
-          }
-        } catch {
-          // Expansion failed — buildCandidatePoolForConcept falls back to
-          // cleaned-title queries on its own, no need to block here.
-        }
-      }
-
-      const candidates = await buildCandidatePoolForConcept(topic, queries, userData?.language, true);
-      if (candidates.length === 0) {
-        setPlaylistError(t.moments.playlistErrors.noGoodVideo);
-        return false;
-      }
-
-      const currentTeacherId = getLastTeacherForConcept(topic.id);
-      const result = selectPlaylistForConceptV2(candidates, learnerProfile, currentTeacherId, {
-        hours: topicHours,
-        deadline: topicDeadline,
-      });
-      if (!result) {
-        setPlaylistError(t.moments.playlistErrors.buildFailed);
+      // A lecture already prepared in the background while the learner was on Home
+      // (lectureBuilder.prefetchNextLecture) opens instantly, with zero API calls.
+      const prepared = takePrefetchedLecture(topic.id, lectureSignature(lectureInput));
+      const lecture: LectureResult = prepared
+        ? { ok: true, primary: prepared.primary, fallbacks: prepared.fallbacks, teachingProcess: prepared.teachingProcess }
+        : await buildLecture({ ...lectureInput, forceRefresh: true });
+      if (!lecture.ok) {
+        setPlaylistError(lecture.reason === 'no-candidates' ? t.moments.playlistErrors.noGoodVideo : t.moments.playlistErrors.buildFailed);
         return false;
       }
 
       // 'control' variant -> teachingProcess is undefined -> this stays null,
       // so handleMarkComplete's push-trigger branch below is a no-op for them,
       // exactly like today.
-      setActiveTeachingProcess(result.teachingProcess ?? null);
+      setActiveTeachingProcess(lecture.teachingProcess);
 
       // No API call here anymore — VideoIntel.tsx verifies against whichever
       // video the learner actually ends up picking (primary or fallback).
@@ -376,8 +322,8 @@ export default function Roadmap({
       const previousVideoId = getPreviousWatchedVideoId(topic);
 
       onLaunchPlaylist({
-        primary: analyzedVideoToVideo(result.primary),
-        fallbacks: result.fallbacks.map(analyzedVideoToVideo),
+        primary: lecture.primary,
+        fallbacks: lecture.fallbacks,
         bridge,
         previousVideoId,
         topicId: topic.id,

@@ -666,6 +666,22 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   // Roadmap times come from the AI as free text ("1 hours").
   const tidyTime = (v: string) => v.replace(/\b1 hours\b/gi, '1 hour');
 
+  // Warm the NEXT lecture in the background so Start opens instantly. Runs once per
+  // topic (cached 7 days), only for signed-in returning learners, after the page has
+  // settled. See lectureBuilder.ts for the full list of cost guards.
+  useEffect(() => {
+    if (!isReturning || isGuest || !currentTopic) return;
+    const topic = currentTopic;
+    const goalTitle = goals.find((g) => g.id === activeGoalId)?.title ?? userData?.goal;
+    const timer = window.setTimeout(() => {
+      void import('./lectureBuilder')
+        .then((m) => m.prefetchNextLecture({ topic, userData, goalTitle, goalId: activeGoalId }))
+        .catch(() => {});
+    }, 3000);
+    return () => window.clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isReturning, isGuest, currentTopic?.id, activeGoalId]);
+
   const getGreeting = () => {
     const hour = new Date().getHours();
     if (hour < 5) return t.dashboard.greeting.night;
