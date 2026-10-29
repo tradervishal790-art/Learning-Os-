@@ -141,7 +141,7 @@ export default function LiveJoin() {
     if (n.length < 2) return setFormError('Please enter your full name.');
     if (!phone) return setFormError('Please enter a valid 10-digit phone number.');
     const accessCode = normalizeAccessCode(accessCodeInput);
-    if (!/^[A-HJ-NP-Z2-9]{12}$/.test(accessCode)) return setFormError('Enter the 8-character access code given to you by the host.');
+    if (!/^[A-HJ-NP-Z2-9]{12}$/.test(accessCode)) return setFormError('Enter the 12-character access code given to you by the host.');
     void join(n, phone, accessCode);
   };
 
