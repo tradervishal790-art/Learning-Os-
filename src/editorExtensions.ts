@@ -1,6 +1,8 @@
 import StarterKit from '@tiptap/starter-kit';
 import { Extension } from '@tiptap/core';
-import { Plugin } from '@tiptap/pm/state';
+import { Plugin, PluginKey } from '@tiptap/pm/state';
+import type { EditorState } from '@tiptap/pm/state';
+import type { Mark } from '@tiptap/pm/model';
 import { TaskList, TaskItem } from '@tiptap/extension-list';
 import { TableKit } from '@tiptap/extension-table';
 import { TextStyleKit } from '@tiptap/extension-text-style';
@@ -12,34 +14,52 @@ import { Placeholder } from '@tiptap/extensions';
 import { VideoTimestamp } from './timestampNode';
 
 /**
- * Keep the previous typing marks when a selection is deleted and leaves an empty cursor.
- * ProseMirror clears stored marks on deletion, which made font/size/colour reset on the next keystroke.
+ * Typing style memory. The font / size / colour / bold the student chose lives only on the text itself, so
+ * when the line becomes empty (select + delete, Ctrl+A + delete, or Backspace down to nothing) ProseMirror has
+ * nothing left to take the style from and the next letter comes out in the default font.
+ * This remembers the style that was last in effect and puts it back as the "typing style" of an empty line.
+ * An explicit choice (stored marks, e.g. "no font") always wins over the memory.
  */
+const typingMarksKey = new PluginKey<readonly Mark[]>('typingMarks');
+
+/** Marks that should follow the student's typing. Links and inline code must not leak into new text. */
+const isTypingMark = (m: Mark): boolean => m.type.spec.inclusive !== false && m.type.name !== 'link' && m.type.name !== 'code';
+
+function marksInEffect(state: EditorState): readonly Mark[] | null {
+  if (state.storedMarks) return state.storedMarks.filter(isTypingMark);
+  const { selection } = state;
+  if (!selection.empty) {
+    let found: readonly Mark[] | null = null;
+    state.doc.nodesBetween(selection.from, selection.to, (node) => {
+      if (found) return false;
+      if (node.isText) found = node.marks;
+      return true;
+    });
+    return found ? (found as readonly Mark[]).filter(isTypingMark) : null;
+  }
+  const $from = selection.$from;
+  if ($from.parent.isTextblock && $from.parent.content.size === 0) return null; // an empty line says nothing new
+  return $from.marks().filter(isTypingMark);
+}
+
 const PreserveTypingMarks = Extension.create({
   name: 'preserveTypingMarks',
   addProseMirrorPlugins() {
     return [
-      new Plugin({
-        appendTransaction(transactions, oldState, newState) {
-          if (!newState.selection.empty || newState.storedMarks?.length) return null;
-          const changedDocument = transactions.some((tr) => tr.docChanged);
-          const oldSelection = oldState.selection;
-          // Preserve marks after deleting a non-empty selection, not after arbitrary document edits.
-          const deletedSelection = changedDocument && !oldSelection.empty;
-          // Moving the caret into an empty line is a separate, intentional preservation case.
-          const movedToEmptyLine = !changedDocument
-            && transactions.some((tr) => tr.selectionSet)
-            && newState.selection.$from.parent.content.size === 0;
-          if (!deletedSelection && !movedToEmptyLine) return null;
-          // marksAcross can be empty when a deletion spans a block boundary, even
-          // though the first selected character has the user's chosen font/size/colour.
-          // Fall back to the marks at the selection start so deleting selected text keeps
-          // that formatting as the next typing style.
-          const marksAcross = oldSelection.empty ? null : oldSelection.$from.marksAcross(oldSelection.$to);
-          const previousMarks = oldState.storedMarks
-            ?? (marksAcross && marksAcross.length > 0 ? marksAcross : oldSelection.$from.marks());
-          if (!previousMarks.length) return null;
-          return newState.tr.setStoredMarks(previousMarks);
+      new Plugin<readonly Mark[]>({
+        key: typingMarksKey,
+        state: {
+          init: () => [],
+          apply: (_tr, value, _old, next) => marksInEffect(next) ?? value,
+        },
+        appendTransaction(transactions, _oldState, newState) {
+          if (!newState.selection.empty || newState.storedMarks) return null; // an explicit choice is never overridden
+          if (!transactions.some((tr) => tr.docChanged || tr.selectionSet)) return null;
+          const $from = newState.selection.$from;
+          if (!$from.parent.isTextblock || $from.parent.content.size !== 0) return null;
+          const remembered = typingMarksKey.getState(newState) ?? [];
+          if (remembered.length === 0) return null;
+          return newState.tr.setStoredMarks(remembered.slice());
         },
       }),
     ];

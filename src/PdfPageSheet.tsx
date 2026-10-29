@@ -110,6 +110,7 @@ export default function PdfPageSheet({
             mode={mode}
             prefs={prefs}
             paperDark={false}
+            paperLight
             selectedIds={selectedIds}
             onSelect={onSelect}
             onCommit={onInk}

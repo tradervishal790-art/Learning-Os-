@@ -64,7 +64,7 @@ function paleOf(hex: string): string {
 }
 
 export default function InkLayer({
-  strokes, width, height, mode, prefs, selectedIds, paperDark = false, onCommit, onActivate, onSelect, onCircle,
+  strokes, width, height, mode, prefs, selectedIds, paperDark = false, paperLight = false, onCommit, onActivate, onSelect, onCircle,
 }: {
   strokes: InkStroke[];
   width: number;
@@ -74,6 +74,8 @@ export default function InkLayer({
   selectedIds: string[];
   /** The paper is dark (e.g. a charcoal page in light theme): 'auto' ink must be light. */
   paperDark?: boolean;
+  /** The page is always white (an imported PDF): 'auto' ink must stay dark even when the app is in dark mode. */
+  paperLight?: boolean;
   onCommit: (next: InkStroke[]) => void;
   onActivate: () => void;
   onSelect: (ids: string[]) => void;
@@ -95,7 +97,7 @@ export default function InkLayer({
   const [draft, setDraft] = useState<InkStroke[] | null>(null); // strokes while erasing / dragging
   const [preview, setPreview] = useState<Preview | null>(null);
   const [themeDark, setDark] = useState(isDarkNow);
-  const dark = themeDark || paperDark;
+  const dark = paperLight ? false : themeDark || paperDark;
   const shown = draft ?? strokes;
   const scale = width > 0 ? width / PAGE_UNITS : 1;
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -616,6 +618,8 @@ export default function InkLayer({
         onPointerUp={(e) => finish(e, false)}
         onPointerCancel={(e) => finish(e, true)}
         onPointerLeave={() => !gesture.current && placeRing(0, 0, false)}
+        // A pen's barrel button / press-and-hold must not open the browser menu in the middle of a stroke.
+        onContextMenu={(e) => { if (active) e.preventDefault(); }}
       />
       {(mode === 'select' || mode === 'circle') && (
         <svg aria-hidden className="absolute inset-0 z-40 pointer-events-none" width={width} height={height}>

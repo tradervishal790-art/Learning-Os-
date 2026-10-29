@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useDarkTheme } from './useDarkTheme';
 import { ChevronDown } from 'lucide-react';
 import { drawStroke, PEN_KINDS } from './inkEngine';
 import type { InkKind, InkStroke } from './notebookStore';
@@ -26,7 +27,7 @@ export function StrokeSample({
   kind, color, width = 3, w = 120, h = 28,
 }: { kind: InkKind; color: string; width?: number; w?: number; h?: number }) {
   const ref = useRef<HTMLCanvasElement>(null);
-  const dark = document.documentElement.classList.contains('dark');
+  const dark = useDarkTheme();
   useEffect(() => {
     const c = ref.current;
     if (!c) return;

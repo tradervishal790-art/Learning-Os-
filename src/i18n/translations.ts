@@ -559,6 +559,8 @@ export interface TranslationShape {
       eraserSize: string;
       eraseAll: string;
       eraseAllConfirm: string;
+      quickStyles: string;
+      snapShapes: string;
       undo: string;
       redo: string;
       modeSelect: string;
@@ -596,6 +598,7 @@ export interface TranslationShape {
       titlePlaceholder: string;
       bodyPlaceholder: string;
       addPage: string;
+      pdfOnlyHint: string;
       pageLabel: string;
       loadError: string;
       undo: string;
@@ -622,6 +625,7 @@ export interface TranslationShape {
       inlineCode: string;
       link: string;
       linkPrompt: string;
+      fontDefault: string;
       removeLink: string;
       table: string;
       addRow: string;
@@ -2147,6 +2151,8 @@ export const translations: Record<Locale, TranslationShape> = {
         eraserSize: "Eraser size",
         eraseAll: "Erase whole page",
         eraseAllConfirm: "Erase all handwriting on this page? You can undo this.",
+        quickStyles: "Quick styles",
+        snapShapes: "Snap shapes",
         undo: "Undo drawing",
         redo: "Redo drawing",
         modeSelect: "Select",
@@ -2184,6 +2190,7 @@ export const translations: Record<Locale, TranslationShape> = {
         titlePlaceholder: "Title",
         bodyPlaceholder: "Start writing...",
         addPage: "Add page",
+        pdfOnlyHint: "This note has only PDF pages. Add a page to type or attach photos.",
         pageLabel: "Page",
         loadError: "Could not open this note.",
         undo: "Undo",
@@ -2210,6 +2217,7 @@ export const translations: Record<Locale, TranslationShape> = {
         inlineCode: "Inline code",
         link: "Link",
         linkPrompt: "Link address (https://...)",
+        fontDefault: "Default",
         removeLink: "Remove link",
         table: "Insert table",
         addRow: "Add row",
@@ -3746,6 +3754,8 @@ export const translations: Record<Locale, TranslationShape> = {
         eraserSize: "Eraser size",
         eraseAll: "Erase whole page",
         eraseAllConfirm: "इस पृष्ठ का सारा हस्तलेखन मिटाएँ? आप इसे पूर्ववत कर सकते हैं।",
+        quickStyles: "त्वरित शैलियाँ",
+        snapShapes: "आकृतियाँ सुधारें",
         undo: "Undo drawing",
         redo: "Redo drawing",
         modeSelect: "Select",
@@ -3783,6 +3793,7 @@ export const translations: Record<Locale, TranslationShape> = {
         titlePlaceholder: "Title",
         bodyPlaceholder: "लिखना शुरू करें...",
         addPage: "Add page",
+        pdfOnlyHint: "इस नोट में सिर्फ़ PDF पृष्ठ हैं। टाइप करने या फ़ोटो जोड़ने के लिए एक पृष्ठ जोड़ें।",
         pageLabel: "Page",
         loadError: "यह नोट खोला नहीं जा सका।",
         undo: "Undo",
@@ -3809,6 +3820,7 @@ export const translations: Record<Locale, TranslationShape> = {
         inlineCode: "Inline code",
         link: "Link",
         linkPrompt: "लिंक का पता (https://...)",
+        fontDefault: "डिफ़ॉल्ट",
         removeLink: "Remove link",
         table: "Insert table",
         addRow: "Add row",
@@ -5344,6 +5356,8 @@ export const translations: Record<Locale, TranslationShape> = {
         eraserSize: "Eraser size",
         eraseAll: "Erase whole page",
         eraseAllConfirm: "Erase all handwriting on this page? You can undo this.",
+        quickStyles: "Quick styles",
+        snapShapes: "Snap shapes",
         undo: "Undo drawing",
         redo: "Redo drawing",
         modeSelect: "Select",
@@ -5381,6 +5395,7 @@ export const translations: Record<Locale, TranslationShape> = {
         titlePlaceholder: "Title",
         bodyPlaceholder: "Start writing...",
         addPage: "Add page",
+        pdfOnlyHint: "This note has only PDF pages. Add a page to type or attach photos.",
         pageLabel: "Page",
         loadError: "Could not open this note.",
         undo: "Undo",
@@ -5407,6 +5422,7 @@ export const translations: Record<Locale, TranslationShape> = {
         inlineCode: "Inline code",
         link: "Link",
         linkPrompt: "Link address (https://...)",
+        fontDefault: "Default",
         removeLink: "Remove link",
         table: "Insert table",
         addRow: "Add row",

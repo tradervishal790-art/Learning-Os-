@@ -2,7 +2,7 @@
 // conflict.ts — sync conflicts (Part 10). Pure: no storage, no network, no React.
 // A note is in conflict when it changed on this device AND on another device since the last sync.
 // ============================================================
-import type { NotePage, NoteVideo } from './notebookStore';
+import type { InkStroke, NotePage, NoteVideo } from './notebookStore';
 import type { NoteSnapshot } from './noteTypes';
 
 export interface ConflictInfo {
@@ -30,7 +30,17 @@ export function hasConflict(localEditedAfterSync: boolean, remoteUpdatedAt: stri
   return remote > synced;
 }
 
-/** Content signature of a page. Ink is compared by stroke ids (a stroke never changes once drawn). */
+/**
+ * A stroke's identity AND its look: moving, resizing, rotating or recolouring handwriting keeps the stroke id,
+ * so the id alone would hide those edits from the conflict check and the other device's copy would win silently.
+ */
+function strokeFingerprint(s: InkStroke): string {
+  let h = 0;
+  for (let i = 0; i < s.pts.length; i++) h = (h * 31 + Math.round(s.pts[i] * 10)) | 0;
+  return `${s.id}|${s.kind}|${s.color}|${s.width}|${s.pts.length}|${h}`;
+}
+
+/** Content signature of a page (ink by stroke id + look; photos by id + position on the page). */
 function signature(p: NotePage): string {
   return JSON.stringify([
     p.text,
@@ -38,8 +48,8 @@ function signature(p: NotePage): string {
     p.template ?? '',
     p.paper ?? '',
     p.bookmarked === true,
-    (p.ink ?? []).map((s) => s.id),
-    (p.attachments ?? []).map((a) => [a.id, a.kind]),
+    (p.ink ?? []).map(strokeFingerprint),
+    (p.attachments ?? []).map((a) => [a.id, a.kind, a.x ?? null, a.y ?? null, a.w ?? null, a.ar ?? null]),
     p.pdf ? [p.pdf.fileId, p.pdf.pageNumber] : null,
   ]);
 }

@@ -122,6 +122,20 @@ export default function VideoNotesPane({
   const [opacity, setOpacity] = useState<number>(loadOpacity);
   const moveRef = useRef<{ dx: number; dy: number } | null>(null);
 
+  // A smaller browser window must never leave the floating video off-screen.
+  useEffect(() => {
+    if (!floating) return undefined;
+    const keep = () =>
+      setPos((p) => {
+        const x = Math.min(window.innerWidth - 80, Math.max(-FLOAT_W + 80, p.x));
+        const y = Math.min(window.innerHeight - 60, Math.max(0, p.y));
+        return x === p.x && y === p.y ? p : { x, y };
+      });
+    keep();
+    window.addEventListener('resize', keep);
+    return () => window.removeEventListener('resize', keep);
+  }, [floating]);
+
   useEffect(() => {
     splitRef.current = split;
   }, [split]);

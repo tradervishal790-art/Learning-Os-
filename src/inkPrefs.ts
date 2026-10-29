@@ -152,9 +152,15 @@ export function useInkPrefs(): [InkPrefs, (patch: Partial<InkPrefs>) => void, ()
     getPrefs
   );
   const reset = useCallback(() => {
-    const current = getPrefs();
-    // Reset active pen settings without deleting the student's saved quick styles or recent colours.
-    setPrefs({ ...DEFAULT_PREFS, favorites: current.favorites, recentColors: current.recentColors });
+    // "Reset pen" resets the PEN only (type, colour, width, smoothing, snap). The eraser, highlighter, laser,
+    // finger setting, saved quick styles and the student's own colours are left exactly as they were.
+    setPrefs({
+      kind: DEFAULT_PREFS.kind,
+      color: DEFAULT_PREFS.color,
+      width: DEFAULT_PREFS.width,
+      smoothing: DEFAULT_PREFS.smoothing,
+      shapeSnap: DEFAULT_PREFS.shapeSnap,
+    });
   }, []);
   return [prefs, setPrefs, reset];
 }

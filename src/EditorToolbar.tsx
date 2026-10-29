@@ -238,9 +238,17 @@ export default function EditorToolbar({
 
   const addLink = () => {
     if (s.link) return void c().extendMarkRange('link').unsetLink().run();
-    const href = window.prompt(t.linkPrompt, 'https://');
-    if (!href || href === 'https://') return;
-    c().extendMarkRange('link').setLink({ href }).run();
+    const input = window.prompt(t.linkPrompt, 'https://')?.trim();
+    if (!input || input === 'https://') return;
+    // "google.com" becomes https://google.com (not a broken link inside the app); only web / mail / phone links are allowed.
+    const href = /^(https?:|mailto:|tel:)/i.test(input) ? input : /^[a-z][a-z0-9+.-]*:/i.test(input) ? null : `https://${input}`;
+    if (!href) return;
+    if (editor.state.selection.empty) {
+      // nothing selected: put the address itself on the page as a link (before, nothing visible happened)
+      c().insertContent({ type: 'text', text: input, marks: [{ type: 'link', attrs: { href } }] }).run();
+    } else {
+      c().extendMarkRange('link').setLink({ href }).run();
+    }
   };
 
   const readAloud = () => {
@@ -289,7 +297,7 @@ export default function EditorToolbar({
         </select>
         <select aria-label={t.fontFamily} title={t.fontFamily} className={`${selectCls} ml-1 w-36`}
           value={s.font} onChange={(e) => setFont(e.target.value)} style={s.font ? { fontFamily: s.font } : undefined}>
-          <option value="">Default</option>
+          <option value="">{t.fontDefault}</option>
           {/* a font saved by an older version / pasted from elsewhere that is not in the list */}
           {s.font && !ALL_FONTS.some((f) => f.value === s.font) && (
             <option value={s.font}>{s.font.split(',')[0].replace(/['"]/g, '')}</option>
@@ -397,7 +405,7 @@ export default function EditorToolbar({
 
   return (
     <div>
-      <div className="flex items-center gap-0.5 overflow-x-auto pb-1">
+      <div className="flex flex-wrap items-center gap-0.5 pb-1">
         {lead}
         {row}
         {extra}

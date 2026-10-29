@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useDarkTheme } from './useDarkTheme';
 import {
   BringToFront, ClipboardPaste, Copy, CopyPlus, Eraser, Hand, Highlighter, Keyboard as TypeIcon, LassoSelect, PenLine, Pointer, Pencil, Paintbrush,
   Plus, Redo2, RotateCcw, Scissors, ScanText, SendToBack, Shapes, SquareDashed, Trash2, Undo2, X,
@@ -57,7 +58,7 @@ const chip = (on: boolean) =>
 
 /** The pen thickness drawn as it really looks: a round dot (a flat bar for the highlighter). */
 function ThicknessDot({ width, color, hl = false }: { width: number; color: string; hl?: boolean }) {
-  const dark = document.documentElement.classList.contains('dark');
+  const dark = useDarkTheme();
   const d = Math.min(22, Math.max(2, width * 2));
   return (
     <span
@@ -68,7 +69,7 @@ function ThicknessDot({ width, color, hl = false }: { width: number; color: stri
 }
 
 function Dot({ color, size = 18 }: { color: string; size?: number }) {
-  const dark = document.documentElement.classList.contains('dark');
+  const dark = useDarkTheme();
   return (
     <span
       className="inline-block rounded-full border border-black/15 dark:border-white/30 shrink-0"
@@ -111,6 +112,7 @@ export default function InkToolbar({
   select: SelectApi;
 }) {
   const t = useTranslation().notebook.ink;
+  const darkTheme = useDarkTheme();
   const [colorOpen, setColorOpen] = useState(false);
   // Laser: the delay + colour options stay hidden until a laser style is tapped, then open in the same row.
   const [selWidth, setSelWidth] = useState(2);
@@ -134,8 +136,14 @@ export default function InkToolbar({
 
   const palette = isHl ? HL_COLORS : INK_COLORS;
   // Colours are the student's own saved ones (starting from a few suggestions); the colour in use always shows first.
-  const saved = prefs.recentColors.length > 0 ? prefs.recentColors : palette.slice(isHl ? 0 : 1, isHl ? 4 : 6);
-  const quick = [...new Set([color, ...(isHl ? [] : ['auto']), ...saved])].slice(0, isHl ? 5 : 7);
+  // The highlighter has its own colours: the pen's custom colours are not shown as highlighter colours.
+  const saved = isHl ? palette.slice(0, 4) : prefs.recentColors.length > 0 ? prefs.recentColors : palette.slice(1, 6);
+  const quickLimit = isHl ? 5 : 7;
+  const quickBase = [...new Set([...(isHl ? [] : ['auto']), ...saved])];
+  // Keep the row in a fixed order (picking a colour must not shuffle the buttons under the finger);
+  // a colour chosen elsewhere (e.g. the custom picker) is put in front only while it is not in the row.
+  let quick = quickBase.slice(0, quickLimit);
+  if (!quick.includes(color)) quick = [color, ...quick].slice(0, quickLimit);
 
 
   const addFavorite = () => {
@@ -228,7 +236,7 @@ export default function InkToolbar({
                 {INK_COLORS.slice(0, 6).map((c) => (
                   <RingSwatch
                     key={c}
-                    color={resolveColor(c, document.documentElement.classList.contains('dark'))}
+                    color={resolveColor(c, darkTheme)}
                     label={c}
                     selected={prefs.color === c}
                     onClick={() => setPrefs({ color: c })}
@@ -274,11 +282,11 @@ export default function InkToolbar({
         <>
           <PenPicker kind={prefs.kind} color={color} labels={kindLabel} title={t.penType} onPick={(k) => setPrefs({ kind: k })} />
           <Sep />
-          <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-white/40">Quick styles</span>
-          <button type="button" onClick={() => setPrefs({ kind: 'pencil', width: 2, color: '#6b7280' })} title="Pencil" aria-label="Pencil style" aria-pressed={prefs.kind === 'pencil'} className={chip(prefs.kind === 'pencil')}><Pencil size={15} /><span className="ml-1">Pencil</span></button>
-          <button type="button" onClick={() => setPrefs({ kind: 'fineliner', width: 1, color: '#3b82f6' })} title="Fine liner" aria-label="Fine liner style" aria-pressed={prefs.kind === 'fineliner'} className={chip(prefs.kind === 'fineliner')}><PenLine size={15} /><span className="ml-1">Fine</span></button>
-          <button type="button" onClick={() => setPrefs({ kind: 'marker', width: 4, color: '#f97316' })} title="Marker" aria-label="Marker style" aria-pressed={prefs.kind === 'marker'} className={chip(prefs.kind === 'marker')}><Highlighter size={15} /><span className="ml-1">Marker</span></button>
-          <button type="button" onClick={() => setPrefs({ kind: 'brush', width: 3, color: '#a855f7' })} title="Brush" aria-label="Brush style" aria-pressed={prefs.kind === 'brush'} className={chip(prefs.kind === 'brush')}><Paintbrush size={15} /><span className="ml-1">Brush</span></button>
+          <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-white/40">{t.quickStyles}</span>
+          <button type="button" onClick={() => setPrefs({ kind: 'pencil', width: 2 })} title={t.penPencil} aria-label={t.penPencil} aria-pressed={prefs.kind === 'pencil'} className={chip(prefs.kind === 'pencil')}><Pencil size={15} /><span className="ml-1">{t.penPencil}</span></button>
+          <button type="button" onClick={() => setPrefs({ kind: 'fineliner', width: 1 })} title={t.penFineliner} aria-label={t.penFineliner} aria-pressed={prefs.kind === 'fineliner'} className={chip(prefs.kind === 'fineliner')}><PenLine size={15} /><span className="ml-1">{t.penFineliner}</span></button>
+          <button type="button" onClick={() => setPrefs({ kind: 'marker', width: 4 })} title={t.penMarker} aria-label={t.penMarker} aria-pressed={prefs.kind === 'marker'} className={chip(prefs.kind === 'marker')}><Highlighter size={15} /><span className="ml-1">{t.penMarker}</span></button>
+          <button type="button" onClick={() => setPrefs({ kind: 'brush', width: 3 })} title={t.penBrush} aria-label={t.penBrush} aria-pressed={prefs.kind === 'brush'} className={chip(prefs.kind === 'brush')}><Paintbrush size={15} /><span className="ml-1">{t.penBrush}</span></button>
         </>
       )}
       {/* the first colours sit right on the toolbar; the rest (and "recent" + custom) are one tap away */}
@@ -367,7 +375,7 @@ export default function InkToolbar({
         onClick={() => setPrefs({ shapeSnap: !prefs.shapeSnap })}
         className={chip(prefs.shapeSnap) + ' flex items-center gap-1.5'}
       >
-        <Shapes size={16} /> <span>Snap shapes</span>
+        <Shapes size={16} /> <span>{t.snapShapes}</span>
       </button>
       {fingerBtn}
       <Btn label={t.resetPen} onClick={resetPrefs}><RotateCcw size={16} /></Btn>

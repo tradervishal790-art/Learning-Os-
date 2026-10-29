@@ -103,7 +103,9 @@ export default function PageEditor({
 
   // Typing and drawing never fight: the text is read-only while a pen tool is active.
   useEffect(() => {
-    editor?.setEditable(mode === 'type' && !recall);
+    // `false` = do not announce an "update": switching tools (or opening the note) is not an edit,
+    // so it must not light up Save, trigger an autosave or show a "discard changes?" prompt.
+    editor?.setEditable(mode === 'type' && !recall, false);
   }, [editor, mode, recall]);
 
   // The sheet's size drives the ink canvases; ink and text share one coordinate space.

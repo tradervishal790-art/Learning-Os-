@@ -115,6 +115,7 @@ export default function NoteLibrary() {
   const importInput = useRef<HTMLInputElement>(null);
 
   const [openId, setOpenId] = useState<string | null>(null);
+  const createdThisSession = useRef(new Set<string>());
   const [sheetId, setSheetId] = useState<string | null>(null);
   const [view, setView] = useState<View>('all');
   const [sort, setSort] = useState<Sort>('recent');
@@ -186,6 +187,11 @@ export default function NoteLibrary() {
     [idx.notes]
   );
 
+  // The chosen tag filter must not outlive its notes (deleted / untagged), or the list looks empty for no reason.
+  useEffect(() => {
+    if (tag && !allTags.includes(tag)) setTag('');
+  }, [tag, allTags]);
+
   const visible = useMemo(() => {
     let list = idx.notes.filter((n) => {
       if (view === 'trash') return !!n.trashedAt;
@@ -242,7 +248,15 @@ export default function NoteLibrary() {
   const newNote = async () => {
     const folderId = view.startsWith('folder:') ? view.slice(7) : null;
     const meta = await createNote(folderId);
+    createdThisSession.current.add(meta.id);
     setOpenId(meta.id);
+  };
+
+  // A note made with "New note" and left without writing anything is removed, so Untitled notes never pile up.
+  // Only notes created in this visit are ever dropped, never an older one.
+  const closeNote = (noteId: string, untouched?: boolean) => {
+    setOpenId(null);
+    if (untouched && createdThisSession.current.delete(noteId)) void deleteNotesForever([noteId]).catch(() => undefined);
   };
 
   const addFolder = (parentId: string | null) => {
@@ -382,7 +396,7 @@ export default function NoteLibrary() {
   if (openId)
     return (
       <Suspense fallback={null}>
-        <NoteEditor id={openId} onBack={() => setOpenId(null)} />
+        <NoteEditor id={openId} onBack={(untouched) => closeNote(openId, untouched)} />
       </Suspense>
     );
 

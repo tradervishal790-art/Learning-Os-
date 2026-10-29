@@ -4,7 +4,7 @@ import { ArrowLeft, Check, Loader2, Save, ChevronDown, FileDown, History, Keyboa
 import { useLanguage, useTranslation } from './i18n/LanguageContext';
 import { format } from './i18n/format';
 import { loadNoteContent, saveNoteContent, getIndex, type InkStroke, type NotePage, type NoteVideo, type PageAttachment } from './notebookStore';
-import { TEXT_REF_WIDTH } from './inkEngine';
+import { TEXT_REF_WIDTH, inLayers } from './inkEngine';
 import { useInkPrefs, type InkMode } from './inkPrefs';
 import InkToolbar, { ModeSwitch } from './InkToolbar';
 import QuickDock from './QuickDock';
@@ -59,7 +59,8 @@ const NO_STROKES: InkStroke[] = []; // one shared empty array keeps the memo'd t
 const COLUMN_MAX = TEXT_REF_WIDTH; // page width at 100% zoom (px)
 const MAX_PDF_PAGES = 150; // one PDF becomes at most this many note pages
 
-export default function NoteEditor({ id, onBack }: { id: string; onBack: () => void }) {
+/** `onBack(true)` = the note was never written in (no title, text, handwriting, photo, recording, PDF or video). */
+export default function NoteEditor({ id, onBack }: { id: string; onBack: (untouched?: boolean) => void }) {
   const t = useTranslation().notebook;
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -233,9 +234,16 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
     onBack();
   };
 
+  // True when nothing was ever put on this note, so the library can drop the empty "Untitled" it just made.
+  const isUntouched = () => {
+    const { title, pages: ps, video: vd } = latest.current;
+    return !title.trim() && !vd && ps.length <= 1
+      && ps.every((p) => !p.text.trim() && !(inkRef.current[p.id]?.length) && !(p.attachments?.length) && !p.pdf);
+  };
+
   const requestBack = () => {
     if (unsavedRef.current) setLeaveAsk(true);
-    else onBack();
+    else onBack(isUntouched());
   };
 
   // Closing the tab / refreshing with unsaved changes: the browser asks first (it does not allow custom wording).
@@ -324,8 +332,13 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
 
   const eraseWholePage = () => {
     const targetPage = viewPage ?? activePage;
-    if (!targetPage || (inkRef.current[targetPage] ?? []).length === 0) return;
-    if (window.confirm(t.ink.eraseAllConfirm)) commitInk(targetPage, []);
+    if (!targetPage) return;
+    const current = inkRef.current[targetPage] ?? [];
+    // Erase all follows the eraser's "what to erase" choice (everything / pen only / highlights only).
+    const target = prefs.eraserTarget;
+    const kept = current.filter((st) => !inLayers(st, target));
+    if (kept.length === current.length) return;
+    if (window.confirm(t.ink.eraseAllConfirm)) commitInk(targetPage, kept);
   };
 
   // ---------- selecting & editing handwriting ----------
@@ -532,6 +545,7 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
     setPages(v.pages);
     setActivePage(v.pages[0]?.id ?? null);
     setRestoreKey((k) => k + 1);
+    setStats({});
     markUnsaved();
     dirty.current = true;
     flush();
@@ -700,6 +714,8 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
           missingFile = true;
           continue;
         }
+        // Browsers ask before allowing several downloads in a row: space them out so none is dropped.
+        if (exportedCount > 0) await new Promise((r) => setTimeout(r, 400));
         const bytes = await exportAnnotatedPdf(await blob.arrayBuffer(), g.pages);
         const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: 'application/pdf' }));
         // Start URL cleanup before clicking so even a failed download click cannot leak it.
@@ -1110,7 +1126,7 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
     return (
       <div className="py-10 text-center text-sm text-gray-500 dark:text-white/60">
         <p className="mb-3">{t.editor.loadError}</p>
-        <button onClick={onBack} className="underline">{t.editor.back}</button>
+        <button onClick={() => onBack()} className="underline">{t.editor.back}</button>
       </div>
     );
   }
@@ -1241,6 +1257,22 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
       </button>
     </div>
   );
+
+  // A note made only of imported PDF pages has no typed page, so the text tools have nothing to work on:
+  // say so and offer one tap to add a page, instead of showing an empty toolbar.
+  const pdfOnlyBar =
+    pages.length > 0 && pages.every((p) => p.pdf) ? (
+      <div className="flex flex-wrap items-center gap-2 text-xs text-gray-600 dark:text-white/70">
+        <span>{t.editor.pdfOnlyHint}</span>
+        <button
+          type="button"
+          onClick={() => addPageAt(pages[pages.length - 1]?.id ?? null)}
+          className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 font-medium hover:bg-gray-100 dark:border-white/10 dark:hover:bg-white/10"
+        >
+          <Plus size={14} /> {t.editor.addPage}
+        </button>
+      </div>
+    ) : null;
 
   const inkBar = (
     <InkToolbar
@@ -1406,7 +1438,7 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
         <div className="pb-1.5 border-b border-gray-200 dark:border-white/10 mb-2">
           <ModeSwitch mode={mode} onMode={chooseMode} />
           {mode === 'type' ? (
-            <EditorToolbar editor={active} onAttach={attach} onFocusMode={() => setFocusMode((f) => !f)} />
+            pdfOnlyBar ?? <EditorToolbar editor={active} onAttach={attach} onFocusMode={() => setFocusMode((f) => !f)} />
           ) : mode === 'circle' ? (
             circleBar
           ) : (
@@ -1489,7 +1521,7 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
           discardLabel={t.polish.discardLeave}
           keepLabel={t.polish.keepEditing}
           busy={saving}
-          onSave={() => void save().then((ok) => (ok ? onBack() : setLeaveAsk(false)))}
+          onSave={() => void save().then((ok) => (ok ? onBack(isUntouched()) : setLeaveAsk(false)))}
           onDiscard={() => void discardAndLeave()}
           onKeep={() => setLeaveAsk(false)}
         />
@@ -1546,7 +1578,7 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: () => v
       )}
       {!isDesktop && !present && (
         <PhoneRibbon tab={phoneTab} open={ribbonOpen} aiOpen={aiOpen} onTab={pickTab} onHeight={setRibbonH}>
-          {phoneTab === 'home' && <EditorToolbar editor={active} onAttach={attach} section="home" onFocusMode={() => setFocusMode((f) => !f)} />}
+          {phoneTab === 'home' && (pdfOnlyBar ?? <EditorToolbar editor={active} onAttach={attach} section="home" onFocusMode={() => setFocusMode((f) => !f)} />)}
           {phoneTab === 'insert' && <EditorToolbar editor={active} onAttach={attach} section="insert" extra={insertTools} onFocusMode={() => setFocusMode((f) => !f)} />}
           {phoneTab === 'view' && <EditorToolbar editor={active} onAttach={attach} section="view" lead={viewTools} onFocusMode={() => setFocusMode((f) => !f)} />}
           {phoneTab === 'draw' && (

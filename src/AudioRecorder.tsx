@@ -80,7 +80,7 @@ export default function AudioRecorder({ onDone, onCancel, labels }: Props) {
             <Square className="h-6 w-6" aria-hidden /> {t('stop', 'Stop')}
           </button>
         )}
-        {state === 'stopped' && rec.interrupted && (
+        {state === 'stopped' && (
           <button type="button" className={`${base} bg-indigo-600 text-white hover:bg-indigo-700`} onClick={() => void finishNow()}>
             {t('saveInterrupted', 'Save recording')}
           </button>
