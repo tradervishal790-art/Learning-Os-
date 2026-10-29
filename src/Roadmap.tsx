@@ -2,11 +2,12 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CircleX, Star, Check, Flame, Lock, Route, Target, Gauge, CircleCheck, Clock, X as CloseIcon, ChartNoAxesColumn, Link2, CircleHelp, Globe, TriangleAlert } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { getRoadmapData, getRoadmapProgress, markTopicFinished, hydrateRoadmapDataFromCloud } from './roadmapData';
+import { getRoadmapData, getRoadmapProgress, getCurrentTopic, markTopicFinished, hydrateRoadmapDataFromCloud } from './roadmapData';
 import { hasSavedVideoForTopic, getSavedVideoIdForTopic } from './VideoIntel';
 import { MAX_ACTIVE_GOALS } from './goalsStore';
 import type { Topic, Video, UserOnboardingData, Goal, TopicBridge } from './types';
-import { buildLecture, lectureSignature, takePrefetchedLecture, type LectureResult } from './lectureBuilder';
+import { buildLecture, lectureSignature, getAttachedLecture, attachLecture, clearAttachedLecture, prefetchNextLecture, type LectureResult } from './lectureBuilder';
+import { useAuthPrompt } from './AuthPrompt';
 import DeepDiveChat from './DeepDiveChat';
 import HintBubble from './HintBubble';
 import { useTranslation } from './i18n/LanguageContext';
@@ -93,6 +94,7 @@ export default function Roadmap({
   onAutoStartConsumed,
 }: RoadmapProps) {
   const t = useTranslation();
+  const { isGuest } = useAuthPrompt();
   const statusLabels: Record<Topic['status'], string> = {
     mastered: t.roadmap.statusLabels.mastered,
     completed: t.roadmap.statusLabels.completed,
@@ -257,6 +259,18 @@ export default function Roadmap({
     }
 
     markTopicFinished(activeGoalId ?? undefined, selectedTopic.id, 'completed');
+    // This topic's video is done -> attach the NEXT topic's video right now, so it is
+    // already waiting the next time the learner opens it (no search, no wait).
+    clearAttachedLecture(selectedTopic.id);
+    const nextTopic = getCurrentTopic(getRoadmapData(activeGoalId));
+    if (!isGuest && nextTopic && nextTopic.id !== selectedTopic.id) {
+      void prefetchNextLecture({
+        topic: nextTopic,
+        userData,
+        goalTitle: goals.find((g) => g.id === activeGoalId)?.title ?? userData?.goal,
+        goalId: activeGoalId,
+      });
+    }
     setSelectedTopic(null);
     setActiveTeachingProcess(null);
     setShowChallengePrompt(false);
@@ -298,16 +312,19 @@ export default function Roadmap({
       const activeGoalTitle = goals.find((g) => g.id === activeGoalId)?.title ?? userData?.goal;
       const lectureInput = { topic, userData, goalTitle: activeGoalTitle, hours: topicHours, deadline: topicDeadline };
 
-      // A lecture already prepared in the background while the learner was on Home
-      // (lectureBuilder.prefetchNextLecture) opens instantly, with zero API calls.
-      const prepared = takePrefetchedLecture(topic.id, lectureSignature(lectureInput));
-      const lecture: LectureResult = prepared
-        ? { ok: true, primary: prepared.primary, fallbacks: prepared.fallbacks, teachingProcess: prepared.teachingProcess }
+      // The topic's lecture stays ATTACHED to it (lectureBuilder), so coming back never
+      // searches again: zero API calls, opens instantly. Only an explicit hours/deadline
+      // choice asks for a fresh, time-aware pick.
+      const sig = lectureSignature(lectureInput);
+      const attached = topicHours || topicDeadline ? null : getAttachedLecture(topic.id, sig);
+      const lecture: LectureResult = attached
+        ? { ok: true, primary: attached.primary, fallbacks: attached.fallbacks, teachingProcess: attached.teachingProcess }
         : await buildLecture({ ...lectureInput, forceRefresh: true });
       if (!lecture.ok) {
         setPlaylistError(lecture.reason === 'no-candidates' ? t.moments.playlistErrors.noGoodVideo : t.moments.playlistErrors.buildFailed);
         return false;
       }
+      if (!attached) attachLecture(topic.id, sig, lecture);
 
       // 'control' variant -> teachingProcess is undefined -> this stays null,
       // so handleMarkComplete's push-trigger branch below is a no-op for them,

@@ -792,6 +792,14 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   return (
     <Onborda steps={getDashboardTour(t)} cardComponent={OnbordaCard}>
     <div className="min-h-dvh bg-[#f4f6ff] dark:bg-black flex text-black dark:text-white">
+      {isReturning && !isGuest && currentTopic && (
+        <LecturePrefetch
+          topic={currentTopic}
+          userData={userData}
+          goalTitle={goals.find((g) => g.id === activeGoalId)?.title ?? userData?.goal}
+          goalId={activeGoalId}
+        />
+      )}
       <aside className="hidden md:flex w-64 border-r border-gray-200 dark:border-white/10 p-6 flex-col flex-shrink-0">
         {SidebarContent}
       </aside>
@@ -841,14 +849,6 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
         <Suspense fallback={<PageLoading />}>
                 {activePage === 'dashboard' && (
           <div className="p-4 md:p-8 flex flex-col gap-4 md:gap-6">
-            {isReturning && !isGuest && currentTopic && (
-              <LecturePrefetch
-                topic={currentTopic}
-                userData={userData}
-                goalTitle={goals.find((g) => g.id === activeGoalId)?.title ?? userData?.goal}
-                goalId={activeGoalId}
-              />
-            )}
             <section className="relative isolate overflow-hidden rounded-[28px] border border-indigo-200/60 bg-gradient-to-br from-white via-indigo-50 to-violet-100 p-5 shadow-[0_18px_55px_rgba(79,70,229,0.10)] dark:border-white/[0.09] dark:from-[#17171f] dark:via-[#11111a] dark:to-[#211735] dark:shadow-[0_20px_60px_rgba(0,0,0,0.22)] md:p-7">
               <div aria-hidden="true" className="pointer-events-none absolute -right-12 -top-20 -z-10 h-56 w-56 rounded-full bg-violet-400/20 blur-3xl dark:bg-violet-500/20" />
               <div aria-hidden="true" className="pointer-events-none absolute -bottom-24 left-1/3 -z-10 h-48 w-48 rounded-full bg-blue-400/15 blur-3xl dark:bg-blue-500/10" />

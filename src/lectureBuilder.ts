@@ -2,8 +2,9 @@
 // Used by the Roadmap's Watch button AND by the background prefetch that warms the
 // next lecture while the learner is on Home, so Start opens instantly.
 //
-// Cost model (why prefetch is cheap): the build is the same work Watch already does,
-// just earlier. It runs at most ONCE per topic (result cached 7 days), never for
+// Cost model (why attaching is cheap): the build is the same work Watch already does,
+// just earlier. It runs at most ONCE per topic (the result stays attached until the
+// topic is completed), never for
 // guests, never offline / on data-saver, never when a video is already saved for the
 // topic, and it backs off for 30 min after a failure. The prefetch also uses the
 // local + shared topic-pool caches (the manual Watch path forces a fresh search).
@@ -74,13 +75,17 @@ export async function buildLecture(input: LectureInput): Promise<LectureResult> 
   };
 }
 
-// ---------------------------------------------------------------- prefetch cache
+// ---------------------------------------------------------------- attached lectures
+// A lecture is ATTACHED to its roadmap topic and stays attached until the topic is
+// completed — so coming back never searches again. Completing a topic attaches the
+// NEXT topic's lecture (Roadmap.handleMarkComplete) and Home attaches the current one
+// as a fallback. Stored per device (localStorage); a new device builds once.
 
 const CACHE_KEY = 'learning_os_lecture_prefetch';
 const FAIL_KEY = 'learning_os_lecture_prefetch_fail';
-const TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const TTL_MS = 90 * 24 * 60 * 60 * 1000;
 const FAIL_BACKOFF_MS = 30 * 60 * 1000;
-const MAX_ENTRIES = 6;
+const MAX_ENTRIES = 12;
 
 interface Entry {
   sig: string;
@@ -90,16 +95,9 @@ interface Entry {
   at: number;
 }
 
-/** Anything that changes which video would be picked changes the signature, so a stale prefetch is never used. */
-export function lectureSignature(input: Pick<LectureInput, 'userData' | 'goalTitle' | 'hours' | 'deadline'>): string {
-  const p = getLearningProfileOrNeutral();
-  return [
-    input.userData?.language ?? '',
-    input.goalTitle ?? input.userData?.goal ?? '',
-    input.hours ?? 0,
-    input.deadline ?? '',
-    p.pace, p.theoryVsPractical, p.depth, p.structureNeed, p.storytelling, p.languageComplexity, p.repetitionNeed, p.priorKnowledgeComfort,
-  ].join('|');
+/** Only things that make an attached video wrong for this learner: language and goal. (Profile tweaks never force a re-search.) */
+export function lectureSignature(input: Pick<LectureInput, 'userData' | 'goalTitle'>): string {
+  return [input.userData?.language ?? '', input.goalTitle ?? input.userData?.goal ?? ''].join('|');
 }
 
 function readAll(): Record<string, Entry> {
@@ -124,14 +122,24 @@ function fresh(e: Entry | undefined, sig: string): e is Entry {
   return !!e && e.sig === sig && Date.now() - e.at < TTL_MS && !!e.primary;
 }
 
-/** Returns a prepared lecture for this topic (and removes it, so a later manual Watch searches fresh again). */
-export function takePrefetchedLecture(topicId: string, sig: string): Entry | null {
+/** The lecture attached to this topic, if any. Reading never removes it. */
+export function getAttachedLecture(topicId: string, sig: string): Entry | null {
+  const e = readAll()[topicId];
+  return fresh(e, sig) ? e : null;
+}
+
+export function attachLecture(topicId: string, sig: string, lecture: Extract<LectureResult, { ok: true }>): void {
   const all = readAll();
-  const e = all[topicId];
-  if (!fresh(e, sig)) return null;
+  all[topicId] = { sig, primary: lecture.primary, fallbacks: lecture.fallbacks, teachingProcess: lecture.teachingProcess, at: Date.now() };
+  writeAll(all);
+}
+
+/** Called when the topic is completed: its video is done, the next topic gets its own. */
+export function clearAttachedLecture(topicId: string): void {
+  const all = readAll();
+  if (!(topicId in all)) return;
   delete all[topicId];
   writeAll(all);
-  return e;
 }
 
 function failedRecently(): boolean {
@@ -162,7 +170,7 @@ export async function prefetchNextLecture(input: LectureInput & { goalId?: strin
     if (inFlight.has(topic.id) || failedRecently()) return;
     if (hasSavedVideoForTopic(input.goalId ?? undefined, topic.id)) return;
     const sig = lectureSignature(input);
-    if (fresh(readAll()[topic.id], sig)) return;
+    if (getAttachedLecture(topic.id, sig)) return;
 
     inFlight.add(topic.id);
     const r = await buildLecture({ ...input, forceRefresh: false });
@@ -170,9 +178,7 @@ export async function prefetchNextLecture(input: LectureInput & { goalId?: strin
       markFailed();
       return;
     }
-    const all = readAll();
-    all[topic.id] = { sig, primary: r.primary, fallbacks: r.fallbacks, teachingProcess: r.teachingProcess, at: Date.now() };
-    writeAll(all);
+    attachLecture(topic.id, sig, r);
   } catch {
     markFailed();
   } finally {

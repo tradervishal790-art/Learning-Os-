@@ -64,7 +64,7 @@ test('#5 next lecture is prefetched once, only for signed-in returning learners,
   for (const guard of ['navigator.onLine === false', 'saveData', 'failedRecently()', 'hasSavedVideoForTopic', 'inFlight.has', 'forceRefresh: false']) {
     assert.ok(lb.includes(guard), guard);
   }
-  assert.match(read('Roadmap.tsx'), /takePrefetchedLecture\(topic\.id, lectureSignature\(lectureInput\)\)/);
+  assert.match(read('Roadmap.tsx'), /getAttachedLecture\(topic\.id, sig\)/);
 });
 
 test('#11 only the everyday five are always visible; the rest sit behind More (sidebar and bottom bar)', () => {
@@ -75,4 +75,16 @@ test('#11 only the everyday five are always visible; the rest sit behind More (s
   assert.match(dash, /moreItems\.map\(renderNavItem\)/);
   assert.match(dash, /id="onborda-nav-more"/);
   assert.match(dash, /PRIMARY_NAV_IDS\.includes\(id\) \? id : 'more'/);
+});
+
+test('#5b a topic keeps its lecture attached until completion, then the NEXT topic gets one', () => {
+  const rm = read('Roadmap.tsx');
+  assert.match(rm, /if \(!attached\) attachLecture\(topic\.id, sig, lecture\)/);
+  assert.match(rm, /clearAttachedLecture\(selectedTopic\.id\)/);
+  assert.match(rm, /getCurrentTopic\(getRoadmapData\(activeGoalId\)\)[\s\S]{0,400}prefetchNextLecture\(/);
+  const lb = read('lectureBuilder.ts');
+  assert.ok(!lb.includes('takePrefetchedLecture'), 'reading an attached lecture must not remove it');
+  assert.match(lb, /export function getAttachedLecture/);
+  assert.match(lb, /export function clearAttachedLecture/);
+  assert.match(read('Dashboard.tsx'), /min-h-dvh[^\n]*\n\s*\{isReturning && !isGuest && currentTopic && \(\s*<LecturePrefetch/);
 });
