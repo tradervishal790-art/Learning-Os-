@@ -44,6 +44,6 @@ test('participant access code is required, normalized and persisted for refresh'
 
 test('host UI displays and can copy the participant-specific access code', () => {
   assert.match(liveHost, /copyAccessCode/);
-  assert.match(liveHost, /navigator\.clipboard\.writeText\(entry\.accessCode\)/);
+  assert.match(liveHost, /navigator\.clipboard\.writeText\(accessCode\)/);
   assert.match(liveHost, /Access: \{a\.accessCode/);
 });
