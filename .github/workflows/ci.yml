@@ -23,12 +23,16 @@ jobs:
         with:
           node-version: 22 # Vite 8 needs Node ^20.19 or >=22.12
           cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21' # Current Firebase Firestore Emulator requires Java 21+
       - run: npm ci
       - name: Lint (oxlint — fails on errors, warnings are allowed)
         run: npm run lint
       - name: Typecheck + build (tsc -b && vite build)
         run: npm run build
       - name: Install Firestore Emulator test tools
-        run: npm install --no-save firebase-tools @firebase/rules-unit-testing
+        run: npm install --no-save --no-audit --no-fund firebase-tools @firebase/rules-unit-testing
       - name: Tests (Firestore Emulator)
         run: npx firebase emulators:exec --only firestore --project demo-learning-os "npm test"
