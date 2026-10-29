@@ -16,7 +16,7 @@ concurrency:
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -28,5 +28,7 @@ jobs:
         run: npm run lint
       - name: Typecheck + build (tsc -b && vite build)
         run: npm run build
-      - name: Tests
-        run: npm test
+      - name: Install Firestore Emulator test tools
+        run: npm install --no-save firebase-tools @firebase/rules-unit-testing
+      - name: Tests (Firestore Emulator)
+        run: npx firebase emulators:exec --only firestore --project demo-learning-os "npm test"
