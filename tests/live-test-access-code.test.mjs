@@ -29,7 +29,7 @@ test('a participant cannot create a phone slot without the matching private acce
 });
 
 test('public join route authenticates before subscribing to the session', () => {
-  assert.match(liveJoin, /ensureSignedIn\(\)\.then\(\(\) => \{[\s\S]*?subscribeSession\(code, setSession\)/);
+  assert.match(liveJoin, /ensureSignedIn\(\)\s*\.then\(\(\) => \{[\s\S]*?subscribeSession\(code, setSession\)/);
 });
 
 test('participant access code is required, normalized and persisted for refresh', () => {
