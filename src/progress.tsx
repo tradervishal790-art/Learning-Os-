@@ -1,6 +1,6 @@
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { ChartNoAxesColumn, Flame, Clock, Brain, Sprout, Target, Star, Check } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import type { Goal } from './types';
 import {
   getStreakStats,
@@ -32,6 +32,22 @@ const statusIcon: Record<string, ReactNode> = {
 
 export default function Progress({ goals = [] }: ProgressProps) {
   const t = useTranslation();
+  const prefersReducedMotion = useReducedMotion();
+  const [activeSection, setActiveSection] = useState('overview');
+  const progressSections = [
+    { id: 'overview', label: 'Overview', target: 'progress-overview' },
+    { id: 'activity', label: 'Activity', target: 'progress-activity' },
+    { id: 'mastery', label: 'Mastery', target: 'progress-mastery' },
+    { id: 'retention', label: 'Retention', target: 'progress-retention' },
+    { id: 'focus', label: 'Focus areas', target: 'progress-focus' },
+  ];
+  const goToSection = (section: typeof progressSections[number]) => {
+    setActiveSection(section.id);
+    document.getElementById(section.target)?.scrollIntoView({
+      behavior: prefersReducedMotion ? 'auto' : 'smooth',
+      block: 'start',
+    });
+  };
   const streak = getStreakStats();
   const completion = getCompletionStats(goals);
   const time = getTimeStats();
@@ -53,8 +69,24 @@ export default function Progress({ goals = [] }: ProgressProps) {
         <p className="text-sm text-gray-500 dark:text-white/60 mt-1">{t.progress.header.subtitle}</p>
       </motion.div>
 
+      {/* Low-distraction section navigation: the active pill moves only after a user action. */}
+      <nav aria-label="Progress sections" className="sticky top-0 z-20 -mx-1 flex gap-1 overflow-x-auto rounded-2xl border border-gray-200/80 bg-white/90 p-1 shadow-sm backdrop-blur dark:border-white/10 dark:bg-[#09090b]/90">
+        {progressSections.map((section) => (
+          <button
+            key={section.id}
+            type="button"
+            onClick={() => goToSection(section)}
+            aria-current={activeSection === section.id ? 'location' : undefined}
+            className={`relative shrink-0 rounded-xl px-3 py-2 text-xs font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-indigo-500 sm:px-4 sm:text-sm ${activeSection === section.id ? 'text-indigo-700 dark:text-indigo-200' : 'text-gray-500 hover:text-gray-900 dark:text-white/55 dark:hover:text-white'}`}
+          >
+            {activeSection === section.id && <motion.span layoutId="progress-active-tab" transition={prefersReducedMotion ? { duration: 0 } : { type: 'spring', stiffness: 420, damping: 34 }} className="absolute inset-0 rounded-xl bg-indigo-100/90 dark:bg-indigo-400/15" />}
+            <span className="relative z-10">{section.label}</span>
+          </button>
+        ))}
+      </nav>
+
       {/* Hero: completion ring + key numbers */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.5 }} className="rounded-2xl card p-4 md:p-6 flex items-center gap-5 md:gap-10 mb-5 md:mb-6">
+      <motion.div id="progress-overview" initial={prefersReducedMotion ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.18 }} className="scroll-mt-24 rounded-2xl card p-4 md:p-6 flex items-center gap-5 md:gap-10 mb-5 md:mb-6">
         <div className="relative w-28 h-28 md:w-36 md:h-36 flex-shrink-0" role="img" aria-label={`${t.progress.stats.completion}: ${completion.percent}%`}>
           <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
             <circle cx="50" cy="50" r="42" fill="none" strokeWidth="8" className="stroke-indigo-100 dark:stroke-white/10" />
@@ -85,7 +117,7 @@ export default function Progress({ goals = [] }: ProgressProps) {
       </motion.div>
 
       {/* Completion progress bar */}
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.15, duration: 0.5 }} className="mb-6 md:mb-10">
+      <motion.div initial={false} animate={{ opacity: 1 }} transition={{ duration: 0.18 }} className="mb-6 md:mb-10">
         <div className="flex justify-between text-xs text-gray-400 dark:text-white/40 mb-2">
           <span>{format(t.progress.completionBar.topicsDone, completion.completed, completion.total)}</span>
           <span>{format(t.progress.completionBar.inProgress, completion.learning)}</span>
@@ -109,7 +141,7 @@ export default function Progress({ goals = [] }: ProgressProps) {
       ) : (
         <>
           {/* Time tracking — last 7 days */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.5 }} className="p-4 md:p-6 rounded-2xl card mb-4 md:mb-6">
+          <motion.div id="progress-activity" initial={prefersReducedMotion ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.18 }} className="scroll-mt-24 p-4 md:p-6 rounded-2xl card mb-4 md:mb-6">
             <div className="flex items-center justify-between mb-3 md:mb-5">
               <h2 className="font-semibold">{t.progress.timeTracking.title}</h2>
               <span className="text-xs text-gray-400 dark:text-white/40">{format(t.progress.timeTracking.last7Days, time.last7DaysMinutes)}</span>
@@ -134,7 +166,7 @@ export default function Progress({ goals = [] }: ProgressProps) {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-4 md:mb-6">
             {/* Mastery heatmap */}
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25, duration: 0.5 }} className="p-4 md:p-6 rounded-2xl card">
+            <motion.div id="progress-mastery" initial={prefersReducedMotion ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.18 }} className="scroll-mt-24 p-4 md:p-6 rounded-2xl card">
               <h2 className="font-semibold mb-3 md:mb-5">{t.progress.masteryHeatmap.title}</h2>
               <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-5 gap-2">
                 {heatmap.map((topic) => (
@@ -155,7 +187,7 @@ export default function Progress({ goals = [] }: ProgressProps) {
             </motion.div>
 
             {/* Retention detail */}
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.5 }} className="p-4 md:p-6 rounded-2xl card">
+            <motion.div id="progress-retention" initial={prefersReducedMotion ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.18 }} className="scroll-mt-24 p-4 md:p-6 rounded-2xl card">
               <h2 className="font-semibold mb-3 md:mb-5">{t.progress.retentionDetail.title}</h2>
               <div className="h-2 bg-gray-100 dark:bg-white/5 rounded-full overflow-hidden mb-4">
                 <motion.div
@@ -183,7 +215,7 @@ export default function Progress({ goals = [] }: ProgressProps) {
           </div>
 
           {/* Weak areas */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35, duration: 0.5 }} className="p-4 md:p-6 rounded-2xl card">
+          <motion.div id="progress-focus" initial={prefersReducedMotion ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.18 }} className="scroll-mt-24 p-4 md:p-6 rounded-2xl card">
             <h2 className="font-semibold mb-3 md:mb-5">{t.progress.weakAreas.title}</h2>
             {weakAreas.length === 0 ? (
               <p className="text-sm text-gray-400 dark:text-white/50">{t.progress.weakAreas.noneFound}</p>
