@@ -333,12 +333,13 @@ function GuestList({
   const done = new Set(submissions.map((s) => s.phone));
 
   const copyAccessCode = async (entry: LiveAllowed) => {
-    if (!entry.accessCode) {
+    const accessCode = entry.accessCode;
+    if (!accessCode) {
       setNote('This older entry has no access code yet. Add the number again to issue one.');
       return;
     }
     try {
-      await navigator.clipboard.writeText(entry.accessCode);
+      await navigator.clipboard.writeText(accessCode);
       setCopiedAccessPhone(entry.phone);
       window.setTimeout(() => setCopiedAccessPhone((current) => current === entry.phone ? null : current), 1800);
     } catch {
