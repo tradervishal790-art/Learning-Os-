@@ -328,8 +328,24 @@ function GuestList({
   const [text, setText] = useState('');
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
+  const [copiedAccessPhone, setCopiedAccessPhone] = useState<string | null>(null);
   const joined = new Map(players.map((p) => [p.phone, p.name]));
   const done = new Set(submissions.map((s) => s.phone));
+
+  const copyAccessCode = async (entry: LiveAllowed) => {
+    const accessCode = entry.accessCode;
+    if (!accessCode) {
+      setNote('This older entry has no access code yet. Add the number again to issue one.');
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(accessCode);
+      setCopiedAccessPhone(entry.phone);
+      window.setTimeout(() => setCopiedAccessPhone((current) => current === entry.phone ? null : current), 1800);
+    } catch {
+      setNote(`Access code for ${entry.phone}: ${entry.accessCode}`);
+    }
+  };
 
   const add = async () => {
     const { entries, invalid } = parseAllowedInput(text);
@@ -358,7 +374,7 @@ function GuestList({
       <p className="flex items-center gap-2 font-semibold mb-1">
         <Users className="w-4 h-4" /> Allowed students · {allowed.length} added · {joinedCount} joined
       </p>
-      <p className="text-xs text-gray-500 dark:text-white/60 mb-3">Only these phone numbers can join, and each number can take the test only once.</p>
+      <p className="text-xs text-gray-500 dark:text-white/60 mb-3">Each student needs their own private access code. Share it directly with that student; a phone number alone no longer grants access.</p>
 
       {!locked && (
         <>
@@ -388,7 +404,23 @@ function GuestList({
               <div key={a.phone} className="flex items-center justify-between gap-2 px-3 py-2 text-sm border-b last:border-b-0 border-gray-100 dark:border-white/10">
                 <div className="min-w-0">
                   <span className="font-medium">{label || a.phone}</span>
-                  {label && <span className="text-gray-400 dark:text-white/40"> · {a.phone}</span>}
+                  <div className="flex flex-wrap items-center gap-1 mt-1">
+                    {label && <span className="text-gray-400 dark:text-white/40">· {a.phone}</span>}
+                    <span className="font-mono text-xs text-gray-500 dark:text-white/60">
+                      Access: {a.accessCode || 'missing — re-add number'}
+                    </span>
+                    {a.accessCode && (
+                      <button
+                        onClick={() => void copyAccessCode(a)}
+                        title="Copy this student's private access code"
+                        aria-label={`Copy access code for ${a.name || a.phone}`}
+                        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md hover:bg-gray-100 dark:hover:bg-white/10 text-xs"
+                      >
+                        {copiedAccessPhone === a.phone ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                        {copiedAccessPhone === a.phone ? 'Copied' : 'Copy'}
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <span className={`text-xs ${isDone ? 'text-emerald-600 dark:text-emerald-400' : isJoined ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 dark:text-white/40'}`}>

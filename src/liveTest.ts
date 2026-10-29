@@ -59,6 +59,8 @@ export interface LivePlayer {
 export interface LiveAllowed {
   phone: string;
   name: string; // optional label typed by the host ('' if none)
+  /** Private bearer code, visible only to the host and the matching participant. */
+  accessCode?: string;
 }
 
 export interface LiveSubmission {
@@ -92,6 +94,15 @@ function generateCode(): string {
   return out;
 }
 
+const ACCESS_CODE_LENGTH = 12;
+
+/** Generate a per-student bearer code with cryptographically secure randomness. */
+export function generateAccessCode(): string {
+  const values = new Uint32Array(ACCESS_CODE_LENGTH);
+  crypto.getRandomValues(values);
+  return Array.from(values, (value) => CODE_CHARS[value % CODE_CHARS.length]).join('');
+}
+
 /** Firestore rejects `undefined` — round-trip through JSON to drop it. */
 function clean<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
@@ -107,6 +118,10 @@ export function normalizePhone(input: string): string | null {
 
 export function normalizeCode(input: string): string {
   return input.toUpperCase().replace(/[^A-Z0-9]/g, '');
+}
+
+export function normalizeAccessCode(input: string): string {
+  return String(input ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '');
 }
 
 /** Only questions that can be graded automatically can be used in a live test
@@ -206,7 +221,11 @@ export function subscribeRoster(
   );
   const u3 = onSnapshot(
     collection(db, 'liveTests', code, 'allowed'),
-    (snap) => onAllowed(snap.docs.map((d) => ({ phone: d.id, name: String(d.data().name ?? '') }))),
+    (snap) => onAllowed(snap.docs.map((d) => ({
+      phone: d.id,
+      name: String(d.data().name ?? ''),
+      accessCode: String(d.data().accessCode ?? ''),
+    }))),
     (e) => console.warn('allowed listener', e)
   );
   return () => {
@@ -247,11 +266,28 @@ export function parseAllowedInput(text: string): { entries: LiveAllowed[]; inval
 }
 
 export async function addAllowed(code: string, entries: LiveAllowed[]): Promise<void> {
-  for (let i = 0; i < entries.length; i += 400) {
+  // Preserve existing access codes when the host re-adds a number, so a
+  // participant already in the session is not silently locked out.
+  const prepared = await Promise.all(entries.map(async (entry) => {
+    const ref = doc(db, 'liveTests', code, 'allowed', entry.phone);
+    const snap = await getDoc(ref);
+    const old = snap.exists() ? snap.data() : {};
+    const oldCode = typeof old.accessCode === 'string' && /^[A-HJ-NP-Z2-9]{12}$/.test(old.accessCode)
+      ? old.accessCode
+      : generateAccessCode();
+    return {
+      ref,
+      value: {
+        phone: entry.phone,
+        name: entry.name || String(old.name ?? ''),
+        accessCode: oldCode,
+      },
+    };
+  }));
+
+  for (let i = 0; i < prepared.length; i += 400) {
     const batch = writeBatch(db);
-    for (const e of entries.slice(i, i + 400)) {
-      batch.set(doc(db, 'liveTests', code, 'allowed', e.phone), { phone: e.phone, name: e.name });
-    }
+    for (const item of prepared.slice(i, i + 400)) batch.set(item.ref, item.value);
     await batch.commit();
   }
 }
@@ -311,15 +347,17 @@ export class JoinError extends Error {
 export async function joinLiveSession(
   code: string,
   typedName: string,
-  phone: string
+  phone: string,
+  accessCode: string
 ): Promise<{ offsetMs: number; name: string; startedAtMs: number | null }> {
   const uid = await ensureSignedIn();
   const ref = doc(db, 'liveTests', code, 'players', phone);
   const before = Date.now();
   try {
-    // The player write checks allow-list membership in Firestore rules. Do this
-    // before reading the allow-list so students cannot enumerate names/phone data.
-    await setDoc(ref, { uid, name: typedName, phone, joinedAt: serverTimestamp() }, { merge: true });
+    // Firestore verifies the private per-student access code against the host's
+    // allow-list before claiming the slot. Write first so other participants
+    // cannot enumerate allow-list names or access codes.
+    await setDoc(ref, { uid, name: typedName, phone, accessCode, joinedAt: serverTimestamp() }, { merge: true });
   } catch (e) {
     if ((e as { code?: string })?.code?.includes('permission-denied')) throw new JoinError('NOT_ALLOWED');
     throw e;

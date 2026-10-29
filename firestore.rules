@@ -80,8 +80,9 @@ service cloud.firestore {
         allow read, write: if isHost();
       }
 
-      // Host's guest list. Students may read their own entry only after their
-      // player document proves ownership of that phone-number slot.
+      // Host's guest list. Each entry contains a private per-student bearer
+      // code. Only the host can list entries; a participant can read only the
+      // matching entry after their player slot is bound to their UID.
       match /allowed/{phone} {
         allow get: if isHost()
           || (signedIn()
@@ -89,8 +90,10 @@ service cloud.firestore {
             && get(/databases/$(database)/documents/liveTests/$(code)/players/$(phone)).data.uid == request.auth.uid);
         allow list: if isHost();
         allow create, update: if isHost()
-          && request.resource.data.keys().hasOnly(['phone', 'name'])
-          && request.resource.data.phone == phone;
+          && request.resource.data.keys().hasOnly(['phone', 'name', 'accessCode'])
+          && request.resource.data.phone == phone
+          && request.resource.data.accessCode is string
+          && request.resource.data.accessCode.matches('[A-HJ-NP-Z2-9]{12}');
         allow delete: if isHost();
       }
 
@@ -103,17 +106,23 @@ service cloud.firestore {
 
         allow create: if signedIn()
           && exists(/databases/$(database)/documents/liveTests/$(code)/allowed/$(phone))
-          && request.resource.data.keys().hasOnly(['uid', 'name', 'phone', 'joinedAt'])
+          && request.resource.data.keys().hasOnly(['uid', 'name', 'phone', 'joinedAt', 'accessCode'])
           && request.resource.data.uid == request.auth.uid
-          && request.resource.data.phone == phone;
+          && request.resource.data.phone == phone
+          && request.resource.data.accessCode == get(/databases/$(database)/documents/liveTests/$(code)/allowed/$(phone)).data.accessCode;
 
         // Re-join (merge) or Start. startedAt can be set once, to the server
         // time, and never changed — so the personal timer cannot be reset.
         allow update: if signedIn()
           && resource.data.uid == request.auth.uid
-          && request.resource.data.keys().hasOnly(['uid', 'name', 'phone', 'joinedAt', 'startedAt'])
+          && request.resource.data.keys().hasOnly(['uid', 'name', 'phone', 'joinedAt', 'startedAt', 'accessCode'])
           && request.resource.data.uid == resource.data.uid
           && request.resource.data.phone == phone
+          // Existing slots keep their original code. Older slots without one
+          // can migrate only by presenting the newly issued allow-list code.
+          && (resource.data.get('accessCode', null) != null
+              ? request.resource.data.accessCode == resource.data.accessCode
+              : request.resource.data.accessCode == get(/databases/$(database)/documents/liveTests/$(code)/allowed/$(phone)).data.accessCode)
           && (resource.data.get('startedAt', null) != null
               ? request.resource.data.startedAt == resource.data.startedAt
               : (request.resource.data.get('startedAt', null) == null
