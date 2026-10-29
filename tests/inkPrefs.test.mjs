@@ -42,3 +42,10 @@ test('recent colours are unique, bounded, and exclude automatic colour', () => {
   assert.equal(new Set(prefs.recentColors).size, prefs.recentColors.length);
   assert.ok(!prefs.recentColors.includes('auto'));
 });
+
+test('palm rejection is on by default and only accepts a boolean', () => {
+  assert.equal(DEFAULT_PREFS.palmRejection, true);
+  assert.equal(normalizeInkPrefs({}).palmRejection, true);
+  assert.equal(normalizeInkPrefs({ palmRejection: false }).palmRejection, false);
+  assert.equal(normalizeInkPrefs({ palmRejection: 'no' }).palmRejection, true);
+});

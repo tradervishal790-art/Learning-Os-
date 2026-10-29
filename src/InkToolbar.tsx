@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useDarkTheme } from './useDarkTheme';
 import {
-  BringToFront, ClipboardPaste, Copy, CopyPlus, Eraser, Hand, Highlighter, Keyboard as TypeIcon, LassoSelect, PenLine, Pointer, Pencil, Paintbrush,
+  BringToFront, ClipboardPaste, ShieldCheck, Copy, CopyPlus, Eraser, Hand, Highlighter, Keyboard as TypeIcon, LassoSelect, PenLine, Pointer, Pencil, Paintbrush,
   Plus, Redo2, RotateCcw, Scissors, ScanText, SendToBack, Shapes, SquareDashed, Trash2, Undo2, X,
 } from 'lucide-react';
 import { useTranslation } from './i18n/LanguageContext';
@@ -169,6 +169,12 @@ export default function InkToolbar({
     </Btn>
   );
 
+  const palmBtn = (
+    <Btn label={prefs.palmRejection ? t.palmRejectOn : t.palmRejectOff} active={prefs.palmRejection} onClick={() => setPrefs({ palmRejection: !prefs.palmRejection })}>
+      <ShieldCheck size={16} />
+    </Btn>
+  );
+
   if (mode === 'select') {
     const a = select;
     return (
@@ -270,6 +276,7 @@ export default function InkToolbar({
         <Sep />
         <Btn label={t.eraseAll} onClick={onEraseAll}><Trash2 size={16} /></Btn>
         {fingerBtn}
+        {palmBtn}
       </div>
     );
   }
@@ -378,6 +385,7 @@ export default function InkToolbar({
         <Shapes size={16} /> <span>{t.snapShapes}</span>
       </button>
       {fingerBtn}
+        {palmBtn}
       <Btn label={t.resetPen} onClick={resetPrefs}><RotateCcw size={16} /></Btn>
     </div>
   );

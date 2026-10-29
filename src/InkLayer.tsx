@@ -30,6 +30,11 @@ import { resolveColor } from './inkEngine';
 
 type XOp = 'move' | 'nw' | 'ne' | 'se' | 'sw' | 'rot';
 
+/** A finger touching within this long after the pen was last seen is treated as a palm. */
+const PALM_WINDOW_MS = 1000;
+/** A touch contact patch bigger than this (CSS px) is a palm. */
+const PALM_SIZE_PX = 40;
+
 type Gesture =
   | { type: 'laser'; id: number; strokes: { pts: { x: number; y: number }[]; end: number | null }[]; down: boolean; raf: number }
   | { type: 'draw'; id: number; stroke: InkStroke; anchor: [number, number]; snapped: boolean; timer?: ReturnType<typeof setTimeout> }
@@ -89,6 +94,7 @@ export default function InkLayer({
   const lassoRef = useRef<SVGPolygonElement>(null);
   const gesture = useRef<Gesture | null>(null);
   const lastPen = useRef(0);
+  const touchGesture = useRef(false); // the current gesture was started by a finger (so a pen may take over)
   const strokesRef = useRef(strokes);
   strokesRef.current = strokes;
   const selRef = useRef(selectedIds);
@@ -293,9 +299,30 @@ export default function InkLayer({
     g.raf = requestAnimationFrame(() => laserFrame(g));
   };
 
+  // ---------- palm rejection ----------
+  /** A touch is a palm when: a pen was active a moment ago, or the contact patch is big. */
+  const isPalm = (e: React.PointerEvent | PointerEvent) =>
+    e.pointerType === 'touch' && prefs.palmRejection &&
+    (Date.now() - lastPen.current < PALM_WINDOW_MS || e.width > PALM_SIZE_PX || e.height > PALM_SIZE_PX);
+
+  /** Drop a finger-started gesture without saving anything (the pen is taking over). */
+  const abortTouchGesture = () => {
+    const g = gesture.current;
+    if (!g || g.type === 'laser' || g.type === 'xform') return;
+    if (g.type === 'draw' && g.timer) clearTimeout(g.timer);
+    try { liveRef.current?.releasePointerCapture(g.id); } catch { /* already released */ }
+    gesture.current = null;
+    touchGesture.current = false;
+    if (g.type === 'draw') liveOff();
+    if (g.type === 'erase') { setDraft(null); placeRing(0, 0, false); }
+    if (g.type === 'lasso') setLasso([]);
+  };
+
   // ---------- pointer: drawing / erasing / lasso (on the live canvas) ----------
 
   const onDown = (e: React.PointerEvent) => {
+    // palm rejection: the pen always wins. If a palm / finger got there first, drop it and let the pen write.
+    if (e.pointerType === 'pen' && prefs.palmRejection && touchGesture.current) abortTouchGesture();
     // a second finger lands while one finger is scrolling: that is a pinch-zoom, stop scrolling
     if (e.pointerType === 'touch' && gesture.current?.type === 'pan') {
       gesture.current.suspended = true;
@@ -337,14 +364,16 @@ export default function InkLayer({
     }
 
     if (e.pointerType === 'touch') {
+      if (isPalm(e)) return; // palm: no scroll, no marks
+      touchGesture.current = true;
       if (!prefs.fingerDraw) {
         // a finger scrolls the page
         gesture.current = { type: 'pan', id: e.pointerId, lastX: e.clientX, lastY: e.clientY, scroller: findScroller(liveRef.current), suspended: false };
         liveRef.current!.setPointerCapture(e.pointerId);
         return;
       }
-      // finger drawing is on: still ignore palms (pen nearby, or a big contact patch)
-      if (Date.now() - lastPen.current < 800 || e.width > 40 || e.height > 40) return;
+    } else {
+      touchGesture.current = false;
     }
 
     onActivate();
@@ -387,7 +416,11 @@ export default function InkLayer({
   };
 
   const onMove = (e: React.PointerEvent) => {
-    if (e.pointerType === 'pen') lastPen.current = Date.now(); // pen hovering = palm rejection window
+    if (e.pointerType === 'pen') {
+      lastPen.current = Date.now(); // pen hovering = palm rejection window
+      // the pen came near while a palm was scrolling / marking: stop the palm at once
+      if (prefs.palmRejection && touchGesture.current && gesture.current && gesture.current.id !== e.pointerId) abortTouchGesture();
+    }
     const g = gesture.current;
     if (!g) {
       if (mode === 'eraser' && e.pointerType !== 'touch') {
@@ -552,7 +585,7 @@ export default function InkLayer({
     const op = (e.target as HTMLElement).dataset.sel as XOp | undefined;
     if (!op || gesture.current || !box) return;
     if (e.pointerType === 'pen') lastPen.current = Date.now();
-    if (e.pointerType === 'touch' && Date.now() - lastPen.current < 800) return; // palm
+    if (isPalm(e)) return; // palm
     e.stopPropagation();
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
     const [x, y] = toPage(e);

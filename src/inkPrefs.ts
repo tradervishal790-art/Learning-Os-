@@ -26,6 +26,8 @@ export interface InkPrefs {
   eraserSize: number;
   /** Let a finger draw. Off by default so a resting palm / scrolling finger never leaves marks. */
   fingerDraw: boolean;
+  /** Palm rejection: a resting palm / extra finger never draws, scrolls or blocks the pen. On by default. */
+  palmRejection: boolean;
   /** Smoothing 0..1. */
   smoothing: number;
   selectShape: 'lasso' | 'rect';
@@ -50,6 +52,7 @@ export const DEFAULT_PREFS: InkPrefs = {
   eraserTarget: 'all',
   eraserSize: 14,
   fingerDraw: false,
+  palmRejection: true,
   smoothing: 0.5,
   selectShape: 'lasso',
   shapeSnap: false,
@@ -106,6 +109,7 @@ export function normalizeInkPrefs(value: unknown): InkPrefs {
     eraserTarget: raw.eraserTarget === 'ink' || raw.eraserTarget === 'hl' ? raw.eraserTarget : 'all',
     eraserSize: bounded(raw.eraserSize, DEFAULT_PREFS.eraserSize, 6, 60),
     fingerDraw: typeof raw.fingerDraw === 'boolean' ? raw.fingerDraw : DEFAULT_PREFS.fingerDraw,
+    palmRejection: typeof raw.palmRejection === 'boolean' ? raw.palmRejection : DEFAULT_PREFS.palmRejection,
     smoothing: bounded(raw.smoothing, DEFAULT_PREFS.smoothing, 0, 1),
     selectShape: raw.selectShape === 'rect' ? 'rect' : 'lasso',
     shapeSnap: typeof raw.shapeSnap === 'boolean' ? raw.shapeSnap : DEFAULT_PREFS.shapeSnap,

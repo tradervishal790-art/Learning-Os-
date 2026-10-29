@@ -549,6 +549,8 @@ export interface TranslationShape {
       fingerDraw: string;
       fingerDrawOn: string;
       fingerDrawOff: string;
+      palmRejectOn: string;
+      palmRejectOff: string;
       more: string;
       resetPen: string;
       eraserStroke: string;
@@ -2141,6 +2143,8 @@ export const translations: Record<Locale, TranslationShape> = {
         fingerDraw: "Draw with finger",
         fingerDrawOn: "Finger draws",
         fingerDrawOff: "Finger scrolls",
+        palmRejectOn: "Palm rejection on",
+        palmRejectOff: "Palm rejection off",
         more: "More",
         resetPen: "Reset pen settings",
         eraserStroke: "Whole stroke",
@@ -3744,6 +3748,8 @@ export const translations: Record<Locale, TranslationShape> = {
         fingerDraw: "Draw with finger",
         fingerDrawOn: "Finger draws",
         fingerDrawOff: "Finger scrolls",
+        palmRejectOn: "Palm rejection on",
+        palmRejectOff: "Palm rejection off",
         more: "More",
         resetPen: "Reset pen settings",
         eraserStroke: "Whole stroke",
@@ -5346,6 +5352,8 @@ export const translations: Record<Locale, TranslationShape> = {
         fingerDraw: "Draw with finger",
         fingerDrawOn: "Finger draws",
         fingerDrawOff: "Finger scrolls",
+        palmRejectOn: "Palm rejection on",
+        palmRejectOff: "Palm rejection off",
         more: "More",
         resetPen: "Reset pen settings",
         eraserStroke: "Whole stroke",
