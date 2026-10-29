@@ -825,14 +825,17 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                     {currentTopic ? statsCards[0].subtitle : t.dashboard.home.learningStyleCard.subtitleNotReady}
                   </p>
                 </div>
-                <button
+                <motion.button
                   type="button"
                   onClick={() => setActivePage(currentTopic ? 'videos' : 'roadmap')}
+                  whileHover={{ y: -2, scale: 1.015 }}
+                  whileTap={{ scale: 0.98 }}
+                  transition={{ type: 'spring', stiffness: 420, damping: 28 }}
                   className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(79,70,229,0.25)] transition hover:bg-indigo-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white active:scale-[0.98] dark:bg-indigo-500 dark:hover:bg-indigo-400 dark:focus-visible:ring-offset-[#17171f] sm:w-auto"
                 >
                   {t.dashboard.home.suggestion.watchCta}
                   <ChevronRight className="h-4 w-4" strokeWidth={2.2} />
-                </button>
+                </motion.button>
               </div>
               <div className="mt-6 grid grid-cols-1 gap-2.5 sm:grid-cols-3">
                 {[
@@ -844,10 +847,13 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                   const locked = navState(shortcut.id).isLocked;
                   const ShortcutIcon = shortcut.icon;
                   return (
-                    <button
+                    <motion.button
                       key={shortcut.id}
                       type="button"
                       onClick={() => item && selectNav(item.id, item.label)}
+                      whileHover={{ y: -3, scale: 1.01 }}
+                      whileTap={{ scale: 0.985 }}
+                      transition={{ type: 'spring', stiffness: 400, damping: 26 }}
                       className="group flex min-w-0 items-center gap-3 rounded-2xl border border-gray-200/80 bg-white/75 p-3 text-left transition hover:-translate-y-0.5 hover:border-indigo-200 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 active:scale-[0.99] dark:border-white/[0.07] dark:bg-white/[0.035] dark:hover:border-indigo-400/30 dark:hover:bg-white/[0.07]"
                     >
                       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 ring-1 ring-indigo-100/80 dark:bg-indigo-500/15 dark:text-indigo-300 dark:ring-indigo-300/10">
@@ -858,7 +864,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                         <span className="mt-0.5 block truncate text-xs text-gray-500 dark:text-white/45">{shortcut.hint}</span>
                       </span>
                       {locked ? <Lock className="h-3.5 w-3.5 shrink-0 text-gray-400" /> : <ChevronRight className="h-4 w-4 shrink-0 text-gray-400 transition group-hover:translate-x-0.5 group-hover:text-indigo-500" />}
-                    </button>
+                    </motion.button>
                   );
                 })}
               </div>
