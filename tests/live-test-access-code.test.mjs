@@ -28,6 +28,10 @@ test('a participant cannot create a phone slot without the matching private acce
   assert.match(players, /resource\.data\.get\('accessCode', null\)/);
 });
 
+test('public join route authenticates before subscribing to the session', () => {
+  assert.match(liveJoin, /ensureSignedIn\(\)\.then\(\(\) => \{[\s\S]*?subscribeSession\(code, setSession\)/);
+});
+
 test('participant access code is required, normalized and persisted for refresh', () => {
   assert.match(liveTest, /export function normalizeAccessCode\(/);
   assert.match(liveTest, /joinLiveSession\([\s\S]*?accessCode: string/);
