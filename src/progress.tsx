@@ -1,5 +1,5 @@
 import { motion, useReducedMotion } from 'framer-motion';
-import { ChartNoAxesColumn, Flame, Clock, Brain, Sprout, Target, Star, Check } from 'lucide-react';
+import { ChartNoAxesColumn, Flame, Clock, Brain, Sprout, Target, Star, Check, ArrowRight } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import type { Goal } from './types';
 import {
@@ -15,6 +15,7 @@ import { format } from './i18n/format';
 
 interface ProgressProps {
   goals?: Goal[];
+  onNavigateToRoadmap?: () => void;
 }
 
 const masteryColor = (score: number): string => {
@@ -30,7 +31,7 @@ const statusIcon: Record<string, ReactNode> = {
   learning: <Flame className="w-3.5 h-3.5" strokeWidth={2} />,
 };
 
-export default function Progress({ goals = [] }: ProgressProps) {
+export default function Progress({ goals = [], onNavigateToRoadmap }: ProgressProps) {
   const t = useTranslation();
   const prefersReducedMotion = useReducedMotion();
   const [activeSection, setActiveSection] = useState('overview');
@@ -69,8 +70,8 @@ export default function Progress({ goals = [] }: ProgressProps) {
         <p className="text-sm text-gray-500 dark:text-white/60 mt-1">{t.progress.header.subtitle}</p>
       </motion.div>
 
-      {/* Low-distraction section navigation: the active pill moves only after a user action. */}
-      <nav aria-label="Progress sections" className="sticky top-0 z-20 -mx-1 flex gap-1 overflow-x-auto rounded-2xl border border-gray-200/80 bg-white/90 p-1 shadow-sm backdrop-blur dark:border-white/10 dark:bg-[#09090b]/90">
+      {/* Section tabs only help once there is real progress data to navigate. */}
+      {hasAnyTopics && <nav aria-label="Progress sections" className="sticky top-0 z-20 -mx-1 mb-3 flex gap-1 overflow-x-auto rounded-2xl border border-gray-200/80 bg-white/90 p-1 shadow-sm backdrop-blur dark:border-white/10 dark:bg-[#09090b]/90">
         {progressSections.map((section) => (
           <button
             key={section.id}
@@ -83,7 +84,7 @@ export default function Progress({ goals = [] }: ProgressProps) {
             <span className="relative z-10">{section.label}</span>
           </button>
         ))}
-      </nav>
+      </nav>}
 
       {/* Hero: completion ring + key numbers */}
       <motion.div id="progress-overview" initial={prefersReducedMotion ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.18 }} className="scroll-mt-24 rounded-2xl card p-4 md:p-6 flex items-center gap-5 md:gap-10 mb-5 md:mb-6">
@@ -110,14 +111,14 @@ export default function Progress({ goals = [] }: ProgressProps) {
             <div key={label} title={label} aria-label={`${label}: ${value}`} className="flex items-center gap-3 min-w-0">
               <Icon className="w-5 h-5 flex-shrink-0 text-gray-500 dark:text-white/50" strokeWidth={1.75} />
               <span className="text-lg md:text-xl font-bold tabular-nums">{value}</span>
-              <span className="hidden md:inline text-xs text-gray-400 dark:text-white/40 uppercase tracking-wider truncate">{label}</span>
+              <span className="text-xs text-gray-500 dark:text-white/55 truncate">{label}</span>
             </div>
           ))}
         </div>
       </motion.div>
 
-      {/* Completion progress bar */}
-      <motion.div initial={false} animate={{ opacity: 1 }} transition={{ duration: 0.18 }} className="mb-6 md:mb-10">
+      {/* A 0/0 progress bar is noise before the learner starts a topic. */}
+      {hasAnyTopics && <motion.div initial={false} animate={{ opacity: 1 }} transition={{ duration: 0.18 }} className="mb-6 md:mb-10">
         <div className="flex justify-between text-xs text-gray-400 dark:text-white/40 mb-2">
           <span>{format(t.progress.completionBar.topicsDone, completion.completed, completion.total)}</span>
           <span>{format(t.progress.completionBar.inProgress, completion.learning)}</span>
@@ -130,13 +131,16 @@ export default function Progress({ goals = [] }: ProgressProps) {
             className="h-full bg-gradient-to-r from-indigo-500 to-violet-500 rounded-full"
           />
         </div>
-      </motion.div>
+      </motion.div>}
 
       {!hasAnyTopics ? (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-8 md:p-12 text-center rounded-2xl card">
           <Sprout className="w-12 h-12 mx-auto mb-4 text-gray-400 dark:text-white/40" strokeWidth={1.5} />
           <h3 className="text-xl font-semibold mb-2">{t.progress.emptyState.title}</h3>
-          <p className="text-gray-400 dark:text-white/60">{t.progress.emptyState.body}</p>
+          <p className="mx-auto max-w-md text-sm text-gray-500 dark:text-white/60">{t.progress.emptyState.body}</p>
+          {onNavigateToRoadmap && <button type="button" onClick={onNavigateToRoadmap} className="mt-5 inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 active:bg-indigo-800">
+            Start learning <ArrowRight className="h-4 w-4" />
+          </button>}
         </motion.div>
       ) : (
         <>
