@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import type { TestPaper, TestUserAnswer } from './types';
 import { isAnswered } from './testGrading';
 import { TakingScreen, type QuestionStatus } from './Test';
-import { JoinError, beginLiveAttempt, joinLiveSession, normalizeCode, normalizePhone, submitLiveAnswers, subscribeSession, type LiveSession } from './liveTest';
+import { JoinError, beginLiveAttempt, joinLiveSession, normalizeAccessCode, normalizeCode, normalizePhone, submitLiveAnswers, subscribeSession, type LiveSession } from './liveTest';
 import { loadSavedTheme } from './ThemeContext';
 import ConfirmDialog from './ConfirmDialog';
 
@@ -19,6 +19,7 @@ import ConfirmDialog from './ConfirmDialog';
 interface SavedPlayer {
   name: string;
   phone: string;
+  accessCode: string;
 }
 interface SavedDraft {
   answers: TestUserAnswer[];
@@ -57,6 +58,7 @@ export default function LiveJoin() {
   const [startedAtMs, setStartedAtMs] = useState<number | null>(null);
   const [name, setName] = useState(player?.name ?? '');
   const [phoneInput, setPhoneInput] = useState(player?.phone ?? '');
+  const [accessCodeInput, setAccessCodeInput] = useState(player?.accessCode ?? '');
   const [formError, setFormError] = useState('');
   const [busy, setBusy] = useState(false);
   const [now, setNow] = useState(Date.now());
@@ -94,14 +96,14 @@ export default function LiveJoin() {
   }, []);
 
   const join = useCallback(
-    async (n: string, phone: string) => {
+    async (n: string, phone: string, accessCode: string) => {
       setBusy(true);
       setFormError('');
       try {
-        const res = await joinLiveSession(code, n, phone);
+        const res = await joinLiveSession(code, n, phone, accessCode);
         setOffsetMs(res.offsetMs);
         setStartedAtMs(res.startedAtMs);
-        const p = { name: res.name, phone };
+        const p = { name: res.name, phone, accessCode };
         writeJson(playerKey(code), p);
         setPlayer(p);
         setJoined(true);
@@ -112,7 +114,7 @@ export default function LiveJoin() {
           setSubmitted(true);
           setSubmitNote('already-or-closed');
         } else if (reason === 'NOT_ALLOWED') {
-          setFormError('This number is not on the test list or is already linked to another device. Check it or ask your host for help.');
+          setFormError('This number/access code could not be verified, or the number is already linked to another device. Ask your host for help.');
         } else if (reason === 'OTHER_DEVICE') {
           setFormError('This number is already in use on another device. Ask your host to unlock it.');
         } else {
@@ -130,7 +132,7 @@ export default function LiveJoin() {
   useEffect(() => {
     if (autoJoinedRef.current || !player || session === 'loading' || session === null || submitted) return;
     autoJoinedRef.current = true;
-    void join(player.name, player.phone);
+    void join(player.name, player.phone, player.accessCode ?? '');
   }, [player, session, submitted, join]);
 
   const handleJoin = () => {
@@ -138,7 +140,9 @@ export default function LiveJoin() {
     const phone = normalizePhone(phoneInput);
     if (n.length < 2) return setFormError('Please enter your full name.');
     if (!phone) return setFormError('Please enter a valid 10-digit phone number.');
-    void join(n, phone);
+    const accessCode = normalizeAccessCode(accessCodeInput);
+    if (!/^[A-HJ-NP-Z2-9]{8}$/.test(accessCode)) return setFormError('Enter the 8-character access code given to you by the host.');
+    void join(n, phone, accessCode);
   };
 
   const live = session !== 'loading' && session !== null ? session : null;
@@ -348,6 +352,16 @@ export default function LiveJoin() {
           placeholder="Phone number (10 digits)"
           className="w-full mb-3 px-4 py-3 rounded-xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 focus:outline-none focus:border-black dark:focus:border-white"
         />
+        <input
+          value={accessCodeInput}
+          onChange={(e) => setAccessCodeInput(e.target.value.toUpperCase())}
+          autoCapitalize="characters"
+          autoComplete="one-time-code"
+          maxLength={8}
+          placeholder="8-character access code from host"
+          className="w-full mb-3 px-4 py-3 rounded-xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 focus:outline-none focus:border-black dark:focus:border-white font-mono tracking-widest"
+        />
+        <p className="text-xs text-gray-500 dark:text-white/60 mb-3">Your host must share your private access code. A phone number alone is not enough.</p>
         {formError && <p className="text-sm text-red-500 mb-3">{formError}</p>}
         <button onClick={handleJoin} disabled={busy} className="w-full py-3 rounded-xl bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white font-semibold disabled:opacity-40">
           {busy ? 'Joining...' : 'Join test'}
