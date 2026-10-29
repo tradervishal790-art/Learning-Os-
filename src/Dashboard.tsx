@@ -322,12 +322,10 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   const activePage = (location.pathname.replace(/^\/dashboard\/?/, '').split('/')[0] || 'dashboard') as DashboardPageId;
   const prefersReducedMotion = useReducedMotion();
   const contentScrollRef = useRef<HTMLDivElement>(null);
+  // Reset scroll instantly on navigation; smooth scrolling fights page transitions.
   useEffect(() => {
-    contentScrollRef.current?.scrollTo({
-      top: 0,
-      behavior: prefersReducedMotion ? 'auto' : 'smooth',
-    });
-  }, [activePage, prefersReducedMotion]);
+    contentScrollRef.current?.scrollTo({ top: 0, behavior: 'auto' });
+  }, [activePage]);
   const setActivePage = useCallback(
     (page: DashboardPageId) => {
       navigate(page === 'dashboard' ? '/dashboard' : `/dashboard/${page}`);
@@ -819,18 +817,28 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
             <motion.div
               key={activePage}
               initial={prefersReducedMotion ? false : (
-                activePage === 'dashboard' ? { opacity: 0, y: 8 } :
-                activePage === 'roadmap' ? { opacity: 0 } :
-                activePage === 'progress' ? { opacity: 0, x: 8 } :
-                activePage === 'videos' ? { opacity: 0, scale: 0.995 } :
-                { opacity: 0, y: 4 }
+                activePage === 'roadmap' ? { opacity: 0, y: 12, scale: 0.992 } :
+                activePage === 'dashboard' ? { opacity: 0, y: 7 } :
+                activePage === 'progress' ? { opacity: 0, x: 10 } :
+                activePage === 'videos' ? { opacity: 0, scale: 0.985, filter: 'blur(3px)' } :
+                activePage === 'revision' ? { opacity: 0, y: 9, filter: 'blur(2px)' } :
+                { opacity: 0, y: 5 }
               )}
-              animate={{ opacity: 1, x: 0, y: 0, scale: 1 }}
-              exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0 }}
-              transition={{
-                duration: prefersReducedMotion ? 0 : activePage === 'roadmap' ? 0.22 : 0.18,
-                ease: [0.22, 1, 0.36, 1],
-              }}
+              animate={{ opacity: 1, x: 0, y: 0, scale: 1, filter: 'blur(0px)' }}
+              exit={prefersReducedMotion ? { opacity: 0, transition: { duration: 0.08 } } : (
+                activePage === 'roadmap' ? { opacity: 0, y: -5, transition: { duration: 0.12 } } :
+                activePage === 'videos' ? { opacity: 0, scale: 0.99, transition: { duration: 0.1 } } :
+                { opacity: 0, y: -3, transition: { duration: 0.1 } }
+              )}
+              transition={prefersReducedMotion ? { duration: 0 } : (
+                activePage === 'roadmap'
+                  ? { opacity: { duration: 0.3, ease: [0.16, 1, 0.3, 1] }, y: { type: "spring", stiffness: 240, damping: 28 }, scale: { duration: 0.28, ease: [0.16, 1, 0.3, 1] }, filter: { duration: 0.22 } }
+                  : activePage === 'videos'
+                    ? { duration: 0.24, ease: [0.22, 1, 0.36, 1] }
+                    : activePage === 'revision'
+                      ? { duration: 0.27, ease: [0.16, 1, 0.3, 1] }
+                      : { duration: 0.22, ease: [0.22, 1, 0.36, 1] }
+              )}
               className="min-h-full"
             >
                 {activePage === 'dashboard' && (
