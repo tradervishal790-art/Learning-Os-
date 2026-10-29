@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useState, lazy, Suspense } from 'react';
+import { useCallback, useEffect, useState, useRef, lazy, Suspense } from 'react';
 import type { ComponentType } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { Search, Film, BookOpen, ClipboardCheck, Newspaper, Lock, Settings as SettingsIcon, Bell, X as CloseIcon, Target, RotateCcw, Flame, Check, ChevronRight, ArrowLeft } from 'lucide-react';
 import PagePlaceholder from './PagePlaceholder';
 import BottomNav from './BottomNav';
@@ -320,6 +320,12 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   // location.pathname looks like "/dashboard" or "/dashboard/roadmap" — the
   // segment right after "/dashboard/" (if any) is the active page.
   const activePage = (location.pathname.replace(/^\/dashboard\/?/, '').split('/')[0] || 'dashboard') as DashboardPageId;
+  const prefersReducedMotion = useReducedMotion();
+  const contentScrollRef = useRef<HTMLDivElement>(null);
+  // Reset scroll instantly on navigation; smooth scrolling fights page transitions.
+  useEffect(() => {
+    contentScrollRef.current?.scrollTo({ top: 0, behavior: 'auto' });
+  }, [activePage]);
   const setActivePage = useCallback(
     (page: DashboardPageId) => {
       navigate(page === 'dashboard' ? '/dashboard' : `/dashboard/${page}`);
@@ -764,7 +770,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
         {SidebarContent}
       </aside>
 
-      <div className={`flex-1 overflow-auto min-w-0 md:pb-0 ${immersive ? '' : 'pb-[calc(3.5rem+env(safe-area-inset-bottom))]'}`}>
+      <div ref={contentScrollRef} className={`flex-1 overflow-auto min-w-0 md:pb-0 ${immersive ? '' : 'pb-[calc(3.5rem+env(safe-area-inset-bottom))]'}`}>
         {!(activePage === 'notes' && noteOpen) && (
         <motion.div
           initial={{ y: -20, opacity: 0 }}
@@ -807,6 +813,34 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
         )}
 
         <Suspense fallback={<PageLoading />}>
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={activePage}
+              initial={prefersReducedMotion ? false : (
+                activePage === 'roadmap' ? { opacity: 0, y: 12, scale: 0.992 } :
+                activePage === 'dashboard' ? { opacity: 0, y: 7 } :
+                activePage === 'progress' ? { opacity: 0, x: 10 } :
+                activePage === 'videos' ? { opacity: 0, scale: 0.985, filter: 'blur(3px)' } :
+                activePage === 'revision' ? { opacity: 0, y: 9, filter: 'blur(2px)' } :
+                { opacity: 0, y: 5 }
+              )}
+              animate={{ opacity: 1, x: 0, y: 0, scale: 1, filter: 'blur(0px)' }}
+              exit={prefersReducedMotion ? { opacity: 0, transition: { duration: 0.08 } } : (
+                activePage === 'roadmap' ? { opacity: 0, y: -5, transition: { duration: 0.12 } } :
+                activePage === 'videos' ? { opacity: 0, scale: 0.99, transition: { duration: 0.1 } } :
+                { opacity: 0, y: -3, transition: { duration: 0.1 } }
+              )}
+              transition={prefersReducedMotion ? { duration: 0 } : (
+                activePage === 'roadmap'
+                  ? { opacity: { duration: 0.3, ease: [0.16, 1, 0.3, 1] }, y: { type: "spring", stiffness: 240, damping: 28 }, scale: { duration: 0.28, ease: [0.16, 1, 0.3, 1] }, filter: { duration: 0.22 } }
+                  : activePage === 'videos'
+                    ? { duration: 0.24, ease: [0.22, 1, 0.36, 1] }
+                    : activePage === 'revision'
+                      ? { duration: 0.27, ease: [0.16, 1, 0.3, 1] }
+                      : { duration: 0.22, ease: [0.22, 1, 0.36, 1] }
+              )}
+              className="min-h-full"
+            >
                 {activePage === 'dashboard' && (
           <div className="p-4 md:p-8 flex flex-col gap-4 md:gap-6">
             <section className="relative isolate overflow-hidden rounded-[28px] border border-indigo-200/60 bg-gradient-to-br from-white via-indigo-50 to-violet-100 p-5 shadow-[0_18px_55px_rgba(79,70,229,0.10)] dark:border-white/[0.09] dark:from-[#17171f] dark:via-[#11111a] dark:to-[#211735] dark:shadow-[0_20px_60px_rgba(0,0,0,0.22)] md:p-7">
@@ -825,14 +859,17 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                     {currentTopic ? statsCards[0].subtitle : t.dashboard.home.learningStyleCard.subtitleNotReady}
                   </p>
                 </div>
-                <button
+                <motion.button
                   type="button"
                   onClick={() => setActivePage(currentTopic ? 'videos' : 'roadmap')}
+                  whileHover={{ y: -2, scale: 1.015 }}
+                  whileTap={{ scale: 0.98 }}
+                  transition={{ type: 'spring', stiffness: 420, damping: 28 }}
                   className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(79,70,229,0.25)] transition hover:bg-indigo-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white active:scale-[0.98] dark:bg-indigo-500 dark:hover:bg-indigo-400 dark:focus-visible:ring-offset-[#17171f] sm:w-auto"
                 >
                   {t.dashboard.home.suggestion.watchCta}
                   <ChevronRight className="h-4 w-4" strokeWidth={2.2} />
-                </button>
+                </motion.button>
               </div>
               <div className="mt-6 grid grid-cols-1 gap-2.5 sm:grid-cols-3">
                 {[
@@ -844,10 +881,13 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                   const locked = navState(shortcut.id).isLocked;
                   const ShortcutIcon = shortcut.icon;
                   return (
-                    <button
+                    <motion.button
                       key={shortcut.id}
                       type="button"
                       onClick={() => item && selectNav(item.id, item.label)}
+                      whileHover={{ y: -3, scale: 1.01 }}
+                      whileTap={{ scale: 0.985 }}
+                      transition={{ type: 'spring', stiffness: 400, damping: 26 }}
                       className="group flex min-w-0 items-center gap-3 rounded-2xl border border-gray-200/80 bg-white/75 p-3 text-left transition hover:-translate-y-0.5 hover:border-indigo-200 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 active:scale-[0.99] dark:border-white/[0.07] dark:bg-white/[0.035] dark:hover:border-indigo-400/30 dark:hover:bg-white/[0.07]"
                     >
                       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 ring-1 ring-indigo-100/80 dark:bg-indigo-500/15 dark:text-indigo-300 dark:ring-indigo-300/10">
@@ -858,7 +898,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                         <span className="mt-0.5 block truncate text-xs text-gray-500 dark:text-white/45">{shortcut.hint}</span>
                       </span>
                       {locked ? <Lock className="h-3.5 w-3.5 shrink-0 text-gray-400" /> : <ChevronRight className="h-4 w-4 shrink-0 text-gray-400 transition group-hover:translate-x-0.5 group-hover:text-indigo-500" />}
-                    </button>
+                    </motion.button>
                   );
                 })}
               </div>
@@ -1042,7 +1082,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
         {activePage === 'mentor' && <Mentor />}
         {activePage === 'notes' && <Notes />}
         {activePage === 'test' && <Test />}
-        {activePage === 'progress' && <Progress goals={goals} />}
+        {activePage === 'progress' && <Progress goals={goals} onNavigateToRoadmap={() => setActivePage('roadmap')} />}
         {activePage === 'research' && <Research />}
         {activePage === 'dictionary' && <Dictionary />}
         {activePage === 'current-affairs' && <CurrentAffairs />}
@@ -1056,6 +1096,8 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
             status={config.status}
           />
         )}
+            </motion.div>
+          </AnimatePresence>
         </Suspense>
       </div>
 

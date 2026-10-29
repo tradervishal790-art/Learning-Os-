@@ -185,3 +185,66 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
     transform: translateY(0) scale(0.99);
   }
 }
+
+
+/* Low-saturation interaction system: clear states without loud, solid fills. */
+:root {
+  --los-accent: #6559c8;
+  --los-accent-hover: #584bb9;
+  --los-accent-soft: #eeedff;
+  --los-accent-border: #d8d4ff;
+  --los-accent-ink: #4c419f;
+}
+
+/* Primary actions stay recognizable, but avoid the electric-indigo block. */
+button.bg-indigo-600,
+a.bg-indigo-600,
+button.bg-violet-600,
+a.bg-violet-600 {
+  background-color: var(--los-accent) !important;
+  border-color: var(--los-accent) !important;
+}
+@media (hover: hover) and (pointer: fine) {
+  button.bg-indigo-600:hover:not(:disabled),
+  a.bg-indigo-600:hover,
+  button.bg-violet-600:hover:not(:disabled),
+  a.bg-violet-600:hover {
+    background-color: var(--los-accent-hover) !important;
+    border-color: var(--los-accent-hover) !important;
+  }
+}
+
+/* Toggles and filter chips should look selected—not like a permanently pressed CTA.
+   aria-pressed is the semantic state, so this works across pages and components. */
+button[aria-pressed="true"],
+[role="switch"][aria-checked="true"],
+[role="tab"][aria-selected="true"] {
+  background-color: var(--los-accent-soft) !important;
+  border-color: var(--los-accent-border) !important;
+  color: var(--los-accent-ink) !important;
+  box-shadow: inset 0 0 0 1px rgba(101, 89, 200, 0.06);
+}
+.dark button[aria-pressed="true"],
+.dark [role="switch"][aria-checked="true"],
+.dark [role="tab"][aria-selected="true"] {
+  background-color: rgba(129, 119, 235, 0.17) !important;
+  border-color: rgba(167, 157, 255, 0.3) !important;
+  color: #d4ceff !important;
+  box-shadow: inset 0 0 0 1px rgba(167, 157, 255, 0.08);
+}
+
+/* A switch must retain its track/thumb affordance rather than becoming a filled chip. */
+[role="switch"][aria-checked="true"] {
+  background-color: var(--los-accent) !important;
+}
+.dark [role="switch"][aria-checked="true"] {
+  background-color: #8177eb !important;
+}
+
+/* Selected date/category chips keep a gentle edge and readable text. */
+.ca-theme button[aria-pressed="true"] {
+  background-color: #e8e7ff !important;
+  border-color: #d3d0ff !important;
+  color: #4c419f !important;
+  box-shadow: inset 0 0 0 1px rgba(101, 89, 200, 0.06);
+}

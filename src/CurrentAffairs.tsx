@@ -149,6 +149,7 @@ function NewspaperCurrentAffairs() {
           <button
             key={d}
             onClick={() => setDate(d)}
+            aria-pressed={d === date}
             className={`flex-shrink-0 h-10 px-4 text-sm rounded-full border transition ${
               d === date
                 ? 'bg-indigo-600 text-white border-indigo-600 dark:bg-indigo-500 dark:text-white dark:border-indigo-500'
