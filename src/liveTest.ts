@@ -94,7 +94,7 @@ function generateCode(): string {
   return out;
 }
 
-const ACCESS_CODE_LENGTH = 8;
+const ACCESS_CODE_LENGTH = 12;
 
 /** Generate a per-student bearer code with cryptographically secure randomness. */
 export function generateAccessCode(): string {
