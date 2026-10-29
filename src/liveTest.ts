@@ -272,7 +272,7 @@ export async function addAllowed(code: string, entries: LiveAllowed[]): Promise<
     const ref = doc(db, 'liveTests', code, 'allowed', entry.phone);
     const snap = await getDoc(ref);
     const old = snap.exists() ? snap.data() : {};
-    const oldCode = typeof old.accessCode === 'string' && /^[A-HJ-NP-Z2-9]{8}$/.test(old.accessCode)
+    const oldCode = typeof old.accessCode === 'string' && /^[A-HJ-NP-Z2-9]{12}$/.test(old.accessCode)
       ? old.accessCode
       : generateAccessCode();
     return {
