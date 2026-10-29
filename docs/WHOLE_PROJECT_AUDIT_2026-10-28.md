@@ -2,7 +2,8 @@
 
 Date: 2026-10-28  
 Audit branch: `audit/whole-project-bugfixes`  
-Base: `main` (no changes made directly to `main`)
+Live-test security follow-up: PR #73 (`fix/live-test-allowlist-access-code`, isolated and not merged)  
+Base: `main` (no follow-up changes made directly to `main`)
 
 ## Confirmed findings and changes
 
@@ -30,7 +31,7 @@ Base: `main` (no changes made directly to `main`)
 - **Severity:** High (participant privacy / unauthorized test entry)
 - **Location:** `firestore.rules`, `src/liveTest.ts`, `src/LiveJoin.tsx`, `src/LiveHost.tsx`, `docs/LIVE_TEST.md`
 - **Evidence:** the old rules let any signed-in account directly read `allowed/{phone}` documents containing phone/name and `done/{phone}` markers containing UID/phone. Even after those reads were restricted, anyone who knew an allowed phone number could race to claim its player slot because the join flow had no proof that the person was the intended student.
-- **Change on isolated branch:** allow-list reads/listing remain host-only except for the matching participant after slot ownership; `done/{phone}` reads are restricted to host/matching UID. Hosts now receive a cryptographically random 12-character per-student access code, and Firestore player creation checks that code against the host-only allow-list entry. The participant form asks for it and stores it locally for refresh. Existing codes are preserved when a host re-adds an entry. The public join route now establishes anonymous auth before subscribing to the session, so it works outside the dashboard login gate. The stale setup guide that showed permissive rules is replaced with deployment instructions for the repository's `firestore.rules`. Static regression tests cover code generation, rules, join persistence, host sharing, and authenticated session loading.
+- **Change on isolated branch:** allow-list reads/listing remain host-only except for the matching participant after slot ownership; `done/{phone}` reads are restricted to host/matching UID. Hosts now receive a cryptographically random 12-character per-student access code, and Firestore player creation checks that code against the host-only allow-list entry. The participant form asks for it and stores it locally for refresh. Existing codes are preserved when a host re-adds an entry. The public join route now establishes anonymous auth before subscribing to the session, so it works outside the dashboard login gate. The stale setup guide that showed permissive rules is replaced with deployment instructions for the repository's `firestore.rules`. Static regression tests cover code generation, rules, join persistence, host sharing, and authenticated session loading; `tests/live-test-rules-emulator.test.mjs` exercises allow-list privacy and access-code enforcement against the Firestore Emulator.
 - **Residual limitation / release gate:** phone numbers still are not OTP-verified; an access code is a bearer secret and can be forwarded. Validate the exact rules with the Firebase Emulator, deploy them to the correct Firebase project, and verify two separate participant UIDs before claiming production protection. Existing allow-list entries created before access codes must be re-added by the host to issue a code.
 
 ### 5. Several local-first stores cannot tell the user when cloud sync failed
@@ -63,4 +64,4 @@ Base: `main` (no changes made directly to `main`)
 - The Notes font-preservation commit on PR #70 passed its GitHub Actions CI: install, lint, TypeScript/build, and test steps all succeeded.
 - PR #71's merged CI and the post-merge `main` push CI passed on 2026-10-28. The isolated access-code follow-up must pass its own CI before its changes are treated as verified.
 - This remains a static/code-and-test audit, not a full manual QA run on Android, desktop, offline mode, two real accounts/devices, or production Firebase rules. Those require environment/device access.
-- High-priority next steps are Firebase Emulator validation/deployment of the updated live-test rules, two-UID authorization tests, and a durable cloud-sync retry/status design. Do not label the entire project “bug-free”; use the remaining findings and manual-test gaps as the exit checklist.
+- High-priority next steps are confirming the new Emulator suite passes, deploying the updated live-test rules to the intended Firebase project, and building a durable cloud-sync retry/status design. Do not label the entire project “bug-free”; use the remaining findings and manual-test gaps as the exit checklist.
