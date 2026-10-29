@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useState, lazy, Suspense } from 'react';
+import { useCallback, useEffect, useState, useRef, lazy, Suspense } from 'react';
 import type { ComponentType } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { Search, Film, BookOpen, ClipboardCheck, Newspaper, Lock, Settings as SettingsIcon, Bell, X as CloseIcon, Target, RotateCcw, Flame, Check, ChevronRight, ArrowLeft } from 'lucide-react';
 import PagePlaceholder from './PagePlaceholder';
 import BottomNav from './BottomNav';
@@ -320,6 +320,14 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   // location.pathname looks like "/dashboard" or "/dashboard/roadmap" — the
   // segment right after "/dashboard/" (if any) is the active page.
   const activePage = (location.pathname.replace(/^\/dashboard\/?/, '').split('/')[0] || 'dashboard') as DashboardPageId;
+  const prefersReducedMotion = useReducedMotion();
+  const contentScrollRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    contentScrollRef.current?.scrollTo({
+      top: 0,
+      behavior: prefersReducedMotion ? 'auto' : 'smooth',
+    });
+  }, [activePage, prefersReducedMotion]);
   const setActivePage = useCallback(
     (page: DashboardPageId) => {
       navigate(page === 'dashboard' ? '/dashboard' : `/dashboard/${page}`);
@@ -764,7 +772,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
         {SidebarContent}
       </aside>
 
-      <div className={`flex-1 overflow-auto min-w-0 md:pb-0 ${immersive ? '' : 'pb-[calc(3.5rem+env(safe-area-inset-bottom))]'}`}>
+      <div ref={contentScrollRef} className={`flex-1 overflow-auto min-w-0 md:pb-0 ${immersive ? '' : 'pb-[calc(3.5rem+env(safe-area-inset-bottom))]'}`}>
         {!(activePage === 'notes' && noteOpen) && (
         <motion.div
           initial={{ y: -20, opacity: 0 }}
@@ -807,6 +815,24 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
         )}
 
         <Suspense fallback={<PageLoading />}>
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={activePage}
+              initial={prefersReducedMotion ? false : (
+                activePage === 'dashboard' ? { opacity: 0, y: 8 } :
+                activePage === 'roadmap' ? { opacity: 0 } :
+                activePage === 'progress' ? { opacity: 0, x: 8 } :
+                activePage === 'videos' ? { opacity: 0, scale: 0.995 } :
+                { opacity: 0, y: 4 }
+              )}
+              animate={{ opacity: 1, x: 0, y: 0, scale: 1 }}
+              exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0 }}
+              transition={{
+                duration: prefersReducedMotion ? 0 : activePage === 'roadmap' ? 0.22 : 0.18,
+                ease: [0.22, 1, 0.36, 1],
+              }}
+              className="min-h-full"
+            >
                 {activePage === 'dashboard' && (
           <div className="p-4 md:p-8 flex flex-col gap-4 md:gap-6">
             <section className="relative isolate overflow-hidden rounded-[28px] border border-indigo-200/60 bg-gradient-to-br from-white via-indigo-50 to-violet-100 p-5 shadow-[0_18px_55px_rgba(79,70,229,0.10)] dark:border-white/[0.09] dark:from-[#17171f] dark:via-[#11111a] dark:to-[#211735] dark:shadow-[0_20px_60px_rgba(0,0,0,0.22)] md:p-7">
@@ -1062,6 +1088,8 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
             status={config.status}
           />
         )}
+            </motion.div>
+          </AnimatePresence>
         </Suspense>
       </div>
 
