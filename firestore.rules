@@ -93,7 +93,7 @@ service cloud.firestore {
           && request.resource.data.keys().hasOnly(['phone', 'name', 'accessCode'])
           && request.resource.data.phone == phone
           && request.resource.data.accessCode is string
-          && request.resource.data.accessCode.matches('[A-HJ-NP-Z2-9]{8}');
+          && request.resource.data.accessCode.matches('[A-HJ-NP-Z2-9]{12}');
         allow delete: if isHost();
       }
 
