@@ -7,7 +7,7 @@ const liveTest = readFileSync('src/liveTest.ts', 'utf8');
 const liveJoin = readFileSync('src/LiveJoin.tsx', 'utf8');
 const liveHost = readFileSync('src/LiveHost.tsx', 'utf8');
 
-test('new allow-list entries get cryptographically random 8-character access codes', () => {
+test('new allow-list entries get cryptographically random 12-character access codes', () => {
   assert.match(liveTest, /ACCESS_CODE_LENGTH = 12/);
   assert.match(liveTest, /crypto\.getRandomValues\(values\)/);
   assert.match(liveTest, /const oldCode = typeof old\.accessCode === 'string'/);
