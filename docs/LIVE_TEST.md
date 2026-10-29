@@ -18,7 +18,7 @@ One host runs a test for a class; students join with a phone number and a privat
 
 1. Open Test → Live → create a session.
 2. Paste allowed students as one phone number per line, or `Name, number`.
-3. Each row gets a cryptographically random 8-character **private access code**. Copy that row's code and send it directly to that student. Do not post the whole list of codes in a public group.
+3. Each row gets a cryptographically random 12-character **private access code**. Copy that row's code and send it directly to that student. Do not post the whole list of codes in a public group.
 4. Students can join at different times and start their own timer. The host can monitor joins/submissions, end the session, and download the ranking PDF.
 
 If an old entry says its code is missing, add that phone number again to issue a code. Re-adding an entry with an existing code preserves that code.
@@ -26,7 +26,7 @@ If an old entry says its code is missing, add that phone number again to issue a
 ## Student flow
 
 1. Open the host's `/live/CODE` link.
-2. Enter full name, the listed phone number, and the private 8-character access code given by the host.
+2. Enter full name, the listed phone number, and the private 12-character access code given by the host.
 3. Press **Start test** when ready. Refreshing the page reuses the locally saved code and preserves the server-stamped start time.
 4. Submit once; a completed attempt cannot be reopened.
 
