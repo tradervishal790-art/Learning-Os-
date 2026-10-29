@@ -4,9 +4,9 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import ConfirmDialog from './ConfirmDialog';
 import LecturePrefetch from './LecturePrefetch';
-import { Search, Film, BookOpen, ClipboardCheck, Newspaper, Lock, Settings as SettingsIcon, Target, RotateCcw, Flame, Check, ChevronRight, ArrowLeft } from 'lucide-react';
+import { Search, Film, BookOpen, ClipboardCheck, Newspaper, Lock, Settings as SettingsIcon, Target, RotateCcw, Flame, Check, ChevronRight, ChevronDown, LayoutGrid, ArrowLeft } from 'lucide-react';
 import PagePlaceholder from './PagePlaceholder';
-import BottomNav from './BottomNav';
+import BottomNav, { PRIMARY_NAV_IDS } from './BottomNav';
 import { useImmersive, useNoteOpen } from './immersive';
 import { getRoadmapData, getCurrentTopic } from './roadmapData';
 import { getRevisionStats, getRevisionDataForGoals } from './revisionData';
@@ -73,9 +73,12 @@ function PageLoading() {
 // must match an `id` added on the actual sidebar/nav element it targets.
 function getDashboardTour(t: ReturnType<typeof useTranslation>): Tour[] {
   // Phones have no sidebar — the tour points at the bottom bar there.
-  // Revision lives behind the "More" slot on phones.
+  // Anything outside the everyday five lives behind "More" (phone bottom bar and desktop sidebar).
   const phone = typeof window !== 'undefined' && !window.matchMedia('(min-width: 768px)').matches;
-  const navSel = (id: string) => (phone ? `#onborda-bnav-${id === 'revision' ? 'more' : id}` : `#onborda-nav-${id}`);
+  const navSel = (id: string) => {
+    const anchor = PRIMARY_NAV_IDS.includes(id) ? id : 'more';
+    return phone ? `#onborda-bnav-${anchor}` : `#onborda-nav-${anchor}`;
+  };
   const navSide = phone ? 'top' : 'right';
   return [
     {
@@ -721,16 +724,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   };
   const sidebarItems = getSidebarItems(t);
 
-  const SidebarContent = (
-    <>
-      <div className="mb-10 flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold bg-gradient-to-r from-purple-500 via-pink-500 to-orange-400 bg-clip-text text-transparent">Learning OS</h1>
-          <p className="text-xs text-gray-400 dark:text-white/40 mt-1">v1.0 - Beta</p>
-        </div>
-      </div>
-      <nav className="space-y-1 flex-1">
-        {sidebarItems.map((item, i) => {
+  const renderNavItem = (item: (typeof sidebarItems)[number], i: number) => {
           const { isLocked } = navState(item.id);
           return (
             <motion.button
@@ -753,7 +747,33 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
               {isLocked && <Lock className="w-3.5 h-3.5" strokeWidth={2} />}
             </motion.button>
           );
-        })}
+  };
+
+  const primaryItems = PRIMARY_NAV_IDS.map((id) => sidebarItems.find((i) => i.id === id)).filter((i): i is (typeof sidebarItems)[number] => Boolean(i));
+  const moreItems = sidebarItems.filter((i) => !PRIMARY_NAV_IDS.includes(i.id));
+  const moreActive = moreItems.some((i) => i.id === activePage);
+
+  const SidebarContent = (
+    <>
+      <div className="mb-10 flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-bold bg-gradient-to-r from-purple-500 via-pink-500 to-orange-400 bg-clip-text text-transparent">Learning OS</h1>
+          <p className="text-xs text-gray-400 dark:text-white/40 mt-1">v1.0 - Beta</p>
+        </div>
+      </div>
+      <nav className="space-y-1 flex-1">
+        {primaryItems.map(renderNavItem)}
+        <details key={moreActive ? 'more-open' : 'more-closed'} open={moreActive} className="group">
+          <summary
+            id="onborda-nav-more"
+            className="list-none cursor-pointer w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-500 dark:text-white/50 hover:text-black dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5 [&::-webkit-details-marker]:hidden"
+          >
+            <LayoutGrid className="w-4 h-4" />
+            <span className="flex-1 text-left">{t.dashboard.sidebar.more}</span>
+            <ChevronDown className="w-4 h-4 transition-transform group-open:rotate-180" />
+          </summary>
+          <div className="space-y-1 mt-1">{moreItems.map(renderNavItem)}</div>
+        </details>
       </nav>
       <div className="mt-auto pt-6 border-t border-gray-200 dark:border-white/10">
         <div className="flex items-center gap-3 px-2">

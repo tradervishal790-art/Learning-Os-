@@ -66,3 +66,13 @@ test('#5 next lecture is prefetched once, only for signed-in returning learners,
   }
   assert.match(read('Roadmap.tsx'), /takePrefetchedLecture\(topic\.id, lectureSignature\(lectureInput\)\)/);
 });
+
+test('#11 only the everyday five are always visible; the rest sit behind More (sidebar and bottom bar)', () => {
+  const nav = read('BottomNav.tsx');
+  assert.match(nav, /PRIMARY_NAV_IDS = \['dashboard', 'roadmap', 'revision', 'videos', 'test'\]/);
+  const dash = read('Dashboard.tsx');
+  assert.match(dash, /primaryItems\.map\(renderNavItem\)/);
+  assert.match(dash, /moreItems\.map\(renderNavItem\)/);
+  assert.match(dash, /id="onborda-nav-more"/);
+  assert.match(dash, /PRIMARY_NAV_IDS\.includes\(id\) \? id : 'more'/);
+});

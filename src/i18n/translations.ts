@@ -61,6 +61,7 @@ export interface TranslationShape {
       dictionary: string;
       test: string;
       currentAffairs: string;
+      more: string;
     };
     greeting: {
       morning: string;
@@ -951,6 +952,7 @@ export const translations: Record<Locale, TranslationShape> = {
         dictionary: 'Dictionary',
         test: 'Test',
         currentAffairs: 'Current Affairs',
+        more: 'More',
       },
       greeting: {
         morning: 'Good Morning',
@@ -2586,6 +2588,7 @@ export const translations: Record<Locale, TranslationShape> = {
         dictionary: 'शब्दकोश',
         test: 'टेस्ट',
         currentAffairs: 'करंट अफेयर्स',
+        more: 'और',
       },
       greeting: {
         morning: 'सुप्रभात',
@@ -4215,6 +4218,7 @@ export const translations: Record<Locale, TranslationShape> = {
         dictionary: 'Dictionary',
         test: 'Test',
         currentAffairs: 'Current Affairs',
+        more: 'Aur',
       },
       greeting: {
         morning: 'Good Morning',

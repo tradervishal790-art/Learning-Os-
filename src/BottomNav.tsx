@@ -7,7 +7,7 @@ import { useImmersive } from './immersive';
 /**
  * Mobile-only bottom navigation, Instagram-style: icons only, no visible
  * text. Labels exist as aria-label/title for screen readers + long-press.
- * Five slots: four primary pages + a "More" slot that opens a sheet with the
+ * Six slots: five primary pages + a "More" slot that opens a sheet with the
  * remaining pages as an icon grid. Desktop (md+) keeps the sidebar.
  */
 
@@ -17,7 +17,9 @@ export interface NavEntry {
   locked: boolean;
 }
 
-const PRIMARY_IDS = ['dashboard', 'roadmap', 'mentor', 'progress'];
+/** The everyday five. Everything else lives behind "More" (bottom bar and desktop sidebar). */
+export const PRIMARY_NAV_IDS = ['dashboard', 'roadmap', 'revision', 'videos', 'test'];
+const PRIMARY_IDS = PRIMARY_NAV_IDS;
 
 function LockBadge() {
   return (
