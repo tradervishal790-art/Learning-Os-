@@ -1,5 +1,7 @@
 import { useRef, useState, type ReactNode } from 'react';
 import { Check } from 'lucide-react';
+import { useDarkTheme } from './useDarkTheme';
+import { resolveColor } from './inkEngine';
 
 // Small building blocks shared by the typing toolbar and the pen toolbar.
 
@@ -86,6 +88,7 @@ export function Pop({ trigger, children }: { trigger: (toggle: () => void, open:
 }
 
 export function Swatches({ colors, onPick }: { colors: string[]; onPick: (c: string) => void }) {
+  const dark = useDarkTheme(); // the "auto" ink colour is black on light and near-white on dark: it must follow a theme switch
   return (
     <div className="flex gap-1.5 flex-wrap max-w-[200px]">
       {colors.map((c) => (
@@ -96,7 +99,7 @@ export function Swatches({ colors, onPick }: { colors: string[]; onPick: (c: str
           onClick={() => onPick(c)}
           aria-label={c}
           className="w-8 h-8 sm:w-7 sm:h-7 rounded-full border border-black/10 dark:border-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-500"
-          style={{ background: c }}
+          style={{ background: resolveColor(c, dark) }}
         />
       ))}
     </div>

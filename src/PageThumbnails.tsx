@@ -30,6 +30,7 @@ import { drawLayer, PAGE_RATIO, PAGE_UNITS } from './inkEngine';
 import { PAGE_TEMPLATES, PAPER_COLORS, paperColor, paperIsDark } from './pageTemplates';
 import type { PageTemplateId } from './pageTemplates';
 import PageBackground from './PageBackground';
+import { loadNotePdf } from './PdfPageSheet';
 import { dropIndexFromY, moveTargetIndex } from './pageDrag';
 
 /* ------------------------------------------------------------------ */
@@ -42,7 +43,12 @@ export interface PageThumbnailsProps {
     strokes: InkStroke[];
     template?: PageTemplateId;
     paper?: string;
-    preview: string; // kept for API compatibility; thumbnails are drawn from strokes
+    preview: string; // kept for API compatibility
+    /** Typed text of the page (plain), drawn small on the thumbnail so text pages are not blank. */
+    text?: string;
+    /** This page shows a page of an imported PDF; the thumbnail renders that PDF page. */
+    pdfFileId?: string;
+    pdfPage?: number;
     bookmarked: boolean;
   }[];
   activeId: string | null;
@@ -146,6 +152,9 @@ interface ThumbProps {
   isFirst: boolean;
   isLast: boolean;
   strokes: InkStroke[];
+  text: string;
+  pdfFileId: string | undefined;
+  pdfPage: number | undefined;
   template: PageTemplateId;
   paper: string | undefined;
   bookmarked: boolean;
@@ -159,9 +168,43 @@ interface ThumbProps {
   actions: ItemActions;
 }
 
+/** Typed text as small grey lines (page units, page width = 1000), so a text-only page does not look empty. */
+function drawTextPreview(ctx: CanvasRenderingContext2D, text: string, onDark: boolean): void {
+  const margin = 70;
+  const size = 34;
+  const lineH = 54;
+  const maxLines = Math.floor((PAGE_UNITS * PAGE_RATIO - margin * 2) / lineH);
+  ctx.save();
+  ctx.font = `${size}px sans-serif`;
+  ctx.textBaseline = 'top';
+  ctx.fillStyle = onDark ? 'rgba(235,235,235,0.8)' : 'rgba(40,40,40,0.8)';
+  let y = margin;
+  let used = 0;
+  outer: for (const para of text.split('\n')) {
+    let line = '';
+    for (const word of para.split(/\s+/).filter(Boolean)) {
+      const next = line ? `${line} ${word}` : word;
+      if (line && ctx.measureText(next).width > PAGE_UNITS - margin * 2) {
+        ctx.fillText(line, margin, y);
+        y += lineH;
+        if (++used >= maxLines) break outer;
+        line = word;
+      } else {
+        line = next;
+      }
+    }
+    if (line) {
+      ctx.fillText(line, margin, y);
+    }
+    y += lineH; // a paragraph break is one line
+    if (++used >= maxLines) break;
+  }
+  ctx.restore();
+}
+
 function PageThumbInner(p: ThumbProps) {
   const {
-    id, index, isFirst, isLast, strokes, template, paper, bookmarked, active,
+    id, index, isFirst, isLast, strokes, text, pdfFileId, pdfPage, template, paper, bookmarked, active,
     dark, dpr, root, labels, menuOpen, dragging, actions,
   } = p;
 
@@ -201,7 +244,9 @@ function PageThumbInner(p: ThumbProps) {
     return () => io.disconnect();
   }, [seen, root]);
 
-  const showCanvas = strokes.length > 0 && seen;
+  const hasText = !pdfFileId && text.trim().length > 0;
+  const showCanvas = (strokes.length > 0 || hasText) && seen;
+  const pdfCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const cw = Math.round(THUMB_W * dpr);
   const ch = Math.round(THUMB_H * dpr);
 
@@ -216,9 +261,26 @@ function PageThumbInner(p: ThumbProps) {
     const k = canvas.width / PAGE_UNITS;
     ctx.setTransform(k, 0, 0, k, 0, 0);
     const inkDark = paperIsDark(paper, dark); // 'auto' ink turns light on a dark paper
+    if (hasText) drawTextPreview(ctx, text, inkDark);
     drawLayer(ctx, strokes, 'hl', inkDark);
     drawLayer(ctx, strokes, 'ink', inkDark);
-  }, [showCanvas, strokes, dark, paper, cw, ch]);
+  }, [showCanvas, strokes, dark, paper, cw, ch, hasText, text]);
+
+  // A PDF page: render the real page (opened once per file, shared with the page view) under the handwriting.
+  useEffect(() => {
+    const canvas = pdfCanvasRef.current;
+    if (!seen || !pdfFileId || !pdfPage || !canvas) return;
+    let cancelled = false;
+    void loadNotePdf(pdfFileId)
+      .then((doc) => {
+        if (cancelled || !doc || pdfPage > doc.numPages) return;
+        return doc.renderPage(pdfPage, canvas, THUMB_W);
+      })
+      .catch(() => undefined); // a failed render just leaves the plain paper
+    return () => {
+      cancelled = true;
+    };
+  }, [seen, pdfFileId, pdfPage]);
 
   const onKeyDown = (e: ReactKeyboardEvent<HTMLLIElement>): void => {
     if (e.key === 'Escape' && menuOpen) {
@@ -257,6 +319,9 @@ function PageThumbInner(p: ThumbProps) {
         style={{ width: THUMB_W, height: THUMB_H }}
       >
         <PageBackground template={template} paper={paper} width={THUMB_W} height={THUMB_H} dark={dark} />
+        {pdfFileId && seen && (
+          <canvas ref={pdfCanvasRef} aria-hidden="true" className="pointer-events-none absolute inset-0 h-full w-full bg-white object-contain" />
+        )}
         {showCanvas && (
           <canvas
             ref={canvasRef}
@@ -674,6 +739,9 @@ export default function PageThumbnails(props: PageThumbnailsProps) {
                 isFirst={i === 0}
                 isLast={i === pages.length - 1}
                 strokes={pg.strokes}
+                text={pg.text ?? ''}
+                pdfFileId={pg.pdfFileId}
+                pdfPage={pg.pdfPage}
                 template={pg.template ?? 'blank'}
                 paper={pg.paper}
                 bookmarked={pg.bookmarked}

@@ -5,6 +5,7 @@ import { format } from './i18n/format';
 import { getIndex, loadNoteContent, pageToHtml } from './notebookStore';
 import { addMistake, getMistakes, removeMistake, type Mistake } from './mistakeStore';
 import { extractHighlights, itemsToText, type HighlightItem, type HighlightKind } from './revisionExtract';
+import { askConfirm } from './dialogApi';
 
 // ============================================================
 // RevisionSheet.tsx — every highlight of one note on a single screen,
@@ -226,7 +227,7 @@ function MistakeList({ noteId, mistakes, onChange, labels: t }: { noteId: string
                 )}
                 <div className="mt-2 flex justify-end">
                   <button
-                    onClick={() => { if (window.confirm(t.removeConfirm)) { removeMistake(m.id); onChange(); } }}
+                    onClick={() => { void askConfirm(t.removeConfirm, { danger: true }).then((ok) => { if (ok) { removeMistake(m.id); onChange(); } }); }}
                     aria-label={t.remove}
                     title={t.remove}
                     className="h-8 w-8 rounded-lg flex items-center justify-center text-gray-500 dark:text-white/60 hover:bg-gray-100 dark:hover:bg-white/10"

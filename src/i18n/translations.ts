@@ -499,6 +499,7 @@ export interface TranslationShape {
       modePen: string;
       modeHighlighter: string;
       modeLaser: string;
+      dockMove: string;
       eyedropper: string;
       editColors: string;
       basicColors: string;
@@ -2111,6 +2112,7 @@ export const translations: Record<Locale, TranslationShape> = {
         laserDelay: "Fades after",
         laserInkHint: "Write on the page; your marks stay for a moment, then disappear by themselves. Nothing is saved.",
         modeLaser: "Laser",
+        dockMove: "Move toolbar",
         laserHint: "Draw to point. Your marks stay for a few seconds, then fade away. Nothing is saved.",
         modeEraser: "Eraser",
         penBallpoint: "Ballpoint",
@@ -3714,6 +3716,7 @@ export const translations: Record<Locale, TranslationShape> = {
         laserDelay: "इतनी देर बाद मिटे",
         laserInkHint: "पन्ने पर लिखें; निशान कुछ देर रहकर अपने आप मिट जाते हैं। कुछ सेव नहीं होता।",
         modeLaser: "लेज़र",
+        dockMove: "टूलबार हिलाएँ",
         laserHint: "इशारा करने के लिए खींचें। निशान कुछ सेकंड रहते हैं, फिर अपने आप मिट जाते हैं। कुछ सेव नहीं होता।",
         modeEraser: "Eraser",
         penBallpoint: "Ballpoint",
@@ -5316,6 +5319,7 @@ export const translations: Record<Locale, TranslationShape> = {
         laserDelay: "Fades after",
         laserInkHint: "Write on the page; your marks stay for a moment, then disappear by themselves. Nothing is saved.",
         modeLaser: "Laser",
+        dockMove: "Move toolbar",
         laserHint: "Draw to point. Your marks stay for a few seconds, then fade away. Nothing is saved.",
         modeEraser: "Eraser",
         penBallpoint: "Ballpoint",

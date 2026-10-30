@@ -1,5 +1,6 @@
 import { auth, db } from './firebase';
 import { doc, getDoc, setDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
+import { serverIso } from './serverClock';
 
 // ============================================================
 // cloudSync.ts
@@ -39,7 +40,7 @@ export async function pushToCloud<T>(key: string, data: T): Promise<void> {
   try {
     await setDoc(doc(db, 'users', uid, 'data', key), {
       value: data,
-      updatedAt: new Date().toISOString(),
+      updatedAt: serverIso(),
     });
   } catch {
     // Network/permission issue — localStorage still has the data, don't block the UI.
@@ -55,7 +56,7 @@ export async function pushToCloudChecked<T>(key: string, data: T): Promise<boole
   try {
     await setDoc(doc(db, 'users', uid, 'data', key), {
       value: data,
-      updatedAt: new Date().toISOString(),
+      updatedAt: serverIso(),
     });
     return true;
   } catch {

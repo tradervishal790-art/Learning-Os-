@@ -27,6 +27,7 @@ import {
 } from './studyPlanStore';
 import { deleteStudyFile, getStudyFile } from './studyFiles';
 import { splitPdfBlob, storeFiles } from './studyPlanFiles';
+import { askConfirm } from './dialogApi';
 
 const card = 'p-4 rounded-2xl card';
 const btn = 'px-3 py-1.5 rounded-lg text-xs font-medium transition-all border';
@@ -116,7 +117,7 @@ export default function StudyPlan() {
   };
 
   const handleRemoveBox = async (box: StudyTopic) => {
-    if (!window.confirm(s.confirmRemoveBox)) return;
+    if (!(await askConfirm(s.confirmRemoveBox, { danger: true }))) return;
     await Promise.all(box.files.map((f) => deleteStudyFile(f.key)));
     commit(removeBox(plan, box.id));
   };

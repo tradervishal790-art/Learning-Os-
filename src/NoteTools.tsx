@@ -4,6 +4,7 @@ import { format } from './i18n/format';
 import type { NotePage, NoteVideo } from './notebookStore';
 import { downloadBlob, fileName, hasText, noteToBackupJson, noteToHtml, noteToMarkdown, noteToText } from './noteExport';
 import { getVersion, listVersions, saveVersion, type VersionData, type VersionMeta } from './noteVersions';
+import { askConfirm } from './dialogApi';
 
 // Dialogs of the note screen (Part 10): Export & share, Version history, Keyboard shortcuts.
 
@@ -210,7 +211,7 @@ export function VersionsDialog({
     }
   };
   const restore = async (m: VersionMeta) => {
-    if (!window.confirm(t.restoreConfirm)) return;
+    if (!(await askConfirm(t.restoreConfirm))) return;
     try {
       const data = await getVersion(m.key);
       if (!data) return onMessage(t.versionError);

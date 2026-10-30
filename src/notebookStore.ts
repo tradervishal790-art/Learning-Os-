@@ -26,6 +26,8 @@ import { planImport, type BackupNote } from './backup';
 import { hasConflict, keepBothCopy, pagesEqual, videoEqual, type ConflictChoice, type ConflictInfo } from './conflict';
 import type { NoteSnapshot } from './noteTypes';
 import { getVersion, listVersions, saveVersion, deleteVersions, type VersionData } from './noteVersions';
+import { applyUndo, captureUndo, type IndexUndo } from './indexUndo';
+import { serverIso } from './serverClock';
 
 // ---------- types ----------
 
@@ -167,7 +169,7 @@ export const FOLDER_COLORS = ['#6b7280', '#ef4444', '#f59e0b', '#10b981', '#3b82
 
 // ---------- tiny helpers ----------
 
-const nowIso = () => new Date().toISOString();
+const nowIso = serverIso; // device clock corrected against the server (see serverClock.ts)
 const newId = (prefix: string) =>
   `${prefix}_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
 
@@ -767,6 +769,15 @@ export function deleteFolder(id: string): void {
 
 export function snapshotIndex(): NotebookIndex {
   return JSON.parse(JSON.stringify(getIndex()));
+}
+
+/** Undo for ONE action: remember only the rows it changed (see indexUndo.ts). */
+export function captureIndexUndo(before: NotebookIndex): IndexUndo<NoteMeta, NoteFolder> {
+  return captureUndo(before, getIndex());
+}
+
+export function applyIndexUndo(u: IndexUndo<NoteMeta, NoteFolder>): void {
+  commitIndex(applyUndo(getIndex(), u, nowIso()));
 }
 
 export function restoreSnapshot(snap: NotebookIndex): void {

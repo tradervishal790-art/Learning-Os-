@@ -8,6 +8,8 @@ import AuthGate from './AuthGate.tsx'
 import { LanguageProvider } from './i18n/LanguageContext.tsx'
 import { AuthPromptProvider } from './AuthPrompt.tsx'
 import CacheWarmup from './cacheWarmup.tsx'
+import { AppDialogHost } from './appDialogs.tsx'
+import { syncServerClock } from './serverClock.ts'
 
 // Live Test join page is public (participants have no account) — it must
 // render outside the login gate and the dashboard app.
@@ -57,6 +59,9 @@ function Root() {
   )
 }
 
+// Correct the notes' "newest wins" timestamps for a wrong device clock (measured against our own server).
+void syncServerClock();
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ErrorBoundary>
@@ -65,6 +70,8 @@ createRoot(document.getElementById('root')!).render(
           {/* Guest -> account prompt (sign-in modal). Wraps everything, including the public /live page. */}
           <AuthPromptProvider>
             <Root />
+            {/* In-app confirm / prompt boxes (replace the browser's native ones). */}
+            <AppDialogHost />
           </AuthPromptProvider>
         </LanguageProvider>
       </BrowserRouter>
