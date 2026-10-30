@@ -8,6 +8,7 @@ import ScreenCrop from './ScreenCrop';
 import { ImageError, compressImage, cropRotateFlip, scanFilter } from './imageTools';
 import AudioRecorder from './AudioRecorder';
 import AudioPlayer from './AudioPlayer';
+import { askConfirm } from './dialogApi';
 
 // ============================================================
 // PageAttachments.tsx — photos + voice recordings under a page's text.
@@ -152,8 +153,8 @@ export default function PageAttachments({
   const addImageRef = useRef(addImage);
   addImageRef.current = addImage;
 
-  const remove = (a: PageAttachment) => {
-    if (!window.confirm(t('removeConfirm'))) return;
+  const remove = async (a: PageAttachment) => {
+    if (!(await askConfirm(t('removeConfirm'), { danger: true }))) return;
     listRef.current = listRef.current.filter((x) => x.id !== a.id);
     onChange(listRef.current);
     // Remove only the note reference. A copied page or note may still reference this blob;

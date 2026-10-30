@@ -7,9 +7,9 @@ import { useLanguage, useTranslation } from './i18n/LanguageContext';
 import { format } from './i18n/format';
 import {
   FOLDER_COLORS, createFolder, createNote, deleteFolder, deleteNotesForever, duplicateNote,
-  getAllSnapshots, hydrateNotebook, setEditorOpen, startLiveNotebookSync, importSnapshots, loadConflict, moveNotes, recolorFolder, renameFolder, renameNote, resolveConflict, restoreNotes, restoreSnapshot,
+  applyIndexUndo, captureIndexUndo, getAllSnapshots, hydrateNotebook, setEditorOpen, startLiveNotebookSync, importSnapshots, loadConflict, moveNotes, recolorFolder, renameFolder, renameNote, resolveConflict, restoreNotes,
   searchNoteIds, setArchived, setConfidence, setExamDate, setNoteTags, setStudyStatus, snapshotIndex, toggleFavorite, togglePin, trashNotes,
-  useNoteConflicts, useNotebookIndex, type NoteFolder, type NoteMeta, type NotebookIndex, type StudyStatus,
+  useNoteConflicts, useNotebookIndex, type NoteFolder, type NoteMeta, type StudyStatus,
 } from './notebookStore';
 import { SaveChip } from './SaveChip';
 import { buildBackupJson, parseBackup } from './backup';
@@ -17,6 +17,8 @@ import type { ConflictInfo } from './conflict';
 import { downloadBlob } from './noteExport';
 import StudyDialog from './StudyDialog';
 import { STUDY_STATUSES, examChip, examSoon, examSortKey } from './studyInfo';
+import { askConfirm, askText } from './dialogApi';
+import type { IndexUndo } from './indexUndo';
 // The rich-text editor (TipTap) is the heaviest part of the notebook — load it only when a note opens.
 const NoteEditor = lazy(() => import('./NoteEditor'));
 const RevisionSheet = lazy(() => import('./RevisionSheet'));
@@ -128,7 +130,7 @@ export default function NoteLibrary() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [moveIds, setMoveIds] = useState<string[] | null>(null);
   const [showFolders, setShowFolders] = useState(false);
-  const [toast, setToast] = useState<{ message: string; snap: NotebookIndex } | null>(null);
+  const [toast, setToast] = useState<{ message: string; undo: IndexUndo<NoteMeta, NoteFolder> | null } | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   // Pull the cloud copy once when the notebook opens (safe offline / signed out).
@@ -219,17 +221,17 @@ export default function NoteLibrary() {
 
   // ---------- helpers ----------
 
-  /** Run a change and offer Undo (restores the whole library snapshot). */
+  /** Run a change and offer Undo. Undo reverts only the rows this change touched, never the rest of the library. */
   const withUndo = (message: string, fn: () => void) => {
-    const snap = snapshotIndex();
+    const before = snapshotIndex();
     fn();
     clearTimeout(toastTimer.current);
-    setToast({ message, snap });
+    setToast({ message, undo: captureIndexUndo(before) });
     toastTimer.current = setTimeout(() => setToast(null), 7000);
   };
   const undo = () => {
-    if (!toast) return;
-    restoreSnapshot(toast.snap);
+    if (!toast?.undo) return;
+    applyIndexUndo(toast.undo);
     setToast(null);
   };
 
@@ -259,27 +261,27 @@ export default function NoteLibrary() {
     if (untouched && createdThisSession.current.delete(noteId)) void deleteNotesForever([noteId]).catch(() => undefined);
   };
 
-  const addFolder = (parentId: string | null) => {
-    const name = window.prompt(t.folderNamePrompt);
+  const addFolder = async (parentId: string | null) => {
+    const name = await askText(t.folderNamePrompt);
     if (name === null) return;
     const f = createFolder(name, parentId);
     setView(`folder:${f.id}`);
   };
 
-  const removeFolder = (f: NoteFolder) => {
+  const removeFolder = async (f: NoteFolder) => {
     const n = idx.notes.filter((x) => x.folderId === f.id).length;
     const msg = n > 0 ? format(t.confirmDeleteFolderWithNotes, n) : t.confirmDeleteFolder;
-    if (!window.confirm(msg)) return;
+    if (!(await askConfirm(msg, { danger: true }))) return;
     withUndo(t.toastFolderDeleted, () => deleteFolder(f.id));
   };
 
-  const editTags = (n: NoteMeta) => {
-    const v = window.prompt(t.tagsPrompt, n.tags.join(', '));
+  const editTags = async (n: NoteMeta) => {
+    const v = await askText(t.tagsPrompt, n.tags.join(', '));
     if (v !== null) setNoteTags(n.id, v.split(','));
   };
 
-  const rename = (n: NoteMeta) => {
-    const v = window.prompt(t.renamePrompt, n.title);
+  const rename = async (n: NoteMeta) => {
+    const v = await askText(t.renamePrompt, n.title);
     if (v !== null) renameNote(n.id, v);
   };
 
@@ -289,13 +291,13 @@ export default function NoteLibrary() {
   };
 
   const foreverIds = async (ids: string[]) => {
-    if (!window.confirm(t.confirmDeleteForever)) return;
+    if (!(await askConfirm(t.confirmDeleteForever, { danger: true }))) return;
     await deleteNotesForever(ids);
     exitSelect();
   };
 
   const emptyTrash = async () => {
-    if (!window.confirm(t.confirmEmptyTrash)) return;
+    if (!(await askConfirm(t.confirmEmptyTrash, { danger: true }))) return;
     await deleteNotesForever(idx.notes.filter((n) => n.trashedAt).map((n) => n.id));
   };
 
@@ -380,7 +382,7 @@ export default function NoteLibrary() {
 
   const flashToast = (message: string) => {
     clearTimeout(toastTimer.current);
-    setToast({ message, snap: snapshotIndex() });
+    setToast({ message, undo: null });
     toastTimer.current = setTimeout(() => setToast(null), 3000);
   };
 
@@ -578,8 +580,9 @@ export default function NoteLibrary() {
                             label: t.renameFolder,
                             icon: <Pencil size={14} />,
                             onClick: () => {
-                              const v2 = window.prompt(t.renameFolderPrompt, f.name);
-                              if (v2 !== null) renameFolder(f.id, v2);
+                              void askText(t.renameFolderPrompt, f.name).then((v2) => {
+                                if (v2 !== null) renameFolder(f.id, v2);
+                              });
                             },
                           },
                           { label: t.deleteFolder, icon: <Trash2 size={14} />, danger: true, onClick: () => removeFolder(f) },
@@ -821,7 +824,7 @@ export default function NoteLibrary() {
       {toast && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-4 px-4 py-2.5 rounded-xl bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white text-sm shadow-lg">
           <span>{toast.message}</span>
-          <button onClick={undo} className="font-semibold underline">{t.undo}</button>
+          {toast.undo && <button onClick={undo} className="font-semibold underline">{t.undo}</button>}
         </div>
       )}
     </div>

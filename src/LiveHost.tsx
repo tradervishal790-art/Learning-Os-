@@ -21,6 +21,7 @@ import {
   type LiveSubmission,
 } from './liveTest';
 import { downloadLeaderboardPdf } from './testPdf';
+import { askConfirm } from './dialogApi';
 
 // ============================================================
 // LiveHost.tsx — the host's control room for a Live Test.
@@ -125,7 +126,7 @@ export default function LiveHost({ paper, onExit }: { paper: TestPaper; onExit: 
         : allowed.length - submissions.length > 0
           ? `${allowed.length - submissions.length} student(s) on the list have not taken the test. Once you end it, nobody can join. End now?`
           : 'End the test and show the ranking?';
-    if (!confirm(msg)) return;
+    if (!(await askConfirm(msg, { danger: true }))) return;
     setBusy(true);
     setError('');
     try {

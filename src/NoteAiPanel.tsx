@@ -34,6 +34,7 @@ import type {
   NoteAiErrorCode, NoteAiOp, NoteAiRequest, NoteAiResult, NoteLang,
 } from './noteAiTypes';
 import { NOTE_AI_LIMITS } from './noteAiTypes';
+import { pickExcerpts, questionWords } from './noteExcerpts';
 
 /* ------------------------------------------------------------------ types */
 
@@ -131,15 +132,13 @@ function rankSources(
   currentTitle: string,
   others: { id: string; title: string; text: string }[],
 ): { id: string; title: string; text: string }[] {
-  const words = question
-    .toLowerCase()
-    .split(/[^\p{L}\p{M}\p{N}]+/u)
-    .filter((w) => w.length >= 3);
+  const words = questionWords(question);
   const score = (text: string): number => {
     const lower = text.toLowerCase();
     return words.reduce((n, w) => (lower.includes(w) ? n + 1 : n), 0);
   };
-  const clamp = (t: string) => t.trim().slice(0, NOTE_AI_LIMITS.maxSourceText);
+  // Longer than the limit: keep the passages that match the question, not just the first 6000 characters.
+  const clamp = (t: string) => pickExcerpts(t, words, NOTE_AI_LIMITS.maxSourceText);
   const list: { id: string; title: string; text: string }[] = [];
   if (noteText.trim()) list.push({ id: CURRENT_NOTE_ID, title: currentTitle, text: clamp(noteText) });
   const ranked = others

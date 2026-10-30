@@ -14,6 +14,7 @@ import {
 } from './editorExtensions';
 import { Btn, Pop, Swatches, Sep, selectCls } from './toolbarParts';
 import { canCaptureScreen } from './ScreenCrop';
+import { askText } from './dialogApi';
 
 // ---------- find & replace (inside the active page) ----------
 
@@ -236,9 +237,9 @@ export default function EditorToolbar({
   const setSize = (n: number | null) => (n === null ? c().unsetFontSize().run() : c().setFontSize(sizeToCss(n)).run());
   const setFont = (v: string) => (v ? c().setFontFamily(v).run() : c().unsetFontFamily().run());
 
-  const addLink = () => {
+  const addLink = async () => {
     if (s.link) return void c().extendMarkRange('link').unsetLink().run();
-    const input = window.prompt(t.linkPrompt, 'https://')?.trim();
+    const input = (await askText(t.linkPrompt, 'https://'))?.trim();
     if (!input || input === 'https://') return;
     // "google.com" becomes https://google.com (not a broken link inside the app); only web / mail / phone links are allowed.
     const href = /^(https?:|mailto:|tel:)/i.test(input) ? input : /^[a-z][a-z0-9+.-]*:/i.test(input) ? null : `https://${input}`;

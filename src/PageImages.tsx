@@ -5,6 +5,7 @@ import { PAGE_UNITS } from './inkEngine';
 import { deleteImage, getImage, putImage } from './attachStore';
 import { cropRotateFlip, scanFilter } from './imageTools';
 import { BTN, errorKey, isFloating } from './PageAttachments';
+import { askConfirm } from './dialogApi';
 
 // ============================================================
 // PageImages.tsx — photos placed ON the page.
@@ -64,8 +65,8 @@ export default function PageImages({
     [onChange]
   );
 
-  const remove = (a: PageAttachment) => {
-    if (!window.confirm(labels.removeConfirm ?? 'Remove?')) return;
+  const remove = async (a: PageAttachment) => {
+    if (!(await askConfirm(labels.removeConfirm ?? 'Remove?', { danger: true }))) return;
     onChange(latest.current.filter((x) => x.id !== a.id));
     setSel(null);
     void deleteImage(a.id).catch(() => undefined);

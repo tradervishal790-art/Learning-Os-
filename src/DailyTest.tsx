@@ -18,6 +18,7 @@ import {
   todayKey,
   MAX_PER_DAY,
 } from './dailyTestStore';
+import { askConfirm, showNotice } from './dialogApi';
 
 // ============================================================
 // DailyTest.tsx — setup + "today's test" screen for the Daily Test feature
@@ -57,7 +58,7 @@ export default function DailyTest({ onStart, onExit }: { onStart: (paper: TestPa
           onCancel={() => setEditingBank(false)}
           onSave={(p) => {
             if (!saveBank(p.questions)) {
-              alert('Could not save — your browser storage is full. Remove some questions or clear old data, then try again.');
+              void showNotice('Could not save — your browser storage is full. Remove some questions or clear old data, then try again.');
               return;
             }
             setEditingBank(false);
@@ -133,8 +134,8 @@ export default function DailyTest({ onStart, onExit }: { onStart: (paper: TestPa
     refresh();
     if (fileRef.current) fileRef.current.value = '';
   };
-  const reset = () => {
-    if (!confirm('Delete the whole question bank and all Daily Test progress? Your finished results stay in Past attempts.')) return;
+  const reset = async () => {
+    if (!(await askConfirm('Delete the whole question bank and all Daily Test progress? Your finished results stay in Past attempts.', { danger: true }))) return;
     resetDaily();
     void clearQueuedDailyPhotos().then(() => setQueuedPhotos(0));
     setMessage('');

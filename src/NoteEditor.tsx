@@ -45,6 +45,9 @@ import { cloneAttachment } from './attachClone';
 import { getImage, getPdf, newAttachId, putPdf } from './attachStore';
 import { compressImage, blobToDataUrl } from './imageTools';
 import type { NoteAiOp } from './noteAiTypes';
+import { askConfirm } from './dialogApi';
+import { aiTextToNodes } from './aiTextToNodes';
+import { downloadBlob, fileName } from './noteExport';
 
 // ============================================================
 // NoteEditor.tsx — title + pages (rich text from Part 2, handwriting from
@@ -338,7 +341,9 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: (untouc
     const target = prefs.eraserTarget;
     const kept = current.filter((st) => !inLayers(st, target));
     if (kept.length === current.length) return;
-    if (window.confirm(t.ink.eraseAllConfirm)) commitInk(targetPage, kept);
+    void askConfirm(t.ink.eraseAllConfirm, { danger: true }).then((ok) => {
+      if (ok) commitInk(targetPage, kept);
+    });
   };
 
   // ---------- selecting & editing handwriting ----------
@@ -412,7 +417,7 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: (untouc
     const sel = currentSelection();
     if (!sel) return;
     if (localStorage.getItem(OCR_OK_KEY) !== '1') {
-      if (!window.confirm(t.ink.ocrConsent)) return;
+      if (!(await askConfirm(t.ink.ocrConsent))) return;
       try {
         localStorage.setItem(OCR_OK_KEY, '1');
       } catch {
@@ -607,8 +612,9 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: (untouc
   };
 
   const unlinkVideo = () => {
-    if (!window.confirm(t.video.unlinkConfirm)) return;
-    updateVideo(null);
+    void askConfirm(t.video.unlinkConfirm, { danger: true }).then((ok) => {
+      if (ok) updateVideo(null);
+    });
   };
 
   /** A time chip in the text was clicked: jump the linked video there, or open another video at that time on YouTube. */
@@ -707,31 +713,25 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: (untouc
         groups.set(p.pdf.fileId, g);
       }
       let missingFile = false;
-      let exportedCount = 0;
+      const made: { name: string; data: Uint8Array }[] = [];
       for (const [fileId, g] of groups) {
         const blob = await getPdf(fileId);
         if (!blob) {
           missingFile = true;
           continue;
         }
-        // Browsers ask before allowing several downloads in a row: space them out so none is dropped.
-        if (exportedCount > 0) await new Promise((r) => setTimeout(r, 400));
         const bytes = await exportAnnotatedPdf(await blob.arrayBuffer(), g.pages);
-        const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: 'application/pdf' }));
-        // Start URL cleanup before clicking so even a failed download click cannot leak it.
-        setTimeout(() => URL.revokeObjectURL(url), 10_000);
-        const a = document.createElement('a');
-        a.href = url;
         const baseName = g.name.replace(/\.pdf$/i, '').replace(/[\\/:*?"<>|\u0000-\u001f]+/g, ' ').trim().slice(0, 80) || 'note';
-        a.download = `${baseName}-annotated.pdf`;
-        document.body.appendChild(a);
-        try {
-          a.click();
-          exportedCount += 1;
-        } finally {
-          a.remove();
-        }
+        made.push({ name: `${baseName}-annotated.pdf`, data: bytes });
       }
+      // One file = a normal PDF download. Several = ONE zip, because several automatic downloads in a row make browsers ask or block.
+      if (made.length === 1) {
+        downloadBlob(made[0].name, new Blob([made[0].data as BlobPart], { type: 'application/pdf' }));
+      } else if (made.length > 1) {
+        const { buildZip } = await import('./zipStore');
+        downloadBlob(fileName(`${latest.current.title} annotated PDFs`, 'zip'), new Blob([buildZip(made) as BlobPart], { type: 'application/zip' }));
+      }
+      const exportedCount = made.length;
       if (missingFile) flash(t.attach.pdfMissing);
       else if (exportedCount > 0) flash(t.attach.pdfExportDone);
       else flash(t.attach.pdfExportFail);
@@ -775,7 +775,7 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: (untouc
     const token = ++circleToken.current;
     const needsAi = c.ink.length > 0 || c.imageIds.length > 0;
     if (needsAi && localStorage.getItem(OCR_OK_KEY) !== '1') {
-      if (!window.confirm(t.ai.circleConsent)) return; // stay in circle mode: they can circle again or press Esc
+      if (!(await askConfirm(t.ai.circleConsent))) return; // stay in circle mode: they can circle again or press Esc
       try {
         localStorage.setItem(OCR_OK_KEY, '1');
       } catch {
@@ -839,7 +839,7 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: (untouc
     void Promise.allSettled(
       metas.map(async (m) => {
         const c = await loadNoteContent(m.id);
-        return c ? { id: m.id, title: m.title || t.untitled, text: c.pages.map((p) => p.text).join('\n').slice(0, 6000) } : null;
+        return c ? { id: m.id, title: m.title || t.untitled, text: c.pages.map((p) => p.text).join('\n').slice(0, 200_000) } : null;
       })
     ).then((rs) => {
       if (!alive) return;
@@ -858,8 +858,8 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: (untouc
     return { selectedText: sel, pageText, noteText, areaText: circleArea };
   };
 
-  const textToNodes = (text: string) =>
-    text.split('\n').map((line) => (line.trim() ? { type: 'paragraph', content: [{ type: 'text', text: line }] } : { type: 'paragraph' }));
+  // AI text keeps its structure: "- " lines become a real bullet list, "1." a numbered one, **bold** stays bold.
+  const textToNodes = (text: string) => aiTextToNodes(text);
 
   /** "Add to note": at the end of the page the student is on. */
   const aiInsert = (text: string) => {
@@ -1075,6 +1075,9 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: (untouc
         template: isTemplateId(p.template) ? p.template : undefined,
         paper: p.paper,
         preview: p.text.slice(0, 80),
+        text: p.text.slice(0, 1500),
+        pdfFileId: p.pdf?.fileId,
+        pdfPage: p.pdf?.pageNumber,
         bookmarked: !!p.bookmarked,
       })),
     [pages, ink]
@@ -1600,7 +1603,7 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: (untouc
           onExit={present ? endPresent : undefined}
           labels={{
             pen: t.ink.modePen, highlighter: t.ink.modeHighlighter, eraser: t.ink.modeEraser, laser: t.ink.modeLaser,
-            select: t.ink.modeSelect, undo: t.ink.undo, redo: t.ink.redo, exit: t.editor.exitPresent,
+            select: t.ink.modeSelect, undo: t.ink.undo, redo: t.ink.redo, exit: t.editor.exitPresent, move: t.ink.dockMove,
           }}
         />
       )}
