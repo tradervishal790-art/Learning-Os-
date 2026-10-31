@@ -20,6 +20,7 @@ import { useTranslation } from './i18n/LanguageContext';
 import { format } from './i18n/format';
 import { authFetch } from './apiFetch';
 import { pullSharedSearch, pushSharedSearch } from './sharedVideoCache';
+import { contributeSharedVideoSignal, getSharedVideoLearningSummary, type SharedVideoLearningSummary } from './sharedLearningIntelligence';
 
 declare global {
   interface Window {
@@ -291,6 +292,17 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
     rewindCount: 0,
     playbackSpeed: 1,
   });
+  const [sharedLearningSummary, setSharedLearningSummary] = useState<SharedVideoLearningSummary | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    setSharedLearningSummary(null);
+    if (!selectedVideo) return () => { active = false; };
+    void getSharedVideoLearningSummary(selectedVideo.id).then((summary) => {
+      if (active) setSharedLearningSummary(summary);
+    });
+    return () => { active = false; };
+  }, [selectedVideo?.id]);
 
   // YouTube's pagination token from the last search for the CURRENT query —
   // lets us fetch the next fresh batch of results instead of re-fetching
@@ -487,6 +499,8 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
     if (!sessionRef.current) return;
     const completeSession = withComputedSignal(sessionRef.current);
     upsertEngagementSession(completeSession);
+    // Cross-user sharing is strictly opt-in; the server rules enforce one contribution per account/video.
+    void contributeSharedVideoSignal(completeSession);
 
     // Rolling-window implicit profile update — silent, no UI notification
     // by design (see /areas/learning-os.md). No-ops until enough consistent
@@ -1014,6 +1028,24 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                       <h2 className="text-2xl font-bold mb-1">{selectedVideo.title}</h2>
                       <p className="text-gray-500 dark:text-white/60">{selectedVideo.channel}</p>
                     </div>
+
+                    {sharedLearningSummary && (
+                      <div className="rounded-xl border border-indigo-200/60 dark:border-indigo-400/20 bg-indigo-50/50 dark:bg-indigo-400/5 p-3 mb-4">
+                        <p className="text-xs font-semibold text-indigo-700 dark:text-indigo-300 mb-1">
+                          Community learning signal · 10+ learners
+                        </p>
+                        <p className="text-sm text-gray-700 dark:text-white/80">
+                          {sharedLearningSummary.completedRate >= 65
+                            ? 'Most contributing learners reached the end of this video.'
+                            : sharedLearningSummary.earlyDropRate >= 45
+                              ? 'Many contributing learners stopped in the early part of this video.'
+                              : 'Learner outcomes are mixed for this video.'}
+                        </p>
+                        <p className="text-[11px] text-gray-500 dark:text-white/40 mt-1">
+                          {sharedLearningSummary.completedRate}% completed · {sharedLearningSummary.earlyDropRate}% stopped early. This is a group signal, not a prediction of your result.
+                        </p>
+                      </div>
+                    )}
 
                     {/* Feedback + Next controls */}
                     <div className="flex items-center gap-3 mb-4">
