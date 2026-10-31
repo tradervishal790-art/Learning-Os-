@@ -80,24 +80,36 @@ export function saveRecallRating(topicId: string, day: number, rating: RecallRat
   return record;
 }
 
+/** Merge valid recall records by topic/checkpoint, keeping the newest timestamp. */
+export function mergeRecallMaps(local: RecallMap, cloud: unknown): RecallMap {
+  const merged: RecallMap = {};
+  for (const source of [cloud, local]) {
+    if (!source || typeof source !== 'object' || Array.isArray(source)) continue;
+    for (const [topicId, records] of Object.entries(source as Record<string, unknown>)) {
+      if (!topicId.trim() || !Array.isArray(records)) continue;
+      for (const candidate of records) {
+        if (!isRecallRecord(candidate) || candidate.topicId !== topicId) continue;
+        const existing = merged[topicId]?.find((record) => record.day === candidate.day);
+        if (!existing || Date.parse(candidate.recordedAt) >= Date.parse(existing.recordedAt)) {
+          merged[topicId] ??= [];
+          merged[topicId] = merged[topicId].filter((record) => record.day !== candidate.day);
+          merged[topicId].push(candidate);
+        }
+      }
+    }
+  }
+  for (const records of Object.values(merged)) records.sort((a, b) => a.day - b.day);
+  return merged;
+}
+
 /** One-time, local-first hydration: never overwrite existing device history. */
 export async function hydrateRecallScoresFromCloud(): Promise<void> {
   if (Object.keys(readAll()).length > 0) return;
   const cloud = await pullFromCloud<unknown>(CLOUD_KEY);
   if (!cloud || typeof cloud !== 'object' || Array.isArray(cloud)) return;
-  const safe: RecallMap = {};
-  for (const [topicId, records] of Object.entries(cloud as Record<string, unknown>)) {
-    if (Array.isArray(records)) {
-      const valid = records.filter(isRecallRecord).filter((record) => record.topicId === topicId);
-      const uniqueByDay = new Map<number, RecallRecord>();
-      for (const record of valid) {
-        const previous = uniqueByDay.get(record.day);
-        if (!previous || Date.parse(record.recordedAt) > Date.parse(previous.recordedAt)) uniqueByDay.set(record.day, record);
-      }
-      const cleaned = [...uniqueByDay.values()].sort((a, b) => a.day - b.day);
-      if (cleaned.length) safe[topicId] = cleaned;
-    }
-  }
+  // A learner may rate a topic while the cloud request is pending. Merge with
+  // the latest local state rather than replacing it with the stale cloud result.
+  const safe = mergeRecallMaps(readAll(), cloud);
   if (Object.keys(safe).length === 0) return;
   try {
     localStorage.setItem(LOCAL_KEY, JSON.stringify(safe));
