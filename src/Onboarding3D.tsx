@@ -14,21 +14,6 @@ interface CardOption {
   icon?: string;
 }
 
-// Helper: random starting positions (off-screen sides) for the card entrance animation
-const getStartPosition = (index: number, _total: number) => {
-  const positions = [
-    { x: -800, y: -400 }, // top-left
-    { x: 800, y: -400 }, // top-right
-    { x: -800, y: 0 }, // left
-    { x: 800, y: 0 }, // right
-    { x: -800, y: 400 }, // bottom-left
-    { x: 800, y: 400 }, // bottom-right
-    { x: 0, y: -600 }, // top
-    { x: 0, y: 600 }, // bottom
-  ];
-  return positions[index % positions.length];
-};
-
 const languageFlags: Record<string, string> = {
   hindi: '🇮🇳',
   english: '🇬🇧',
@@ -125,7 +110,6 @@ export default function Onboarding3D({ onComplete }: Onboarding3DProps) {
     return (
       <div className={isGrid ? 'grid grid-cols-2 md:grid-cols-4 gap-4' : 'grid grid-cols-2 md:grid-cols-3 gap-4'}>
         {options.map((option, i) => {
-          const start = getStartPosition(i, options.length);
           const isSelected =
             (step === 0 && data.role === option.id) ||
             (step === 1 && data.goal === option.id) ||
@@ -134,9 +118,9 @@ export default function Onboarding3D({ onComplete }: Onboarding3DProps) {
           return (
             <motion.button
               key={`${step}-${option.id}`}
-              initial={{ x: start.x, y: start.y, opacity: 0, rotate: start.x > 0 ? 30 : -30, scale: 0.5 }}
-              animate={{ x: 0, y: 0, opacity: 1, rotate: 0, scale: 1 }}
-              transition={{ delay: i * 0.05, duration: 0.28, ease: 'easeOut' }}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.035, duration: 0.2, ease: 'easeOut' }}
               whileHover={{ scale: 1.01, y: -1 }}
               whileTap={{ scale: 0.99 }}
               onClick={() => {
