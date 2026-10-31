@@ -43,7 +43,7 @@ function describeExpired(list: ExpiredBox[], s: (typeof studyPlanText)['en']): s
 
 type Viewing = { topic: StudyTopic; action: { type: 'learn' } | { type: 'revise'; day: number } };
 
-export default function StudyPlan() {
+export default function StudyPlan({ initialSubject = '' }: { initialSubject?: string }) {
   const { locale } = useLanguage();
   const s = studyPlanText[locale];
   // Expired boxes (original end date passed) are cleared as soon as the page opens; their files are
@@ -56,7 +56,7 @@ export default function StudyPlan() {
     if (swept.expired.length > 0) savePlan(p);
     // First visit: start with one subject and an empty T1 box, ready for files.
     if (p.subjects.length === 0) {
-      const name = studyPlanText[locale].defaultSubject;
+      const name = initialSubject.trim() || studyPlanText[locale].defaultSubject;
       p = addBox(addSubject(p, name), name);
       savePlan(p);
     }
