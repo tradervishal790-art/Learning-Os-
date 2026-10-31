@@ -137,8 +137,10 @@ export async function addChannel(input: string): Promise<SavedChannel[]> {
     title: typeof data.title === 'string' && data.title ? data.title : data.channelId,
     handle: typeof data.handle === 'string' && data.handle ? data.handle : undefined,
   };
-  const next = sanitizeChannels(mergeResolvedChannel(latest, resolved, MAX_CHANNELS));
-  if (next !== latest) saveChannels(next);
+  const merged = mergeResolvedChannel(latest, resolved, MAX_CHANNELS);
+  if (merged === latest) return latest; // another in-flight add already saved it
+  const next = sanitizeChannels(merged);
+  saveChannels(next);
   return next;
 }
 
