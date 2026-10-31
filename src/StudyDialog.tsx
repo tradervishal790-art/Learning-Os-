@@ -28,12 +28,7 @@ export default function StudyDialog({
     'needs-revision': t.study.statusNeedsRevision,
     mastered: t.study.statusMastered,
   };
-  const chip = (on: boolean) =>
-    `min-h-9 px-3 rounded-lg text-xs border transition-colors ${
-      on
-        ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white border-transparent'
-        : 'border-gray-200 dark:border-white/10 text-gray-700 dark:text-white/80 hover:bg-gray-100 dark:hover:bg-white/10'
-    }`;
+  const chip = () => 'los-chip';
 
   return (
     <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
@@ -49,7 +44,7 @@ export default function StudyDialog({
           <div className="text-xs text-gray-500 dark:text-white/60 mb-2">{t.study.statusLabel}</div>
           <div className="flex flex-wrap gap-2">
             {STUDY_STATUSES.map((s) => (
-              <button key={s} aria-pressed={status === s} className={chip(status === s)} onClick={() => setStatus(s)}>
+              <button key={s} aria-pressed={status === s} className={chip()} onClick={() => setStatus(s)}>
                 {label[s]}
               </button>
             ))}
@@ -59,11 +54,11 @@ export default function StudyDialog({
         <div>
           <div className="text-xs text-gray-500 dark:text-white/60 mb-2">{t.study.confidenceLabel}</div>
           <div className="flex flex-wrap gap-2">
-            <button aria-pressed={confidence === 0} className={chip(confidence === 0)} onClick={() => setConfidence(0)}>
+            <button aria-pressed={confidence === 0} className={chip()} onClick={() => setConfidence(0)}>
               {t.study.confidenceNone}
             </button>
             {[1, 2, 3, 4, 5].map((n) => (
-              <button key={n} aria-pressed={confidence === n} className={`${chip(confidence === n)} min-w-9`} onClick={() => setConfidence(n)}>
+              <button key={n} aria-pressed={confidence === n} className={`${chip()} min-w-9`} onClick={() => setConfidence(n)}>
                 {n}
               </button>
             ))}
@@ -83,7 +78,7 @@ export default function StudyDialog({
               className="h-9 px-2 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-black text-sm"
             />
             {date && (
-              <button className={chip(false)} onClick={() => setDate('')}>
+              <button className={chip()} onClick={() => setDate('')}>
                 {t.study.clearDate}
               </button>
             )}
@@ -94,7 +89,7 @@ export default function StudyDialog({
           <button className={chip(false)} onClick={onClose}>
             {t.cancel}
           </button>
-          <button className={chip(true)} onClick={() => onSave({ status, confidence, examDate: date || null })}>
+          <button className="los-btn los-btn-primary" onClick={() => onSave({ status, confidence, examDate: date || null })}>
             {t.study.save}
           </button>
         </div>
