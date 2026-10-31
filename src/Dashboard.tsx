@@ -245,6 +245,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   // opened, so each topic keeps its own saved video instead of every topic
   // in a goal sharing one slot (see VideoIntel's activeTopicId).
   const [viewingTopicId, setViewingTopicId] = useState<string | null>(null);
+  const [focusTopicOverride, setFocusTopicOverride] = useState('');
 
   const [showSettings, setShowSettings] = useState(false);
   // Deep-settings: the full learning-profile report is hidden by default,
@@ -314,6 +315,11 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
     setPreloadedPlaylist(null);
     setViewingTopicId(topicId);
     setActivePage('videos');
+  };
+
+  const handleOpenFocus = (topicTitle: string) => {
+    setFocusTopicOverride(topicTitle);
+    setActivePage('focus');
   };
 
   // FIX: Pehle yahan sirf name/role/goal/language/hours bhej rahe the,
@@ -635,6 +641,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
             userData={userData}
             onLaunchPlaylist={handleLaunchPlaylist}
             onOpenSavedVideo={handleOpenSavedVideo}
+            onOpenFocus={handleOpenFocus}
             onGenerateForSubject={onGenerateForSubject}
             lastRoadmapError={lastRoadmapError}
             goals={goals}
@@ -661,8 +668,8 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
         {activePage === 'focus' && (
           <FocusPlayer
             key={`${activeGoalId ?? 'no-goal'}-${currentTopic?.id ?? 'no-topic'}`}
-            initialTopic={currentTopic?.title ?? goals.find((goal) => goal.id === activeGoalId)?.title ?? userData?.goal ?? ''}
-            onClose={() => setActivePage('dashboard')}
+            initialTopic={focusTopicOverride || currentTopic?.title || goals.find((goal) => goal.id === activeGoalId)?.title || userData?.goal || ''}
+            onClose={() => { setFocusTopicOverride(''); setActivePage('dashboard'); }}
           />
         )}
         {activePage === 'mentor' && (
