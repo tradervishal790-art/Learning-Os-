@@ -911,9 +911,11 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                   videos.map((video, i) => {
                     const watched = watchHistory.find((w) => w.videoId === video.id);
                     return (
-                      <motion.div
+                      <motion.button
+                        type="button"
                         key={video.id}
                         id={i === 0 ? 'onborda-video-primary' : i === 1 ? 'onborda-video-fallback' : undefined}
+                        aria-pressed={selectedVideo?.id === video.id}
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: i * 0.04 }}
@@ -924,7 +926,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                           // picked — primary or fallback — not always primary.
                           void verifyBridgeForVideo(video);
                         }}
-                        className={`p-3 rounded-lg cursor-pointer transition border ${
+                        className={`w-full p-3 text-left rounded-lg cursor-pointer transition border ${
                           selectedVideo?.id === video.id
                             ? 'border-black dark:border-white bg-gray-50 dark:bg-white/10'
                             : 'border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/10'
@@ -943,7 +945,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                             {watched && <span className="text-xs text-gray-500 dark:text-white/60">{format(t.videos.score, watched.aiScore)}</span>}
                           </div>
                         </div>
-                      </motion.div>
+                      </motion.button>
                     );
                   })
                 )}
