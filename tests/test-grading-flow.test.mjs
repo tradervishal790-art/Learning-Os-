@@ -27,7 +27,7 @@ test('Hindi answer normalization ignores spacing and common punctuation', () => 
 
 test('subjective answers remain pending unless an accepted answer is supplied', () => {
   const question = { id: 's1', type: 'subjective', question: 'Define gravity', modelAnswer: 'Force of attraction', explanation: '', marks: 2 };
-  const answers = [{ questionId: 's1', type: 'subjective', text: 'Force of attraction' }];
+  const answers = [{ questionId: 's1', type: 'subjective', text: 'Gravity pulls objects together' }];
   assert.equal(grading.buildInitialResults([question], answers)[0].isCorrect, null);
   assert.equal(grading.buildInitialResults([{ ...question, acceptedAnswers: ['Gravity is attraction'] }], answers)[0].isCorrect, false);
 });
