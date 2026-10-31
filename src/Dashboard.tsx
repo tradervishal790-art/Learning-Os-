@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState, lazy, Suspense } from 'react';
 import type { ComponentType } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, BookOpen, ClipboardCheck, Newspaper, Lock, Settings as SettingsIcon, ArrowLeft } from 'lucide-react';
+import { Search, BookOpen, ClipboardCheck, Newspaper, Lock, Settings as SettingsIcon, ArrowLeft, CalendarDays, PlayCircle } from 'lucide-react';
 import PagePlaceholder from './PagePlaceholder';
 import MissionControl from './MissionControl';
 import BottomNav from './BottomNav';
@@ -48,6 +48,8 @@ const Research = lazy(() => import('./Research'));
 const Dictionary = lazy(() => import('./Dictionary'));
 const CurrentAffairs = lazy(() => import('./CurrentAffairs'));
 const Test = lazy(() => import('./Test'));
+const StudyPlanPage = lazy(() => import('./StudyPlan'));
+const FocusPlayer = lazy(() => import('./FocusPlayer'));
 
 // Small, centered loading indicator shown while a lazy page's chunk is
 // still downloading — kept intentionally minimal (no new deps).
@@ -115,10 +117,12 @@ function getSidebarItems(t: ReturnType<typeof useTranslation>): { id: DashboardP
   return [
     { id: 'dashboard', label: 'Mission Control' },
     { id: 'roadmap', label: t.dashboard.sidebar.roadmap },
+    { id: 'study-plan', label: 'Study Plan', icon: CalendarDays },
     { id: 'revision', label: t.dashboard.sidebar.revision },
     { id: 'notes', label: t.dashboard.sidebar.notes },
     { id: 'test', label: t.dashboard.sidebar.test, icon: ClipboardCheck },
     { id: 'videos', label: t.dashboard.sidebar.videos },
+    { id: 'focus', label: 'Focus Player', icon: PlayCircle },
     { id: 'mentor', label: t.dashboard.sidebar.mentor },
     { id: 'progress', label: t.dashboard.sidebar.progress },
     { id: 'research', label: t.dashboard.sidebar.research, icon: Search },
@@ -640,6 +644,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
             onSwitchGoal={onSwitchGoal}
           />
         )}
+        {activePage === 'study-plan' && <StudyPlanPage />}
         {activePage === 'revision' && <Revision goals={goals} />}
         {activePage === 'videos' && (
           <div className="relative">
@@ -650,6 +655,13 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
               allGoalIds={goals.filter((g) => g.status === 'active').map((g) => g.id)}
             />
           </div>
+        )}
+        {activePage === 'focus' && (
+          <FocusPlayer
+            key={`${activeGoalId ?? 'no-goal'}-${currentTopic?.id ?? 'no-topic'}`}
+            initialTopic={currentTopic?.title ?? goals.find((goal) => goal.id === activeGoalId)?.title ?? userData?.goal ?? ''}
+            onClose={() => setActivePage('dashboard')}
+          />
         )}
         {activePage === 'mentor' && <Mentor />}
         {activePage === 'notes' && <Notes />}
