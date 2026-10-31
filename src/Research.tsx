@@ -23,6 +23,14 @@ function cacheKey(query: string, locale: string): string {
   return `${RESEARCH_CACHE_PREFIX}${locale}_${query.trim().toLowerCase()}`;
 }
 
+function isSafeExternalUrl(url: string): boolean {
+  try {
+    return ['http:', 'https:'].includes(new URL(url).protocol);
+  } catch {
+    return false;
+  }
+}
+
 function displayUrl(url: string): string {
   try {
     const u = new URL(url);
@@ -68,7 +76,11 @@ export default function Research({ embedded = false, onClose }: ResearchProps) {
   const [error, setError] = useState('');
   const requestIdRef = useRef(0);
 
-  useEffect(() => () => { requestIdRef.current += 1; }, [locale, embedded]);
+  useEffect(() => {
+    requestIdRef.current += 1;
+    setLoading(false);
+    return () => { requestIdRef.current += 1; };
+  }, [locale, embedded]);
 
   // Standalone mode restores the last session. Embedded mode always opens
   // as a blank search space (see ResearchProps.embedded doc above).
@@ -196,7 +208,7 @@ export default function Research({ embedded = false, onClose }: ResearchProps) {
       )}
       {result.results.map((r, i) => (
         <motion.div key={i} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
-          {r.url ? (
+          {r.url && isSafeExternalUrl(r.url) ? (
             <a href={r.url} target="_blank" rel="noopener noreferrer" className="group block">
               <p className="text-xs text-gray-400 dark:text-white/40 truncate mb-0.5">{displayUrl(r.url)}</p>
               <h3 className="text-base font-medium underline-offset-2 group-hover:underline">{r.title}</h3>
