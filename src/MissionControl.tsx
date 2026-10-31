@@ -147,7 +147,7 @@ export default function MissionControl({
           <span className="inline-flex items-center gap-1.5 text-cyan-300/70"><Sparkles className="h-3 w-3" /> Connected learning system</span>
         </div>
 
-        {visibleRows.length === 0 && <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-center"><p className="text-sm font-medium text-white">Your map is empty</p><p className="mt-1 text-xs text-slate-400">Restore the learning engines to continue.</p><button type="button" onClick={() => { mapPrefsEdited.current = true; setVisibleNodeIds(defaultNodeIds); }} className="mt-3 rounded-lg border border-cyan-300/30 px-3 py-2 text-xs text-cyan-100">Restore learning engines</button></div>}
+        {visibleRows.length === 0 && <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-center"><p className="text-sm font-medium text-white">Your map is empty</p><p className="mt-1 text-xs text-slate-400">Restore the learning engines to continue.</p><button type="button" onClick={() => { mapPrefsEdited.current = true; setVisibleNodeIds(defaultNodeIds); }} className="los-btn los-btn-secondary mt-3">Restore learning engines</button></div>}
         <div className={`relative hidden flex-none overflow-visible rounded-[24px] border border-white/[0.07] bg-[#0b1221]/65 lg:block ${visibleRows.length === 0 ? 'hidden' : ''}`} style={{ height: `${mapHeight}px` }}>
           <div className="relative min-h-[660px]" style={{ height: `${mapHeight}px` }}>
           <div className="absolute inset-0 opacity-[0.16]" style={{ backgroundImage: 'radial-gradient(#7dd3fc 0.7px, transparent 0.7px)', backgroundSize: '24px 24px' }} />
@@ -268,7 +268,7 @@ export default function MissionControl({
 
         <div className="relative mt-2 flex shrink-0 flex-wrap items-center justify-between gap-2 px-1 text-[9px] text-slate-500 md:px-3">
           <div className="relative">
-            <button type="button" onClick={() => setMoreOpen((value) => !value)} aria-expanded={moreOpen} className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-medium text-slate-200 transition hover:border-cyan-300/40 hover:bg-white/[0.07]">
+            <button type="button" onClick={() => setMoreOpen((value) => !value)} aria-expanded={moreOpen} className="los-btn los-btn-secondary">
               <MoreHorizontal className="h-4 w-4 text-cyan-300" /> More <ChevronDown className={`h-3.5 w-3.5 transition-transform ${moreOpen ? 'rotate-180' : ''}`} />
             </button>
             {moreOpen && <div className="absolute bottom-full left-0 z-30 mb-2 w-[min(16rem,calc(100vw-2rem))] max-h-[min(70vh,520px)] overflow-y-auto rounded-xl border border-white/10 bg-[#111d31] p-1.5 shadow-2xl">
@@ -284,7 +284,7 @@ export default function MissionControl({
               })}
             </div>}
           </div>
-          <button type="button" onClick={() => { setCustomizeOpen(true); setMoreOpen(false); }} className="inline-flex items-center gap-2 rounded-xl border border-cyan-300/20 bg-cyan-300/[0.06] px-3 py-2 text-xs font-medium text-cyan-100 transition hover:border-cyan-300/40 hover:bg-cyan-300/10">Customize map</button>
+          <button type="button" onClick={() => { setCustomizeOpen(true); setMoreOpen(false); }} className="los-btn los-btn-secondary">Customize map</button>
           <span className="shrink-0">{activeGoals} active goal{activeGoals === 1 ? '' : 's'} · {hasLearningProfile ? 'Profile ready' : 'Profile not set up'}</span>
         </div>
         {customizeOpen && <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="map-customize-title">
@@ -307,11 +307,11 @@ export default function MissionControl({
             </div>
             <div className="flex items-center justify-between border-t border-white/[0.08] px-5 py-3">
               <button type="button" onClick={() => { mapPrefsEdited.current = true; setVisibleNodeIds(defaultNodeIds); }} className="text-xs text-slate-400 transition hover:text-white">Reset default</button>
-              <button type="button" onClick={() => setCustomizeOpen(false)} className="rounded-lg bg-cyan-300 px-4 py-2 text-xs font-semibold text-slate-950 transition hover:bg-cyan-200">Done</button>
+              <button type="button" onClick={() => setCustomizeOpen(false)} className="los-btn los-btn-primary">Done</button>
             </div>
           </div>
         </div>}
-        <button type="button" onClick={() => { const action = getNextBestStepAction({ hasLearningProfile, revisionDue, revisionOverdue }); if (action === 'profile') onOpenProfile(); else open(action); }} className="mt-1 flex shrink-0 items-center justify-between gap-3 rounded-xl border border-cyan-300/15 bg-cyan-300/[0.06] px-3 py-2 text-left transition hover:bg-cyan-300/10">
+        <button type="button" onClick={() => { const action = getNextBestStepAction({ hasLearningProfile, revisionDue, revisionOverdue }); if (action === 'profile') onOpenProfile(); else open(action); }} className="los-btn los-btn-primary mt-1 w-full justify-between text-left">
           <span className="min-w-0"><span className="block text-[9px] uppercase tracking-[0.16em] text-cyan-200/70">Your next best step</span><span className="block truncate text-xs font-medium text-white">{!hasLearningProfile ? 'Set up your learning profile' : activeGoals === 0 ? 'Choose a learning goal' : revisionOverdue > 0 ? `${revisionOverdue} overdue topics to revise` : revisionDue > 0 ? `${revisionDue} topics ready for revision` : nextTopic || 'Open your learning roadmap'}</span></span>
           <ArrowUpRight className="h-4 w-4 shrink-0 text-cyan-200" />
         </button>
