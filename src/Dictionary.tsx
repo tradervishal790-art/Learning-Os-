@@ -109,6 +109,8 @@ export default function Dictionary() {
           type="text"
           value={query}
           onChange={(e) => {
+            searchIdRef.current += 1;
+            setSearching(false);
             setQuery(e.target.value);
             setEntry(null);
             setNotFound(false);
