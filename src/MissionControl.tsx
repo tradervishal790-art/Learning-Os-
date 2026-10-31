@@ -71,7 +71,7 @@ const functionNodes = [
   { id: 'progress', number: '12', title: 'Progress', subtitle: 'See your growth', color: '#a78bfa', icon: Zap, children: [{ label: 'Growth and progress', detail: 'Track your progress', icon: Zap, action: 'progress' as const }] },
   { id: 'research', number: '13', title: 'Research', subtitle: 'Explore new ideas', color: '#67e8f9', icon: Search, children: [{ label: 'Research workspace', detail: 'Explore ideas and sources', icon: Search, action: 'research' as const }] },
   { id: 'dictionary', number: '14', title: 'Dictionary', subtitle: 'Look up concepts', color: '#a78bfa', icon: BookOpen, children: [{ label: 'Open dictionary', detail: 'Find meanings and concepts', icon: BookOpen, action: 'dictionary' as const }] },
-  { id: 'current-affairs', number: '15', title: 'Current Affairs', subtitle: 'Stay informed', color: '#e879f9', icon: Newspaper, children: [{ label: 'Current affairs', detail: 'Read latest updates', icon: Newspaper, action: 'current-affairs' as const }] },
+  { id: 'current-affairs', number: '15', title: 'Current Affairs', subtitle: 'Stay informed', color: '#e879f9', icon: Newspaper, children: [{ label: 'Current affairs', detail: 'Read latest updates', icon: Newspaper, action: 'current-affairs' as const }, { label: 'YouTube channel follow-up', detail: 'Follow trusted news channels', icon: Video, action: 'current-affairs' as const }] },
 ];
 const allFunctionNodes = [...rows, ...functionNodes];
 const MAP_NODES_STORAGE_KEY = 'learning_os_mission_map_nodes';
@@ -181,10 +181,13 @@ export default function MissionControl({
                 <g key={row.id} filter="url(#mindGlow)" opacity=".95">
                   <path d={`M 235 ${mapHeight / 2} C 330 ${mapHeight / 2}, 330 ${y}, 420 ${y}`} stroke={`url(#line-${row.id})`} strokeWidth="2.2" />
                   <g style={{ opacity: selectedEngine === row.id ? 1 : 0, transition: 'opacity 420ms cubic-bezier(.22,1,.36,1)' }}>
-                    <path d={`M 690 ${y} C 790 ${y}, 800 ${y-22}, 900 ${y-22}`} stroke={row.color} strokeOpacity=".85" strokeWidth="1.9" />
-                    <path d={`M 690 ${y} C 790 ${y}, 800 ${y+22}, 900 ${y+22}`} stroke={row.color} strokeOpacity=".85" strokeWidth="1.9" />
-                    <circle cx="900" cy={y-22} r="3" fill={row.color} />
-                    <circle cx="900" cy={y+22} r="3" fill={row.color} />
+                    {row.children.map((child, childIndex) => {
+                      const childOffset = (childIndex - (row.children.length - 1) / 2) * 44;
+                      return <g key={child.label}>
+                        <path d={`M 690 ${y} C 790 ${y}, 800 ${y + childOffset}, 900 ${y + childOffset}`} stroke={row.color} strokeOpacity=".85" strokeWidth="1.9" />
+                        <circle cx="900" cy={y + childOffset} r="3" fill={row.color} />
+                      </g>;
+                    })}
                   </g>
                   <circle cx="420" cy={y} r="4" fill={row.color} />
                 </g>
@@ -231,7 +234,7 @@ export default function MissionControl({
                       className="group absolute left-[75%] z-10 flex h-[42px] w-[22%] -translate-y-1/2 items-center gap-2.5 rounded-xl border border-white/[0.09] bg-[#101a2b]/95 px-3 text-left transition-[opacity,transform,background-color,border-color,box-shadow] duration-[420ms] ease-out hover:border-white/20 hover:bg-[#18263a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"
                       aria-hidden={!isExpanded}
                       tabIndex={isExpanded ? 0 : -1}
-                      style={{ top: `${((rowY[i] + (childIndex === 0 ? -22 : 22)) / mapHeight) * 100}%`, borderColor: `${row.color}35`, opacity: isExpanded ? 1 : 0, pointerEvents: isExpanded ? 'auto' : 'none', transform: isExpanded ? 'translateY(-50%) translateX(0) scale(1)' : 'translateY(calc(-50% + 9px)) translateX(-8px) scale(.985)', transitionDelay: isExpanded ? `${childIndex * 75}ms` : '0ms' }}
+                      style={{ top: `${((rowY[i] + (childIndex - (row.children.length - 1) / 2) * 44) / mapHeight) * 100}%`, borderColor: `${row.color}35`, opacity: isExpanded ? 1 : 0, pointerEvents: isExpanded ? 'auto' : 'none', transform: isExpanded ? 'translateY(-50%) translateX(0) scale(1)' : 'translateY(calc(-50% + 9px)) translateX(-8px) scale(.985)', transitionDelay: isExpanded ? `${childIndex * 75}ms` : '0ms' }}
                     >
                       <ChildIcon className="h-3.5 w-3.5 shrink-0" style={{ color: row.color }} />
                       <span className="min-w-0">
