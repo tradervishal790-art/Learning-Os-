@@ -28,6 +28,143 @@ service cloud.firestore {
       allow read, write: if signedIn() && request.auth.uid == uid;
     }
 
+    match /users/{uid}/learningIntelligence/{videoId} {
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow create: if realAccount() && request.auth.uid == uid
+        && videoId.matches('^[A-Za-z0-9_-]{11}
+    // ---------- shared caches (no owner) ----------
+    // Read: any signed-in user (guests too). Write: real accounts only, so an
+    // anonymous account cannot poison what every student sees. No client deletes.
+    match /shared_current_affairs/{id} {
+      allow read: if signedIn();
+      allow create, update: if realAccount();
+    }
+    match /shared_channel_days/{id} {
+      allow read: if signedIn();
+      allow create, update: if realAccount();
+    }
+    match /shared_video_summaries/{id} {
+      allow read: if signedIn();
+      allow create, update: if realAccount();
+    }
+    match /shared_video_analysis/{id} {
+      allow read: if signedIn();
+      allow create, update: if realAccount();
+    }
+    match /shared_topic_pools/{id} {
+      allow read: if signedIn();
+      allow create, update: if realAccount();
+    }
+
+    // ---------- live tests ----------
+    match /liveTests/{code} {
+
+      function sessionPath() {
+        return /databases/$(database)/documents/liveTests/$(code);
+      }
+
+      function isHost() {
+        return signedIn() && get(sessionPath()).data.hostUid == request.auth.uid;
+      }
+
+      // Public session doc: questions here have the answer key stripped
+      // (publicQuestion in liveTest.ts); the real key lives in private/paper.
+      // get only: the 6-character code is the secret, so sessions cannot be listed.
+      allow get: if signedIn();
+      allow create: if signedIn()
+        && code.matches('[A-Z0-9]{6}')
+        && request.resource.data.hostUid == request.auth.uid;
+      // The host can only end the session (status/endedAt); hostUid never changes.
+      allow update: if signedIn()
+        && resource.data.hostUid == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'endedAt']);
+
+      // Answer key — host only. Students must never be able to read it.
+      match /private/{docId} {
+        allow read, write: if isHost();
+      }
+
+      // Host's guest list. Students may read their own entry only after their
+      // player document proves ownership of that phone-number slot.
+      match /allowed/{phone} {
+        allow get: if isHost()
+          || (signedIn()
+            && exists(/databases/$(database)/documents/liveTests/$(code)/players/$(phone))
+            && get(/databases/$(database)/documents/liveTests/$(code)/players/$(phone)).data.uid == request.auth.uid);
+        allow list: if isHost();
+        allow create, update: if isHost()
+          && request.resource.data.keys().hasOnly(['phone', 'name'])
+          && request.resource.data.phone == phone;
+        allow delete: if isHost();
+      }
+
+      // One doc per phone number; locks that number to the first device (uid).
+      // A different uid hitting the update rule gets permission-denied, which
+      // joinLiveSession() turns into OTHER_DEVICE.
+      match /players/{phone} {
+        allow get: if isHost() || resource.data.uid == request.auth.uid;
+        allow list: if isHost();
+
+        allow create: if signedIn()
+          && exists(/databases/$(database)/documents/liveTests/$(code)/allowed/$(phone))
+          && request.resource.data.keys().hasOnly(['uid', 'name', 'phone', 'joinedAt'])
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.phone == phone;
+
+        // Re-join (merge) or Start. startedAt can be set once, to the server
+        // time, and never changed — so the personal timer cannot be reset.
+        allow update: if signedIn()
+          && resource.data.uid == request.auth.uid
+          && request.resource.data.keys().hasOnly(['uid', 'name', 'phone', 'joinedAt', 'startedAt'])
+          && request.resource.data.uid == resource.data.uid
+          && request.resource.data.phone == phone
+          && (resource.data.get('startedAt', null) != null
+              ? request.resource.data.startedAt == resource.data.startedAt
+              : (request.resource.data.get('startedAt', null) == null
+                 || request.resource.data.startedAt == request.time));
+
+        // Host frees a number locked to a lost device (resetPlayer).
+        allow delete: if isHost();
+      }
+
+      // Answers. Create-only: a second write to the same phone is an update
+      // and is denied, so a student cannot resubmit. Only the host reads them.
+      match /submissions/{phone} {
+        allow read: if isHost() || (signedIn() && resource.data.uid == request.auth.uid);
+        allow create: if signedIn()
+          && request.resource.data.keys().hasOnly(['uid', 'name', 'phone', 'answers', 'timeTakenSeconds', 'submittedAt'])
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.phone == phone
+          && request.resource.data.timeTakenSeconds is number
+          && get(/databases/$(database)/documents/liveTests/$(code)/players/$(phone)).data.uid == request.auth.uid
+          && !exists(/databases/$(database)/documents/liveTests/$(code)/done/$(phone));
+      }
+
+      // "Already finished" marker. The host can read all markers; students
+      // can read only their own marker. Missing markers remain readable as
+      // missing so a participant can check whether they have already finished.
+      match /done/{phone} {
+        allow get: if isHost()
+          || !exists(/databases/$(database)/documents/liveTests/$(code)/done/$(phone))
+          || (signedIn() && resource.data.uid == request.auth.uid);
+        allow list: if isHost();
+        allow create: if signedIn()
+          && request.resource.data.keys().hasOnly(['uid', 'phone'])
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.phone == phone
+          && get(/databases/$(database)/documents/liveTests/$(code)/players/$(phone)).data.uid == request.auth.uid;
+      }
+    }
+  }
+}
+)
+        && request.resource.data.keys().hasOnly(['outcome', 'feedback', 'submittedAt'])
+        && request.resource.data.outcome in ['early-drop', 'partial', 'near-complete', 'completed']
+        && request.resource.data.feedback in ['like', 'dislike', 'none']
+        && request.resource.data.submittedAt == request.time;
+      allow update, delete: if false;
+    }
+
     // ---------- shared caches (no owner) ----------
     // Read: any signed-in user (guests too). Write: real accounts only, so an
     // anonymous account cannot poison what every student sees. No client deletes.
