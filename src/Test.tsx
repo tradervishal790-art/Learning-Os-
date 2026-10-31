@@ -662,15 +662,16 @@ export function TakingScreen({
                     return (
                       <button
                         key={i}
+                        aria-pressed={!!selected}
                         onClick={() => onSelectMCQ(i)}
                         className={`w-full text-left p-4 rounded-xl border transition ${
                           selected
-                            ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white border-black dark:border-white'
+                            ? 'bg-indigo-50 text-gray-900 dark:bg-indigo-400/15 dark:text-white border-indigo-300 dark:border-indigo-300/40'
                             : 'bg-white dark:bg-white/5 border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10'
                         }`}
                       >
                         <span className="flex items-start gap-3 w-full">
-                          <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${selected ? 'bg-white/20 text-white' : 'bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-white/70'}`}>{String.fromCharCode(65 + i)}</span>
+                          <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${selected ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-white/70'}`}>{String.fromCharCode(65 + i)}</span>
                           <span className="min-w-0 flex-1 text-[15px] md:text-base leading-relaxed"><MathText>{opt}</MathText></span>
                           {selected && <CheckCircle2 className="w-5 h-5 shrink-0" />}
                         </span>
