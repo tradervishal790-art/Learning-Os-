@@ -224,8 +224,8 @@ export default function MissionControl({
                     >
                       <ChildIcon className="h-3.5 w-3.5 shrink-0" style={{ color: row.color }} />
                       <span className="min-w-0">
-                        <span className="block truncate text-[11px] font-medium text-slate-200">{child.label}</span>
-                        <span className="block truncate text-[8px] text-slate-500">{row.id === 'retain' && childIndex === 1 ? `${revisionDue + revisionOverdue} topics due` : child.detail}</span>
+                        <span className="block truncate text-[12px] font-medium text-slate-200">{child.label}</span>
+                        <span className="block truncate text-[10px] text-slate-500">{row.id === 'retain' && childIndex === 1 ? `${revisionDue + revisionOverdue} topics due` : child.detail}</span>
                       </span>
                       <ArrowUpRight className="ml-auto h-3 w-3 shrink-0 text-slate-600 opacity-0 transition group-hover:opacity-100" />
                     </button>
