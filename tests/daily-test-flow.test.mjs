@@ -7,7 +7,7 @@ const KEY = 'learning_os_daily_test';
 
 function question(id) {
   return {
-    id, type: 'mcq', question: `Select the correct statement about concept ${id}?`,
+    id, type: 'mcq', question: `Which statement best explains the unique learning concept ${id} for this chapter?`,
     options: ['True', 'False'], correctIndex: 0, explanation: '', marks: 1, negativeMarks: 0,
   };
 }
@@ -15,7 +15,7 @@ function question(id) {
 test('daily tests keep a waiting paper stable and consume the remaining round before repeating', () => {
   localStorage.removeItem(KEY);
   store.setPerDay(3);
-  assert.equal(store.saveBank(['a', 'b', 'c', 'd', 'e'].map(question)), true);
+  assert.equal(store.saveBank(['alpha', 'bravo', 'charlie', 'delta', 'echo'].map(question)), true);
 
   const first = store.getOrCreateTodayTest();
   assert.equal(first.questions.length, 3);
