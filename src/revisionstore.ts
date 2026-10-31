@@ -66,7 +66,7 @@ export function mergeReviewMaps(local: ReviewsMap, cloud: ReviewsMap): ReviewsMa
   return merged;
 }
 
-function mergeReviewDateMaps(local: ReviewDatesMap, cloud: ReviewDatesMap): ReviewDatesMap {
+export function mergeReviewDateMaps(local: ReviewDatesMap, cloud: ReviewDatesMap): ReviewDatesMap {
   const merged: ReviewDatesMap = {};
   for (const source of [cloud, local]) {
     for (const [topicId, dates] of Object.entries(source)) {
