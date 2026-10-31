@@ -263,7 +263,7 @@ export default function BlueprintInterview({
             {phase === 'done' && resultProfile && (
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
                 {/* Mind score ring + radar */}
-                <div className="p-4 rounded-xl border border-purple-300/30 dark:border-purple-500/20 bg-purple-50/50 dark:bg-purple-500/5">
+                <div className="los-panel los-panel-accent">
                   <div className="flex items-center justify-between mb-2">
                     <p className="text-xs font-semibold text-purple-700 dark:text-purple-300">{t.blueprintInterview.resultSection.mindMapTitle}</p>
                     <div className="text-right">
