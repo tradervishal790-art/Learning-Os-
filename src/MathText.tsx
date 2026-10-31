@@ -11,7 +11,6 @@ const symbols: Record<string, string> = {
   partial:'∂', nabla:'∇', sum:'∑', int:'∫', propto:'∝', sim:'∼',
 };
 
-type Token = { node: ReactNode; text: string };
 function parseLatex(source: string): ReactNode[] {
   let i = 0;
   const readGroup = (): ReactNode => {
