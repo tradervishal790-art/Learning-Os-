@@ -1,5 +1,5 @@
 /// <reference types="vite/client" />
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { FileText, PenLine, Lightbulb, Calculator, TriangleAlert, Globe, Rocket, Target, Sparkles, Loader2, CirclePlay } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -9,6 +9,7 @@ import { authFetch } from './apiFetch';
 import { getPersonalityProfile } from './personalityProfileStore';
 import { buildPersonalityBrief } from './personalityBrief';
 import { extractYouTubeId } from './youtubeId';
+import { beginRequest, invalidateRequests, isLatestRequest } from './requestSequence';
 
 // Lightweight markdown renderer for myNotes (## headings, - bullets,
 // **bold**, blank-line paragraph breaks) — no react-markdown dependency
@@ -174,6 +175,33 @@ export default function Notes({ videoTitle, videoDescription, videoId }: { video
   const [activeSection, setActiveSection] = useState('summary');
   const [youtubeUrl, setYoutubeUrl] = useState('');
   const [currentVideoId, setCurrentVideoId] = useState<string | null>(null);
+  const generationRequestRef = useRef(0);
+
+  // A changed topic, URL, locale or embedded video invalidates the previous AI request.
+  // A late response must never replace notes for the learner's newer choice.
+  useEffect(() => {
+    invalidateRequests(generationRequestRef);
+    setLoading(false);
+    setError('');
+    if (!videoTitle) return;
+    setTopic(videoTitle);
+    setCurrentVideoId(videoId ?? null);
+    setActiveSection('summary');
+    try {
+      const cached = localStorage.getItem(topicCacheKey(videoTitle));
+      const parsed = cached ? JSON.parse(cached) as DeepNotesData : null;
+      setNotes(parsed && isFreshForLocale(parsed, locale) ? parsed : null);
+    } catch {
+      setNotes(null);
+    }
+  }, [videoTitle, videoId, locale]);
+
+  useEffect(() => {
+    invalidateRequests(generationRequestRef);
+    setLoading(false);
+  }, [topic, youtubeUrl]);
+
+  useEffect(() => () => invalidateRequests(generationRequestRef), []);
 
   // Restore on mount. Two modes:
   // - Embedded with a videoTitle (called from VideoIntel's "Deep Notes"):
@@ -186,7 +214,10 @@ export default function Notes({ videoTitle, videoDescription, videoId }: { video
     try {
       if (videoTitle) {
         const cached = localStorage.getItem(topicCacheKey(videoTitle));
-        if (cached) setNotes(JSON.parse(cached));
+        if (cached) {
+          const parsed = JSON.parse(cached) as DeepNotesData;
+          if (isFreshForLocale(parsed, locale)) setNotes(parsed);
+        }
         return;
       }
       const saved = localStorage.getItem(NOTES_STATE_STORAGE_KEY);
@@ -227,39 +258,48 @@ export default function Notes({ videoTitle, videoDescription, videoId }: { video
   }, [videoTitle, topic, notes, activeSection, youtubeUrl, currentVideoId]);
 
   const handleGenerate = async () => {
-    if (!topic.trim()) return;
+    const requestedTopic = topic.trim();
+    if (!requestedTopic) return;
+    const requestId = beginRequest(generationRequestRef);
     setLoading(true);
     setError('');
 
     try {
-      const cacheKey = topicCacheKey(topic);
+      const cacheKey = topicCacheKey(requestedTopic);
       const cached = localStorage.getItem(cacheKey);
       if (cached) {
         const parsed = JSON.parse(cached) as DeepNotesData;
         if (isFreshForLocale(parsed, locale)) {
-          setNotes(parsed);
-          setLoading(false);
+          if (isLatestRequest(generationRequestRef, requestId)) setNotes(parsed);
           return;
         }
       }
 
       const context = videoDescription ? `Title: ${videoTitle}\nDescription: ${videoDescription}` : '';
-      const deepNotes = await generateDeepNotes(topic, context, videoId, locale);
+      const deepNotes = await generateDeepNotes(requestedTopic, context, videoId, locale);
+      if (!isLatestRequest(generationRequestRef, requestId)) return;
       deepNotes.locale = locale;
       if (videoId) setCurrentVideoId(videoId);
       localStorage.setItem(cacheKey, JSON.stringify(deepNotes));
       setNotes(deepNotes);
     } catch (err) {
-      setError(err instanceof Error ? err.message : t.notes.genericGenerateError);
+      if (isLatestRequest(generationRequestRef, requestId)) {
+        setError(err instanceof Error ? err.message : t.notes.genericGenerateError);
+      }
     } finally {
-      setLoading(false);
+      if (isLatestRequest(generationRequestRef, requestId)) setLoading(false);
     }
   };
 
   const handleGenerateFromVideo = async () => {
-    const videoId = extractVideoId(youtubeUrl.trim());
+    const requestId = beginRequest(generationRequestRef);
+    const requestedUrl = youtubeUrl.trim();
+    const videoId = extractVideoId(requestedUrl);
     if (!videoId) {
-      setError(t.notes.invalidUrlError);
+      if (isLatestRequest(generationRequestRef, requestId)) {
+        setError(t.notes.invalidUrlError);
+        setLoading(false);
+      }
       return;
     }
 
@@ -272,23 +312,26 @@ export default function Notes({ videoTitle, videoDescription, videoId }: { video
       if (cached) {
         const parsed = JSON.parse(cached) as DeepNotesData;
         if (isFreshForLocale(parsed, locale)) {
-          setNotes(parsed);
-          setLoading(false);
+          if (isLatestRequest(generationRequestRef, requestId)) setNotes(parsed);
           return;
         }
       }
 
       const meta = await fetchVideoMeta(videoId);
+      if (!isLatestRequest(generationRequestRef, requestId)) return;
       const context = `Title: ${meta.title}\nDescription: ${meta.description.slice(0, 500)}`;
       const deepNotes = await generateDeepNotes(meta.title, context, videoId, locale);
+      if (!isLatestRequest(generationRequestRef, requestId)) return;
       deepNotes.locale = locale;
 
       localStorage.setItem(`deepnotes_v3_${videoId}`, JSON.stringify(deepNotes));
       setNotes(deepNotes);
     } catch (err) {
-      setError(err instanceof Error ? err.message : t.notes.genericVideoGenerateError);
+      if (isLatestRequest(generationRequestRef, requestId)) {
+        setError(err instanceof Error ? err.message : t.notes.genericVideoGenerateError);
+      }
     } finally {
-      setLoading(false);
+      if (isLatestRequest(generationRequestRef, requestId)) setLoading(false);
     }
   };
 
