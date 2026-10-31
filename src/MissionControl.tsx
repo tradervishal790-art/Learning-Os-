@@ -164,7 +164,7 @@ export default function MissionControl({
           <span className="inline-flex items-center gap-1.5 text-cyan-300/70"><Sparkles className="h-3 w-3" /> Connected learning system</span>
         </div>
 
-        <div className="relative hidden min-h-0 flex-1 overflow-auto rounded-[24px] border border-white/[0.07] bg-[#0b1221]/65 lg:block">
+        <div className="relative hidden min-h-0 flex-1 overflow-visible rounded-[24px] border border-white/[0.07] bg-[#0b1221]/65 lg:block">
           <div className="relative min-h-[660px]" style={{ height: `${mapHeight}px` }}>
           <div className="absolute inset-0 opacity-[0.16]" style={{ backgroundImage: 'radial-gradient(#7dd3fc 0.7px, transparent 0.7px)', backgroundSize: '24px 24px' }} />
           <svg className="absolute inset-0 h-full w-full" viewBox={`0 0 1200 ${mapHeight}`} preserveAspectRatio="none" fill="none" aria-hidden="true">
@@ -179,7 +179,7 @@ export default function MissionControl({
               const y = rowY[i];
               return (
                 <g key={row.id} filter="url(#mindGlow)" opacity=".95">
-                  <path d={`M 235 330 C 330 330, 330 ${y}, 420 ${y}`} stroke={`url(#line-${row.id})`} strokeWidth="2.2" />
+                  <path d={`M 235 ${mapHeight / 2} C 330 ${mapHeight / 2}, 330 ${y}, 420 ${y}`} stroke={`url(#line-${row.id})`} strokeWidth="2.2" />
                   <g style={{ opacity: selectedEngine === row.id ? 1 : 0, transition: 'opacity 420ms cubic-bezier(.22,1,.36,1)' }}>
                     <path d={`M 690 ${y} C 790 ${y}, 800 ${y-22}, 900 ${y-22}`} stroke={row.color} strokeOpacity=".85" strokeWidth="1.9" />
                     <path d={`M 690 ${y} C 790 ${y}, 800 ${y+22}, 900 ${y+22}`} stroke={row.color} strokeOpacity=".85" strokeWidth="1.9" />
@@ -190,7 +190,7 @@ export default function MissionControl({
                 </g>
               );
             })}
-            <circle cx="235" cy="330" r="7" fill="#c4b5fd" filter="url(#mindGlow)" />
+            <circle cx="235" cy={mapHeight / 2} r="7" fill="#c4b5fd" filter="url(#mindGlow)" />
           </svg>
 
           <div className="absolute left-[2.5%] z-10 flex h-[132px] w-[17%] flex-col justify-center rounded-2xl border border-violet-300/50 bg-gradient-to-br from-[#29214d] to-[#151a31] px-4 shadow-[0_0_38px_rgba(139,92,246,.15)]" style={{ top: '50%', transform: 'translateY(-50%)' }}>
