@@ -31,7 +31,7 @@ function renderMyNotesMarkdown(raw: string) {
   // seen in production), normalize it here rather than trusting the prompt
   // instruction alone. Doesn't touch real newline characters — only the
   // literal backslash-n sequence.
-  const normalized = raw.replace(/\n/g, '\n');
+  const normalized = raw.replace(/\\n/g, '\n');
   const lines = normalized.split('\n');
   return lines.map((line, i) => {
     const trimmed = line.trim();
