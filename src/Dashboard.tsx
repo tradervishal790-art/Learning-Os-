@@ -591,13 +591,13 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                 >
                   <ArrowLeft className="w-5 h-5" strokeWidth={1.9} />
                 </button>
-            <h2 className="text-lg md:text-2xl font-bold truncate text-white">
+                <h2 className={`text-lg md:text-2xl font-bold truncate ${isMissionControl ? "text-white" : ""}`}>
                   {sidebarItems.find((i) => i.id === activePage)?.label ?? ''}
                 </h2>
               </>
             )}
             {activePage === 'dashboard' && (
-            <h2 className="text-lg md:text-2xl font-bold truncate text-white">
+                <h2 className={`text-lg md:text-2xl font-bold truncate ${isMissionControl ? "text-white" : ""}`}>
               Mission Control
             </h2>
             )}
