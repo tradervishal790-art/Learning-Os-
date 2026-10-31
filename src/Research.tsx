@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Search, X } from 'lucide-react';
 import { useTranslation, useLanguage } from './i18n/LanguageContext';
@@ -66,6 +66,7 @@ export default function Research({ embedded = false, onClose }: ResearchProps) {
   const [history, setHistory] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const requestIdRef = useRef(0);
 
   // Standalone mode restores the last session. Embedded mode always opens
   // as a blank search space (see ResearchProps.embedded doc above).
@@ -94,31 +95,53 @@ export default function Research({ embedded = false, onClose }: ResearchProps) {
     }
   }, [embedded, query, result, history]);
 
-  const handleSearch = async () => {
-    const q = query.trim();
-    if (!q) return;
+  const handleSearch = async (requestedQuery = query) => {
+    const q = requestedQuery.trim();
+    if (!q || loading) return;
 
+    const requestId = ++requestIdRef.current;
     setLoading(true);
     setError('');
+    setResult(null);
 
     try {
-      const cached = localStorage.getItem(cacheKey(q, locale));
+      let cached: string | null = null;
+      try {
+        cached = localStorage.getItem(cacheKey(q, locale));
+      } catch {
+        // Private browsing or storage limits must not block a live search.
+      }
       if (cached) {
-        setResult(JSON.parse(cached));
-        setLoading(false);
-        return;
+        try {
+          const parsed = JSON.parse(cached) as ResearchResponse;
+          if (parsed && Array.isArray(parsed.results)) {
+            if (requestId === requestIdRef.current) {
+              setResult({ ...parsed, query: q });
+              if (!embedded) setHistory((prev) => [q, ...prev.filter((h) => h.toLowerCase() !== q.toLowerCase())].slice(0, 8));
+            }
+            return;
+          }
+        } catch {
+          // Ignore a corrupted cache entry and fetch a fresh result.
+        }
       }
 
       const res = await runResearch(q, t.research.genericError, locale);
-      localStorage.setItem(cacheKey(q, locale), JSON.stringify(res));
-      setResult(res);
-      if (!embedded) {
-        setHistory((prev) => [q, ...prev.filter((h) => h.toLowerCase() !== q.toLowerCase())].slice(0, 8));
+      try {
+        localStorage.setItem(cacheKey(q, locale), JSON.stringify(res));
+      } catch {
+        // Results remain usable even when the browser cannot persist cache.
+      }
+      if (requestId === requestIdRef.current) {
+        setResult(res);
+        if (!embedded) {
+          setHistory((prev) => [q, ...prev.filter((h) => h.toLowerCase() !== q.toLowerCase())].slice(0, 8));
+        }
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : t.research.genericError);
+      if (requestId === requestIdRef.current) setError(err instanceof Error ? err.message : t.research.genericError);
     } finally {
-      setLoading(false);
+      if (requestId === requestIdRef.current) setLoading(false);
     }
   };
 
@@ -130,7 +153,7 @@ export default function Research({ embedded = false, onClose }: ResearchProps) {
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+          onKeyDown={(e) => e.key === 'Enter' && void handleSearch()}
           placeholder={t.research.searchPlaceholder}
           autoFocus={embedded}
           className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg pl-9 pr-4 py-2.5 placeholder-gray-400 dark:placeholder-white/40 focus:outline-none focus:border-black dark:focus:border-white"
@@ -138,7 +161,7 @@ export default function Research({ embedded = false, onClose }: ResearchProps) {
       </div>
       <div className="flex gap-2 mt-2">
         <button
-          onClick={handleSearch}
+          onClick={() => void handleSearch()}
           disabled={loading || !query.trim()}
           className="flex-1 px-5 py-2.5 bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white disabled:opacity-40 rounded-lg font-semibold transition"
         >
@@ -219,7 +242,7 @@ export default function Research({ embedded = false, onClose }: ResearchProps) {
                 key={h}
                 onClick={() => {
                   setQuery(h);
-                  setTimeout(handleSearch, 0);
+                  void handleSearch(h);
                 }}
                 className="px-3 py-1.5 border border-gray-200 dark:border-white/10 rounded-full text-xs text-gray-500 dark:text-white/60 hover:bg-gray-100 dark:hover:bg-white/10 hover:text-black dark:hover:text-white transition"
               >
