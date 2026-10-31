@@ -90,14 +90,16 @@ export function mergeReviewDateMaps(local: ReviewDatesMap, cloud: ReviewDatesMap
  * original checkpoint data without a destructive migration.
  */
 export async function hydrateRevisionFromCloud(): Promise<void> {
-  const local = loadReviews();
-  const localDates = loadReviewDates();
   const [cloud, cloudDates] = await Promise.all([
     pullFromCloud<ReviewsMap>(CLOUD_KEY),
     pullFromCloud<ReviewDatesMap>(CLOUD_DATES_KEY),
   ]);
+  // Re-read after the network wait: a review may have been recorded locally
+  // while cloud hydration was in flight. Never merge from a stale snapshot.
+  const latestLocal = loadReviews();
+  const latestLocalDates = loadReviewDates();
   if (cloud) {
-    const merged = mergeReviewMaps(local, cloud);
+    const merged = mergeReviewMaps(latestLocal, cloud);
     if (JSON.stringify(merged) !== JSON.stringify(local)) {
       try {
         localStorage.setItem(REVISION_REVIEWS_STORAGE_KEY, JSON.stringify(merged));
@@ -108,7 +110,7 @@ export async function hydrateRevisionFromCloud(): Promise<void> {
     }
   }
   if (cloudDates) {
-    const mergedDates = mergeReviewDateMaps(localDates, cloudDates);
+    const mergedDates = mergeReviewDateMaps(latestLocalDates, cloudDates);
     if (JSON.stringify(mergedDates) !== JSON.stringify(localDates)) saveReviewDates(mergedDates);
   }
 }
