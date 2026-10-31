@@ -122,13 +122,13 @@ export default function MissionControl({
 
       <header className="relative z-10 flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-white/[0.07] px-5 py-3 md:px-8">
         <div className="min-w-0">
-          <div className="flex items-center gap-2 text-[9px] font-semibold uppercase tracking-[0.24em] text-cyan-300/80">
+          <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-cyan-300/80">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,.9)]" />
             Personal learning network
           </div>
           <h1 className="mt-1 text-lg font-semibold tracking-tight text-white md:text-xl">Your learning map</h1>
         </div>
-        <div className="flex flex-wrap items-center justify-end gap-2 text-[10px] sm:gap-3">
+        <div className="flex flex-wrap items-center justify-end gap-2 text-[11px] sm:gap-3">
           <span className="hidden rounded-full border border-white/[0.08] bg-white/[0.035] px-3 py-2 text-slate-400 sm:inline-flex">
             <span className="mr-1.5 text-cyan-300">●</span> {goalTitle || 'Choose a learning goal'}
           </span>
@@ -142,7 +142,7 @@ export default function MissionControl({
       </header>
 
       <section className="relative z-10 flex min-h-0 flex-1 flex-col overflow-y-auto px-3 pb-3 pt-2 md:px-6 md:pb-5 md:pt-3">
-        <div className="mb-1 flex shrink-0 items-center justify-between px-1 text-[9px] uppercase tracking-[0.2em] text-slate-600 md:px-3">
+        <div className="mb-1 flex shrink-0 items-center justify-between px-1 text-[11px] uppercase tracking-[0.2em] text-slate-600 md:px-3">
           <span>Student journey map</span>
           <span className="inline-flex items-center gap-1.5 text-cyan-300/70"><Sparkles className="h-3 w-3" /> Connected learning system</span>
         </div>
@@ -181,10 +181,10 @@ export default function MissionControl({
           </svg>
 
           <div className="absolute left-[2.5%] z-10 flex h-[132px] w-[17%] flex-col justify-center rounded-2xl border border-violet-300/50 bg-gradient-to-br from-[#29214d] to-[#151a31] px-4 shadow-[0_0_38px_rgba(139,92,246,.15)]" style={{ top: '50%', transform: 'translateY(-50%)' }}>
-            <div className="flex items-center gap-2 text-[9px] font-semibold uppercase tracking-[0.2em] text-violet-200"><Users className="h-3.5 w-3.5" /> Student</div>
+            <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-violet-200"><Users className="h-3.5 w-3.5" /> Student</div>
             <div className="mt-2 truncate text-lg font-semibold text-white">{name || 'Learner'}</div>
-            <div className="mt-1 line-clamp-2 text-[10px] leading-relaxed text-violet-100/60">{goalTitle ? `Learning ${goalTitle}` : 'Starts with curiosity'}</div>
-            <div className="mt-3 text-[9px] text-violet-200/60">YOU ARE HERE</div>
+            <div className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-violet-100/60">{goalTitle ? `Learning ${goalTitle}` : 'Starts with curiosity'}</div>
+            <div className="mt-3 text-[11px] text-violet-200/60">YOU ARE HERE</div>
           </div>
 
           {visibleRows.map((row, i) => {
@@ -201,9 +201,9 @@ export default function MissionControl({
                 >
                   <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl" style={{ backgroundColor: `${row.color}20`, color: row.color }}><Icon className="h-5 w-5" /></span>
                   <span className="min-w-0 flex-1">
-                    <span className="block text-[9px] font-semibold tracking-[0.18em]" style={{ color: row.color }}>{row.number}</span>
+                    <span className="block text-[11px] font-semibold tracking-[0.18em]" style={{ color: row.color }}>{row.number}</span>
                     <span className="mt-0.5 block text-sm font-semibold text-white">{row.title}</span>
-                    <span className="mt-0.5 block truncate text-[10px] text-slate-500">{row.subtitle}</span>
+                    <span className="mt-0.5 block truncate text-[11px] text-slate-500">{row.subtitle}</span>
                   </span>
                   <ArrowUpRight className="h-4 w-4 shrink-0 text-slate-600 transition group-hover:text-white" />
                 </button>
@@ -222,7 +222,7 @@ export default function MissionControl({
                     >
                       <ChildIcon className="h-3.5 w-3.5 shrink-0" style={{ color: row.color }} />
                       <span className="min-w-0">
-                        <span className="block truncate text-[10px] font-medium text-slate-200">{child.label}</span>
+                        <span className="block truncate text-[11px] font-medium text-slate-200">{child.label}</span>
                         <span className="block truncate text-[8px] text-slate-500">{row.id === 'retain' && childIndex === 1 ? `${revisionDue + revisionOverdue} topics due` : child.detail}</span>
                       </span>
                       <ArrowUpRight className="ml-auto h-3 w-3 shrink-0 text-slate-600 opacity-0 transition group-hover:opacity-100" />
@@ -233,7 +233,7 @@ export default function MissionControl({
             );
           })}
 
-          <div className="absolute bottom-4 left-5 flex items-center gap-4 text-[9px] text-slate-600">
+          <div className="absolute bottom-4 left-5 flex items-center gap-4 text-[11px] text-slate-600">
             <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-violet-300" /> Student</span>
             <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-cyan-300" /> Learning engines</span>
             <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-emerald-300" /> Actions</span>
@@ -246,7 +246,7 @@ export default function MissionControl({
           <div className="relative flex flex-col gap-2.5">
             <div className="mb-1 flex items-center gap-3 rounded-xl border border-violet-300/40 bg-[#211b40] p-3">
               <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-400/15 text-violet-200"><Users className="h-4 w-4" /></span>
-              <span><span className="block text-xs font-semibold text-white">{name || 'Student'}</span><span className="block text-[10px] text-violet-200/60">{goalTitle || 'Starts with curiosity'}</span></span>
+              <span><span className="block text-xs font-semibold text-white">{name || 'Student'}</span><span className="block text-[11px] text-violet-200/60">{goalTitle || 'Starts with curiosity'}</span></span>
             </div>
             {visibleRows.map((row) => {
               const Icon = row.icon;
@@ -254,11 +254,11 @@ export default function MissionControl({
                 <div key={row.id} className="relative ml-5 rounded-xl border bg-[#111d31] p-3" style={{ borderColor: `${row.color}50` }}>
                   <button type="button" onClick={() => setSelectedEngine((current) => current === row.id ? null : row.id)} aria-expanded={selectedEngine === row.id} className="flex w-full items-center gap-3 text-left">
                     <Icon className="h-5 w-5" style={{ color: row.color }} />
-                    <span className="flex-1"><span className="block text-xs font-semibold text-white">{row.number} · {row.title}</span><span className="block text-[10px] text-slate-500">{row.subtitle}</span></span>
+                    <span className="flex-1"><span className="block text-xs font-semibold text-white">{row.number} · {row.title}</span><span className="block text-[11px] text-slate-500">{row.subtitle}</span></span>
                     <ArrowUpRight className="h-4 w-4 text-slate-500" />
                   </button>
                   {selectedEngine === row.id && <div className="ml-8 mt-2 flex flex-wrap gap-1.5">
-                    {row.children.map((child) => <button key={child.label} onClick={() => open(child.action)} className="rounded-lg border border-white/[0.08] bg-white/[0.035] px-2 py-1.5 text-[9px] text-slate-300">{child.label} ↗</button>)}
+                    {row.children.map((child) => <button key={child.label} onClick={() => open(child.action)} className="rounded-lg border border-white/[0.08] bg-white/[0.035] px-2 py-1.5 text-[11px] text-slate-300">{child.label} ↗</button>)}
                   </div>}
                 </div>
               );
@@ -266,7 +266,7 @@ export default function MissionControl({
           </div>
         </div>
 
-        <div className="relative mt-2 flex shrink-0 flex-wrap items-center justify-between gap-2 px-1 text-[9px] text-slate-500 md:px-3">
+        <div className="relative mt-2 flex shrink-0 flex-wrap items-center justify-between gap-2 px-1 text-[11px] text-slate-500 md:px-3">
           <div className="relative">
             <button type="button" onClick={() => setMoreOpen((value) => !value)} aria-expanded={moreOpen} className="los-btn los-btn-secondary">
               <MoreHorizontal className="h-4 w-4 text-cyan-300" /> More <ChevronDown className={`h-3.5 w-3.5 transition-transform ${moreOpen ? 'rotate-180' : ''}`} />
@@ -278,7 +278,7 @@ export default function MissionControl({
                 const ItemIcon = item.icon;
                 return <button key={item.action} type="button" onClick={() => { setMoreOpen(false); open(item.action); }} className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition hover:bg-white/[0.07]">
                   <ItemIcon className="h-4 w-4 shrink-0 text-cyan-300" />
-                  <span className="min-w-0"><span className="block text-xs font-medium text-white">{item.label}</span><span className="block text-[10px] text-slate-500">{item.detail}</span></span>
+                  <span className="min-w-0"><span className="block text-xs font-medium text-white">{item.label}</span><span className="block text-[11px] text-slate-500">{item.detail}</span></span>
                   <ArrowUpRight className="ml-auto h-3.5 w-3.5 text-slate-600" />
                 </button>;
               })}
@@ -301,7 +301,7 @@ export default function MissionControl({
                   <input type="checkbox" checked={checked} onChange={() => { mapPrefsEdited.current = true; setVisibleNodeIds((current) => checked ? current.filter((id) => id !== node.id) : [...current, node.id]); if (checked && selectedEngine === node.id) setSelectedEngine(null); }} className="h-4 w-4 accent-cyan-400" />
                   <span className="flex h-9 w-9 items-center justify-center rounded-lg" style={{ color: node.color, backgroundColor: `${node.color}20` }}><NodeIcon className="h-4 w-4" /></span>
                   <span className="min-w-0 flex-1"><span className="block text-sm font-medium text-slate-100">{node.title}</span><span className="block text-xs text-slate-500">{node.subtitle}</span></span>
-                  <span className="text-[10px] text-slate-500">{checked ? 'On map' : 'Add'}</span>
+                  <span className="text-[11px] text-slate-500">{checked ? 'On map' : 'Add'}</span>
                 </label>;
               })}
             </div>
@@ -312,7 +312,7 @@ export default function MissionControl({
           </div>
         </div>}
         <button type="button" onClick={() => { const action = getNextBestStepAction({ hasLearningProfile, revisionDue, revisionOverdue }); if (action === 'profile') onOpenProfile(); else open(action); }} className="los-btn los-btn-primary mt-1 w-full justify-between text-left">
-          <span className="min-w-0"><span className="block text-[9px] uppercase tracking-[0.16em] text-cyan-200/70">Your next best step</span><span className="block truncate text-xs font-medium text-white">{!hasLearningProfile ? 'Set up your learning profile' : activeGoals === 0 ? 'Choose a learning goal' : revisionOverdue > 0 ? `${revisionOverdue} overdue topics to revise` : revisionDue > 0 ? `${revisionDue} topics ready for revision` : nextTopic || 'Open your learning roadmap'}</span></span>
+          <span className="min-w-0"><span className="block text-[11px] uppercase tracking-[0.16em] text-cyan-200/70">Your next best step</span><span className="block truncate text-xs font-medium text-white">{!hasLearningProfile ? 'Set up your learning profile' : activeGoals === 0 ? 'Choose a learning goal' : revisionOverdue > 0 ? `${revisionOverdue} overdue topics to revise` : revisionDue > 0 ? `${revisionDue} topics ready for revision` : nextTopic || 'Open your learning roadmap'}</span></span>
           <ArrowUpRight className="h-4 w-4 shrink-0 text-cyan-200" />
         </button>
       </section>
