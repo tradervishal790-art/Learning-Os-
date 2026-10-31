@@ -90,9 +90,11 @@ export default function DailyTest({ onStart, onExit }: { onStart: (paper: TestPa
     setMessage('');
     try {
       let current = loadDaily();
-      if (!current.pending && (getReadyDailyQuestionCount(current.bank) < current.perDay || current.queue.length < current.perDay) && queuedPhotos > 0) {
-        const neededReadyQuestions = getReadyDailyQuestionCount(current.bank) + Math.max(0, current.perDay - current.queue.length);
-        const result = await processQueuedPhotosForDailyTest(neededReadyQuestions, setMessage);
+      if (!current.pending && getReadyDailyQuestionCount(current.bank) < current.perDay && queuedPhotos > 0) {
+        // A short remaining queue is normal near the end of a round. The
+        // scheduler starts the next round itself; only read more files when
+        // the whole ready bank is too small for one daily test.
+        const result = await processQueuedPhotosForDailyTest(current.perDay, setMessage);
         setQueuedPhotos(result.remainingFiles);
         current = loadDaily();
         if (result.errors.length) setMessage(`Imported ${result.processedFiles} file(s). ${result.errors[0]} Remaining files are saved for retry.`);
