@@ -6,6 +6,7 @@ import { decodeHtml } from './textUtil';
 import { loadTimeline, segmentIndexAt, type ConceptSegment } from './conceptTimeline';
 import ShortsBank from './ShortsBank';
 import { cacheGet, cacheSet } from './mediaCache';
+import { beginRequest, invalidateRequests, isLatestRequest } from './requestSequence';
 import { loadShorts, prefetchShorts } from './shortsData';
 import {
   MAX_SAVED,
@@ -209,11 +210,13 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
   const focusSec = Math.min(MAX_FOCUS_MIN * 60, breakPrefs.everyMin * 60 + breakPrefs.bonusSec);
   const focusSecRef = useRef(focusSec);
   const playerRef = useRef<any>(null);
+  const searchRequestRef = useRef(0);
   const notesRef = useRef<HTMLTextAreaElement>(null);
 
   const search = useCallback(async (q: string, l: Lang) => {
     const clean = q.trim();
     if (!clean) return;
+    const requestId = beginRequest(searchRequestRef);
     setLoading(true);
     setError('');
     setActive(null);
@@ -226,6 +229,7 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
         return;
       }
       const shared = await pullSharedSearch<FocusVideo>(key);
+      if (!isLatestRequest(searchRequestRef, requestId)) return;
       if (shared) {
         cacheSet(key, shared.items);
         setPicks(pickThree(shared.items));
@@ -235,6 +239,7 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
       if (l !== 'any') params.set('relevanceLanguage', l);
       const res = await authFetch(`/api/youtube?${params.toString()}`);
       const data = await res.json();
+      if (!isLatestRequest(searchRequestRef, requestId)) return;
       if (!res.ok) throw new Error(data?.error || 'Could not load videos');
       const items: FocusVideo[] = (data.items ?? []).map((it: any) => ({
         id: it.id.videoId,
@@ -252,12 +257,21 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
       cacheSet(key, items);
       pushSharedSearch(key, items, data.nextPageToken ?? null);
     } catch (e: any) {
-      setPicks([]);
-      setError(e?.message || 'Something went wrong. Try again.');
+      if (isLatestRequest(searchRequestRef, requestId)) {
+        setPicks([]);
+        setError(e?.message || 'Something went wrong. Try again.');
+      }
     } finally {
-      setLoading(false);
+      if (isLatestRequest(searchRequestRef, requestId)) setLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    invalidateRequests(searchRequestRef);
+    setLoading(false);
+  }, [topic, lang]);
+
+  useEffect(() => () => invalidateRequests(searchRequestRef), []);
 
   useEffect(() => {
     if (initialTopic) void search(initialTopic, 'any');
