@@ -710,9 +710,11 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                   <span className="text-sm font-medium">{t.settingsModal.theme}</span>
                   <button
                     onClick={toggleTheme}
-                    className={`relative w-14 h-8 rounded-full transition-colors ${theme === 'light' ? 'bg-black' : 'bg-gray-300'}`}
+                    aria-label={t.settingsModal.theme}
+                    aria-pressed={theme === 'light'}
+                    className="los-switch"
                   >
-                    <span className={`absolute top-1 w-6 h-6 rounded-full bg-white transition-transform ${theme === 'light' ? 'translate-x-7' : 'translate-x-1'}`} />
+                    <span className="los-switch-thumb" style={{ transform: theme === 'light' ? 'translateX(19px)' : 'translateX(1px)' }} />
                   </button>
                 </div>
 
@@ -722,7 +724,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                     type="text"
                     value={settingsName}
                     onChange={(e) => setSettingsName(e.target.value)}
-                    className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-2.5 focus:outline-none focus:border-purple-500/50"
+                    className="los-field"
                   />
                 </div>
 
@@ -733,7 +735,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                       <button
                         key={r}
                         onClick={() => setSettingsRole(r)}
-                        className={`px-3 py-1.5 rounded-full text-xs border transition ${settingsRole === r ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white border-transparent' : 'border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10'}`}
+                        className="los-chip" aria-pressed={settingsRole === r}
                       >
                         {t.onboarding.roles[r]}
                       </button>
@@ -748,7 +750,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                     value={settingsGoal}
                     onChange={(e) => setSettingsGoal(e.target.value)}
                     placeholder={t.settingsModal.topicPlaceholder}
-                    className="w-full px-3 py-2 rounded-lg text-sm border border-gray-200 dark:border-white/10 bg-transparent focus:outline-none focus:border-black dark:focus:border-white"
+                    className="los-field"
                   />
                 </div>
 
@@ -759,7 +761,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                       <button
                         key={l}
                         onClick={() => setSettingsLanguage(l)}
-                        className={`px-3 py-1.5 rounded-full text-xs border transition ${settingsLanguage === l ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white border-transparent' : 'border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10'}`}
+                        className="los-chip" aria-pressed={settingsLanguage === l}
                       >
                         {t.onboarding.languages[l]}
                       </button>
