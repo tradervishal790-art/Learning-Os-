@@ -568,7 +568,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
       </aside>
 
       <div className={`flex-1 min-w-0 ${isMissionControl ? "h-dvh overflow-hidden bg-[#080d19]" : "overflow-auto"} md:pb-0 ${immersive ? "" : "pb-[calc(3.5rem+env(safe-area-inset-bottom))]"}`}>
-        {!(activePage === 'notes' && noteOpen) && (
+        {activePage !== 'dashboard' && !(activePage === 'notes' && noteOpen) && (
         <motion.div
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
