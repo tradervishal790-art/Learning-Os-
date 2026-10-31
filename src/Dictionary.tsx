@@ -149,6 +149,8 @@ export default function Dictionary() {
         )}
       </div>
 
+      {loading && <p role="status" className="mt-3 text-xs text-gray-500 dark:text-white/40">Loading dictionary…</p>}
+
       {loadError && (
         <div className="mt-6 flex items-center gap-3 text-sm text-red-500">
           <p>Couldn't load the dictionary. Check your connection and try again.</p>
