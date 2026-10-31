@@ -9,6 +9,7 @@ function session(overrides = {}) {
     totalDuration: 600,
     watchedSeconds: 300,
     watchPercentage: 50,
+    seekForwardCount: 0,
     completed: false,
     feedback: null,
     ...overrides,
@@ -19,6 +20,7 @@ test('ignores accidental starts and invalid watch samples', () => {
   assert.equal(signals.isMeaningfulSharedLearningSample(session({ watchedSeconds: 10, watchPercentage: 2 })), false);
   assert.equal(signals.isMeaningfulSharedLearningSample(session({ totalDuration: 0 })), false);
   assert.equal(signals.isMeaningfulSharedLearningSample(session({ watchPercentage: 101 })), false);
+  assert.equal(signals.isMeaningfulSharedLearningSample(session({ seekForwardCount: 1 })), false);
   assert.equal(signals.isMeaningfulSharedLearningSample(session()), true);
 });
 
@@ -27,7 +29,7 @@ test('classifies watch outcomes into coarse buckets', () => {
   assert.equal(signals.classifySharedLearningOutcome(session({ watchPercentage: 20 })), 'partial');
   assert.equal(signals.classifySharedLearningOutcome(session({ watchPercentage: 69.9 })), 'partial');
   assert.equal(signals.classifySharedLearningOutcome(session({ watchPercentage: 70 })), 'near-complete');
-  assert.equal(signals.classifySharedLearningOutcome(session({ watchPercentage: 85 })), 'completed');
+  assert.equal(signals.classifySharedLearningOutcome(session({ watchPercentage: 85 })), 'near-complete');
   assert.equal(signals.classifySharedLearningOutcome(session({ watchPercentage: 30, completed: true })), 'completed');
 });
 
@@ -40,7 +42,7 @@ test('contribution contains only a coarse outcome and optional feedback', () => 
     watchedSeconds: 500,
     watchPercentage: 90,
     pauseCount: 8,
-    seekForwardCount: 3,
+    seekForwardCount: 0,
     replayCount: 2,
     completed: true,
     timeToFirstPause: 12,
