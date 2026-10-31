@@ -1078,7 +1078,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                           } catch {
                             // best effort
                           }
-                          navigate('/dashboard/mentor');
+                          navigate('/dashboard/mentor', { replace: true });
                         }}
                         className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10"
                       >
