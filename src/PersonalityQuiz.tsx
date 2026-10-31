@@ -130,7 +130,7 @@ export default function PersonalityQuiz({
                 <button
                   key={v.id}
                   onClick={() => setVersion(v.id)}
-                  className="w-full text-left px-4 py-3 rounded-xl border border-gray-200 dark:border-white/10 hover:border-purple-400 hover:bg-purple-50 dark:hover:bg-purple-500/10 transition"
+                  className="los-choice"
                 >
                   <span className="text-sm font-medium">{v.title}</span>
                   <span className="block text-xs text-gray-400 dark:text-white/40 mt-0.5">{v.hint}</span>
@@ -149,7 +149,7 @@ export default function PersonalityQuiz({
                     <button
                       key={opt.key}
                       onClick={() => handleSelect(opt.key)}
-                      className="w-full text-left px-4 py-3 rounded-xl border border-gray-200 dark:border-white/10 hover:border-purple-400 hover:bg-purple-50 dark:hover:bg-purple-500/10 transition text-sm leading-relaxed"
+                      className="los-choice"
                     >
                       <span className="font-semibold text-purple-500 mr-2">{opt.key}.</span>
                       {opt.text[version]}
@@ -174,7 +174,7 @@ export default function PersonalityQuiz({
               </p>
               <button
                 onClick={startProbe}
-                className="w-full px-4 py-3 rounded-xl bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white text-sm font-semibold transition active:scale-[0.98]"
+                className="los-btn los-btn-primary w-full"
               >
                 Start Part 2
               </button>
@@ -196,7 +196,7 @@ export default function PersonalityQuiz({
                     <button
                       key={optIdx}
                       onClick={() => handleProbeSelect(optIdx)}
-                      className="w-full text-left px-4 py-3 rounded-xl border border-gray-200 dark:border-white/10 hover:border-purple-400 hover:bg-purple-50 dark:hover:bg-purple-500/10 text-sm transition"
+                      className="los-choice"
                     >
                       <span className="font-semibold text-purple-500 mr-2">{'ABCD'[shown]}.</span>
                       {probe![probeIndex].q.options[optIdx]}
@@ -234,7 +234,7 @@ export default function PersonalityQuiz({
           <div className="p-4 border-t border-gray-200 dark:border-white/10">
             <button
               onClick={onClose}
-              className="w-full px-4 py-3 rounded-xl bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white text-sm font-semibold transition active:scale-[0.98]"
+              className="los-btn los-btn-primary w-full"
             >
               Done
             </button>
