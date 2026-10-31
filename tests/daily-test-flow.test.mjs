@@ -26,14 +26,11 @@ test('daily tests keep a waiting paper stable and consume the remaining round be
   const firstIds = new Set(first.questions.map((q) => q.id));
   assert.equal(saved.queue.length, 2);
 
-  // Move the completed date back one day to model the next calendar day.
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-  const y = yesterday.getFullYear();
-  const m = String(yesterday.getMonth() + 1).padStart(2, '0');
-  const d = String(yesterday.getDate()).padStart(2, '0');
-  saved.lastCompletedDate = `${y}-${m}-${d}`;
+  // Move the completion date well into the past to model the next test day.
+  assert.equal(saved.pending, null);
+  saved.lastCompletedDate = '2000-01-01';
   localStorage.setItem(KEY, JSON.stringify(saved));
+  assert.equal(store.getDailyStatus(), 'ready');
 
   const second = store.getOrCreateTodayTest();
   assert.equal(second.questions.length, 3);
