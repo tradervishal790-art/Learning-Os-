@@ -263,6 +263,50 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
     background: rgb(var(--los-accent) / 0.12);
     color: rgb(var(--los-accent-strong));
   }
+  .los-onboarding-card {
+    position: relative;
+    display: flex;
+    min-height: 142px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    padding: 20px;
+    border: 1px solid rgb(255 255 255 / 0.09);
+    border-radius: 18px;
+    background: rgb(255 255 255 / 0.035);
+    color: rgb(255 255 255 / 0.9);
+    text-align: center;
+    transition: background-color 180ms ease, border-color 180ms ease, transform 180ms ease;
+  }
+  .los-onboarding-card:hover {
+    border-color: rgb(167 139 250 / 0.25);
+    background: rgb(167 139 250 / 0.07);
+  }
+  .los-onboarding-card[aria-pressed="true"] {
+    border-color: rgb(167 139 250 / 0.42);
+    background: rgb(167 139 250 / 0.13);
+  }
+  .los-onboarding-card:focus-visible {
+    outline: 2px solid rgb(196 181 253 / 0.75);
+    outline-offset: 3px;
+  }
+  .los-onboarding-input {
+    width: 100%;
+    padding: 14px 18px;
+    border: 1px solid rgb(255 255 255 / 0.12);
+    border-radius: 14px;
+    background: rgb(255 255 255 / 0.045);
+    color: white;
+    font-size: 18px;
+    text-align: center;
+  }
+  .los-onboarding-input::placeholder { color: rgb(255 255 255 / 0.32); }
+  .los-onboarding-input:focus {
+    border-color: rgb(167 139 250 / 0.48);
+    outline: 2px solid rgb(167 139 250 / 0.12);
+    outline-offset: 2px;
+  }
   .los-choice {
     display: block;
     width: 100%;
