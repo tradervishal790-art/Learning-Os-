@@ -29,12 +29,10 @@ import { deleteStudyFile, getStudyFile } from './studyFiles';
 import { splitPdfBlob, storeFiles } from './studyPlanFiles';
 import { askConfirm } from './dialogApi';
 
-const card = 'p-4 rounded-2xl card';
-const btn = 'px-3 py-1.5 rounded-lg text-xs font-medium transition-all border';
-const btnPrimary = `${btn} bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white border-transparent hover:opacity-80`;
-const btnGhost = `${btn} border-gray-200 dark:border-white/10 text-gray-600 dark:text-white/70 hover:bg-gray-100 dark:hover:bg-white/10`;
-const inputCls =
-  'px-3 py-2 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-black text-sm text-black dark:text-white';
+const card = 'los-panel p-4 rounded-2xl';
+const btnPrimary = 'los-btn los-btn-primary';
+const btnGhost = 'los-btn los-btn-secondary';
+const inputCls = 'los-field';
 
 function describeExpired(list: ExpiredBox[], s: (typeof studyPlanText)['en']): string {
   if (list.length === 0) return '';
