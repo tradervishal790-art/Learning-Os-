@@ -70,7 +70,7 @@ export default function MissionControl({
     : nextTopic || 'Your learning path starts here';
 
   return (
-    <main className="mission-map relative flex h-[calc(100dvh-3.5rem-env(safe-area-inset-bottom))] min-h-0 md:h-[calc(100dvh-64px)] w-full flex-col overflow-hidden bg-[#080d19] text-slate-100">
+    <main className="mission-map relative flex h-[calc(100dvh-6rem-env(safe-area-inset-bottom))] min-h-0 md:h-[calc(100dvh-64px)] w-full flex-col overflow-hidden bg-[#080d19] text-slate-100">
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -left-40 top-[-220px] h-[520px] w-[520px] rounded-full bg-violet-600/[0.10] blur-[130px]" />
         <div className="absolute right-[-120px] top-[10%] h-[480px] w-[480px] rounded-full bg-cyan-500/[0.08] blur-[130px]" />
@@ -104,7 +104,7 @@ export default function MissionControl({
           <span className="inline-flex items-center gap-1.5 text-cyan-300/70"><Sparkles className="h-3 w-3" /> Connected learning system</span>
         </div>
 
-        <div className="relative hidden min-h-0 flex-1 overflow-hidden rounded-[24px] border border-white/[0.07] bg-[#0b1221]/65 md:block">
+        <div className="relative hidden min-h-0 flex-1 overflow-hidden rounded-[24px] border border-white/[0.07] bg-[#0b1221]/65 lg:block">
           <div className="absolute inset-0 opacity-[0.16]" style={{ backgroundImage: 'radial-gradient(#7dd3fc 0.7px, transparent 0.7px)', backgroundSize: '24px 24px' }} />
           <svg className="absolute inset-0 h-full w-full" viewBox="0 0 1200 660" preserveAspectRatio="none" fill="none" aria-hidden="true">
             <defs>
@@ -186,7 +186,7 @@ export default function MissionControl({
           </div>
         </div>
 
-        <div className="relative min-h-0 flex-1 overflow-y-auto rounded-2xl border border-white/[0.07] bg-[#0b1221]/70 p-3 md:hidden">
+        <div className="relative min-h-0 flex-1 overflow-y-auto rounded-2xl border border-white/[0.07] bg-[#0b1221]/70 p-3 lg:hidden">
           <div className="absolute bottom-8 left-[27px] top-8 w-px bg-gradient-to-b from-violet-400 via-cyan-300 to-fuchsia-400 opacity-60" />
           <div className="relative flex flex-col gap-2.5">
             <div className="mb-1 flex items-center gap-3 rounded-xl border border-violet-300/40 bg-[#211b40] p-3">
