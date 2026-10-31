@@ -229,7 +229,7 @@ export default function BlueprintInterview({
                     <button
                       key={opt.key}
                       onClick={() => handleSelect(opt.text)}
-                      className="w-full text-left px-4 py-3 rounded-xl border border-gray-200 dark:border-white/10 hover:border-purple-400 hover:bg-purple-50 dark:hover:bg-purple-500/10 transition text-sm leading-relaxed"
+                      className="los-choice"
                     >
                       <span className="font-semibold text-purple-500 mr-2">{opt.key}.</span>
                       {opt.text}
