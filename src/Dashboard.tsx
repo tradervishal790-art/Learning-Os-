@@ -569,7 +569,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
         {SidebarContent}
       </aside>}
 
-      <div className={`flex-1 min-w-0 ${isMissionControl ? "h-dvh overflow-hidden bg-[#080d19]" : "overflow-auto"} md:pb-0 ${isMissionControl || immersive ? "" : "pb-[calc(3.5rem+env(safe-area-inset-bottom))]"}`}>
+      <div className={`flex-1 min-w-0 ${isMissionControl ? "h-dvh overflow-hidden bg-[#080d19] flex flex-col" : "overflow-auto"} md:pb-0 ${isMissionControl || immersive ? "" : "pb-[calc(3.5rem+env(safe-area-inset-bottom))]"}`}>
         {!(activePage === 'notes' && noteOpen) && (
         <motion.div
           initial={{ y: -20, opacity: 0 }}
