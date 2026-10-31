@@ -17,6 +17,7 @@ export interface SharedLearningSessionInput {
   totalDuration: number;
   watchedSeconds: number;
   watchPercentage: number;
+  seekForwardCount: number;
   completed: boolean;
   feedback: SharedLearningFeedback | null;
 }
@@ -27,10 +28,12 @@ export function isMeaningfulSharedLearningSample(session: SharedLearningSessionI
     Number.isFinite(session.totalDuration) &&
     Number.isFinite(session.watchedSeconds) &&
     Number.isFinite(session.watchPercentage) &&
+    Number.isFinite(session.seekForwardCount) &&
     session.totalDuration > 0 &&
     session.watchedSeconds >= 30 &&
     session.watchPercentage >= 5 &&
-    session.watchPercentage <= 100
+    session.watchPercentage <= 100 &&
+    session.seekForwardCount === 0
   );
 }
 
@@ -38,7 +41,7 @@ export function isMeaningfulSharedLearningSample(session: SharedLearningSessionI
 export function classifySharedLearningOutcome(
   session: Pick<SharedLearningSessionInput, 'watchPercentage' | 'completed'>
 ): SharedLearningOutcome {
-  if (session.completed || session.watchPercentage >= 85) return 'completed';
+  if (session.completed) return 'completed';
   if (session.watchPercentage >= 70) return 'near-complete';
   if (session.watchPercentage >= 20) return 'partial';
   return 'early-drop';
