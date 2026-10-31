@@ -32,3 +32,12 @@ test('aggregate payload contains only three outcome counters', () => {
     sampleCount: 1, lowCount: 0, mediumCount: 1, highCount: 0,
   });
 });
+
+test('community video outcomes provide only a small cohort-qualified ranking nudge', () => {
+  assert.equal(logic.communityVideoNudge(undefined), 0);
+  assert.equal(logic.communityVideoNudge({ completedRate: 90, earlyDropRate: 10, sampleCount: 9 }), 0);
+  assert.equal(logic.communityVideoNudge({ completedRate: 90, earlyDropRate: 10, sampleCount: 10 }), 0.064);
+  assert.equal(logic.communityVideoNudge({ completedRate: 10, earlyDropRate: 90, sampleCount: 10 }), -0.064);
+  assert.equal(logic.communityVideoNudge({ completedRate: 100, earlyDropRate: 0, sampleCount: 100 }), 0.08);
+  assert.equal(logic.communityVideoNudge({ completedRate: 101, earlyDropRate: 0, sampleCount: 10 }), 0);
+});
