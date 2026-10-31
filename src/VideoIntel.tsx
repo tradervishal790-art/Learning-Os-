@@ -693,6 +693,21 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
 
     setLoading(true);
     setErrorMessage('');
+    // A new search is a new learning choice. Stop showing/playing the previous
+    // result immediately so the list and player can never describe different queries.
+    setSelectedVideo(null);
+    setVideos([]);
+    setActiveBridge(null);
+    setRecallFor(null);
+    setShowResearch(false);
+    setWatchStats({
+      watchedDuration: 0,
+      totalDuration: 0,
+      watchPercentage: 0,
+      pauseCount: 0,
+      rewindCount: 0,
+      playbackSpeed: 1,
+    });
     nextPageTokenRef.current = null; // fresh query — start pagination over
 
     try {
