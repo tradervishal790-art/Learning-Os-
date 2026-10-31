@@ -113,7 +113,7 @@ export default function Onboarding3D({ onComplete }: Onboarding3DProps) {
             onKeyDown={(e) => e.key === 'Enter' && canProceed() && next()}
             placeholder={t.onboarding.namePlaceholder}
             autoFocus
-            className="w-full text-center bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-xl text-white placeholder-white/30 focus:outline-none focus:border-purple-500/50"
+            className="los-onboarding-input"
           />
         </div>
       );
@@ -136,9 +136,9 @@ export default function Onboarding3D({ onComplete }: Onboarding3DProps) {
               key={`${step}-${option.id}`}
               initial={{ x: start.x, y: start.y, opacity: 0, rotate: start.x > 0 ? 30 : -30, scale: 0.5 }}
               animate={{ x: 0, y: 0, opacity: 1, rotate: 0, scale: 1 }}
-              transition={{ delay: i * 0.08, duration: 0.8, type: 'spring', stiffness: 70, damping: 15 }}
-              whileHover={{ scale: 1.05, y: -4 }}
-              whileTap={{ scale: 0.95 }}
+              transition={{ delay: i * 0.05, duration: 0.28, ease: 'easeOut' }}
+              whileHover={{ scale: 1.01, y: -1 }}
+              whileTap={{ scale: 0.99 }}
               onClick={() => {
                 if (step === 0) setData({ ...data, role: option.id });
                 else if (step === 1) setData({ ...data, goal: option.id });
@@ -150,12 +150,8 @@ export default function Onboarding3D({ onComplete }: Onboarding3DProps) {
                   setLanguage(mapOnboardingLanguage(option.id));
                 }
               }}
-              className={`relative p-6 rounded-2xl border transition-all duration-300 overflow-hidden ${
-                isSelected
-                  ? 'bg-purple-500/20 border-purple-500/50'
-                  : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20'
-              }`}
-              style={isSelected ? { boxShadow: '0 0 40px rgba(139, 92, 246, 0.4)' } : {}}
+              className="los-onboarding-card"
+              aria-pressed={isSelected}
             >
               <div className="text-5xl mb-3">{option.icon}</div>
               <div className="text-white font-medium text-sm">{option.label}</div>
@@ -163,9 +159,9 @@ export default function Onboarding3D({ onComplete }: Onboarding3DProps) {
                 <motion.div
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
-                  className="absolute top-3 right-3 w-6 h-6 rounded-full bg-purple-500 flex items-center justify-center"
+                  className="absolute top-3 right-3 w-5 h-5 rounded-full bg-violet-300/20 border border-violet-200/30 flex items-center justify-center"
                 >
-                  <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="w-3 h-3 text-violet-100" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                   </svg>
                 </motion.div>
@@ -230,10 +226,8 @@ export default function Onboarding3D({ onComplete }: Onboarding3DProps) {
           <motion.button
             onClick={back}
             disabled={step === 0}
-            whileHover={step > 0 ? { x: -4 } : {}}
-            className={`px-6 py-3 rounded-full text-sm font-medium transition-all ${
-              step === 0 ? 'opacity-0 pointer-events-none' : 'text-white/60 hover:text-white'
-            }`}
+            whileHover={step > 0 ? { x: -1 } : {}}
+            className={`los-btn los-btn-secondary rounded-full ${step === 0 ? 'opacity-0 pointer-events-none' : ''}`}
           >
             {t.onboarding.back}
           </motion.button>
@@ -241,12 +235,9 @@ export default function Onboarding3D({ onComplete }: Onboarding3DProps) {
           <motion.button
             onClick={next}
             disabled={!canProceed()}
-            whileHover={canProceed() ? { scale: 1.05 } : {}}
-            whileTap={canProceed() ? { scale: 0.95 } : {}}
-            className={`px-8 py-3 rounded-full font-semibold text-sm transition-all duration-300 ${
-              canProceed() ? 'bg-white text-black' : 'bg-white/10 text-white/30 cursor-not-allowed'
-            }`}
-            style={canProceed() ? { boxShadow: '0 0 30px rgba(139, 92, 246, 0.4)' } : {}}
+            whileHover={canProceed() ? { scale: 1.015, y: -1 } : {}}
+            whileTap={canProceed() ? { scale: 0.99 } : {}}
+            className={`los-btn los-btn-primary rounded-full px-8 py-3 ${canProceed() ? '' : 'opacity-40 cursor-not-allowed'}`}
           >
             {step === stepTitles.length - 1 ? t.onboarding.start : t.onboarding.continue}
           </motion.button>
