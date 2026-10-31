@@ -22,6 +22,7 @@ import { authFetch } from './apiFetch';
 import { pullSharedSearch, pushSharedSearch } from './sharedVideoCache';
 import { contributeSharedVideoSignal, getSharedVideoLearningSummary, type SharedVideoLearningSummary } from './sharedLearningIntelligence';
 import { beginRequest, invalidateRequests, isLatestRequest } from './requestSequence';
+import VideoChapterNavigator from './VideoChapterNavigator';
 
 declare global {
   interface Window {
@@ -1026,6 +1027,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                       onPlaybackRateChange={onPlaybackRateChange}
                     />
                   </div>
+                  <VideoChapterNavigator videoId={selectedVideo.id} title={selectedVideo.title} playerRef={playerRef} />
 
                   {recallFor === selectedVideo.id && (
                     <RecallCheck
