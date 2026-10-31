@@ -68,6 +68,8 @@ export default function Research({ embedded = false, onClose }: ResearchProps) {
   const [error, setError] = useState('');
   const requestIdRef = useRef(0);
 
+  useEffect(() => () => { requestIdRef.current += 1; }, [locale, embedded]);
+
   // Standalone mode restores the last session. Embedded mode always opens
   // as a blank search space (see ResearchProps.embedded doc above).
   useEffect(() => {
@@ -182,7 +184,10 @@ export default function Research({ embedded = false, onClose }: ResearchProps) {
 
   // Renders like a search-engine results page: title link, url line,
   // snippet — one card per source, instead of one AI-written essay.
-  const resultsBlock = result && result.results.length > 0 && (
+  const resultsBlock = result && (
+    result.results.length === 0 ? (
+      <p role="status" className="mt-6 text-sm text-gray-500 dark:text-white/50">No results found. Try a different search phrase.</p>
+    ) : (
     <div className={embedded ? 'mt-4 space-y-4' : 'max-w-3xl mx-auto space-y-5'}>
       {!result.grounded && (
         <p className="text-xs text-gray-400 dark:text-white/40">
@@ -203,6 +208,7 @@ export default function Research({ embedded = false, onClose }: ResearchProps) {
         </motion.div>
       ))}
     </div>
+    )
   );
 
   if (embedded) {
