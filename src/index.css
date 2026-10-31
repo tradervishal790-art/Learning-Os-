@@ -240,6 +240,29 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
     line-height: 1.25;
     transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
   }
+  .los-nav-item {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border: 1px solid transparent;
+    border-radius: 12px;
+    color: rgb(var(--los-muted));
+    font-size: 13px;
+    font-weight: 500;
+    text-align: left;
+    transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+  }
+  .los-nav-item:hover {
+    background: rgb(var(--los-border) / 0.055);
+    color: rgb(var(--los-text) / 0.92);
+  }
+  .los-nav-item[aria-current="page"] {
+    border-color: rgb(var(--los-accent) / 0.14);
+    background: rgb(var(--los-accent) / 0.12);
+    color: rgb(var(--los-accent-strong));
+  }
   .los-choice {
     display: block;
     width: 100%;
