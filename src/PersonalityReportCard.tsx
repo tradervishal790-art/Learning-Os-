@@ -90,7 +90,7 @@ export default function PersonalityReportCard({
 
   if (!report) {
     return (
-      <div className="rounded-xl border border-purple-200 dark:border-purple-500/20 bg-purple-50 dark:bg-purple-500/5 p-4">
+      <div className="los-panel los-panel-accent">
         {loading ? (
           <>
             <p className="text-sm font-semibold">Writing your report…</p>
@@ -104,7 +104,7 @@ export default function PersonalityReportCard({
             </p>
             <button
               onClick={generate}
-              className="mt-3 px-4 py-2.5 rounded-xl bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white text-sm font-semibold transition active:scale-[0.98]"
+              className="los-btn los-btn-primary mt-3"
             >
               {error ? 'Try again' : 'Get AI report'}
             </button>
@@ -117,14 +117,14 @@ export default function PersonalityReportCard({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-2xl border border-purple-200 dark:border-purple-500/20 bg-purple-50 dark:bg-purple-500/5 p-4">
+      <div className="los-panel los-panel-accent">
         <p className="text-[11px] uppercase tracking-widest text-purple-500">Your learning archetype</p>
         <p className="text-xl font-semibold mt-1">{report.archetype}</p>
         <p className="text-xs text-gray-500 dark:text-white/50 mt-1">
           <span className="text-purple-500 font-medium">{report.dominantArea}</span> dominant · <span className="text-purple-500 font-medium">{report.growthArea}</span> growth area
         </p>
       </div>
-      <div className="rounded-2xl border border-gray-200 dark:border-white/10 p-4">
+      <div className="los-panel">
         <p className="text-[11px] uppercase tracking-widest text-gray-400 dark:text-white/40 mb-3">Deep analysis</p>
         <MiniMarkdown text={report.report} />
       </div>
