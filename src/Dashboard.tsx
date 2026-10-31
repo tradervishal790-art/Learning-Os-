@@ -17,7 +17,7 @@ import { computeGrowthEdges } from './growthEdges';
 import { getBehaviourStats } from './behaviourStats';
 import { analyzeAttempt, analyzeHistory } from './testAnalytics';
 import { getTestAttempts } from './testStore';
-import { getLearningProfile, saveLearningProfile, clearLearningProfile } from './learningProfileStore';
+import { getLearningProfile, saveLearningProfile } from './learningProfileStore';
 import { pushToCloud, pullFromCloud } from './cloudSync';
 import { buildCandidatePoolForConcept } from './conceptVideoPool';
 import { selectPlaylistForConcept, analyzedVideoToVideo } from './PlaylistBuilder';
@@ -281,11 +281,6 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
     // mergeLearningProfile internally — this just syncs Dashboard's own
     // state so the home page's Learning Style card reflects it immediately.
     setLearningProfile(profile);
-  };
-
-  const handleClearProfile = () => {
-    clearLearningProfile();
-    setLearningProfile(null);
   };
 
   const handleOpenLearningProfile = () => {
