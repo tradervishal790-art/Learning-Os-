@@ -42,7 +42,8 @@ export function isSafeExternalUrl(value: string): boolean {
 export function displayResearchUrl(value: string): string {
   try {
     const url = new URL(value);
-    return url.hostname.replace(/^www\./, '') + url.pathname.replace(/\/$/, '');
+    const path = url.pathname.endsWith('/') ? url.pathname.slice(0, -1) : url.pathname;
+    return url.hostname.replace(/^www\\./, '') + path;
   } catch {
     return value;
   }
