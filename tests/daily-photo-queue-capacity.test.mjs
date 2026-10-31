@@ -15,3 +15,14 @@ test('photo queue reports the exact number saved and preserves the capacity limi
   assert.equal(await queue.getQueuedPhotoCount(), 200);
   await queue.clearQueuedDailyPhotos();
 });
+
+test('concurrent uploads cannot exceed the shared 200-file capacity', async () => {
+  await queue.clearQueuedDailyPhotos();
+  const first = Array.from({ length: 150 }, (_, i) => new File([`first-${i}`], `first-${i}.jpg`, { type: 'image/jpeg' }));
+  const second = Array.from({ length: 150 }, (_, i) => new File([`second-${i}`], `second-${i}.jpg`, { type: 'image/jpeg' }));
+  const results = await Promise.all([queue.enqueueDailyPhotos(first), queue.enqueueDailyPhotos(second)]);
+  assert.equal(await queue.getQueuedPhotoCount(), 200);
+  assert.equal(results.reduce((sum, result) => sum + result.added, 0), 200);
+  assert.equal(results.reduce((sum, result) => sum + result.skipped, 0), 100);
+  await queue.clearQueuedDailyPhotos();
+});

@@ -100,9 +100,9 @@ export default function DailyTest({ onStart, onExit }: { onStart: (paper: TestPa
         current = loadDaily();
         if (result.errors.length) {
           importFailed = true;
-          setMessage(`Imported ${result.processedFiles} file(s). ${result.errors[0]} Remaining files are saved for retry.`);
+          setMessage(`Processed ${result.processedPages} page(s). ${result.errors[0]} Remaining pages/files are saved for retry.`);
         }
-        else if (result.processedFiles > 0) setMessage(`Imported ${result.processedFiles} file(s) only when needed. ${result.remainingFiles} file(s) remain queued for later tests.`);
+        else if (result.processedPages > 0) setMessage(`Processed only ${result.processedPages} page(s) needed for this test. ${result.remainingFiles} source file(s) remain queued for later tests.`);
       }
       const paper = getOrCreateTodayTest();
       if (!paper) {
