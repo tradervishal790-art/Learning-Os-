@@ -63,7 +63,7 @@ export async function getQueuedPhotoCount(): Promise<number> {
   }
 }
 
-export async function enqueueDailyPhotos(files: File[]): Promise<number> {
+export async function enqueueDailyPhotos(files: File[]): Promise<{ count: number; added: number; skipped: number }> {
   const db = await openDb();
   const existing = await new Promise<QueuedPhoto[]>((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, 'readonly');
@@ -74,7 +74,7 @@ export async function enqueueDailyPhotos(files: File[]): Promise<number> {
   });
   const available = Math.max(0, MAX_FILES - existing.length);
   const selected = files.slice(0, available);
-  if (!selected.length) return existing.length;
+  if (!selected.length) return { count: existing.length, added: 0, skipped: files.length };
   await transact<void>('readwrite', (store, resolve) => {
     selected.forEach((file) => store.put({
       id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `photo_${Date.now()}_${Math.random()}`,
@@ -86,7 +86,7 @@ export async function enqueueDailyPhotos(files: File[]): Promise<number> {
     resolve();
   });
   updateCount(existing.length + selected.length);
-  return existing.length + selected.length;
+  return { count: existing.length + selected.length, added: selected.length, skipped: files.length - selected.length };
 }
 
 export async function clearQueuedDailyPhotos(): Promise<void> {
