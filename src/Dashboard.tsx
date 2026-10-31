@@ -569,11 +569,11 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
 
   return (
     <div className={`min-h-dvh flex text-black dark:text-white ${isMissionControl ? "bg-[#080d19] text-white" : "bg-[#f4f6ff] dark:bg-black"}`}>
-      <aside className={`hidden md:flex w-64 border-r p-6 flex-col flex-shrink-0 ${isMissionControl ? "border-white/[0.07] bg-[#080d19]" : "border-gray-200 dark:border-white/10"}`}>
+      {!isMissionControl && <aside className="hidden md:flex w-64 border-r border-gray-200 dark:border-white/10 p-6 flex-col flex-shrink-0">
         {SidebarContent}
-      </aside>
+      </aside>}
 
-      <div className={`flex-1 min-w-0 ${isMissionControl ? "h-dvh overflow-hidden bg-[#080d19]" : "overflow-auto"} md:pb-0 ${immersive ? "" : "pb-[calc(3.5rem+env(safe-area-inset-bottom))]"}`}>
+      <div className={`flex-1 min-w-0 ${isMissionControl ? "h-dvh overflow-hidden bg-[#080d19]" : "overflow-auto"} md:pb-0 ${isMissionControl || immersive ? "" : "pb-[calc(3.5rem+env(safe-area-inset-bottom))]"}`}>
         {!(activePage === 'notes' && noteOpen) && (
         <motion.div
           initial={{ y: -20, opacity: 0 }}
@@ -1069,15 +1069,14 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
         )}
       </AnimatePresence>
 
-      <BottomNav
-        darkMode={isMissionControl}
+      {!isMissionControl && <BottomNav
         items={sidebarItems.map((i) => ({ id: i.id, label: i.label, locked: navState(i.id).isLocked }))}
         activeId={activePage}
         onSelect={(id) => {
           const item = sidebarItems.find((i) => i.id === id);
           if (item) selectNav(item.id, item.label);
         }}
-      />
+      />}
     </div>
   );
 }
