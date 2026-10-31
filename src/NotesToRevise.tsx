@@ -20,8 +20,7 @@ export default function NotesToRevise() {
     () =>
       idx.notes
         .filter((n) => !n.trashedAt && !n.archived && (n.status === 'needs-revision' || (n.status !== 'mastered' && examSoon(n.examDate))))
-        .sort((a, b) => examSortKey(a.examDate) - examSortKey(b.examDate))
-        .slice(0, SHOW),
+        .sort((a, b) => examSortKey(a.examDate) - examSortKey(b.examDate)),
     [idx.notes]
   );
 
