@@ -309,13 +309,16 @@ function QuestionCard({
 
       {question.type === 'mcq' ? (
         <div className="space-y-2 mb-3">
+          <p className="text-xs font-medium text-gray-500 dark:text-white/60">Options · select the correct answer</p>
           {(question as MCQQuestion).options.map((opt, oi) => (
             <div key={oi} className="flex items-center gap-2">
+              <span className="w-7 h-7 flex-shrink-0 rounded-lg bg-gray-100 dark:bg-white/10 flex items-center justify-center text-xs font-semibold text-gray-600 dark:text-white/70">{optionLabel(oi)}</span>
               <input
                 type="radio"
                 checked={(question as MCQQuestion).correctIndex === oi}
                 onChange={() => onChange({ correctIndex: oi })}
-                aria-label={`Mark option ${oi + 1} correct`}
+                aria-label={`Set option ${optionLabel(oi)} as correct answer`}
+                title={`Correct answer: ${optionLabel(oi)}`}
               />
               <input
                 value={opt}
@@ -324,7 +327,8 @@ function QuestionCard({
                   options[oi] = e.target.value;
                   onChange({ options });
                 }}
-                placeholder={`Option ${optionLabel(oi)}`}
+                aria-label={`Option ${optionLabel(oi)} text`}
+                placeholder={`Enter option ${optionLabel(oi)}`}
                 className="flex-1 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-black dark:focus:border-white"
               />
               {(question as MCQQuestion).options.length > MIN_OPTIONS && (
