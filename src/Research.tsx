@@ -3,41 +3,14 @@ import { motion } from 'framer-motion';
 import { Search, X } from 'lucide-react';
 import { useTranslation, useLanguage } from './i18n/LanguageContext';
 import { authFetch } from './apiFetch';
-
-interface SerpResult {
-  title: string;
-  url: string;
-  snippet: string;
-}
-
-interface ResearchResponse {
-  query: string;
-  results: SerpResult[];
-  grounded: boolean;
-}
+import { displayResearchUrl, isSafeExternalUrl, normalizeResearchResponse } from './researchUtils';
+import type { ResearchResponse } from './researchUtils';
 
 const RESEARCH_STATE_STORAGE_KEY = 'learning_os_research_state';
 const RESEARCH_CACHE_PREFIX = 'learning_os_research_cache_';
 
 function cacheKey(query: string, locale: string): string {
   return `${RESEARCH_CACHE_PREFIX}${locale}_${query.trim().toLowerCase()}`;
-}
-
-function isSafeExternalUrl(url: string): boolean {
-  try {
-    return ['http:', 'https:'].includes(new URL(url).protocol);
-  } catch {
-    return false;
-  }
-}
-
-function displayUrl(url: string): string {
-  try {
-    const u = new URL(url);
-    return u.hostname.replace(/^www\./, '') + u.pathname.replace(/\/$/, '');
-  } catch {
-    return url;
-  }
 }
 
 async function runResearch(query: string, genericErrorMsg: string, locale: string): Promise<ResearchResponse> {
@@ -47,13 +20,17 @@ async function runResearch(query: string, genericErrorMsg: string, locale: strin
     body: JSON.stringify({ query, locale }),
   });
 
-  const data = await response.json().catch(() => ({}));
-
+  const data: unknown = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(data?.error || `${genericErrorMsg} (${response.status})`);
+    const message = data && typeof data === 'object' && 'error' in data && typeof data.error === 'string'
+      ? data.error
+      : `${genericErrorMsg} (${response.status})`;
+    throw new Error(message);
   }
 
-  return { query, results: data.results ?? [], grounded: !!data.grounded };
+  const normalized = normalizeResearchResponse(data, query);
+  if (!normalized) throw new Error(genericErrorMsg);
+  return normalized;
 }
 
 interface ResearchProps {
@@ -89,10 +66,14 @@ export default function Research({ embedded = false, onClose }: ResearchProps) {
     try {
       const saved = localStorage.getItem(RESEARCH_STATE_STORAGE_KEY);
       if (saved) {
-        const parsed = JSON.parse(saved) as { query: string; result: ResearchResponse | null; history: string[] };
-        if (parsed.query) setQuery(parsed.query);
-        if (parsed.result) setResult(parsed.result);
-        if (parsed.history) setHistory(parsed.history);
+        const parsed = JSON.parse(saved) as { query?: unknown; result?: unknown; history?: unknown };
+        if (typeof parsed.query === 'string') setQuery(parsed.query);
+        if (Array.isArray(parsed.history)) {
+          setHistory(parsed.history.filter((word): word is string => typeof word === 'string' && !!word.trim()).slice(0, 8));
+        }
+        if (typeof parsed.query === 'string' && parsed.result) {
+          setResult(normalizeResearchResponse(parsed.result, parsed.query));
+        }
       }
     } catch {
       // Corrupted storage — ignore, start fresh.
@@ -101,7 +82,7 @@ export default function Research({ embedded = false, onClose }: ResearchProps) {
 
   useEffect(() => {
     if (embedded) return;
-    if (!query && !result) return;
+    if (!query && !result && history.length === 0) return;
     try {
       localStorage.setItem(RESEARCH_STATE_STORAGE_KEY, JSON.stringify({ query, result, history }));
     } catch {
@@ -111,8 +92,10 @@ export default function Research({ embedded = false, onClose }: ResearchProps) {
 
   const handleSearch = async (requestedQuery = query) => {
     const q = requestedQuery.trim();
-    if (!q || loading) return;
+    if (!q) return;
 
+    // A newer search always supersedes an older one, including searches
+    // started with Enter while a previous request is still in flight.
     const requestId = ++requestIdRef.current;
     setLoading(true);
     setError('');
@@ -120,29 +103,37 @@ export default function Research({ embedded = false, onClose }: ResearchProps) {
 
     try {
       let cached: string | null = null;
+      const key = cacheKey(q, locale);
       try {
-        cached = localStorage.getItem(cacheKey(q, locale));
+        cached = localStorage.getItem(key);
       } catch {
         // Private browsing or storage limits must not block a live search.
       }
       if (cached) {
+        let parsedCache: unknown = null;
         try {
-          const parsed = JSON.parse(cached) as ResearchResponse;
-          if (parsed && Array.isArray(parsed.results)) {
-            if (requestId === requestIdRef.current) {
-              setResult({ ...parsed, query: q });
-              if (!embedded) setHistory((prev) => [q, ...prev.filter((h) => h.toLowerCase() !== q.toLowerCase())].slice(0, 8));
-            }
-            return;
-          }
+          parsedCache = JSON.parse(cached);
         } catch {
-          // Ignore a corrupted cache entry and fetch a fresh result.
+          // Remove malformed JSON so it cannot poison the next visit.
+        }
+        const normalized = normalizeResearchResponse(parsedCache, q);
+        if (normalized) {
+          if (requestId === requestIdRef.current) {
+            setResult(normalized);
+            if (!embedded) setHistory((prev) => [q, ...prev.filter((h) => h.toLowerCase() !== q.toLowerCase())].slice(0, 8));
+          }
+          return;
+        }
+        try {
+          localStorage.removeItem(key);
+        } catch {
+          // Cache cleanup is best-effort.
         }
       }
 
       const res = await runResearch(q, t.research.genericError, locale);
       try {
-        localStorage.setItem(cacheKey(q, locale), JSON.stringify(res));
+        localStorage.setItem(key, JSON.stringify(res));
       } catch {
         // Results remain usable even when the browser cannot persist cache.
       }
@@ -159,6 +150,16 @@ export default function Research({ embedded = false, onClose }: ResearchProps) {
     }
   };
 
+  const updateQuery = (value: string) => {
+    // Editing the search invalidates the previous result immediately; a late
+    // response must never appear under a different query in the input.
+    requestIdRef.current += 1;
+    setQuery(value);
+    setResult(null);
+    setError('');
+    setLoading(false);
+  };
+
   const searchBar = (
     <div>
       <div className="relative">
@@ -166,7 +167,7 @@ export default function Research({ embedded = false, onClose }: ResearchProps) {
         <input
           type="text"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => updateQuery(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && void handleSearch()}
           placeholder={t.research.searchPlaceholder}
           autoFocus={embedded}
@@ -200,26 +201,26 @@ export default function Research({ embedded = false, onClose }: ResearchProps) {
     result.results.length === 0 ? (
       <p role="status" className="mt-6 text-sm text-gray-500 dark:text-white/50">No results found. Try a different search phrase.</p>
     ) : (
-    <div className={embedded ? 'mt-4 space-y-4' : 'max-w-3xl mx-auto space-y-5'}>
-      {!result.grounded && (
-        <p className="text-xs text-gray-400 dark:text-white/40">
-          {t.research.notGroundedNote}
-        </p>
-      )}
-      {result.results.map((r, i) => (
-        <motion.div key={i} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
-          {r.url && isSafeExternalUrl(r.url) ? (
-            <a href={r.url} target="_blank" rel="noopener noreferrer" className="group block">
-              <p className="text-xs text-gray-400 dark:text-white/40 truncate mb-0.5">{displayUrl(r.url)}</p>
-              <h3 className="text-base font-medium underline-offset-2 group-hover:underline">{r.title}</h3>
-            </a>
-          ) : (
-            <h3 className="text-base font-medium">{r.title}</h3>
-          )}
-          <p className="text-sm text-gray-600 dark:text-white/70 leading-relaxed mt-1">{r.snippet}</p>
-        </motion.div>
-      ))}
-    </div>
+      <div className={embedded ? 'mt-4 space-y-4' : 'max-w-3xl mx-auto space-y-5'}>
+        {!result.grounded && (
+          <p className="text-xs text-gray-400 dark:text-white/40">
+            {t.research.notGroundedNote}
+          </p>
+        )}
+        {result.results.map((r, i) => (
+          <motion.div key={i} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
+            {r.url && isSafeExternalUrl(r.url) ? (
+              <a href={r.url} target="_blank" rel="noopener noreferrer" className="group block">
+                <p className="text-xs text-gray-400 dark:text-white/40 truncate mb-0.5">{displayResearchUrl(r.url)}</p>
+                <h3 className="text-base font-medium underline-offset-2 group-hover:underline">{r.title}</h3>
+              </a>
+            ) : (
+              <h3 className="text-base font-medium">{r.title}</h3>
+            )}
+            <p className="text-sm text-gray-600 dark:text-white/70 leading-relaxed mt-1">{r.snippet}</p>
+          </motion.div>
+        ))}
+      </div>
     )
   );
 
@@ -231,9 +232,10 @@ export default function Research({ embedded = false, onClose }: ResearchProps) {
           <h3 className="font-semibold text-sm">{t.research.embedded.title}</h3>
         </div>
         {searchBar}
-        {error && <p className="text-red-500 dark:text-red-400 text-sm mt-2">{error}</p>}
+        {error && <p role="alert" className="text-red-500 dark:text-red-400 text-sm mt-2">{error}</p>}
+        {loading && <p role="status" className="text-sm text-gray-400 dark:text-white/40 mt-3">Searching…</p>}
         {resultsBlock}
-        {!result && !loading && (
+        {!result && !loading && !error && (
           <p className="text-sm text-gray-400 dark:text-white/40 mt-4">{t.research.embedded.hint}</p>
         )}
       </div>
@@ -251,7 +253,8 @@ export default function Research({ embedded = false, onClose }: ResearchProps) {
 
       <div className="max-w-3xl mx-auto mb-6">
         {searchBar}
-        {error && <p className="text-red-500 dark:text-red-400 text-sm mt-2">{error}</p>}
+        {error && <p role="alert" className="text-red-500 dark:text-red-400 text-sm mt-2">{error}</p>}
+        {loading && <p role="status" className="text-sm text-gray-400 dark:text-white/40 mt-3">Searching…</p>}
 
         {history.length > 0 && !loading && (
           <div className="flex gap-2 mt-3 flex-wrap">
@@ -259,7 +262,7 @@ export default function Research({ embedded = false, onClose }: ResearchProps) {
               <button
                 key={h}
                 onClick={() => {
-                  setQuery(h);
+                  updateQuery(h);
                   void handleSearch(h);
                 }}
                 className="px-3 py-1.5 border border-gray-200 dark:border-white/10 rounded-full text-xs text-gray-500 dark:text-white/60 hover:bg-gray-100 dark:hover:bg-white/10 hover:text-black dark:hover:text-white transition"
@@ -273,7 +276,7 @@ export default function Research({ embedded = false, onClose }: ResearchProps) {
 
       {resultsBlock}
 
-      {!result && !loading && (
+      {!result && !loading && !error && (
         <div className="max-w-2xl mx-auto text-center py-16 text-gray-400 dark:text-white/60">
           <Search className="w-12 h-12 mx-auto mb-3 opacity-30" />
           <p className="text-lg mb-2">{t.research.emptyState.title}</p>
