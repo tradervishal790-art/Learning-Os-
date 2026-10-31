@@ -15,6 +15,7 @@ import DailyTest from './DailyTest';
 import ConfirmDialog from './ConfirmDialog';
 import { setImmersive } from './immersive';
 import { completeDailyTest, isDailyPaper, getDailyStatus } from './dailyTestStore';
+import { contributeQuestionPatterns } from './sharedLearningPatterns';
 
 // ============================================================
 // Test.tsx — "Test" tab (Dashboard renders <Test /> with no props).
@@ -238,6 +239,7 @@ export default function Test() {
       scorePercent: computeScorePercent(obtainedMarks, totalMarks),
     };
     saveTestAttempt(newAttempt);
+    void contributeQuestionPatterns([...getTestAttempts().filter((saved) => saved.id !== newAttempt.id), newAttempt]);
     if (isDailyPaper(paper.id)) completeDailyTest(paper.id, results);
     setAttempt(newAttempt);
     setStage('results');
@@ -272,6 +274,7 @@ export default function Test() {
     const obtainedMarks = computeObtainedMarks(results);
     const updated: TestAttempt = { ...attempt, results, obtainedMarks, scorePercent: computeScorePercent(obtainedMarks, attempt.totalMarks) };
     updateTestAttempt(updated);
+    void contributeQuestionPatterns([...getTestAttempts().filter((saved) => saved.id !== updated.id), updated]);
     setAttempt(updated);
   };
 
