@@ -32,3 +32,13 @@ export function communityVideoNudge(signal?: { completedRate: number; earlyDropR
   if (![signal.completedRate, signal.earlyDropRate].every((value) => Number.isFinite(value) && value >= 0 && value <= 100)) return 0;
   return Math.max(-1, Math.min(1, (signal.completedRate - signal.earlyDropRate) / 100)) * 0.08;
 }
+
+export function isAnsweredQuestionOutcome(
+  questionType: 'mcq' | 'subjective',
+  answer: { type: string; selectedIndex?: number | null; text?: string } | undefined,
+  isCorrect: boolean | null
+): boolean {
+  if (isCorrect === null || !answer || answer.type !== questionType) return false;
+  if (questionType === 'mcq') return typeof answer.selectedIndex === 'number' && Number.isInteger(answer.selectedIndex);
+  return typeof answer.text === 'string' && answer.text.trim().length > 0;
+}
