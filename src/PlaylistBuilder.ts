@@ -269,7 +269,8 @@ export function selectPlaylistForConcept(
   candidates: AnalyzedVideo[],
   learnerProfile: LearningProfile,
   currentTeacherId?: string,
-  timing?: PlaylistTiming
+  timing?: PlaylistTiming,
+  communitySignals?: Record<string, CommunityVideoSignal>
 ): PlaylistResult | null {
   if (candidates.length === 0) return null;
 
@@ -281,7 +282,8 @@ export function selectPlaylistForConcept(
   const scored = candidates
     .map((video) => ({
       video,
-      score: scoreCandidate(video, learnerDimensions, currentTeacherId, allSessions),
+      score: scoreCandidate(video, learnerDimensions, currentTeacherId, allSessions)
+        + communityVideoNudge(communitySignals?.[video.videoId]),
     }))
     .sort((a, b) => b.score - a.score);
 
@@ -396,7 +398,7 @@ export function selectPlaylistForConceptV2(
   const variant = getOrAssignVariant();
 
   if (variant === 'control') {
-    const result = selectPlaylistForConcept(candidates, learnerProfile, currentTeacherId, timing);
+    const result = selectPlaylistForConcept(candidates, learnerProfile, currentTeacherId, timing, communitySignals);
     return result ? { ...result, variant: 'control' } : null;
   }
 
