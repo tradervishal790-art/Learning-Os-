@@ -2,6 +2,7 @@ import { getEngagementSessions, getEngagementSessionsForVideo } from './engageme
 import type { EngagementSession, LearningProfile, Video } from './types';
 import { getOrAssignVariant } from './experimentVariant';
 import { resolveTeachingProcessForSelection, type TeachingProcess } from './personalityEngine';
+import { communityVideoNudge } from './sharedLearningPatternLogic';
 
 // ============================================================
 // PlaylistBuilder.ts
@@ -378,12 +379,6 @@ export interface CommunityVideoSignal {
   sampleCount: number;
 }
 
-function communityEffectivenessNudge(videoId: string, signals?: Record<string, CommunityVideoSignal>): number {
-  const signal = signals?.[videoId];
-  if (!signal || signal.sampleCount < 10) return 0;
-  // Small tie-breaker only: engagement is a useful clue, not proof of learning.
-  return Math.max(-1, Math.min(1, (signal.completedRate - signal.earlyDropRate) / 100)) * 0.08;
-}
 
 export interface PlaylistResultV2 extends PlaylistResult {
   variant: 'control' | 'personality_v1';
@@ -418,7 +413,7 @@ export function selectPlaylistForConceptV2(
     .map((video) => ({
       video,
       score: scoreCandidatePersonality(video, learnerDimensions, currentTeacherId, allSessions, process)
-        + communityEffectivenessNudge(video.videoId, communitySignals),
+        + communityVideoNudge(communitySignals?.[video.videoId]),
     }))
     .sort((a, b) => b.score - a.score);
 
