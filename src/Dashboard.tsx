@@ -832,7 +832,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                     Shared Learning Intelligence
                   </label>
                   <p className="text-xs text-gray-400 dark:text-white/40 mb-3 leading-relaxed">
-                    Help improve video recommendations for everyone. Only one broad watch outcome and optional helpful/not-for-me feedback per video are contributed. Your name, email, video title, notes, chats, and learning profile are not shared. Community results appear only after 10 different accounts contribute.
+                    Help improve learning recommendations for everyone. If enabled, Learning OS shares only broad video outcomes and optional feedback, revision-recall bands by interval, and question-accuracy bands after 10 scored questions. Your name, email, video titles, question text, answers, topic names, notes, chats, and learning profile are not shared. Group insights appear only after 10 different accounts contribute to that signal.
                   </p>
                   <label className={`flex items-center gap-3 p-3 rounded-xl border border-gray-200 dark:border-white/10 ${isGuest ? 'opacity-50' : 'cursor-pointer'}`}>
                     <input
@@ -846,7 +846,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                       }}
                       className="h-4 w-4 accent-indigo-600"
                     />
-                    <span className="text-sm font-medium">Contribute anonymized video learning signals</span>
+                    <span className="text-sm font-medium">Contribute shared learning signals</span>
                   </label>
                   {isGuest && (
                     <p className="text-xs text-gray-400 dark:text-white/40 mt-2">
@@ -854,7 +854,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                     </p>
                   )}
                   <p className="text-[11px] text-gray-400 dark:text-white/30 mt-2">
-                    Turning this off stops future contributions; existing group totals remain. A private one-time marker prevents duplicate counting.
+                    Turning this off stops future contributions; existing group totals remain. Private markers prevent duplicate counting per signal.
                   </p>
                 </div>
 
