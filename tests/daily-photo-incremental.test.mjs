@@ -56,3 +56,37 @@ test('Daily Test extracts only the pages needed and resumes remaining PDF pages 
   await queue.clearQueuedDailyPhotos();
   localStorage.removeItem(DAILY_KEY);
 });
+
+test('answer-key-only PDF pages can complete questions extracted from earlier pages', async () => {
+  await queue.clearQueuedDailyPhotos();
+  localStorage.removeItem(DAILY_KEY);
+  await queue.enqueueDailyPhotos([new File(['original-pdf'], 'answers.pdf', { type: 'application/pdf' })]);
+
+  const dependencies = {
+    prepareUpload: async () => ['question-page', 'answer-key-page'].map((page) => ({ mimeType: 'application/pdf', data: btoa(page) })),
+    extractQuestionsFromPhoto: async (payload) => {
+      if (atob(payload.data) === 'question-page') {
+        return {
+          questions: [{
+            type: 'mcq', number: 1, question: 'Which option is correct for this page?',
+            options: ['A', 'B'], answer: '', explanation: '', incomplete: false,
+          }],
+          answerKey: [],
+        };
+      }
+      return { questions: [], answerKey: [{ number: 1, answer: 'A', explanation: '' }] };
+    },
+  };
+
+  const result = await queue.processQueuedPhotosForDailyTest(1, undefined, dependencies);
+  assert.equal(result.errors.length, 0);
+  assert.equal(result.processedPages, 2);
+  assert.equal(result.processedFiles, 1);
+  assert.equal(result.remainingFiles, 0);
+  assert.equal(result.bank.length, 1);
+  assert.equal(result.bank[0].type, 'mcq');
+  assert.equal(result.bank[0].correctIndex, 0);
+
+  await queue.clearQueuedDailyPhotos();
+  localStorage.removeItem(DAILY_KEY);
+});
