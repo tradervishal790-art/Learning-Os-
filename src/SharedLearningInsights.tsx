@@ -29,7 +29,7 @@ export default function SharedLearningInsights({ kind }: Props) {
   return (
     <section className="rounded-2xl card border border-indigo-200/60 dark:border-indigo-400/20 p-4 mb-5 md:mb-6" aria-label="Community learning patterns">
       <div className="flex items-center justify-between gap-3 mb-2">
-        <h2 className="text-sm font-semibold">Community learning patterns</h2>
+        <h2 className="text-sm font-semibold">{kind === "revision" ? "Community revision patterns" : "Community question patterns"}</h2>
         <span className="text-[10px] text-gray-400 dark:text-white/40">10+ accounts per signal</span>
       </div>
       <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
