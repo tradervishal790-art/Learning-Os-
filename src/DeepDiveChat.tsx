@@ -42,21 +42,11 @@ export default function DeepDiveChat({ onComplete, onClose }: DeepDiveChatProps)
 
   const isLastStep = step === DEEP_DIVE_QUESTIONS.length - 1;
 
-  const handleNext = async () => {
-    if (!currentAnswer.trim()) return;
-    const updatedAnswers = [...answers, currentAnswer.trim()];
-    setAnswers(updatedAnswers);
-    setCurrentAnswer('');
-
-    if (!isLastStep) {
-      setStep((s) => s + 1);
-      return;
-    }
-
-    // Last answer submitted — extract dimensions and merge.
+  const processAnswers = async (answersToProcess: string[]) => {
     setPhase('processing');
+    setErrorMsg('');
     try {
-      const qaPairs = DEEP_DIVE_QUESTIONS.map((q, i) => ({ question: q, answer: updatedAnswers[i] }));
+      const qaPairs = DEEP_DIVE_QUESTIONS.map((q, i) => ({ question: q, answer: answersToProcess[i] }));
       const prompt = buildExtractionPrompt(qaPairs);
       const rawResponse = await callGemini(prompt);
       const signals = parseDeepDiveResponse(rawResponse);
@@ -74,12 +64,25 @@ export default function DeepDiveChat({ onComplete, onClose }: DeepDiveChatProps)
         return;
       }
 
-      const merged = mergeLearningProfile(existingProfile, signals);
-      onComplete(merged);
+      onComplete(mergeLearningProfile(existingProfile, signals));
     } catch (err: any) {
       setPhase('error');
       setErrorMsg(err.message || t.deepDiveChat.errors.generic);
     }
+  };
+
+  const handleNext = async () => {
+    if (!currentAnswer.trim()) return;
+    const updatedAnswers = [...answers, currentAnswer.trim()];
+    setAnswers(updatedAnswers);
+    setCurrentAnswer('');
+
+    if (!isLastStep) {
+      setStep((s) => s + 1);
+      return;
+    }
+
+    await processAnswers(updatedAnswers);
   };
 
   return (
@@ -95,7 +98,7 @@ export default function DeepDiveChat({ onComplete, onClose }: DeepDiveChatProps)
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.95, opacity: 0 }}
-        className="bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-white/10 rounded-3xl max-w-lg w-full p-5 md:p-6 text-black dark:text-white max-h-[85vh] overflow-y-auto"
+        className="bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-white/10 rounded-3xl max-w-lg w-full p-5 md:p-6 text-black dark:text-white max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
@@ -123,12 +126,12 @@ export default function DeepDiveChat({ onComplete, onClose }: DeepDiveChatProps)
                 rows={4}
                 placeholder={t.deepDiveChat.answerPlaceholder}
                 autoFocus={false}
-                className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 text-base md:text-sm placeholder-gray-400 dark:placeholder-white/40 focus:outline-none focus:border-purple-500/50 mb-4 resize-none"
+                className="los-field mb-4 min-h-28 resize-none"
               />
               <button
                 onClick={handleNext}
                 disabled={!currentAnswer.trim()}
-                className="w-full px-4 py-3.5 md:py-2.5 rounded-lg bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white disabled:opacity-40 text-sm font-semibold transition active:scale-[0.98]"
+                className="los-btn los-btn-primary w-full disabled:opacity-40"
               >
                 {isLastStep ? t.deepDiveChat.submitCta : t.deepDiveChat.nextCta}
               </button>
@@ -149,12 +152,21 @@ export default function DeepDiveChat({ onComplete, onClose }: DeepDiveChatProps)
           {phase === 'error' && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-4 text-center">
               <p className="text-sm text-red-500 dark:text-red-400 mb-4">{errorMsg}</p>
-              <button
-                onClick={onClose}
-                className="px-4 py-2.5 rounded-lg border border-gray-200 dark:border-white/10 text-sm hover:bg-gray-100 dark:hover:bg-white/10 transition"
-              >
-                {t.deepDiveChat.closeCta}
-              </button>
+              <div className="flex justify-center gap-2">
+                <button
+                  onClick={() => void processAnswers(answers)}
+                  disabled={answers.length !== DEEP_DIVE_QUESTIONS.length}
+                  className="los-btn los-btn-primary disabled:opacity-40"
+                >
+                  Try again
+                </button>
+                <button
+                  onClick={onClose}
+                  className="los-btn los-btn-secondary"
+                >
+                  {t.deepDiveChat.closeCta}
+                </button>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
