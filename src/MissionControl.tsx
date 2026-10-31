@@ -70,7 +70,7 @@ export default function MissionControl({
     : nextTopic || 'Your learning path starts here';
 
   return (
-    <main className="mission-map relative flex h-[calc(100dvh-3.5rem-env(safe-area-inset-bottom))] min-h-0 md:h-dvh w-full flex-col overflow-hidden bg-[#080d19] text-slate-100">
+    <main className="mission-map relative flex h-[calc(100dvh-3.5rem-env(safe-area-inset-bottom))] min-h-0 md:h-[calc(100dvh-64px)] w-full flex-col overflow-hidden bg-[#080d19] text-slate-100">
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -left-40 top-[-220px] h-[520px] w-[520px] rounded-full bg-violet-600/[0.10] blur-[130px]" />
         <div className="absolute right-[-120px] top-[10%] h-[480px] w-[480px] rounded-full bg-cyan-500/[0.08] blur-[130px]" />
@@ -83,7 +83,7 @@ export default function MissionControl({
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,.9)]" />
             Personal learning network
           </div>
-          <h1 className="mt-1 text-lg font-semibold tracking-tight text-white md:text-xl">Mission Control</h1>
+          <h1 className="mt-1 text-lg font-semibold tracking-tight text-white md:text-xl">Your learning map</h1>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2 text-[10px] sm:gap-3">
           <span className="hidden rounded-full border border-white/[0.08] bg-white/[0.035] px-3 py-2 text-slate-400 sm:inline-flex">
