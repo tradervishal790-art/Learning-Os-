@@ -2,8 +2,9 @@ import { useCallback, useEffect, useState, lazy, Suspense } from 'react';
 import type { ComponentType } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Film, BookOpen, ClipboardCheck, Newspaper, Lock, Settings as SettingsIcon, Bell, X as CloseIcon, Target, RotateCcw, Flame, Check, ChevronRight, ArrowLeft } from 'lucide-react';
+import { Search, BookOpen, ClipboardCheck, Newspaper, Lock, Settings as SettingsIcon, ArrowLeft } from 'lucide-react';
 import PagePlaceholder from './PagePlaceholder';
+import MissionControl from './MissionControl';
 import BottomNav from './BottomNav';
 import { useImmersive, useNoteOpen } from './immersive';
 import { getRoadmapData, getCurrentTopic } from './roadmapData';
@@ -14,13 +15,9 @@ import GrowthEdgesCard from './GrowthEdgesCard';
 import PersonalityReportCard from './PersonalityReportCard';
 import { computeGrowthEdges } from './growthEdges';
 import { getBehaviourStats } from './behaviourStats';
-import WelcomeBack from './WelcomeBack';
-import CurrentAffairsChip from './CurrentAffairsChip';
-import DailyHabit from './DailyHabit';
 import { analyzeAttempt, analyzeHistory } from './testAnalytics';
 import { getTestAttempts } from './testStore';
-import { getLearningProfile, saveLearningProfile, clearLearningProfile } from './learningProfileStore';
-import { getEngagementSessions } from './engagementStore';
+import { getLearningProfile, saveLearningProfile } from './learningProfileStore';
 import { pushToCloud, pullFromCloud } from './cloudSync';
 import { buildCandidatePoolForConcept } from './conceptVideoPool';
 import { selectPlaylistForConcept, analyzedVideoToVideo } from './PlaylistBuilder';
@@ -29,11 +26,6 @@ import { useTheme } from './ThemeContext';
 import { signOutOfApp, getCurrentUser } from './authStore';
 import { useAuthPrompt, SignInButton } from './AuthPrompt';
 import type { DashboardPageId, PageConfig, UserOnboardingData, LearningProfile, Video, Topic, Goal, TopicBridge } from './types';
-import Onborda from './Onborda';
-import { OnbordaProvider, useOnborda } from './OnbordaContext';
-import OnbordaCard from './OnbordaCard';
-import type { Tour } from './onbordaTypes';
-import { hasSeenTour, markTourSeen } from './tourStore';
 import { useTranslation } from './i18n/LanguageContext';
 import { format } from './i18n/format';
 
@@ -64,65 +56,6 @@ function PageLoading() {
       Loading…
     </div>
   );
-}
-
-// Guided spotlight tour for first-time users — see Onborda.tsx for how this
-// engine works (ported from uixmat/onborda, MIT). Each `selector` below
-// must match an `id` added on the actual sidebar/nav element it targets.
-function getDashboardTour(t: ReturnType<typeof useTranslation>): Tour[] {
-  // Phones have no sidebar — the tour points at the bottom bar there.
-  // Revision lives behind the "More" slot on phones.
-  const phone = typeof window !== 'undefined' && !window.matchMedia('(min-width: 768px)').matches;
-  const navSel = (id: string) => (phone ? `#onborda-bnav-${id === 'revision' ? 'more' : id}` : `#onborda-nav-${id}`);
-  const navSide = phone ? 'top' : 'right';
-  return [
-    {
-      tour: 'dashboard-intro',
-      steps: [
-        {
-          title: t.dashboard.tour.dashboardIntro[0].title,
-          content: t.dashboard.tour.dashboardIntro[0].content,
-          selector: navSel('roadmap'),
-          side: navSide,
-        },
-        {
-          title: t.dashboard.tour.dashboardIntro[1].title,
-          content: t.dashboard.tour.dashboardIntro[1].content,
-          selector: navSel('revision'),
-          side: navSide,
-        },
-        {
-          title: t.dashboard.tour.dashboardIntro[2].title,
-          content: t.dashboard.tour.dashboardIntro[2].content,
-          selector: navSel('progress'),
-          side: navSide,
-        },
-        {
-          title: t.dashboard.tour.dashboardIntro[3].title,
-          content: t.dashboard.tour.dashboardIntro[3].content,
-          selector: '#onborda-settings-button',
-          side: 'left',
-        },
-      ],
-    },
-    {
-      tour: 'video-picker-intro',
-      steps: [
-        {
-          title: t.dashboard.tour.videoPickerIntro[0].title,
-          content: t.dashboard.tour.videoPickerIntro[0].content,
-          selector: '#onborda-video-primary',
-          side: 'right',
-        },
-        {
-          title: t.dashboard.tour.videoPickerIntro[1].title,
-          content: t.dashboard.tour.videoPickerIntro[1].content,
-          selector: '#onborda-video-fallback',
-          side: 'right',
-        },
-      ],
-    },
-  ];
 }
 
 interface DashboardProps {
@@ -173,41 +106,13 @@ interface Blueprint {
   };
 }
 
-// Simple two-tone "bell" using Web Audio API — no audio file/asset needed,
-// so it works offline and doesn't add anything to the bundle.
-function playReminderBell() {
-  try {
-    const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-    if (!AudioCtx) return;
-    const ctx = new AudioCtx();
-    if (ctx.state === 'suspended') ctx.resume();
-    const playTone = (freq: number, startAt: number, duration: number) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.value = freq;
-      gain.gain.setValueAtTime(0.0001, ctx.currentTime + startAt);
-      gain.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime + startAt + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + startAt + duration);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(ctx.currentTime + startAt);
-      osc.stop(ctx.currentTime + startAt + duration);
-    };
-    playTone(880, 0, 0.35);
-    playTone(1108.73, 0.15, 0.4);
-  } catch {
-    // Audio blocked (autoplay policy / unsupported) — reminder banner still shows silently.
-  }
-}
-
 // Pages that need a real account. Guests (no sign-up yet) can use the home page,
 // the Mind Blueprint, Videos and Dictionary; everything below asks them to sign in.
 // (The server enforces the same split for AI endpoints — see api/_lib/auth.ts.)
 
 function getSidebarItems(t: ReturnType<typeof useTranslation>): { id: DashboardPageId; label: string; icon?: ComponentType<{ className?: string }> }[] {
   return [
-    { id: 'dashboard', label: t.dashboard.sidebar.home },
+    { id: 'dashboard', label: 'Mission Control' },
     { id: 'roadmap', label: t.dashboard.sidebar.roadmap },
     { id: 'revision', label: t.dashboard.sidebar.revision },
     { id: 'notes', label: t.dashboard.sidebar.notes },
@@ -220,8 +125,6 @@ function getSidebarItems(t: ReturnType<typeof useTranslation>): { id: DashboardP
     { id: 'current-affairs', label: t.dashboard.sidebar.currentAffairs, icon: Newspaper },
   ];
 }
-
-const STAT_ICONS = { target: Target, refresh: RotateCcw, streak: Flame } as const;
 
 const roleOptions = ['student', 'developer', 'researcher', 'business', 'exam', 'creator'];
 const languageOptions = ['hindi', 'english', 'hinglish', 'any'];
@@ -293,18 +196,6 @@ function trackAndComputeStreak(): number {
 function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGenerateForSubject, roadmapVersion, lastRoadmapError, goals, activeGoalId, onAddGoal, onEndGoal, onSwitchGoal }: DashboardProps) {
   const t = useTranslation();
   const { isGuest, openSignIn } = useAuthPrompt();
-  const { startOnborda } = useOnborda();
-
-  // Auto-start the guided tour once, for a first-time learner only.
-  useEffect(() => {
-    if (!hasSeenTour('dashboard-intro')) {
-      const timer = setTimeout(() => {
-        startOnborda('dashboard-intro');
-        markTourSeen('dashboard-intro');
-      }, 800);
-      return () => clearTimeout(timer);
-    }
-  }, [startOnborda]);
 
   const { theme, toggleTheme } = useTheme();
   // activePage now mirrors the real URL (/dashboard/:page) instead of being
@@ -330,9 +221,6 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   const [streak, setStreak] = useState(0);
   const noteOpen = useNoteOpen();
   const immersive = useImmersive(); // true while a full-attention flow (e.g. a timed test) hides the bottom bar
-  // Bell + sound reminder — computed once when the app/home page opens (not
-  // only on navigating into the Revision tab), so nothing due gets missed.
-  const [revisionAlert, setRevisionAlert] = useState<{ dueToday: number; overdue: number } | null>(null);
   const [showLearningQuiz, setShowLearningQuiz] = useState(false);
   // Alternative onboarding path — does NOT replace showLearningQuiz above,
   // both remain independently reachable from the home page.
@@ -376,28 +264,6 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   }, []);
 
   useEffect(() => {
-    const stats = getRevisionStats(getRevisionDataForGoals(t.revisionTasks, goals));
-    if (stats.dueToday + stats.overdue > 0) {
-      setRevisionAlert({ dueToday: stats.dueToday, overdue: stats.overdue });
-      // The banner shows every time, but the chime only rings once every few hours:
-      // this effect runs on every page load, and hearing the same bell on each
-      // refresh quickly turns a helpful reminder into an annoyance.
-      const BELL_KEY = 'learning_os_bell_last';
-      const BELL_GAP_MS = 3 * 60 * 60 * 1000;
-      let ring = true;
-      try {
-        const last = Number(localStorage.getItem(BELL_KEY) ?? 0);
-        if (Date.now() - last < BELL_GAP_MS) ring = false;
-        else localStorage.setItem(BELL_KEY, String(Date.now()));
-      } catch {
-        /* storage unavailable -> just ring */
-      }
-      if (ring) playReminderBell();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
     setSettingsName(userData?.name ?? '');
     setSettingsRole(userData?.role ?? '');
     setSettingsGoal(userData?.goal ?? '');
@@ -417,9 +283,13 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
     setLearningProfile(profile);
   };
 
-  const handleClearProfile = () => {
-    clearLearningProfile();
-    setLearningProfile(null);
+  const handleOpenLearningProfile = () => {
+    if (learningProfile) {
+      setShowSettings(true);
+      setShowFullProfileReport(true);
+      return;
+    }
+    setShowLearningQuiz(true);
   };
 
   const handleLaunchPlaylist = (payload: { primary: Video; fallbacks: Video[]; bridge?: TopicBridge; previousVideoId?: string | null; topicId: string }) => {
@@ -621,74 +491,8 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   const currentTopic = getCurrentTopic(getRoadmapData(activeGoalId));
   const revisionStats = getRevisionStats(getRevisionDataForGoals(t.revisionTasks, goals));
 
-  // ---------- "Get Started" checklist (new-user guidance) ----------
-  // New users land on a Dashboard with 8 sidebar sections and no clear
-  // "do this first" signal. This computes the 3 steps that actually
-  // matter in the right order — each check reads real existing state
-  // (no new store needed), so it disappears on its own once genuinely
-  // done, and never lies about progress.
-  const hasLearningProfile = learningProfile !== null;
-  const hasRoadmap = goals.length > 0;
-  const hasWatchedVideo = getEngagementSessions().length > 0;
-  const onboardingSteps = [
-    {
-      done: hasLearningProfile,
-      title: t.dashboard.checklist.steps[0].title,
-      subtitle: t.dashboard.checklist.steps[0].subtitle,
-      action: () => setShowLearningQuiz(true),
-      cta: t.dashboard.checklist.steps[0].cta,
-    },
-    {
-      done: hasRoadmap,
-      title: t.dashboard.checklist.steps[1].title,
-      subtitle: t.dashboard.checklist.steps[1].subtitle,
-      action: () => setActivePage('roadmap'),
-      cta: t.dashboard.checklist.steps[1].cta,
-    },
-    {
-      done: hasWatchedVideo,
-      title: t.dashboard.checklist.steps[2].title,
-      subtitle: t.dashboard.checklist.steps[2].subtitle,
-      action: () => setActivePage('videos'),
-      cta: t.dashboard.checklist.steps[2].cta,
-    },
-  ];
-  const showOnboardingChecklist = onboardingSteps.some((s) => !s.done);
-
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 5) return t.dashboard.greeting.night;
-    if (hour < 12) return t.dashboard.greeting.morning;
-    if (hour < 17) return t.dashboard.greeting.afternoon;
-    if (hour < 21) return t.dashboard.greeting.evening;
-    return t.dashboard.greeting.night;
-  };
-
-  const statsCards = [
-    {
-      title: t.dashboard.home.statsCards.goal,
-      value: currentTopic ? currentTopic.title : t.dashboard.home.statsCards.pickTopic,
-      subtitle: currentTopic ? `${currentTopic.estimatedTime} - ${currentTopic.difficulty}` : t.dashboard.home.statsCards.openRoadmap,
-      icon: 'target',
-      onClick: () => setActivePage('roadmap'),
-    },
-    {
-      title: t.dashboard.home.statsCards.revision,
-      value: format(t.dashboard.home.statsCards.dueSuffix, revisionStats.dueToday + revisionStats.overdue),
-      subtitle: revisionStats.overdue > 0 ? format(t.dashboard.home.statsCards.overdueSuffix, revisionStats.overdue) : t.dashboard.home.statsCards.caughtUp,
-      icon: 'refresh',
-      onClick: () => setActivePage('revision'),
-    },
-    {
-      title: t.dashboard.home.statsCards.streak,
-      value: `${streak} ${streak === 1 ? t.dashboard.home.statsCards.day : t.dashboard.home.statsCards.days}`,
-      subtitle: streak > 0 ? t.dashboard.home.statsCards.keepGoing : t.dashboard.home.statsCards.startToday,
-      icon: 'streak',
-      onClick: () => setActivePage('progress'),
-    },
-  ];
-
   const config = pageConfigs[activePage];
+  const isMissionControl = activePage === 'dashboard';
   // Guests can preview every section; account checks remain on protected actions.
 
   // Two different locks: authLocked = needs a real account (guest);
@@ -729,11 +533,17 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
               transition={{ delay: 0.1 + i * 0.05, duration: 0.4 }}
               onClick={() => selectNav(item.id, item.label)}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
-                isLocked
-                  ? 'text-gray-300 dark:text-white/20 hover:text-gray-400 dark:hover:text-white/30'
-                  : activePage === item.id
-                  ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white'
-                  : 'text-gray-500 dark:text-white/50 hover:text-black dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5'
+                isMissionControl
+                  ? isLocked
+                    ? 'text-white/20'
+                    : activePage === item.id
+                    ? 'bg-indigo-500 text-white'
+                    : 'text-white/55 hover:text-white hover:bg-white/5'
+                  : isLocked
+                    ? 'text-gray-300 dark:text-white/20 hover:text-gray-400 dark:hover:text-white/30'
+                    : activePage === item.id
+                      ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white'
+                      : 'text-gray-500 dark:text-white/50 hover:text-black dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5'
               }`}
             >
               {item.icon && <item.icon className="w-4 h-4" />}
@@ -743,7 +553,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
           );
         })}
       </nav>
-      <div className="mt-auto pt-6 border-t border-gray-200 dark:border-white/10">
+      <div className={`mt-auto pt-6 border-t ${isMissionControl ? "border-white/10" : "border-gray-200 dark:border-white/10"}`}>
         <div className="flex items-center gap-3 px-2">
           <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400 flex items-center justify-center text-sm font-bold text-white flex-shrink-0">
             {displayName.charAt(0).toUpperCase()}
@@ -758,19 +568,18 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   );
 
   return (
-    <Onborda steps={getDashboardTour(t)} cardComponent={OnbordaCard}>
-    <div className="min-h-dvh bg-[#f4f6ff] dark:bg-black flex text-black dark:text-white">
-      <aside className="hidden md:flex w-64 border-r border-gray-200 dark:border-white/10 p-6 flex-col flex-shrink-0">
+    <div className={`min-h-dvh flex text-black dark:text-white ${isMissionControl ? "bg-[#080d19] text-white" : "bg-[#f4f6ff] dark:bg-black"}`}>
+      {!isMissionControl && <aside className="hidden md:flex w-64 border-r border-gray-200 dark:border-white/10 p-6 flex-col flex-shrink-0">
         {SidebarContent}
-      </aside>
+      </aside>}
 
-      <div className={`flex-1 overflow-auto min-w-0 md:pb-0 ${immersive ? '' : 'pb-[calc(3.5rem+env(safe-area-inset-bottom))]'}`}>
+      <div className={`flex-1 min-w-0 ${isMissionControl ? "h-dvh overflow-hidden bg-[#080d19]" : "overflow-auto"} md:pb-0 ${isMissionControl || immersive ? "" : "pb-[calc(3.5rem+env(safe-area-inset-bottom))]"}`}>
         {!(activePage === 'notes' && noteOpen) && (
         <motion.div
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.6 }}
-          className="border-b border-gray-200 dark:border-white/10 px-4 md:px-8 py-2 md:py-6 flex justify-between items-center gap-3"
+          className={`border-b px-4 md:px-8 py-2 md:py-4 flex justify-between items-center gap-3 ${isMissionControl ? "border-white/[0.07] bg-[#080d19]" : "border-gray-200 dark:border-white/10"}`}
         >
           <div className="flex items-center gap-3 min-w-0">
             {activePage !== 'dashboard' && (
@@ -782,23 +591,20 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                 >
                   <ArrowLeft className="w-5 h-5" strokeWidth={1.9} />
                 </button>
-                <h2 className="text-lg md:text-2xl font-bold truncate">
+                <h2 className={`text-lg md:text-2xl font-bold truncate ${isMissionControl ? "text-white" : ""}`}>
                   {sidebarItems.find((i) => i.id === activePage)?.label ?? ''}
                 </h2>
               </>
             )}
             {activePage === 'dashboard' && (
-            <h2 className="text-lg md:text-2xl font-bold truncate">
-              {getGreeting()},{' '}
-              <span className="bg-gradient-to-r from-purple-500 via-pink-500 to-orange-400 bg-clip-text text-transparent">
-                {displayName}
-              </span>
+                <h2 className={`text-lg md:text-2xl font-bold truncate ${isMissionControl ? "text-white" : ""}`}>
+              Mission Control
             </h2>
             )}
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
             <SignInButton className="px-3 md:px-4 py-2 rounded-full bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white text-sm font-semibold hover:opacity-90 transition" />
-            <button id="onborda-settings-button" onClick={() => { setShowSettings(true); setShowFullProfileReport(false); }} aria-label={t.settingsModal.title} className="w-10 h-10 md:w-auto md:h-auto md:px-4 md:py-2 rounded-full md:border md:border-gray-300 md:dark:border-white/10 text-sm flex items-center justify-center gap-2 hover:bg-gray-100 dark:hover:bg-white/10 active:bg-gray-200 dark:active:bg-white/15 transition-colors">
+            <button id="onborda-settings-button" onClick={() => { setShowSettings(true); setShowFullProfileReport(false); }} aria-label={t.settingsModal.title} className={`w-10 h-10 md:w-auto md:h-auto md:px-4 md:py-2 rounded-full md:border text-sm flex items-center justify-center gap-2 transition-colors ${isMissionControl ? "border-white/10 text-white hover:bg-white/5" : "md:border-gray-300 md:dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10 active:bg-gray-200 dark:active:bg-white/15"}`}>
             <SettingsIcon className="w-[21px] h-[21px] md:w-4 md:h-4" strokeWidth={1.75} />
             <span className="hidden md:inline">{t.settingsModal.title}</span>
           </button>
@@ -808,209 +614,19 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
 
         <Suspense fallback={<PageLoading />}>
                 {activePage === 'dashboard' && (
-          <div className="p-4 md:p-8 flex flex-col gap-4 md:gap-6">
-            <section className="relative isolate overflow-hidden rounded-[28px] border border-indigo-200/60 bg-gradient-to-br from-white via-indigo-50 to-violet-100 p-5 shadow-[0_18px_55px_rgba(79,70,229,0.10)] dark:border-white/[0.09] dark:from-[#17171f] dark:via-[#11111a] dark:to-[#211735] dark:shadow-[0_20px_60px_rgba(0,0,0,0.22)] md:p-7">
-              <div aria-hidden="true" className="pointer-events-none absolute -right-12 -top-20 -z-10 h-56 w-56 rounded-full bg-violet-400/20 blur-3xl dark:bg-violet-500/20" />
-              <div aria-hidden="true" className="pointer-events-none absolute -bottom-24 left-1/3 -z-10 h-48 w-48 rounded-full bg-blue-400/15 blur-3xl dark:bg-blue-500/10" />
-              <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-                <div className="min-w-0 flex-1">
-                  <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-indigo-200/70 bg-white/75 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-indigo-700 dark:border-white/10 dark:bg-white/[0.06] dark:text-indigo-200">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_0_3px_rgba(16,185,129,0.12)]" />
-                    {statsCards[0].title}
-                  </div>
-                  <h3 className="max-w-2xl text-xl font-semibold leading-tight tracking-tight text-gray-950 dark:text-white sm:text-2xl md:text-3xl">
-                    {statsCards[0].value}
-                  </h3>
-                  <p className="mt-2 max-w-xl text-sm leading-relaxed text-gray-600 dark:text-white/55">
-                    {currentTopic ? statsCards[0].subtitle : t.dashboard.home.learningStyleCard.subtitleNotReady}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setActivePage(currentTopic ? 'videos' : 'roadmap')}
-                  className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(79,70,229,0.25)] transition hover:bg-indigo-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white active:scale-[0.98] dark:bg-indigo-500 dark:hover:bg-indigo-400 dark:focus-visible:ring-offset-[#17171f] sm:w-auto"
-                >
-                  {t.dashboard.home.suggestion.watchCta}
-                  <ChevronRight className="h-4 w-4" strokeWidth={2.2} />
-                </button>
-              </div>
-              <div className="mt-6 grid grid-cols-1 gap-2.5 sm:grid-cols-3">
-                {[
-                  { id: 'roadmap' as DashboardPageId, icon: Target, hint: statsCards[0].subtitle },
-                  { id: 'revision' as DashboardPageId, icon: RotateCcw, hint: revisionStats.overdue > 0 ? `${revisionStats.overdue} overdue` : revisionStats.dueToday > 0 ? `${revisionStats.dueToday} due today` : 'Review what you learned' },
-                  { id: 'test' as DashboardPageId, icon: ClipboardCheck, hint: t.dashboard.sidebar.test },
-                ].map((shortcut) => {
-                  const item = sidebarItems.find((entry) => entry.id === shortcut.id);
-                  const locked = navState(shortcut.id).isLocked;
-                  const ShortcutIcon = shortcut.icon;
-                  return (
-                    <button
-                      key={shortcut.id}
-                      type="button"
-                      onClick={() => item && selectNav(item.id, item.label)}
-                      className="group flex min-w-0 items-center gap-3 rounded-2xl border border-gray-200/80 bg-white/75 p-3 text-left transition hover:-translate-y-0.5 hover:border-indigo-200 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 active:scale-[0.99] dark:border-white/[0.07] dark:bg-white/[0.035] dark:hover:border-indigo-400/30 dark:hover:bg-white/[0.07]"
-                    >
-                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 ring-1 ring-indigo-100/80 dark:bg-indigo-500/15 dark:text-indigo-300 dark:ring-indigo-300/10">
-                        <ShortcutIcon className="h-[18px] w-[18px]" strokeWidth={1.8} />
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm font-semibold text-gray-900 dark:text-white/90">{item?.label ?? shortcut.id}</span>
-                        <span className="mt-0.5 block truncate text-xs text-gray-500 dark:text-white/45">{shortcut.hint}</span>
-                      </span>
-                      {locked ? <Lock className="h-3.5 w-3.5 shrink-0 text-gray-400" /> : <ChevronRight className="h-4 w-4 shrink-0 text-gray-400 transition group-hover:translate-x-0.5 group-hover:text-indigo-500" />}
-                    </button>
-                  );
-                })}
-              </div>
-            </section>
-            {/* Secondary destinations remain available from the navigation menu. */}
-
-            <WelcomeBack goals={goals} revisionTasks={t.revisionTasks} onOpen={setActivePage} />
-            <DailyHabit />
-            <CurrentAffairsChip onOpen={() => setActivePage('current-affairs')} />
-            {showOnboardingChecklist && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="p-4 md:p-5 rounded-2xl card"
-              >
-                <h3 className="font-semibold mb-0.5">{t.dashboard.checklist.heading}</h3>
-                <p className="text-xs text-gray-400 dark:text-white/40 mb-2">
-                  {t.dashboard.checklist.subheading}
-                </p>
-                <div className="divide-y divide-gray-100 dark:divide-white/10">
-                  {onboardingSteps.map((step, i) => (
-                    <div
-                      key={step.title}
-                      className={`flex items-center gap-3 py-3 ${step.done ? 'opacity-50' : ''}`}
-                    >
-                      <div
-                        className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0 ${
-                          step.done
-                            ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white'
-                            : 'border border-gray-300 dark:border-white/30 text-gray-400 dark:text-white/40'
-                        }`}
-                      >
-                        {step.done ? <Check className="w-3.5 h-3.5" strokeWidth={2.5} /> : i + 1}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium truncate">{step.title}</div>
-                        <div className="text-xs text-gray-400 dark:text-white/40 truncate">{step.subtitle}</div>
-                      </div>
-                      {!step.done && (
-                        <button
-                          onClick={step.action}
-                          className="px-3 py-1.5 rounded-full bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white text-xs font-medium hover:opacity-80 transition flex-shrink-0"
-                        >
-                          {step.cta}
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </motion.div>
-            )}
-
-            <AnimatePresence>
-              {revisionAlert && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="p-4 rounded-2xl border border-black/10 dark:border-white/20 bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white flex items-center gap-3 flex-wrap"
-                >
-                  <Bell className="w-5 h-5 flex-shrink-0" strokeWidth={1.75} />
-                  <div className="flex-1 min-w-[200px]">
-                    <div className="font-semibold text-sm">
-                      {revisionAlert.overdue > 0
-                        ? format(t.dashboard.home.revisionBanner.overdueTitle, revisionAlert.dueToday + revisionAlert.overdue, revisionAlert.overdue)
-                        : format(t.dashboard.home.revisionBanner.dueTitle, revisionAlert.dueToday)}
-                    </div>
-                    <div className="text-xs opacity-70">{t.dashboard.home.revisionBanner.subtitle}</div>
-                  </div>
-                  <button
-                    onClick={() => {
-                      setRevisionAlert(null);
-                      setActivePage('revision');
-                    }}
-                    className="px-4 py-2 rounded-full bg-white text-black dark:bg-black dark:text-white text-sm font-medium hover:opacity-80 transition whitespace-nowrap"
-                  >
-                    View Revision
-                  </button>
-                  <button
-                    onClick={() => setRevisionAlert(null)}
-                    aria-label="Dismiss"
-                    className="px-3 py-2 rounded-full text-sm opacity-70 hover:opacity-100 transition"
-                  >
-                    <CloseIcon className="w-4 h-4" />
-                  </button>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            <div className="hidden md:grid rounded-2xl card overflow-hidden grid-cols-3 divide-x divide-gray-100 dark:divide-white/10">
-              {statsCards.map((card) => {
-                const StatIcon = STAT_ICONS[card.icon as keyof typeof STAT_ICONS];
-                return (
-                <button
-                  key={card.title}
-                  onClick={card.onClick}
-                  aria-label={card.title}
-                  className="text-center md:text-left px-2 md:px-5 py-4 md:py-5 hover:bg-gray-50 dark:hover:bg-white/5 active:bg-gray-100 dark:active:bg-white/10 transition-colors"
-                >
-                  <StatIcon className="md:hidden w-5 h-5 mx-auto mb-1.5 text-gray-500 dark:text-white/50" strokeWidth={1.75} />
-                  <div className="hidden md:block text-xs text-gray-500 dark:text-white/50 mb-1">{card.title}</div>
-                  <div className="text-sm md:text-xl font-semibold tabular-nums line-clamp-2 md:line-clamp-1">{card.value}</div>
-                  <div className="hidden md:block text-sm text-gray-500 dark:text-white/50">{card.subtitle}</div>
-                </button>
-                );
-              })}
-            </div>
-
-            <button
-              onClick={() => setActivePage('videos')}
-              className="hidden md:block px-5 py-2.5 rounded-full bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white text-sm font-medium hover:opacity-85 active:opacity-70 transition-opacity"
-            >
-              {t.dashboard.home.suggestion.watchCta}
-            </button>
-
-            <section className="pt-6 border-t border-gray-200 dark:border-white/10">
-              <h3 className="font-semibold mb-1">{learningProfile ? t.dashboard.home.learningStyleCard.titleReady : t.dashboard.home.learningStyleCard.titleNotReady}</h3>
-              <p className="text-sm text-gray-500 dark:text-white/50 mb-2">
-                {learningProfile
-                  ? t.dashboard.home.learningStyleCard.subtitleReady
-                  : t.dashboard.home.learningStyleCard.subtitleNotReady}
-              </p>
-              {learningProfile && (
-                <p className="text-sm text-gray-500 dark:text-white/50 mb-2">
-                  {t.dashboard.home.learningStyleCard.detailReady}
-                </p>
-              )}
-              <div className="flex flex-wrap items-center gap-x-5 gap-y-2 mt-4">
-                <button
-                  onClick={() => setShowLearningQuiz(true)}
-                  className="px-4 py-2 rounded-full border border-gray-300 dark:border-white/20 text-sm font-medium hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
-                >
-                  {learningProfile ? t.dashboard.home.learningStyleCard.retakeCta : t.dashboard.home.learningStyleCard.startCta}
-                </button>
-                <button
-                  onClick={() => setShowTasteOnboarding(true)}
-                  className="flex items-center gap-2 text-sm font-medium underline-offset-4 hover:underline"
-                >
-                  <Film className="w-4 h-4" strokeWidth={1.75} />
-                  {t.dashboard.home.learningStyleCard.analyzeVideosCta}
-                </button>
-                {learningProfile && (
-                  <button
-                    onClick={handleClearProfile}
-                    className="text-sm text-gray-400 dark:text-white/40 hover:text-red-500 dark:hover:text-red-400 transition-colors"
-                  >
-                    Clear my profile
-                  </button>
-                )}
-              </div>
-            </section>
-          </div>
+          <MissionControl
+            name={displayName}
+            goalTitle={goals.find((goal) => goal.id === activeGoalId)?.title ?? userData?.goal ?? ''}
+            nextTopic={currentTopic?.title ?? null}
+            nextTopicDetail={currentTopic ? `${currentTopic.estimatedTime} · ${currentTopic.difficulty}` : 'Your roadmap will help turn a big goal into manageable steps.'}
+            hasLearningProfile={Boolean(learningProfile)}
+            revisionDue={revisionStats.dueToday}
+            revisionOverdue={revisionStats.overdue}
+            streak={streak}
+            activeGoals={goals.filter((goal) => goal.status === 'active').length}
+            onNavigate={setActivePage}
+            onOpenProfile={handleOpenLearningProfile}
+          />
         )}
 
         {activePage === 'roadmap' && (
@@ -1453,23 +1069,18 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
         )}
       </AnimatePresence>
 
-      <BottomNav
+      {!isMissionControl && <BottomNav
         items={sidebarItems.map((i) => ({ id: i.id, label: i.label, locked: navState(i.id).isLocked }))}
         activeId={activePage}
         onSelect={(id) => {
           const item = sidebarItems.find((i) => i.id === id);
           if (item) selectNav(item.id, item.label);
         }}
-      />
+      />}
     </div>
-    </Onborda>
   );
 }
 
 export default function Dashboard(props: DashboardProps) {
-  return (
-    <OnbordaProvider>
-      <DashboardInner {...props} />
-    </OnbordaProvider>
-  );
+  return <DashboardInner {...props} />;
 }
