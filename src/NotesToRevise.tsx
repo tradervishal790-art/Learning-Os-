@@ -14,15 +14,17 @@ export default function NotesToRevise() {
   const nt = useTranslation().notebook;
   const idx = useNotebookIndex();
   const [openId, setOpenId] = useState<string | null>(null);
+  const [showAll, setShowAll] = useState(false);
 
   const due = useMemo(
     () =>
       idx.notes
         .filter((n) => !n.trashedAt && !n.archived && (n.status === 'needs-revision' || (n.status !== 'mastered' && examSoon(n.examDate))))
-        .sort((a, b) => examSortKey(a.examDate) - examSortKey(b.examDate))
-        .slice(0, SHOW),
+        .sort((a, b) => examSortKey(a.examDate) - examSortKey(b.examDate)),
     [idx.notes]
   );
+
+  const visibleDue = showAll ? due : due.slice(0, SHOW);
 
   if (openId)
     return (
@@ -40,7 +42,7 @@ export default function NotesToRevise() {
       </div>
       <p className="text-xs text-gray-500 dark:text-white/60 mb-3">{nt.rsheet.dueHint}</p>
       <ul className="space-y-2">
-        {due.map((n) => {
+        {visibleDue.map((n) => {
           const c = examChip(n.examDate);
           const when = !c ? '' : c.kind === 'today' ? nt.study.examToday : c.kind === 'tomorrow' ? nt.study.examTomorrow : c.kind === 'future' ? format(nt.study.examInDays, c.days) : format(nt.study.examPast, c.days);
           return (
@@ -57,6 +59,16 @@ export default function NotesToRevise() {
           );
         })}
       </ul>
+      {due.length > SHOW && (
+        <button
+          type="button"
+          aria-expanded={showAll}
+          onClick={() => setShowAll((value) => !value)}
+          className="mt-3 text-xs font-medium text-gray-600 underline underline-offset-4 dark:text-white/70"
+        >
+          {showAll ? nt.rsheet.showFewer : format(nt.rsheet.showAll, due.length)}
+        </button>
+      )}
     </section>
   );
 }

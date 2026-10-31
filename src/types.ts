@@ -105,6 +105,8 @@ export interface RevisionItem {
   status: RevisionStatus;
   difficulty: RevisionDifficulty;
   retention: number;
+  /** Calendar days past due; missing/zero means this checkpoint is not overdue. */
+  daysOverdue?: number;
   /** What to actually do on this checkpoint's day — replaces the old
    *  standalone "Learning Path" tab in Notes.tsx. Pulled from that topic's
    *  cached Deep Notes (grounded to the actual video) when available,

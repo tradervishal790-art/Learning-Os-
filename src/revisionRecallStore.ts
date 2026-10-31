@@ -102,20 +102,20 @@ export function mergeRecallMaps(local: RecallMap, cloud: unknown): RecallMap {
   return merged;
 }
 
-/** One-time, local-first hydration: never overwrite existing device history. */
+/** Merge local + cloud recall history on every revision-room hydration. */
 export async function hydrateRecallScoresFromCloud(): Promise<void> {
-  if (Object.keys(readAll()).length > 0) return;
   const cloud = await pullFromCloud<unknown>(CLOUD_KEY);
   if (!cloud || typeof cloud !== 'object' || Array.isArray(cloud)) return;
-  // A learner may rate a topic while the cloud request is pending. Merge with
-  // the latest local state rather than replacing it with the stale cloud result.
-  const safe = mergeRecallMaps(readAll(), cloud);
-  if (Object.keys(safe).length === 0) return;
+  // Re-read after the network wait so a rating made during hydration is kept.
+  const latestLocal = readAll();
+  const safe = mergeRecallMaps(latestLocal, cloud);
+  if (JSON.stringify(safe) === JSON.stringify(latestLocal)) return;
   try {
     localStorage.setItem(LOCAL_KEY, JSON.stringify(safe));
   } catch {
-    // Best-effort hydration.
+    // Best-effort local merge; the current session still keeps its local state.
   }
+  void pushToCloud(CLOUD_KEY, safe);
 }
 
 /** Last self-reported recall rating for a checkpoint, if available. */

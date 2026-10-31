@@ -1,18 +1,13 @@
 import type { RevisionItem, RevisionStatus, RevisionDifficulty, Topic, Difficulty, Goal } from './types';
 import { getRoadmapData } from './roadmapData';
 import { getReviewedDays, getReviewDate } from './revisionstore';
-import { getRecallRating } from './revisionRecallStore';
+import { getRecallRecords } from './revisionRecallStore';
+import { calendarDaysBetween, getAdaptiveIntervalDays, getDaysOverdue } from './revisionScheduling';
 import type { TranslationShape } from './i18n/translations';
 
 // Day labels remain stable, while each next interval is measured from the
 // actual completion time of the previous checkpoint.
 const SCHEDULE_DAYS = [1, 3, 7, 15, 30, 60];
-
-function daysBetween(fromISO: string, to: Date = new Date()): number {
-  const from = new Date(fromISO).getTime();
-  if (Number.isNaN(from)) return 0;
-  return Math.floor((to.getTime() - from) / (1000 * 60 * 60 * 24));
-}
 
 function addDays(dateISO: string, days: number): string {
   const date = new Date(dateISO);
@@ -122,15 +117,15 @@ export function getRevisionData(revisionTasks: TranslationShape['revisionTasks']
     const anchorDate = previousReviewDate
       ?? (previousDay ? addDays(topic.learningStartedAt, previousDay) : topic.learningStartedAt);
     const standardInterval = nextDay - previousDay;
-    const previousRecall = previousDay ? getRecallRating(topic.id, previousDay) : null;
-    // A forgotten topic returns sooner; partial recall gets a shorter
-    // consolidation gap. Strong recall keeps the normal spaced interval.
-    const intervalDays = previousRecall === 'forgot'
-      ? 1
-      : previousRecall === 'partial'
-        ? Math.min(2, standardInterval)
-        : standardInterval;
-    const elapsedSinceAnchor = daysBetween(anchorDate, now);
+    const recentRatings = getRecallRecords(topic.id)
+      .filter((record) => record.day < nextDay)
+      .sort((a, b) => a.day - b.day)
+      .slice(-3)
+      .map((record) => record.rating);
+    // Missed days never create a stack of old checkpoints: one active
+    // checkpoint remains, and its next interval starts from the real review.
+    const intervalDays = getAdaptiveIntervalDays(standardInterval, recentRatings);
+    const elapsedSinceAnchor = calendarDaysBetween(anchorDate, now);
     const daysUntilDue = intervalDays - elapsedSinceAnchor;
 
     let status: RevisionStatus;
@@ -150,12 +145,20 @@ export function getRevisionData(revisionTasks: TranslationShape['revisionTasks']
       status,
       difficulty: toRevisionDifficulty(topic.difficulty),
       retention,
+      daysOverdue: getDaysOverdue(daysUntilDue),
       task: getTaskForTopic(topic.title, nextDay, revisionTasks),
     });
   }
 
   const statusOrder: Record<RevisionStatus, number> = { overdue: 0, 'due-today': 1, upcoming: 2, mastered: 3 };
-  return items.sort((a, b) => statusOrder[a.status] - statusOrder[b.status] || a.day - b.day);
+  return items.sort((a, b) => {
+    const statusDifference = statusOrder[a.status] - statusOrder[b.status];
+    if (statusDifference !== 0) return statusDifference;
+    if (a.status === 'overdue' && b.status === 'overdue') {
+      return a.retention - b.retention || (b.daysOverdue ?? 0) - (a.daysOverdue ?? 0) || a.day - b.day;
+    }
+    return a.day - b.day;
+  });
 }
 
 /** Merge checkpoints from every active goal's roadmap at once. */
@@ -172,7 +175,14 @@ export function getRevisionDataForGoals(
   });
 
   const statusOrder: Record<RevisionStatus, number> = { overdue: 0, 'due-today': 1, upcoming: 2, mastered: 3 };
-  return merged.sort((a, b) => statusOrder[a.status] - statusOrder[b.status] || a.day - b.day);
+  return merged.sort((a, b) => {
+    const statusDifference = statusOrder[a.status] - statusOrder[b.status];
+    if (statusDifference !== 0) return statusDifference;
+    if (a.status === 'overdue' && b.status === 'overdue') {
+      return a.retention - b.retention || (b.daysOverdue ?? 0) - (a.daysOverdue ?? 0) || a.day - b.day;
+    }
+    return a.day - b.day;
+  });
 }
 
 /** Aggregate counts for the Revision dashboard. */
