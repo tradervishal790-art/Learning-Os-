@@ -19,7 +19,12 @@ export default function SharedLearningInsights({ kind }: Props) {
     void Promise.all(ids.map(async ({ id, label }) => ({
       id, label, summary: await getSharedPatternSummary(id),
     }))).then((results) => {
-      if (active) setSummaries(results.filter((item): item is typeof item & { summary: SharedPatternSummary } => item.summary !== null));
+      if (active) {
+        const visible: Array<{ id: string; label: string; summary: SharedPatternSummary }> = results
+          .filter((item) => item.summary !== null)
+          .map((item) => ({ id: item.id, label: item.label, summary: item.summary! }));
+        setSummaries(visible);
+      }
     });
     return () => { active = false; };
   }, [kind]);
