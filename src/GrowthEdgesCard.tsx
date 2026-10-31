@@ -19,7 +19,7 @@ export default function GrowthEdgesCard({ edges, hasPersonality, className = '' 
           <p className="text-xs text-gray-400 dark:text-white/40 mb-3">Habits from your personality that your tests also show. Small things to try next.</p>
           <div className="space-y-3">
             {edges.map((e) => (
-              <div key={e.trait + e.title} className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 p-3">
+              <div key={e.trait + e.title} className="los-panel">
                 <p className="text-[11px] uppercase tracking-wide text-purple-500 mb-0.5">{TRAIT_LABELS[e.trait]}</p>
                 <p className="text-sm font-semibold">{e.title}</p>
                 <p className="text-xs text-gray-500 dark:text-white/50 mt-1">{e.cause}</p>
