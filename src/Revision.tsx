@@ -13,6 +13,7 @@ import { format } from './i18n/format';
 import StudyPlan from './StudyPlan';
 import { studyPlanText } from './studyPlanText';
 import { useLanguage } from './i18n/LanguageContext';
+import { contributeRevisionPattern } from './sharedLearningPatterns';
 
 const statusIcons: Record<RevisionStatus, ReactNode> = {
   'due-today': <Flame className="w-3 h-3" strokeWidth={2} />,
@@ -105,6 +106,7 @@ export default function Revision({ goals = [] }: RevisionProps) {
 
   const handleRecallRating = (item: RevisionItem & { goalId?: string }, rating: RecallRating) => {
     saveRecallRating(item.topicId, item.day, rating);
+    void contributeRevisionPattern(item.day);
     setRecallAccuracy(getRecallAccuracy());
     setRecallTrend(getRecallTrend());
     handleMarkDone(item);
