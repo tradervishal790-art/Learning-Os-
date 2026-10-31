@@ -272,24 +272,31 @@ export default function Notes({ videoTitle, videoDescription, videoId }: { video
         }
       }
 
-      const context = videoDescription ? `Title: ${videoTitle}\nDescription: ${videoDescription}` : '';
-      const deepNotes = await generateDeepNotes(topic, context, videoId, locale);
+      const context = videoDescription ? `Title: ${videoTitle}\\nDescription: ${videoDescription}` : '';
+      const deepNotes = await generateDeepNotes(requestedTopic, context, videoId, locale);
+      if (!isLatestRequest(generationRequestRef, requestId)) return;
       deepNotes.locale = locale;
       if (videoId) setCurrentVideoId(videoId);
       localStorage.setItem(cacheKey, JSON.stringify(deepNotes));
       setNotes(deepNotes);
     } catch (err) {
-      setError(err instanceof Error ? err.message : t.notes.genericGenerateError);
+      if (isLatestRequest(generationRequestRef, requestId)) {
+        setError(err instanceof Error ? err.message : t.notes.genericGenerateError);
+      }
     } finally {
-      setLoading(false);
+      if (isLatestRequest(generationRequestRef, requestId)) setLoading(false);
     }
   };
 
   const handleGenerateFromVideo = async () => {
-    const videoId = extractVideoId(youtubeUrl.trim());
+    const requestId = beginRequest(generationRequestRef);
+    const requestedUrl = youtubeUrl.trim();
+    const videoId = extractYouTubeId(requestedUrl);
     if (!videoId) {
-      setError(t.notes.invalidUrlError);
-      setLoading(false);
+      if (isLatestRequest(generationRequestRef, requestId)) {
+        setError(t.notes.invalidUrlError);
+        setLoading(false);
+      }
       return;
     }
 
@@ -308,16 +315,20 @@ export default function Notes({ videoTitle, videoDescription, videoId }: { video
       }
 
       const meta = await fetchVideoMeta(videoId);
-      const context = `Title: ${meta.title}\nDescription: ${meta.description.slice(0, 500)}`;
+      if (!isLatestRequest(generationRequestRef, requestId)) return;
+      const context = `Title: ${meta.title}\\nDescription: ${meta.description.slice(0, 500)}`;
       const deepNotes = await generateDeepNotes(meta.title, context, videoId, locale);
+      if (!isLatestRequest(generationRequestRef, requestId)) return;
       deepNotes.locale = locale;
 
       localStorage.setItem(`deepnotes_v3_${videoId}`, JSON.stringify(deepNotes));
       setNotes(deepNotes);
     } catch (err) {
-      setError(err instanceof Error ? err.message : t.notes.genericVideoGenerateError);
+      if (isLatestRequest(generationRequestRef, requestId)) {
+        setError(err instanceof Error ? err.message : t.notes.genericVideoGenerateError);
+      }
     } finally {
-      setLoading(false);
+      if (isLatestRequest(generationRequestRef, requestId)) setLoading(false);
     }
   };
 
