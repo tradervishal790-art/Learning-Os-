@@ -854,7 +854,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                     </p>
                   )}
                   <p className="text-[11px] text-gray-400 dark:text-white/30 mt-2">
-                    You can switch this off at any time. A private one-time marker prevents duplicate counting.
+                    Turning this off stops future contributions; existing group totals remain. A private one-time marker prevents duplicate counting.
                   </p>
                 </div>
 
