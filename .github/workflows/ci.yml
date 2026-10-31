@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, "feature/**", "feat/**"]
+    branches: [main, "feature/**", "feat/**", "phase-*"]
   pull_request:
 
 # Same gate as docs/RULES.md ("Before every commit"), plus tests and lint.
