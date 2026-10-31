@@ -1,6 +1,7 @@
 import type { RevisionItem, RevisionStatus, RevisionDifficulty, Topic, Difficulty, Goal } from './types';
 import { getRoadmapData } from './roadmapData';
 import { getReviewedDays, getReviewDate } from './revisionstore';
+import { getRecallRating } from './revisionRecallStore';
 import type { TranslationShape } from './i18n/translations';
 
 // Day labels remain stable, while each next interval is measured from the
@@ -121,12 +122,16 @@ export function getRevisionData(revisionTasks: TranslationShape['revisionTasks']
     // checkpoint date so existing learners do not suddenly lose or gain time.
     const anchorDate = previousReviewDate
       ?? (previousDay ? addDays(topic.learningStartedAt, previousDay) : topic.learningStartedAt);
-    const intervalDays = nextDay - previousDay;
-    const elapsedSinceAnchor = previousReviewDate
-      ? daysBetween(anchorDate, now)
-      : previousDay
-        ? daysBetween(anchorDate, now)
-        : elapsedDays;
+    const standardInterval = nextDay - previousDay;
+    const previousRecall = previousDay ? getRecallRating(topic.id, previousDay) : null;
+    // A forgotten topic returns sooner; partial recall gets a shorter
+    // consolidation gap. Strong recall keeps the normal spaced interval.
+    const intervalDays = previousRecall === 'forgot'
+      ? 1
+      : previousRecall === 'partial'
+        ? Math.min(2, standardInterval)
+        : standardInterval;
+    const elapsedSinceAnchor = daysBetween(anchorDate, now);
     const daysUntilDue = intervalDays - elapsedSinceAnchor;
 
     let status: RevisionStatus;
