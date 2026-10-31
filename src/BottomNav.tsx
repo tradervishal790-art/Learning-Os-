@@ -31,9 +31,10 @@ interface Props {
   items: NavEntry[];
   activeId: string;
   onSelect: (id: string) => void;
+  darkMode?: boolean;
 }
 
-export default function BottomNav({ items, activeId, onSelect }: Props) {
+export default function BottomNav({ items, activeId, onSelect, darkMode = false }: Props) {
   const [moreOpen, setMoreOpen] = useState(false);
   const immersive = useImmersive();
 
@@ -50,12 +51,9 @@ export default function BottomNav({ items, activeId, onSelect }: Props) {
 
   if (immersive) return null;
 
-  const tone = (active: boolean, locked: boolean) =>
-    active
-      ? 'text-indigo-600 dark:text-indigo-400'
-      : locked
-      ? 'text-gray-300 dark:text-white/25'
-      : 'text-gray-500 dark:text-white/50';
+  const tone = (active: boolean, locked: boolean) => darkMode
+    ? active ? 'text-cyan-300' : locked ? 'text-white/20' : 'text-white/55'
+    : active ? 'text-indigo-600 dark:text-indigo-400' : locked ? 'text-gray-300 dark:text-white/25' : 'text-gray-500 dark:text-white/50';
 
   return (
     <div className="md:hidden">
@@ -76,7 +74,7 @@ export default function BottomNav({ items, activeId, onSelect }: Props) {
               exit={{ y: 24, opacity: 0 }}
               transition={{ duration: 0.2, ease: 'easeOut' }}
               onClick={(e) => e.stopPropagation()}
-              className="absolute inset-x-3 rounded-3xl bg-white dark:bg-neutral-900 border border-gray-200 dark:border-white/10 p-3 grid grid-cols-4 gap-1"
+              className={`absolute inset-x-3 rounded-3xl border p-3 grid grid-cols-4 gap-1 ${darkMode ? "bg-[#101a2b] border-white/10" : "bg-white dark:bg-neutral-900 border-gray-200 dark:border-white/10"}`}
               style={{ bottom: 'calc(3.5rem + env(safe-area-inset-bottom) + 0.5rem)' }}
             >
               {more.map((item) => {
@@ -105,7 +103,7 @@ export default function BottomNav({ items, activeId, onSelect }: Props) {
 
       <nav
         aria-label="Main"
-        className="fixed bottom-0 inset-x-0 z-40 bg-white/95 dark:bg-black/95 backdrop-blur border-t border-gray-200 dark:border-white/10"
+        className={`fixed bottom-0 inset-x-0 z-40 backdrop-blur border-t ${darkMode ? "bg-[#080d19]/95 border-white/10" : "bg-white/95 dark:bg-black/95 border-gray-200 dark:border-white/10"}`}
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         <div className="h-14 flex items-center justify-around">
