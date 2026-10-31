@@ -14,6 +14,8 @@ test('topic evidence matches exact normalized topic names and ignores pending su
     attempt(' algebra ', [true]),
   ]);
   assert.deepEqual(evidence, { accuracy: 67, attempts: 2, gradedQuestions: 3 });
+  const hindi = getTopicTestEvidence('प्रकाश संश्लेषण', [attempt('प्रकाश-संश्लेषण', [true, false])]);
+  assert.deepEqual(hindi, { accuracy: 50, attempts: 1, gradedQuestions: 2 });
 });
 
 test('only the five most recent matching tests contribute to mastery evidence', () => {

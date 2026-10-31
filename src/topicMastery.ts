@@ -7,8 +7,9 @@ export interface TopicTestEvidence {
 }
 
 function normalizeTopicName(value: string): string {
-  return value.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
-    .replace(/[^a-z0-9]+/g, ' ').trim().replace(/\s+/g, ' ');
+  // Keep Unicode letters and combining marks so Hindi and other scripts match too.
+  return value.normalize('NFKC').toLowerCase()
+    .replace(/[^\p{L}\p{M}\p{N}]+/gu, ' ').trim().replace(/\s+/g, ' ');
 }
 
 /** Use only exact normalized topic matches, so similar chapter names are not conflated. */
