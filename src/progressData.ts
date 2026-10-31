@@ -3,6 +3,8 @@ import { getRoadmapData } from './roadmapData';
 import { getEngagementSessions } from './engagementStore';
 import { getRevisionDataForGoals, getRevisionStats } from './revisionData';
 import { getRecallRecords } from './revisionRecallStore';
+import { getTestAttempts } from './testStore';
+import { combineTopicMasteryScore, getTopicTestEvidence } from './topicMastery';
 import type { TranslationShape } from './i18n/translations';
 
 // ============================================================
@@ -135,6 +137,9 @@ export interface TopicMastery {
   /** Latest observed recall score from the learner's explicit revision ratings; null means not measured. */
   observedRecall: number | null;
   recallAttempts: number;
+  /** Accuracy across the learner's five most recent scored tests for this exact topic. */
+  testAccuracy: number | null;
+  testAttempts: number;
   goalTitle?: string;
 }
 
@@ -160,6 +165,7 @@ export function getMasteryHeatmap(goals: Goal[], sessions: EngagementSession[] =
       : [{ roadmap: getRoadmapData() }];
 
   const result: TopicMastery[] = [];
+  const testAttempts = getTestAttempts();
 
   for (const { roadmap, goalTitle } of roadmapEntries) {
     for (const topic of roadmap.children ?? []) {
@@ -172,15 +178,21 @@ export function getMasteryHeatmap(goals: Goal[], sessions: EngagementSession[] =
         ? Math.round(topicRecallRecords.reduce((sum, record) => sum + (record.rating === 'remembered' ? 100 : record.rating === 'partial' ? 50 : 0), 0) / topicRecallRecords.length)
         : null;
 
-      let adjusted = observedRecall ?? baseline;
+      let engagementAdjusted = baseline;
       if (topicSessions.length > 0) {
         const avgSignalPoints =
           topicSessions.reduce((sum, s) => sum + SIGNAL_POINTS[s.signal], 0) / topicSessions.length;
-        adjusted = Math.max(0, Math.min(100, Math.round(baseline + avgSignalPoints)));
+        engagementAdjusted = Math.max(0, Math.min(100, Math.round(baseline + avgSignalPoints)));
       }
-
-      // Prefer explicit recall ratings over inferred status/engagement when available.
-      if (observedRecall !== null) adjusted = observedRecall;
+      const testEvidence = getTopicTestEvidence(topic.title, testAttempts);
+      // Explicit recall remains strongest; real scored tests add a measured signal
+      // instead of leaving mastery based only on roadmap completion / video reactions.
+      const adjusted = combineTopicMasteryScore(
+        engagementAdjusted,
+        observedRecall,
+        testEvidence.accuracy,
+        testEvidence.attempts,
+      );
 
       result.push({
         topicId: topic.id,
@@ -191,6 +203,8 @@ export function getMasteryHeatmap(goals: Goal[], sessions: EngagementSession[] =
         sessionCount: topicSessions.length,
         observedRecall,
         recallAttempts: topicRecallRecords.length,
+        testAccuracy: testEvidence.accuracy,
+        testAttempts: testEvidence.attempts,
         goalTitle,
       });
     }
