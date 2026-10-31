@@ -158,7 +158,7 @@ export default function Onboarding3D({ onComplete }: Onboarding3DProps) {
   };
 
   return (
-    <div className="min-h-screen bg-[#030303] flex flex-col relative overflow-hidden">
+    <div className="min-h-dvh min-h-screen bg-[#030303] flex flex-col relative overflow-x-hidden overflow-y-auto">
       <div
         className="absolute inset-0 pointer-events-none"
         style={{ background: 'radial-gradient(circle at center, rgba(139, 92, 246, 0.1) 0%, transparent 60%)' }}
