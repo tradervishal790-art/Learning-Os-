@@ -291,6 +291,15 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
     setLearningProfile(null);
   };
 
+  const handleOpenLearningProfile = () => {
+    if (learningProfile) {
+      setShowSettings(true);
+      setShowFullProfileReport(true);
+      return;
+    }
+    setShowLearningQuiz(true);
+  };
+
   const handleLaunchPlaylist = (payload: { primary: Video; fallbacks: Video[]; bridge?: TopicBridge; previousVideoId?: string | null; topicId: string }) => {
     setPreloadedPlaylist(payload);
     setViewingTopicId(payload.topicId);
@@ -618,7 +627,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
             streak={streak}
             activeGoals={goals.filter((goal) => goal.status === 'active').length}
             onNavigate={setActivePage}
-            onOpenProfile={() => setShowLearningQuiz(true)}
+            onOpenProfile={handleOpenLearningProfile}
           />
           <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-3 px-4 pb-6 md:px-8">
             <WelcomeBack goals={goals} revisionTasks={t.revisionTasks} onOpen={setActivePage} />
