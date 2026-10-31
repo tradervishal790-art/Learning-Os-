@@ -534,19 +534,10 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.1 + i * 0.05, duration: 0.4 }}
               onClick={() => selectNav(item.id, item.label)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
-                isMissionControl
-                  ? isLocked
-                    ? 'text-white/20'
-                    : activePage === item.id
-                    ? 'bg-indigo-500 text-white'
-                    : 'text-white/55 hover:text-white hover:bg-white/5'
-                  : isLocked
-                    ? 'text-gray-300 dark:text-white/20 hover:text-gray-400 dark:hover:text-white/30'
-                    : activePage === item.id
-                      ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white'
-                      : 'text-gray-500 dark:text-white/50 hover:text-black dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5'
-              }`}
+              className={`los-nav-item ${
+                isLocked ? 'opacity-45 cursor-not-allowed' : ''
+              } ${isMissionControl ? 'text-white/60' : ''}`}
+              aria-current={activePage === item.id ? 'page' : undefined}
             >
               {item.icon && <item.icon className="w-4 h-4" />}
               <span className="flex-1 text-left">{item.label}</span>
