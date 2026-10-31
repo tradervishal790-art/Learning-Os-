@@ -92,7 +92,6 @@ export function getRevisionData(revisionTasks: TranslationShape['revisionTasks']
   for (const topic of topics) {
     if (topic.status === 'locked' || !topic.learningStartedAt) continue;
 
-    const elapsedDays = daysBetween(topic.learningStartedAt, now);
     const reviewedDays = getReviewedDays(topic.id);
     const allCheckpointsDone = SCHEDULE_DAYS.every((d) => reviewedDays.includes(d));
 
