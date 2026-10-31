@@ -295,10 +295,10 @@ export default function Test() {
         </motion.div>
       )}
 
-      <SharedLearningInsights kind="questions" />
-
       {stage === 'list' && (
-        <TestList
+        <>
+          <SharedLearningInsights kind="questions" />
+          <TestList
           papers={papers}
           history={history}
           onCreate={openCreate}
@@ -308,7 +308,8 @@ export default function Test() {
           onLive={startLive}
           onDaily={() => setStage('daily')}
           onOpenAttempt={openPastAttempt}
-        />
+          />
+        </>
       )}
 
       {stage === 'daily' && <DailyTest onStart={startInstructions} onExit={() => setStage('list')} />}
