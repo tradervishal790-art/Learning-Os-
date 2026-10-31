@@ -1,16 +1,23 @@
 import type { RevisionItem, RevisionStatus, RevisionDifficulty, Topic, Difficulty, Goal } from './types';
 import { getRoadmapData } from './roadmapData';
-import { getReviewedDays } from './revisionstore';
+import { getReviewedDays, getReviewDate } from './revisionstore';
 import type { TranslationShape } from './i18n/translations';
 
-// Standard spaced-repetition checkpoints, referenced across the app copy
-// (App.tsx demo modal) as "Day 1, 3, 7, 15, 30, 60".
+// Day labels remain stable, while each next interval is measured from the
+// actual completion time of the previous checkpoint.
 const SCHEDULE_DAYS = [1, 3, 7, 15, 30, 60];
 
 function daysBetween(fromISO: string, to: Date = new Date()): number {
   const from = new Date(fromISO).getTime();
   if (Number.isNaN(from)) return 0;
   return Math.floor((to.getTime() - from) / (1000 * 60 * 60 * 24));
+}
+
+function addDays(dateISO: string, days: number): string {
+  const date = new Date(dateISO);
+  if (Number.isNaN(date.getTime())) return dateISO;
+  date.setDate(date.getDate() + days);
+  return date.toISOString();
 }
 
 function formatDueDate(daysUntilDue: number): string {
@@ -23,18 +30,13 @@ function formatDueDate(daysUntilDue: number): string {
 
 // Rough Ebbinghaus-style estimate — retention starts high right after the
 // topic was last touched and decays the longer a due checkpoint is left
-// unreviewed, relative to how long that checkpoint's interval is.
+// unreviewed, relative to the interval length.
 function estimateRetention(daysPastDue: number, intervalDays: number): number {
   const ratio = intervalDays > 0 ? daysPastDue / intervalDays : 0;
   const retention = 95 - Math.round(ratio * 40);
   return Math.max(30, Math.min(98, retention));
 }
 
-// Generic fallback task per spaced-repetition checkpoint — used when the
-// topic has no cached Deep Notes yet (so nothing video-grounded exists to
-// pull from). Kept in sync with generate-notes.ts's learningPath spirit.
-// Sourced from t.revisionTasks (translations.ts) — passed in by the caller
-// since this is a plain module and can't call useTranslation() itself.
 function fallbackDayTasks(revisionTasks: TranslationShape['revisionTasks']): Record<number, string> {
   return {
     1: revisionTasks.day1,
@@ -46,13 +48,6 @@ function fallbackDayTasks(revisionTasks: TranslationShape['revisionTasks']): Rec
   };
 }
 
-/**
- * Resolves what to actually DO for this topic's due checkpoint. Prefers the
- * matching "Day N: ..." line from that topic's cached Deep Notes (Notes.tsx
- * — grounded in the real video transcript when one was used), falling back
- * to a generic day-based task when no notes have been generated for this
- * topic yet.
- */
 function getTaskForTopic(topicTitle: string, day: number, revisionTasks: TranslationShape['revisionTasks']): string {
   try {
     const cacheKey = `deepnotes_v3_topic_${topicTitle.trim().toLowerCase()}`;
@@ -72,12 +67,6 @@ function getTaskForTopic(topicTitle: string, day: number, revisionTasks: Transla
 }
 
 function categoryForDifficulty(difficulty: Difficulty): string {
-  // NOTE: no translation keys exist for these category labels
-  // ("Foundations"/"Core Concepts"/"Advanced") or for formatDueDate's
-  // relative-date phrases below — flagging rather than guessing new
-  // Hindi/Hinglish text, per the "don't touch translations.ts content
-  // unless it's an actual bug" rule. Left as English pending a decision
-  // on where these keys should live in translations.ts.
   if (difficulty === 'Beginner') return 'Foundations';
   if (difficulty === 'Intermediate') return 'Core Concepts';
   return 'Advanced';
@@ -90,11 +79,9 @@ function toRevisionDifficulty(difficulty: Difficulty): RevisionDifficulty {
 }
 
 /**
- * Builds live spaced-repetition items straight from the roadmap — one item
- * per next-due schedule checkpoint, only for topics the learner has
- * actually started (status learning/completed/mastered AND has a
- * learningStartedAt timestamp). Nothing here is seeded/mock: an empty
- * roadmap or a roadmap nobody has started yet correctly returns [].
+ * Builds live spaced-repetition items from started roadmap topics. New
+ * reviews schedule the next checkpoint relative to the actual last review.
+ * Old installations without timestamps retain their original due dates.
  */
 export function getRevisionData(revisionTasks: TranslationShape['revisionTasks'], roadmap: Topic = getRoadmapData()): RevisionItem[] {
   const topics = roadmap.children ?? [];
@@ -119,8 +106,6 @@ export function getRevisionData(revisionTasks: TranslationShape['revisionTasks']
         status: 'mastered',
         difficulty: toRevisionDifficulty(topic.difficulty),
         retention: 100,
-        // NOTE: also flagged above — no translation key exists for this
-        // "mastered" task line either.
         task: 'Mastered — sab checkpoints ho gaye ✓',
       });
       continue;
@@ -129,13 +114,27 @@ export function getRevisionData(revisionTasks: TranslationShape['revisionTasks']
     const nextDay = SCHEDULE_DAYS.find((d) => !reviewedDays.includes(d));
     if (nextDay === undefined) continue;
 
-    const daysUntilDue = nextDay - elapsedDays;
+    const previousDay = [...reviewedDays].filter((day) => SCHEDULE_DAYS.includes(day) && day < nextDay).sort((a, b) => b - a)[0] ?? 0;
+    const previousReviewDate = previousDay ? getReviewDate(topic.id, previousDay) : null;
+
+    // For legacy records without a timestamp, reconstruct the old planned
+    // checkpoint date so existing learners do not suddenly lose or gain time.
+    const anchorDate = previousReviewDate
+      ?? (previousDay ? addDays(topic.learningStartedAt, previousDay) : topic.learningStartedAt);
+    const intervalDays = nextDay - previousDay;
+    const elapsedSinceAnchor = previousReviewDate
+      ? daysBetween(anchorDate, now)
+      : previousDay
+        ? daysBetween(anchorDate, now)
+        : elapsedDays;
+    const daysUntilDue = intervalDays - elapsedSinceAnchor;
+
     let status: RevisionStatus;
     if (daysUntilDue > 0) status = 'upcoming';
     else if (daysUntilDue === 0) status = 'due-today';
     else status = 'overdue';
 
-    const retention = estimateRetention(Math.max(0, -daysUntilDue), nextDay);
+    const retention = estimateRetention(Math.max(0, -daysUntilDue), intervalDays);
 
     items.push({
       id: `${topic.id}-day${nextDay}`,
@@ -155,15 +154,7 @@ export function getRevisionData(revisionTasks: TranslationShape['revisionTasks']
   return items.sort((a, b) => statusOrder[a.status] - statusOrder[b.status] || a.day - b.day);
 }
 
-/**
- * Same as getRevisionData, but merges checkpoints from EVERY active goal's
- * roadmap at once (each active goal has its own roadmap — see
- * roadmapData.ts). Items get a `goalTitle` tag when there's more than 1
- * active goal, so the UI can show which goal a checkpoint belongs to;
- * single-goal users see no change. Used by Dashboard's stats card and the
- * Revision page, so revision always covers both simultaneous goals instead
- * of just whichever one the Roadmap tab happens to be open on.
- */
+/** Merge checkpoints from every active goal's roadmap at once. */
 export function getRevisionDataForGoals(
   revisionTasks: TranslationShape['revisionTasks'],
   goals: Goal[]
@@ -173,9 +164,6 @@ export function getRevisionDataForGoals(
 
   const merged = activeGoals.flatMap((g) => {
     const items = getRevisionData(revisionTasks, getRoadmapData(g.id));
-    // goalId is always stamped (needed so "Mark Done" can write back to the
-    // right goal's roadmap); goalTitle is only added for display when the
-    // learner has more than one active goal at once.
     return items.map((it) => ({ ...it, goalId: g.id, ...(activeGoals.length > 1 ? { goalTitle: g.title } : {}) }));
   });
 
@@ -183,15 +171,13 @@ export function getRevisionDataForGoals(
   return merged.sort((a, b) => statusOrder[a.status] - statusOrder[b.status] || a.day - b.day);
 }
 
-/** Aggregate stats for the Revision dashboard — counts + average retention. */
+/** Aggregate counts for the Revision dashboard. */
 export function getRevisionStats(items: RevisionItem[]) {
   const total = items.length;
   const dueToday = items.filter((i) => i.status === 'due-today').length;
   const overdue = items.filter((i) => i.status === 'overdue').length;
   const upcoming = items.filter((i) => i.status === 'upcoming').length;
   const mastered = items.filter((i) => i.status === 'mastered').length;
-  const avgRetention =
-    total === 0 ? 0 : Math.round(items.reduce((sum, i) => sum + i.retention, 0) / total);
-
+  const avgRetention = total === 0 ? 0 : Math.round(items.reduce((sum, i) => sum + i.retention, 0) / total);
   return { total, dueToday, overdue, upcoming, mastered, avgRetention };
 }
