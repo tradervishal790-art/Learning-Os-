@@ -128,12 +128,12 @@ export default function MissionControl({
               return (
                 <g key={row.id} filter="url(#mindGlow)" opacity=".95">
                   <path d={`M 235 330 C 330 330, 330 ${y}, 420 ${y}`} stroke={`url(#line-${row.id})`} strokeWidth="2.2" />
-                  {selectedEngine === row.id && <>
+                  <g style={{ opacity: selectedEngine === row.id ? 1 : 0, transition: 'opacity 420ms cubic-bezier(.22,1,.36,1)' }}>
                     <path d={`M 690 ${y} C 790 ${y}, 800 ${y-22}, 900 ${y-22}`} stroke={row.color} strokeOpacity=".85" strokeWidth="1.9" />
                     <path d={`M 690 ${y} C 790 ${y}, 800 ${y+22}, 900 ${y+22}`} stroke={row.color} strokeOpacity=".85" strokeWidth="1.9" />
                     <circle cx="900" cy={y-22} r="3" fill={row.color} />
                     <circle cx="900" cy={y+22} r="3" fill={row.color} />
-                  </>}
+                  </g>
                   <circle cx="420" cy={y} r="4" fill={row.color} />
                 </g>
               );
@@ -157,8 +157,8 @@ export default function MissionControl({
                   type="button"
                   onClick={() => setSelectedEngine((current) => current === row.id ? null : row.id)}
                   aria-expanded={selectedEngine === row.id}
-                  className={`group absolute left-[35%] z-10 flex h-[76px] w-[22%] -translate-y-1/2 items-center gap-3 rounded-2xl border bg-[#111d31]/95 px-4 text-left shadow-[0_10px_35px_rgba(0,0,0,.25)] transition duration-200 hover:-translate-y-[calc(50%+3px)] hover:bg-[#17263d] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 ${selectedEngine === row.id ? 'ring-1 ring-white/30 bg-[#1a2940]' : ''}`}
-                  style={{ top, borderColor: `${row.color}55`, boxShadow: `0 0 22px ${row.color}12` }}
+                  className={`group absolute left-[35%] z-10 flex h-[76px] w-[22%] -translate-y-1/2 items-center gap-3 rounded-2xl border bg-[#111d31]/95 px-4 text-left shadow-[0_10px_35px_rgba(0,0,0,.25)] transition-[transform,background-color,box-shadow,border-color] duration-300 ease-out hover:scale-[1.015] hover:bg-[#17263d] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 ${selectedEngine === row.id ? 'ring-1 ring-white/30 bg-[#1a2940]' : ''}`}
+                  style={{ top, transform: selectedEngine === row.id ? 'translateY(calc(-50% - 4px)) scale(1.015)' : undefined, borderColor: `${row.color}55`, boxShadow: selectedEngine === row.id ? `0 9px 32px ${row.color}24` : `0 0 22px ${row.color}12` }}
                 >
                   <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl" style={{ backgroundColor: `${row.color}20`, color: row.color }}><Icon className="h-5 w-5" /></span>
                   <span className="min-w-0 flex-1">
@@ -168,15 +168,18 @@ export default function MissionControl({
                   </span>
                   <ArrowUpRight className="h-4 w-4 shrink-0 text-slate-600 transition group-hover:text-white" />
                 </button>
-                {selectedEngine === row.id && row.children.map((child, childIndex) => {
+                {row.children.map((child, childIndex) => {
+                  const isExpanded = selectedEngine === row.id;
                   const ChildIcon = child.icon;
                   return (
                     <button
                       key={child.label}
                       type="button"
                       onClick={() => open(child.action)}
-                      className="group absolute left-[75%] z-10 flex h-[42px] w-[22%] -translate-y-1/2 items-center gap-2.5 rounded-xl border border-white/[0.09] bg-[#101a2b]/95 px-3 text-left transition duration-200 hover:border-white/20 hover:bg-[#18263a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"
-                      style={{ top: `${((rowY[i] + (childIndex === 0 ? -22 : 22)) / 660) * 100}%`, borderColor: `${row.color}35` }}
+                      className="group absolute left-[75%] z-10 flex h-[42px] w-[22%] -translate-y-1/2 items-center gap-2.5 rounded-xl border border-white/[0.09] bg-[#101a2b]/95 px-3 text-left transition-[opacity,transform,background-color,border-color,box-shadow] duration-400 ease-out hover:border-white/20 hover:bg-[#18263a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"
+                      aria-hidden={!isExpanded}
+                      tabIndex={isExpanded ? 0 : -1}
+                      style={{ top: `${((rowY[i] + (childIndex === 0 ? -22 : 22)) / 660) * 100}%`, borderColor: `${row.color}35`, opacity: isExpanded ? 1 : 0, pointerEvents: isExpanded ? 'auto' : 'none', transform: isExpanded ? 'translateY(-50%) translateX(0) scale(1)' : 'translateY(calc(-50% + 9px)) translateX(-8px) scale(.985)', transitionDelay: isExpanded ? `${childIndex * 75}ms` : '0ms' }}
                     >
                       <ChildIcon className="h-3.5 w-3.5 shrink-0" style={{ color: row.color }} />
                       <span className="min-w-0">
