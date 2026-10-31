@@ -28,6 +28,7 @@ import { useAuthPrompt, SignInButton } from './AuthPrompt';
 import type { DashboardPageId, PageConfig, UserOnboardingData, LearningProfile, Video, Topic, Goal, TopicBridge } from './types';
 import { useTranslation } from './i18n/LanguageContext';
 import { format } from './i18n/format';
+import { isSharedLearningEnabled, setSharedLearningEnabled } from './sharedLearningIntelligence';
 
 // Every real "page" is lazy-loaded: each one only downloads once the user
 // actually navigates to its route, instead of every page's code shipping
@@ -251,6 +252,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   const [regeneratingRoadmap, setRegeneratingRoadmap] = useState(false);
   const [regenerateResult, setRegenerateResult] = useState<'success' | 'error' | null>(null);
   const [settingsLanguage, setSettingsLanguage] = useState(userData?.language ?? '');
+  const [shareLearningSignals, setShareLearningSignals] = useState(isSharedLearningEnabled);
 
   const [showCustomPlaylist, setShowCustomPlaylist] = useState(false);
   const [customTopic, setCustomTopic] = useState('');
@@ -823,6 +825,38 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                     )}
                   </div>
                 )}
+
+                {/* Shared Learning Intelligence — opt-in, coarse video outcomes only. */}
+                <div className="pt-2 border-t border-gray-200 dark:border-white/10">
+                  <label className="block text-xs uppercase tracking-wider text-gray-400 dark:text-white/40 mb-2 mt-4">
+                    Shared Learning Intelligence
+                  </label>
+                  <p className="text-xs text-gray-400 dark:text-white/40 mb-3 leading-relaxed">
+                    Help improve video recommendations for everyone. Only one broad watch outcome and optional helpful/not-for-me feedback per video are contributed. Your name, email, video title, notes, chats, and learning profile are not shared. Community results appear only after 10 different accounts contribute.
+                  </p>
+                  <label className={`flex items-center gap-3 p-3 rounded-xl border border-gray-200 dark:border-white/10 ${isGuest ? 'opacity-50' : 'cursor-pointer'}`}>
+                    <input
+                      type="checkbox"
+                      checked={shareLearningSignals}
+                      disabled={isGuest}
+                      onChange={(event) => {
+                        const enabled = event.target.checked;
+                        setShareLearningSignals(enabled);
+                        setSharedLearningEnabled(enabled);
+                      }}
+                      className="h-4 w-4 accent-indigo-600"
+                    />
+                    <span className="text-sm font-medium">Contribute anonymized video learning signals</span>
+                  </label>
+                  {isGuest && (
+                    <p className="text-xs text-gray-400 dark:text-white/40 mt-2">
+                      Sign in with a free account to opt in. You can still view community insights.
+                    </p>
+                  )}
+                  <p className="text-[11px] text-gray-400 dark:text-white/30 mt-2">
+                    You can switch this off at any time. A private one-time marker prevents duplicate counting.
+                  </p>
+                </div>
 
                 {/* Personality Check — separate optional 20-question screen,
                     opened from here only (not part of the Blueprint Interview). */}
