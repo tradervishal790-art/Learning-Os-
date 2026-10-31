@@ -3,6 +3,7 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { authFetch } from './apiFetch';
 import { pushToCloud, pullFromCloud } from './cloudSync';
 import { istDateKey } from './currentAffairsStore';
+import { mergeResolvedChannel } from './channelDigestLogic';
 
 // ============================================================
 // channelDigestStore.ts
@@ -127,10 +128,17 @@ export async function addChannel(input: string): Promise<SavedChannel[]> {
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data?.error || `Could not find that channel (${response.status})`);
   if (typeof data?.channelId !== 'string') throw new Error("Couldn't find that channel.");
-  if (current.some((c) => c.channelId === data.channelId)) return current; // already added
 
-  const next = sanitizeChannels([...current, { channelId: data.channelId, title: data.title, handle: data.handle }]);
-  saveChannels(next);
+  // Re-read after the network request: another action may have removed or
+  // added a channel while resolution was in flight. Never write a stale list.
+  const latest = loadChannels();
+  const resolved: SavedChannel = {
+    channelId: data.channelId,
+    title: typeof data.title === 'string' && data.title ? data.title : data.channelId,
+    handle: typeof data.handle === 'string' && data.handle ? data.handle : undefined,
+  };
+  const next = sanitizeChannels(mergeResolvedChannel(latest, resolved, MAX_CHANNELS));
+  if (next !== latest) saveChannels(next);
   return next;
 }
 
