@@ -199,7 +199,6 @@ function trackAndComputeStreak(): number {
 function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGenerateForSubject, roadmapVersion, lastRoadmapError, goals, activeGoalId, onAddGoal, onEndGoal, onSwitchGoal }: DashboardProps) {
   const t = useTranslation();
   const { isGuest, openSignIn } = useAuthPrompt();
-  const { startOnborda } = useOnborda();
 
   const { theme, toggleTheme } = useTheme();
   // activePage now mirrors the real URL (/dashboard/:page) instead of being
