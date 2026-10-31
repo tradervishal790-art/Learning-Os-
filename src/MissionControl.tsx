@@ -1,4 +1,4 @@
-import { ArrowUpRight, BrainCircuit, BookOpen, CheckCircle2, Compass, GraduationCap, NotebookPen, RotateCcw, Sparkles, Target, Users, Video, Zap } from 'lucide-react';
+import { ArrowUpRight, BrainCircuit, CheckCircle2, Compass, GraduationCap, NotebookPen, RotateCcw, Sparkles, Target, Users, Video, Zap } from 'lucide-react';
 import type { DashboardPageId } from './types';
 
 interface MissionControlProps {
@@ -70,7 +70,7 @@ export default function MissionControl({
     : nextTopic || 'Your learning path starts here';
 
   return (
-    <main className="mission-map relative flex h-[calc(100dvh-82px)] min-h-[570px] w-full flex-col overflow-hidden bg-[#080d19] text-slate-100">
+    <main className="mission-map relative flex h-[calc(100dvh-3.5rem-env(safe-area-inset-bottom))] min-h-0 md:h-dvh w-full flex-col overflow-hidden bg-[#080d19] text-slate-100">
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -left-40 top-[-220px] h-[520px] w-[520px] rounded-full bg-violet-600/[0.10] blur-[130px]" />
         <div className="absolute right-[-120px] top-[10%] h-[480px] w-[480px] rounded-full bg-cyan-500/[0.08] blur-[130px]" />
