@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState, lazy, Suspense } from 'react';
 import type { ComponentType } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Film, BookOpen, ClipboardCheck, Newspaper, Lock, Settings as SettingsIcon, Bell, X as CloseIcon, Target, RotateCcw, Flame, Check, ChevronRight, ArrowLeft } from 'lucide-react';
+import { Search, BookOpen, ClipboardCheck, Newspaper, Lock, Settings as SettingsIcon, X as CloseIcon, ArrowLeft } from 'lucide-react';
 import PagePlaceholder from './PagePlaceholder';
 import MissionControl from './MissionControl';
 import BottomNav from './BottomNav';
@@ -21,7 +21,6 @@ import DailyHabit from './DailyHabit';
 import { analyzeAttempt, analyzeHistory } from './testAnalytics';
 import { getTestAttempts } from './testStore';
 import { getLearningProfile, saveLearningProfile, clearLearningProfile } from './learningProfileStore';
-import { getEngagementSessions } from './engagementStore';
 import { pushToCloud, pullFromCloud } from './cloudSync';
 import { buildCandidatePoolForConcept } from './conceptVideoPool';
 import { selectPlaylistForConcept, analyzedVideoToVideo } from './PlaylistBuilder';
@@ -30,11 +29,6 @@ import { useTheme } from './ThemeContext';
 import { signOutOfApp, getCurrentUser } from './authStore';
 import { useAuthPrompt, SignInButton } from './AuthPrompt';
 import type { DashboardPageId, PageConfig, UserOnboardingData, LearningProfile, Video, Topic, Goal, TopicBridge } from './types';
-import Onborda from './Onborda';
-import { OnbordaProvider, useOnborda } from './OnbordaContext';
-import OnbordaCard from './OnbordaCard';
-import type { Tour } from './onbordaTypes';
-import { hasSeenTour, markTourSeen } from './tourStore';
 import { useTranslation } from './i18n/LanguageContext';
 import { format } from './i18n/format';
 
@@ -65,65 +59,6 @@ function PageLoading() {
       Loading…
     </div>
   );
-}
-
-// Guided spotlight tour for first-time users — see Onborda.tsx for how this
-// engine works (ported from uixmat/onborda, MIT). Each `selector` below
-// must match an `id` added on the actual sidebar/nav element it targets.
-function getDashboardTour(t: ReturnType<typeof useTranslation>): Tour[] {
-  // Phones have no sidebar — the tour points at the bottom bar there.
-  // Revision lives behind the "More" slot on phones.
-  const phone = typeof window !== 'undefined' && !window.matchMedia('(min-width: 768px)').matches;
-  const navSel = (id: string) => (phone ? `#onborda-bnav-${id === 'revision' ? 'more' : id}` : `#onborda-nav-${id}`);
-  const navSide = phone ? 'top' : 'right';
-  return [
-    {
-      tour: 'dashboard-intro',
-      steps: [
-        {
-          title: t.dashboard.tour.dashboardIntro[0].title,
-          content: t.dashboard.tour.dashboardIntro[0].content,
-          selector: navSel('roadmap'),
-          side: navSide,
-        },
-        {
-          title: t.dashboard.tour.dashboardIntro[1].title,
-          content: t.dashboard.tour.dashboardIntro[1].content,
-          selector: navSel('revision'),
-          side: navSide,
-        },
-        {
-          title: t.dashboard.tour.dashboardIntro[2].title,
-          content: t.dashboard.tour.dashboardIntro[2].content,
-          selector: navSel('progress'),
-          side: navSide,
-        },
-        {
-          title: t.dashboard.tour.dashboardIntro[3].title,
-          content: t.dashboard.tour.dashboardIntro[3].content,
-          selector: '#onborda-settings-button',
-          side: 'left',
-        },
-      ],
-    },
-    {
-      tour: 'video-picker-intro',
-      steps: [
-        {
-          title: t.dashboard.tour.videoPickerIntro[0].title,
-          content: t.dashboard.tour.videoPickerIntro[0].content,
-          selector: '#onborda-video-primary',
-          side: 'right',
-        },
-        {
-          title: t.dashboard.tour.videoPickerIntro[1].title,
-          content: t.dashboard.tour.videoPickerIntro[1].content,
-          selector: '#onborda-video-fallback',
-          side: 'right',
-        },
-      ],
-    },
-  ];
 }
 
 interface DashboardProps {
@@ -296,17 +231,6 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   const { isGuest, openSignIn } = useAuthPrompt();
   const { startOnborda } = useOnborda();
 
-  // Auto-start the guided tour once, for a first-time learner only.
-  useEffect(() => {
-    if (!hasSeenTour('dashboard-intro')) {
-      const timer = setTimeout(() => {
-        startOnborda('dashboard-intro');
-        markTourSeen('dashboard-intro');
-      }, 800);
-      return () => clearTimeout(timer);
-    }
-  }, [startOnborda]);
-
   const { theme, toggleTheme } = useTheme();
   // activePage now mirrors the real URL (/dashboard/:page) instead of being
   // plain React state — this is what gives every page its own shareable,
@@ -331,9 +255,6 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   const [streak, setStreak] = useState(0);
   const noteOpen = useNoteOpen();
   const immersive = useImmersive(); // true while a full-attention flow (e.g. a timed test) hides the bottom bar
-  // Bell + sound reminder — computed once when the app/home page opens (not
-  // only on navigating into the Revision tab), so nothing due gets missed.
-  const [revisionAlert, setRevisionAlert] = useState<{ dueToday: number; overdue: number } | null>(null);
   const [showLearningQuiz, setShowLearningQuiz] = useState(false);
   // Alternative onboarding path — does NOT replace showLearningQuiz above,
   // both remain independently reachable from the home page.
@@ -374,28 +295,6 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
 
   useEffect(() => {
     setStreak(trackAndComputeStreak());
-  }, []);
-
-  useEffect(() => {
-    const stats = getRevisionStats(getRevisionDataForGoals(t.revisionTasks, goals));
-    if (stats.dueToday + stats.overdue > 0) {
-      setRevisionAlert({ dueToday: stats.dueToday, overdue: stats.overdue });
-      // The banner shows every time, but the chime only rings once every few hours:
-      // this effect runs on every page load, and hearing the same bell on each
-      // refresh quickly turns a helpful reminder into an annoyance.
-      const BELL_KEY = 'learning_os_bell_last';
-      const BELL_GAP_MS = 3 * 60 * 60 * 1000;
-      let ring = true;
-      try {
-        const last = Number(localStorage.getItem(BELL_KEY) ?? 0);
-        if (Date.now() - last < BELL_GAP_MS) ring = false;
-        else localStorage.setItem(BELL_KEY, String(Date.now()));
-      } catch {
-        /* storage unavailable -> just ring */
-      }
-      if (ring) playReminderBell();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -622,73 +521,6 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   const currentTopic = getCurrentTopic(getRoadmapData(activeGoalId));
   const revisionStats = getRevisionStats(getRevisionDataForGoals(t.revisionTasks, goals));
 
-  // ---------- "Get Started" checklist (new-user guidance) ----------
-  // New users land on a Dashboard with 8 sidebar sections and no clear
-  // "do this first" signal. This computes the 3 steps that actually
-  // matter in the right order — each check reads real existing state
-  // (no new store needed), so it disappears on its own once genuinely
-  // done, and never lies about progress.
-  const hasLearningProfile = learningProfile !== null;
-  const hasRoadmap = goals.length > 0;
-  const hasWatchedVideo = getEngagementSessions().length > 0;
-  const onboardingSteps = [
-    {
-      done: hasLearningProfile,
-      title: t.dashboard.checklist.steps[0].title,
-      subtitle: t.dashboard.checklist.steps[0].subtitle,
-      action: () => setShowLearningQuiz(true),
-      cta: t.dashboard.checklist.steps[0].cta,
-    },
-    {
-      done: hasRoadmap,
-      title: t.dashboard.checklist.steps[1].title,
-      subtitle: t.dashboard.checklist.steps[1].subtitle,
-      action: () => setActivePage('roadmap'),
-      cta: t.dashboard.checklist.steps[1].cta,
-    },
-    {
-      done: hasWatchedVideo,
-      title: t.dashboard.checklist.steps[2].title,
-      subtitle: t.dashboard.checklist.steps[2].subtitle,
-      action: () => setActivePage('videos'),
-      cta: t.dashboard.checklist.steps[2].cta,
-    },
-  ];
-  const showOnboardingChecklist = onboardingSteps.some((s) => !s.done);
-
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 5) return t.dashboard.greeting.night;
-    if (hour < 12) return t.dashboard.greeting.morning;
-    if (hour < 17) return t.dashboard.greeting.afternoon;
-    if (hour < 21) return t.dashboard.greeting.evening;
-    return t.dashboard.greeting.night;
-  };
-
-  const statsCards = [
-    {
-      title: t.dashboard.home.statsCards.goal,
-      value: currentTopic ? currentTopic.title : t.dashboard.home.statsCards.pickTopic,
-      subtitle: currentTopic ? `${currentTopic.estimatedTime} - ${currentTopic.difficulty}` : t.dashboard.home.statsCards.openRoadmap,
-      icon: 'target',
-      onClick: () => setActivePage('roadmap'),
-    },
-    {
-      title: t.dashboard.home.statsCards.revision,
-      value: format(t.dashboard.home.statsCards.dueSuffix, revisionStats.dueToday + revisionStats.overdue),
-      subtitle: revisionStats.overdue > 0 ? format(t.dashboard.home.statsCards.overdueSuffix, revisionStats.overdue) : t.dashboard.home.statsCards.caughtUp,
-      icon: 'refresh',
-      onClick: () => setActivePage('revision'),
-    },
-    {
-      title: t.dashboard.home.statsCards.streak,
-      value: `${streak} ${streak === 1 ? t.dashboard.home.statsCards.day : t.dashboard.home.statsCards.days}`,
-      subtitle: streak > 0 ? t.dashboard.home.statsCards.keepGoing : t.dashboard.home.statsCards.startToday,
-      icon: 'streak',
-      onClick: () => setActivePage('progress'),
-    },
-  ];
-
   const config = pageConfigs[activePage];
   // Guests can preview every section; account checks remain on protected actions.
 
@@ -759,7 +591,6 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   );
 
   return (
-    <Onborda steps={getDashboardTour(t)} cardComponent={OnbordaCard}>
     <div className="min-h-dvh bg-[#f4f6ff] dark:bg-black flex text-black dark:text-white">
       <aside className="hidden md:flex w-64 border-r border-gray-200 dark:border-white/10 p-6 flex-col flex-shrink-0">
         {SidebarContent}
@@ -806,6 +637,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
 
         <Suspense fallback={<PageLoading />}>
                 {activePage === 'dashboard' && (
+          <>
           <MissionControl
             name={displayName}
             goalTitle={goals.find((goal) => goal.id === activeGoalId)?.title ?? userData?.goal ?? ''}
@@ -819,6 +651,12 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
             onNavigate={setActivePage}
             onOpenProfile={() => setShowLearningQuiz(true)}
           />
+          <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-3 px-4 pb-6 md:px-8">
+            <WelcomeBack goals={goals} revisionTasks={t.revisionTasks} onOpen={setActivePage} />
+            <DailyHabit />
+            <CurrentAffairsChip onOpen={() => setActivePage('current-affairs')} />
+          </div>
+          </>
         )}
 
         {activePage === 'roadmap' && (
@@ -1270,14 +1108,9 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
         }}
       />
     </div>
-    </Onborda>
   );
 }
 
 export default function Dashboard(props: DashboardProps) {
-  return (
-    <OnbordaProvider>
-      <DashboardInner {...props} />
-    </OnbordaProvider>
-  );
+  return <DashboardInner {...props} />;
 }
