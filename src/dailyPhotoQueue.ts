@@ -145,9 +145,15 @@ async function saveQueuedPhotoParts(item: QueuedPhoto, parts: QueuedPhotoPart[])
 
 /** Extract only enough pages to prepare the requested test. Remaining pages stay
  * attached to their original queue record and are picked up on a later test day. */
+export interface DailyPhotoProcessorDependencies {
+  prepareUpload?: typeof prepareUpload;
+  extractQuestionsFromPhoto?: typeof extractQuestionsFromPhoto;
+}
+
 export async function processQueuedPhotosForDailyTest(
   targetCount: number,
   onProgress?: (message: string) => void,
+  dependencies: DailyPhotoProcessorDependencies = {},
 ): Promise<{ bank: TestQuestion[]; processedFiles: number; processedPages: number; remainingFiles: number; errors: string[] }> {
   let bank = loadDaily().bank;
   let processedFiles = 0;
@@ -155,6 +161,8 @@ export async function processQueuedPhotosForDailyTest(
   const errors: string[] = [];
   const queued = await getQueuedPhotos();
   const target = Math.max(1, Math.floor(targetCount) || 1);
+  const prepare = dependencies.prepareUpload ?? prepareUpload;
+  const extract = dependencies.extractQuestionsFromPhoto ?? extractQuestionsFromPhoto;
 
   for (let i = 0; i < queued.length && getReadyDailyQuestionCount(bank) < target; i += 1) {
     const item = queued[i];
@@ -164,7 +172,7 @@ export async function processQueuedPhotosForDailyTest(
       let workingItem = item;
       if (!parts?.length) {
         const file = new File([item.blob], item.name, { type: item.type || item.blob.type });
-        const payloads = await prepareUpload(file, { pdfPagesPerChunk: 1 });
+        const payloads = await prepare(file, { pdfPagesPerChunk: 1 });
         if (payloads.length === 0) throw new Error('No readable pages were found in this file.');
         parts = payloads.map((payload, index) => ({
           name: payload.mimeType === 'application/pdf' ? `${item.name} · page ${index + 1}` : item.name,
@@ -181,7 +189,7 @@ export async function processQueuedPhotosForDailyTest(
         onProgress?.(`Reading ${part.name} · page ${pageIndex + 1} of ${parts.length}`);
         try {
           const payload = await blobToPhotoPayload(part.blob, part.type);
-          const extracted = await extractQuestionsFromPhoto(payload);
+          const extracted = await extract(payload);
           if (extracted.questions.length === 0 && extracted.answerKey.length === 0) {
             throw new Error('No questions or answer key could be read from this page. It is still queued; try a clearer photo or PDF.');
           }
