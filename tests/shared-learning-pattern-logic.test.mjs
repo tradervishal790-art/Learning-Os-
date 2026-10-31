@@ -41,3 +41,11 @@ test('community video outcomes provide only a small cohort-qualified ranking nud
   assert.equal(logic.communityVideoNudge({ completedRate: 100, earlyDropRate: 0, sampleCount: 100 }), 0.08);
   assert.equal(logic.communityVideoNudge({ completedRate: 101, earlyDropRate: 0, sampleCount: 10 }), 0);
 });
+
+test('unanswered questions are not treated as incorrect learning evidence', () => {
+  assert.equal(logic.isAnsweredQuestionOutcome('mcq', { type: 'mcq', selectedIndex: null }, false), false);
+  assert.equal(logic.isAnsweredQuestionOutcome('mcq', { type: 'mcq', selectedIndex: 1 }, false), true);
+  assert.equal(logic.isAnsweredQuestionOutcome('subjective', { type: 'subjective', text: '   ' }, false), false);
+  assert.equal(logic.isAnsweredQuestionOutcome('subjective', { type: 'subjective', text: 'my answer' }, true), true);
+  assert.equal(logic.isAnsweredQuestionOutcome('subjective', { type: 'subjective', text: 'my answer' }, null), false);
+});
