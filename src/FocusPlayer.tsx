@@ -220,6 +220,7 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
     setLoading(true);
     setError('');
     setActive(null);
+    setPicks([]);
     try { localStorage.setItem(LAST_TOPIC_KEY, clean); } catch { /* the search still works without persistence */ }
     try {
       const key = `search_focus_${l}_${clean.toLowerCase().replace(/\s+/g, ' ').slice(0, 120)}`;
