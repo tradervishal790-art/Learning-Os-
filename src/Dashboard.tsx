@@ -214,9 +214,15 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   const activePage = (location.pathname.replace(/^\/dashboard\/?/, '').split('/')[0] || 'dashboard') as DashboardPageId;
   const setActivePage = useCallback(
     (page: DashboardPageId) => {
-      navigate(page === 'dashboard' ? '/dashboard' : `/dashboard/${page}`);
+      const target = page === 'dashboard' ? '/dashboard' : `/dashboard/${page}`;
+      // Keep one history entry for the dashboard session: opening the first
+      // section creates an entry, switching between sections replaces it.
+      // Returning to Mission Control also replaces the section entry. This
+      // prevents browser/device Back from replaying an older dashboard tab.
+      const replace = page === 'dashboard' || activePage !== 'dashboard';
+      navigate(target, { replace });
     },
-    [navigate]
+    [navigate, activePage]
   );
 
   const [streak, setStreak] = useState(0);
