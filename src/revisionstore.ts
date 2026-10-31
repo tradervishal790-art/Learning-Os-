@@ -100,7 +100,7 @@ export async function hydrateRevisionFromCloud(): Promise<void> {
   const latestLocalDates = loadReviewDates();
   if (cloud) {
     const merged = mergeReviewMaps(latestLocal, cloud);
-    if (JSON.stringify(merged) !== JSON.stringify(local)) {
+    if (JSON.stringify(merged) !== JSON.stringify(latestLocal)) {
       try {
         localStorage.setItem(REVISION_REVIEWS_STORAGE_KEY, JSON.stringify(merged));
       } catch {
@@ -111,7 +111,7 @@ export async function hydrateRevisionFromCloud(): Promise<void> {
   }
   if (cloudDates) {
     const mergedDates = mergeReviewDateMaps(latestLocalDates, cloudDates);
-    if (JSON.stringify(mergedDates) !== JSON.stringify(localDates)) saveReviewDates(mergedDates);
+    if (JSON.stringify(mergedDates) !== JSON.stringify(latestLocalDates)) saveReviewDates(mergedDates);
   }
 }
 
