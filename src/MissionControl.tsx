@@ -69,7 +69,7 @@ const MAP_NODES_STORAGE_KEY = 'learning_os_mission_map_nodes';
 const defaultNodeIds = ['know', 'plan', 'learn', 'retain', 'prove'];
 
 export default function MissionControl({
-  name, goalTitle, nextTopic, nextTopicDetail, hasLearningProfile,
+  name, goalTitle, nextTopic, hasLearningProfile,
   revisionDue, revisionOverdue, streak, activeGoals, onNavigate, onOpenProfile,
 }: MissionControlProps) {
   const [selectedEngine, setSelectedEngine] = useState<string | null>(null);
@@ -110,9 +110,6 @@ export default function MissionControl({
   const open = (action: 'profile' | DashboardPageId) => action === 'profile' ? onOpenProfile() : onNavigate(action);
   const moreItems = functionNodes.map((node) => ({ ...node.children[0], label: node.title, detail: node.subtitle }));
   const filteredMoreItems = moreItems.filter((item) => item.label.toLowerCase().includes(functionSearch.toLowerCase()));
-  const currentStep = revisionOverdue + revisionDue > 0
-    ? `${revisionOverdue + revisionDue} topics ready for revision`
-    : nextTopic || 'Your learning path starts here';
 
   return (
     <main className="mission-map relative flex h-[calc(100dvh-64px-env(safe-area-inset-bottom))] min-h-0 md:h-[calc(100dvh-64px)] w-full flex-col overflow-hidden bg-[#080d19] text-slate-100">
