@@ -2,6 +2,7 @@ import { getEngagementSessions, getEngagementSessionsForVideo } from './engageme
 import type { EngagementSession, LearningProfile, Video } from './types';
 import { getOrAssignVariant } from './experimentVariant';
 import { resolveTeachingProcessForSelection, type TeachingProcess } from './personalityEngine';
+import { communityVideoNudge } from './sharedLearningPatternLogic';
 
 // ============================================================
 // PlaylistBuilder.ts
@@ -268,7 +269,8 @@ export function selectPlaylistForConcept(
   candidates: AnalyzedVideo[],
   learnerProfile: LearningProfile,
   currentTeacherId?: string,
-  timing?: PlaylistTiming
+  timing?: PlaylistTiming,
+  communitySignals?: Record<string, CommunityVideoSignal>
 ): PlaylistResult | null {
   if (candidates.length === 0) return null;
 
@@ -280,7 +282,8 @@ export function selectPlaylistForConcept(
   const scored = candidates
     .map((video) => ({
       video,
-      score: scoreCandidate(video, learnerDimensions, currentTeacherId, allSessions),
+      score: scoreCandidate(video, learnerDimensions, currentTeacherId, allSessions)
+        + communityVideoNudge(communitySignals?.[video.videoId]),
     }))
     .sort((a, b) => b.score - a.score);
 
@@ -372,6 +375,13 @@ export function rerankRemaining(
 // caller can tag the EngagementSession and drive push-trigger UI.
 // ============================================================
 
+export interface CommunityVideoSignal {
+  completedRate: number;
+  earlyDropRate: number;
+  sampleCount: number;
+}
+
+
 export interface PlaylistResultV2 extends PlaylistResult {
   variant: 'control' | 'personality_v1';
   /** Only set when variant === 'personality_v1'. */
@@ -382,12 +392,13 @@ export function selectPlaylistForConceptV2(
   candidates: AnalyzedVideo[],
   learnerProfile: LearningProfile,
   currentTeacherId?: string,
-  timing?: PlaylistTiming
+  timing?: PlaylistTiming,
+  communitySignals?: Record<string, CommunityVideoSignal>
 ): PlaylistResultV2 | null {
   const variant = getOrAssignVariant();
 
   if (variant === 'control') {
-    const result = selectPlaylistForConcept(candidates, learnerProfile, currentTeacherId, timing);
+    const result = selectPlaylistForConcept(candidates, learnerProfile, currentTeacherId, timing, communitySignals);
     return result ? { ...result, variant: 'control' } : null;
   }
 
@@ -403,7 +414,8 @@ export function selectPlaylistForConceptV2(
   const scored = candidates
     .map((video) => ({
       video,
-      score: scoreCandidatePersonality(video, learnerDimensions, currentTeacherId, allSessions, process),
+      score: scoreCandidatePersonality(video, learnerDimensions, currentTeacherId, allSessions, process)
+        + communityVideoNudge(communitySignals?.[video.videoId]),
     }))
     .sort((a, b) => b.score - a.score);
 

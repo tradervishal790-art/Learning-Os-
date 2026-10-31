@@ -15,6 +15,8 @@ import DailyTest from './DailyTest';
 import ConfirmDialog from './ConfirmDialog';
 import { setImmersive } from './immersive';
 import { completeDailyTest, isDailyPaper, getDailyStatus } from './dailyTestStore';
+import { contributeQuestionPatterns } from './sharedLearningPatterns';
+import SharedLearningInsights from './SharedLearningInsights';
 
 // ============================================================
 // Test.tsx — "Test" tab (Dashboard renders <Test /> with no props).
@@ -238,6 +240,7 @@ export default function Test() {
       scorePercent: computeScorePercent(obtainedMarks, totalMarks),
     };
     saveTestAttempt(newAttempt);
+    void contributeQuestionPatterns([...getTestAttempts().filter((saved) => saved.id !== newAttempt.id), newAttempt]);
     if (isDailyPaper(paper.id)) completeDailyTest(paper.id, results);
     setAttempt(newAttempt);
     setStage('results');
@@ -272,6 +275,7 @@ export default function Test() {
     const obtainedMarks = computeObtainedMarks(results);
     const updated: TestAttempt = { ...attempt, results, obtainedMarks, scorePercent: computeScorePercent(obtainedMarks, attempt.totalMarks) };
     updateTestAttempt(updated);
+    void contributeQuestionPatterns([...getTestAttempts().filter((saved) => saved.id !== updated.id), updated]);
     setAttempt(updated);
   };
 
@@ -292,7 +296,9 @@ export default function Test() {
       )}
 
       {stage === 'list' && (
-        <TestList
+        <>
+          <SharedLearningInsights kind="questions" />
+          <TestList
           papers={papers}
           history={history}
           onCreate={openCreate}
@@ -302,7 +308,8 @@ export default function Test() {
           onLive={startLive}
           onDaily={() => setStage('daily')}
           onOpenAttempt={openPastAttempt}
-        />
+          />
+        </>
       )}
 
       {stage === 'daily' && <DailyTest onStart={startInstructions} onExit={() => setStage('list')} />}
@@ -612,6 +619,13 @@ export function TakingScreen({
     marked: 'bg-purple-500 text-white',
     'answered-marked': 'bg-purple-500 text-white',
   };
+  const statusLabel: Record<QuestionStatus, string> = {
+    'not-visited': 'Not visited',
+    'not-answered': 'Visited, not answered',
+    answered: 'Answered',
+    marked: 'Marked for review, not answered',
+    'answered-marked': 'Answered and marked for review',
+  };
 
   const isLast = step === paper.questions.length - 1;
   const lowTime = timeLeft !== null && timeLeft <= 60;
@@ -662,6 +676,8 @@ export function TakingScreen({
                       <button
                         key={i}
                         onClick={() => onSelectMCQ(i)}
+                        type="button"
+                        aria-pressed={!!selected}
                         className={`w-full text-left p-4 rounded-xl border transition ${
                           selected
                             ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white border-black dark:border-white'
@@ -705,6 +721,9 @@ export function TakingScreen({
               <button
                 key={q.id}
                 onClick={() => onGoToStep(i)}
+                type="button"
+                aria-label={`Question ${i + 1}: ${statusLabel[statusMap[q.id] ?? 'not-visited']}`}
+                aria-current={i === step ? 'step' : undefined}
                 className={`w-9 h-9 rounded-lg text-sm font-semibold transition ${statusColor[statusMap[q.id] ?? 'not-visited']} ${i === step ? 'ring-2 ring-offset-2 ring-black dark:ring-white dark:ring-offset-black' : ''}`}
               >
                 {i + 1}

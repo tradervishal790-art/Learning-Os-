@@ -13,6 +13,8 @@ import { format } from './i18n/format';
 import StudyPlan from './StudyPlan';
 import { studyPlanText } from './studyPlanText';
 import { useLanguage } from './i18n/LanguageContext';
+import { contributeRevisionPattern } from './sharedLearningPatterns';
+import SharedLearningInsights from './SharedLearningInsights';
 
 const statusIcons: Record<RevisionStatus, ReactNode> = {
   'due-today': <Flame className="w-3 h-3" strokeWidth={2} />,
@@ -105,6 +107,7 @@ export default function Revision({ goals = [] }: RevisionProps) {
 
   const handleRecallRating = (item: RevisionItem & { goalId?: string }, rating: RecallRating) => {
     saveRecallRating(item.topicId, item.day, rating);
+    void contributeRevisionPattern(item.day);
     setRecallAccuracy(getRecallAccuracy());
     setRecallTrend(getRecallTrend());
     handleMarkDone(item);
@@ -166,6 +169,8 @@ export default function Revision({ goals = [] }: RevisionProps) {
           </div>
         ))}
       </motion.div>
+
+      <SharedLearningInsights kind="revision" />
 
       {/* Observed recall trend — blank days are intentionally not treated as failures. */}
       <section className="rounded-2xl card border border-gray-200 dark:border-white/10 p-4 mb-5 md:mb-6" aria-label="Seven-day recall trend">

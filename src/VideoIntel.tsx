@@ -20,6 +20,7 @@ import { useTranslation } from './i18n/LanguageContext';
 import { format } from './i18n/format';
 import { authFetch } from './apiFetch';
 import { pullSharedSearch, pushSharedSearch } from './sharedVideoCache';
+import { contributeSharedVideoSignal, getSharedVideoLearningSummary, type SharedVideoLearningSummary } from './sharedLearningIntelligence';
 
 declare global {
   interface Window {
@@ -291,6 +292,17 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
     rewindCount: 0,
     playbackSpeed: 1,
   });
+  const [sharedLearningSummary, setSharedLearningSummary] = useState<SharedVideoLearningSummary | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    setSharedLearningSummary(null);
+    if (!selectedVideo) return () => { active = false; };
+    void getSharedVideoLearningSummary(selectedVideo.id).then((summary) => {
+      if (active) setSharedLearningSummary(summary);
+    });
+    return () => { active = false; };
+  }, [selectedVideo?.id]);
 
   // YouTube's pagination token from the last search for the CURRENT query —
   // lets us fetch the next fresh batch of results instead of re-fetching
@@ -487,6 +499,8 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
     if (!sessionRef.current) return;
     const completeSession = withComputedSignal(sessionRef.current);
     upsertEngagementSession(completeSession);
+    // Cross-user sharing is strictly opt-in; the server rules enforce one contribution per account/video.
+    void contributeSharedVideoSignal(completeSession);
 
     // Rolling-window implicit profile update — silent, no UI notification
     // by design (see /areas/learning-os.md). No-ops until enough consistent
@@ -693,6 +707,21 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
 
     setLoading(true);
     setErrorMessage('');
+    // A new search is a new learning choice. Stop showing/playing the previous
+    // result immediately so the list and player can never describe different queries.
+    setSelectedVideo(null);
+    setVideos([]);
+    setActiveBridge(null);
+    setRecallFor(null);
+    setShowResearch(false);
+    setWatchStats({
+      watchedDuration: 0,
+      totalDuration: 0,
+      watchPercentage: 0,
+      pauseCount: 0,
+      rewindCount: 0,
+      playbackSpeed: 1,
+    });
     nextPageTokenRef.current = null; // fresh query — start pagination over
 
     try {
@@ -896,9 +925,11 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                   videos.map((video, i) => {
                     const watched = watchHistory.find((w) => w.videoId === video.id);
                     return (
-                      <motion.div
+                      <motion.button
+                        type="button"
                         key={video.id}
                         id={i === 0 ? 'onborda-video-primary' : i === 1 ? 'onborda-video-fallback' : undefined}
+                        aria-pressed={selectedVideo?.id === video.id}
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: i * 0.04 }}
@@ -909,7 +940,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                           // picked — primary or fallback — not always primary.
                           void verifyBridgeForVideo(video);
                         }}
-                        className={`p-3 rounded-lg cursor-pointer transition border ${
+                        className={`w-full p-3 text-left rounded-lg cursor-pointer transition border ${
                           selectedVideo?.id === video.id
                             ? 'border-black dark:border-white bg-gray-50 dark:bg-white/10'
                             : 'border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/10'
@@ -928,7 +959,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                             {watched && <span className="text-xs text-gray-500 dark:text-white/60">{format(t.videos.score, watched.aiScore)}</span>}
                           </div>
                         </div>
-                      </motion.div>
+                      </motion.button>
                     );
                   })
                 )}
@@ -997,6 +1028,24 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                       <h2 className="text-2xl font-bold mb-1">{selectedVideo.title}</h2>
                       <p className="text-gray-500 dark:text-white/60">{selectedVideo.channel}</p>
                     </div>
+
+                    {sharedLearningSummary && (
+                      <div className="rounded-xl border border-indigo-200/60 dark:border-indigo-400/20 bg-indigo-50/50 dark:bg-indigo-400/5 p-3 mb-4">
+                        <p className="text-xs font-semibold text-indigo-700 dark:text-indigo-300 mb-1">
+                          Community learning signal · 10+ accounts
+                        </p>
+                        <p className="text-sm text-gray-700 dark:text-white/80">
+                          {sharedLearningSummary.completedRate >= 65
+                            ? 'Most contributing accounts reached the end of this video.'
+                            : sharedLearningSummary.earlyDropRate >= 45
+                              ? 'Many contributing accounts stopped in the early part of this video.'
+                              : 'Learner outcomes are mixed for this video.'}
+                        </p>
+                        <p className="text-[11px] text-gray-500 dark:text-white/40 mt-1">
+                          {sharedLearningSummary.completedRate}% completed · {sharedLearningSummary.earlyDropRate}% stopped early. This is a group signal, not a prediction of your result.
+                        </p>
+                      </div>
+                    )}
 
                     {/* Feedback + Next controls */}
                     <div className="flex items-center gap-3 mb-4">

@@ -38,7 +38,7 @@ export default function NotesHome() {
         <button className={pill(tab === 'ai')} onClick={() => choose('ai')}>{t.tabAi}</button>
       </div>
       )}
-      <Suspense fallback={null}>
+      <Suspense fallback={<div role="status" aria-live="polite" className="mx-4 rounded-xl border border-gray-200 px-4 py-5 text-sm text-gray-500 dark:border-white/10 dark:text-white/50 md:mx-8">Opening your learning workspace…</div>}>
         {tab === 'notebook' ? (
           <div className={noteOpen ? "px-2 pb-2 md:px-8 md:pb-8" : "px-4 pb-4 md:px-8 md:pb-8"}>
             <NoteLibrary />

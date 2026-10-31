@@ -1,30 +1,33 @@
 import { pushToCloud, pullFromCloud } from './cloudSync';
 
-// ============================================================
-// revisionStore.ts
-// Tracks which spaced-repetition checkpoints (Day 1/3/7/15/30/60) the
-// learner has actually marked "done" for each roadmap topic. Separate
-// from roadmapData.ts because a topic can have multiple review
-// checkpoints over its lifetime — this is a per-checkpoint log, not a
-// single status field.
-//
-// CROSS-DEVICE SYNC: same pattern as learningProfileStore.ts — localStorage
-// stays the synchronous source of truth, saves also push to Firestore
-// (best-effort, fire-and-forget), and hydrateRevisionFromCloud() — called
-// once on sign-in — pulls the cloud copy down if this device has none yet.
-// ============================================================
-
+// Checkpoints stay in the legacy day map for compatibility. Actual review
+// timestamps live beside it so the next interval starts when the learner
+// really reviewed, not when they first opened the topic.
 const REVISION_REVIEWS_STORAGE_KEY = 'learning_os_revision_reviews';
+const REVISION_DATES_STORAGE_KEY = 'learning_os_revision_review_dates';
 const CLOUD_KEY = 'revisionReviews';
+const CLOUD_DATES_KEY = 'revisionReviewDates';
 
-type ReviewsMap = Record<string, number[]>; // topicId -> reviewed schedule days
+type ReviewsMap = Record<string, number[]>;
+type ReviewDatesMap = Record<string, Record<string, string>>;
 
 function loadReviews(): ReviewsMap {
   try {
     const saved = localStorage.getItem(REVISION_REVIEWS_STORAGE_KEY);
     if (!saved) return {};
-    const parsed = JSON.parse(saved);
-    return parsed && typeof parsed === 'object' ? parsed : {};
+    const parsed: unknown = JSON.parse(saved);
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed as ReviewsMap : {};
+  } catch {
+    return {};
+  }
+}
+
+function loadReviewDates(): ReviewDatesMap {
+  try {
+    const saved = localStorage.getItem(REVISION_DATES_STORAGE_KEY);
+    if (!saved) return {};
+    const parsed: unknown = JSON.parse(saved);
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed as ReviewDatesMap : {};
   } catch {
     return {};
   }
@@ -39,13 +42,15 @@ function saveReviews(reviews: ReviewsMap): void {
   void pushToCloud(CLOUD_KEY, reviews);
 }
 
-/**
- * Called once, the first time the Revision page is opened (see
- * Revision.tsx) — not upfront on sign-in — to pull revision history down
- * from Firestore into localStorage on a device that has none yet — without
- * this, a topic marked "revised" on Device A would show as never-revised
- * on Device B, wrongly re-triggering "overdue" reminders there.
- */
+function saveReviewDates(dates: ReviewDatesMap): void {
+  try {
+    localStorage.setItem(REVISION_DATES_STORAGE_KEY, JSON.stringify(dates));
+  } catch {
+    // Keep the revision flow usable when browser storage is unavailable.
+  }
+  void pushToCloud(CLOUD_DATES_KEY, dates);
+}
+
 /** Merge local + cloud checkpoints without losing reviews recorded on either device. */
 export function mergeReviewMaps(local: ReviewsMap, cloud: ReviewsMap): ReviewsMap {
   const merged: ReviewsMap = {};
@@ -61,41 +66,94 @@ export function mergeReviewMaps(local: ReviewsMap, cloud: ReviewsMap): ReviewsMa
   return merged;
 }
 
-export async function hydrateRevisionFromCloud(): Promise<void> {
-  const local = loadReviews();
-  const cloud = await pullFromCloud<ReviewsMap>(CLOUD_KEY);
-  if (!cloud) return;
-
-  const merged = mergeReviewMaps(local, cloud);
-  if (JSON.stringify(merged) === JSON.stringify(local)) return;
-  try {
-    localStorage.setItem(REVISION_REVIEWS_STORAGE_KEY, JSON.stringify(merged));
-  } catch {
-    // Best-effort.
+export function mergeReviewDateMaps(local: ReviewDatesMap, cloud: ReviewDatesMap): ReviewDatesMap {
+  const merged: ReviewDatesMap = {};
+  for (const source of [cloud, local]) {
+    for (const [topicId, dates] of Object.entries(source)) {
+      if (!topicId.trim() || !dates || typeof dates !== 'object' || Array.isArray(dates)) continue;
+      for (const [day, timestamp] of Object.entries(dates)) {
+        if (!/^\d+$/.test(day) || !Number.isFinite(Date.parse(timestamp))) continue;
+        const previous = merged[topicId]?.[day];
+        if (!previous || Date.parse(timestamp) > Date.parse(previous)) {
+          merged[topicId] ??= {};
+          merged[topicId][day] = timestamp;
+        }
+      }
+    }
   }
-  // Publish the union so the next device receives both sets of checkpoints.
-  void pushToCloud(CLOUD_KEY, merged);
+  return merged;
 }
 
-/** Which schedule-day checkpoints (e.g. [1, 3]) have been marked done for this topic. */
+/**
+ * Pull revision history on demand and merge it with local data. Timestamp
+ * history is additive and separate so older installations keep their
+ * original checkpoint data without a destructive migration.
+ */
+export async function hydrateRevisionFromCloud(): Promise<void> {
+  const [cloud, cloudDates] = await Promise.all([
+    pullFromCloud<ReviewsMap>(CLOUD_KEY),
+    pullFromCloud<ReviewDatesMap>(CLOUD_DATES_KEY),
+  ]);
+  // Re-read after the network wait: a review may have been recorded locally
+  // while cloud hydration was in flight. Never merge from a stale snapshot.
+  const latestLocal = loadReviews();
+  const latestLocalDates = loadReviewDates();
+  if (cloud) {
+    const merged = mergeReviewMaps(latestLocal, cloud);
+    if (JSON.stringify(merged) !== JSON.stringify(latestLocal)) {
+      try {
+        localStorage.setItem(REVISION_REVIEWS_STORAGE_KEY, JSON.stringify(merged));
+      } catch {
+        // Best-effort.
+      }
+      void pushToCloud(CLOUD_KEY, merged);
+    }
+  }
+  if (cloudDates) {
+    const mergedDates = mergeReviewDateMaps(latestLocalDates, cloudDates);
+    if (JSON.stringify(mergedDates) !== JSON.stringify(latestLocalDates)) saveReviewDates(mergedDates);
+  }
+}
+
+/** Which schedule-day checkpoints have been marked done for this topic. */
 export function getReviewedDays(topicId: string): number[] {
-  return loadReviews()[topicId] ?? [];
+  const days = loadReviews()[topicId];
+  return Array.isArray(days) ? days.filter((day) => Number.isInteger(day) && day > 0) : [];
 }
 
-/** Marks a checkpoint as reviewed — idempotent, safe to call more than once. */
-export function markDayReviewed(topicId: string, day: number): void {
+/** Actual completion time for a checkpoint; null means legacy history. */
+export function getReviewDate(topicId: string, day: number): string | null {
+  const value = loadReviewDates()[topicId]?.[String(day)];
+  return typeof value === 'string' && Number.isFinite(Date.parse(value)) ? value : null;
+}
+
+/** Marks a checkpoint as reviewed — idempotent and timestamped. */
+export function markDayReviewed(topicId: string, day: number, reviewedAt = new Date().toISOString()): void {
+  if (!topicId.trim() || !Number.isInteger(day) || day <= 0 || !Number.isFinite(Date.parse(reviewedAt))) return;
   const reviews = loadReviews();
   const existing = reviews[topicId] ?? [];
   if (!existing.includes(day)) {
     reviews[topicId] = [...existing, day].sort((a, b) => a - b);
     saveReviews(reviews);
   }
+
+  const dates = loadReviewDates();
+  dates[topicId] ??= {};
+  dates[topicId][String(day)] = reviewedAt;
+  saveReviewDates(dates);
 }
 
-/** Undo, in case "Mark Done" was clicked by mistake. */
+/** Undo a checkpoint, including its timestamp, if it was clicked by mistake. */
 export function unmarkDayReviewed(topicId: string, day: number): void {
   const reviews = loadReviews();
   const existing = reviews[topicId] ?? [];
   reviews[topicId] = existing.filter((d) => d !== day);
   saveReviews(reviews);
+
+  const dates = loadReviewDates();
+  if (dates[topicId]) {
+    delete dates[topicId][String(day)];
+    if (Object.keys(dates[topicId]).length === 0) delete dates[topicId];
+    saveReviewDates(dates);
+  }
 }

@@ -29,6 +29,8 @@ interface AnswerRecord {
 
 type Phase = 'answering' | 'analyzing' | 'done' | 'error';
 
+const BLUEPRINT_DRAFT_KEY = 'learning_os_blueprint_draft_v1';
+
 async function callAnalysisApi(answers: AnswerRecord[], genericErrorMsg: string, locale: string): Promise<any> {
   const response = await authFetch('/api/blueprint-interview', {
     method: 'POST',
@@ -51,8 +53,22 @@ export default function BlueprintInterview({
   const { locale } = useLanguage();
   const BLUEPRINT_QUESTIONS = getBlueprintQuestions(t);
   const DIMENSION_ORDER = getDimensionOrder(t.blueprintInterview.dimensionLabels);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [answers, setAnswers] = useState<AnswerRecord[]>([]);
+  const [initialDraft] = useState<AnswerRecord[]>(() => {
+    try {
+      const saved = localStorage.getItem(BLUEPRINT_DRAFT_KEY);
+      const parsed = saved ? JSON.parse(saved) as { questionId: string; optionKey: string }[] : [];
+      if (!Array.isArray(parsed)) return [];
+      return parsed.slice(0, BLUEPRINT_QUESTIONS.length - 1).flatMap((entry, index) => {
+        const question = BLUEPRINT_QUESTIONS[index];
+        const option = question?.options.find((item) => item.key === entry.optionKey);
+        return question && entry.questionId === question.id && option
+          ? [{ questionId: question.id, question: question.text, selectedOption: option.text }]
+          : [];
+      });
+    } catch { return []; }
+  });
+  const [currentIndex, setCurrentIndex] = useState(initialDraft.length);
+  const [answers, setAnswers] = useState<AnswerRecord[]>(initialDraft);
   const [phase, setPhase] = useState<Phase>('answering');
   const [errorMsg, setErrorMsg] = useState('');
   const [report, setReport] = useState('');
@@ -66,6 +82,19 @@ export default function BlueprintInterview({
   useEffect(() => {
     containerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   }, [currentIndex]);
+
+  useEffect(() => {
+    try {
+      if (phase === 'done' || answers.length === 0) {
+        localStorage.removeItem(BLUEPRINT_DRAFT_KEY);
+      } else if (answers.length < totalQuestions) {
+        localStorage.setItem(BLUEPRINT_DRAFT_KEY, JSON.stringify(answers.map((answer, index) => ({
+          questionId: answer.questionId,
+          optionKey: BLUEPRINT_QUESTIONS[index]?.options.find((option) => option.text === answer.selectedOption)?.key,
+        }))));
+      }
+    } catch { /* Best-effort local draft */ }
+  }, [answers, phase, totalQuestions, BLUEPRINT_QUESTIONS]);
 
   const handleSelect = async (optionText: string) => {
     const newAnswer: AnswerRecord = {
@@ -102,6 +131,7 @@ export default function BlueprintInterview({
       setResultProfile(profile);
       setReport(data.report);
       setPhase('done');
+      try { localStorage.removeItem(BLUEPRINT_DRAFT_KEY); } catch { /* Best-effort */ }
       onComplete(profile);
     } catch (err: any) {
       setPhase('error');
@@ -131,6 +161,7 @@ export default function BlueprintInterview({
       setResultProfile(profile);
       setReport(data.report);
       setPhase('done');
+      try { localStorage.removeItem(BLUEPRINT_DRAFT_KEY); } catch { /* Best-effort */ }
       onComplete(profile);
     } catch (err: any) {
       setPhase('error');
@@ -161,6 +192,7 @@ export default function BlueprintInterview({
                 ? t.blueprintInterview.progress.analyzing
                 : format(t.blueprintInterview.progress.questionOf, currentIndex + 1, totalQuestions)}
             </p>
+            {phase === 'answering' && initialDraft.length > 0 && <p className="mt-1 text-[10px] text-emerald-600 dark:text-emerald-400">Your saved progress has been restored.</p>}
             {phase === 'answering' && (
               <div className="mt-2 h-1 bg-gray-200 dark:bg-white/10 rounded-full overflow-hidden">
                 <div
@@ -190,7 +222,8 @@ export default function BlueprintInterview({
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.2 }}
               >
-                <p className="text-sm font-medium leading-relaxed mb-4">{currentQuestion.text}</p>
+                <p className="mb-4 text-sm font-medium leading-relaxed">{currentQuestion.text}</p>
+                <p className="mb-3 text-[10px] text-gray-400 dark:text-white/40">Your answers are saved on this device as you go.</p>
                 <div className="space-y-2">
                   {currentQuestion.options.map((opt) => (
                     <button

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Search, Volume2 } from 'lucide-react';
+import { Search, Volume2, RotateCw } from 'lucide-react';
 import { ensureDictionaryLoaded, lookupWord, suggestWords } from './dictionaryStore';
 import type { DictionaryEntry } from './dictionaryStore';
 
@@ -13,17 +13,29 @@ export default function Dictionary() {
   const [notFound, setNotFound] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
+  const [searchError, setSearchError] = useState('');
+  const [searching, setSearching] = useState(false);
   const [recent, setRecent] = useState<string[]>([]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const searchIdRef = useRef(0);
 
-  useEffect(() => {
-    ensureDictionaryLoaded()
+  const loadDictionary = () => {
+    setLoading(true);
+    setLoadError(false);
+    void ensureDictionaryLoaded()
       .catch(() => setLoadError(true))
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    loadDictionary();
 
     try {
       const saved = localStorage.getItem(RECENT_KEY);
-      if (saved) setRecent(JSON.parse(saved));
+      if (saved) {
+        const parsed: unknown = JSON.parse(saved);
+        if (Array.isArray(parsed)) setRecent(parsed.filter((word): word is string => typeof word === 'string').slice(0, RECENT_LIMIT));
+      }
     } catch {
       // corrupted/unavailable storage — start fresh, non-critical
     }
@@ -38,6 +50,8 @@ export default function Dictionary() {
     let cancelled = false;
     suggestWords(q).then((s) => {
       if (!cancelled) setSuggestions(s);
+    }).catch(() => {
+      if (!cancelled) setSuggestions([]);
     });
     return () => {
       cancelled = true;
@@ -46,26 +60,36 @@ export default function Dictionary() {
 
   const search = async (word: string) => {
     const w = word.trim();
-    if (!w) return;
+    if (!w || loading || loadError) return;
+    const requestId = ++searchIdRef.current;
     setQuery(w);
     setSuggestions([]);
+    setEntry(null);
+    setNotFound(false);
+    setSearchError('');
+    setSearching(true);
 
-    const found = await lookupWord(w);
-    if (found) {
-      setEntry(found);
-      setNotFound(false);
-      setRecent((prev) => {
-        const next = [w.toLowerCase(), ...prev.filter((r) => r !== w.toLowerCase())].slice(0, RECENT_LIMIT);
-        try {
-          localStorage.setItem(RECENT_KEY, JSON.stringify(next));
-        } catch {
-          // storage full/unavailable — non-critical
-        }
-        return next;
-      });
-    } else {
-      setEntry(null);
-      setNotFound(true);
+    try {
+      const found = await lookupWord(w);
+      if (requestId !== searchIdRef.current) return;
+      if (found) {
+        setEntry(found);
+        setRecent((prev) => {
+          const next = [w.toLowerCase(), ...prev.filter((r) => r !== w.toLowerCase())].slice(0, RECENT_LIMIT);
+          try {
+            localStorage.setItem(RECENT_KEY, JSON.stringify(next));
+          } catch {
+            // storage full/unavailable — non-critical
+          }
+          return next;
+        });
+      } else {
+        setNotFound(true);
+      }
+    } catch {
+      if (requestId === searchIdRef.current) setSearchError('The word could not be loaded. Please try again.');
+    } finally {
+      if (requestId === searchIdRef.current) setSearching(false);
     }
   };
 
@@ -87,13 +111,29 @@ export default function Dictionary() {
         <input
           type="text"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && search(query)}
+          onChange={(e) => {
+            searchIdRef.current += 1;
+            setSearching(false);
+            setQuery(e.target.value);
+            setEntry(null);
+            setNotFound(false);
+            setSearchError('');
+          }}
+          onKeyDown={(e) => e.key === 'Enter' && void search(query)}
           placeholder={loading ? 'Loading dictionary…' : 'Search an English word…'}
           disabled={loading || loadError}
           autoFocus
-          className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg pl-9 pr-4 py-2.5 placeholder-gray-400 dark:placeholder-white/40 focus:outline-none focus:border-black dark:focus:border-white disabled:opacity-50"
+          className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg pl-9 pr-12 py-2.5 placeholder-gray-400 dark:placeholder-white/40 focus:outline-none focus:border-black dark:focus:border-white disabled:opacity-50"
         />
+        <button
+          type="button"
+          onClick={() => void search(query)}
+          disabled={loading || loadError || searching || !query.trim()}
+          aria-label="Search dictionary"
+          className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-md text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10 disabled:opacity-40"
+        >
+          {searching ? <span className="text-xs">…</span> : <Search className="w-4 h-4" />}
+        </button>
         {suggestions.length > 0 && (
           <div className="absolute z-10 mt-1 w-full bg-white dark:bg-neutral-900 border border-gray-200 dark:border-white/10 rounded-lg shadow-lg overflow-hidden">
             {suggestions.map((s) => (
@@ -110,9 +150,12 @@ export default function Dictionary() {
       </div>
 
       {loadError && (
-        <p className="mt-6 text-red-500">
-          Couldn't load the dictionary. Check your connection and reload the page.
-        </p>
+        <div className="mt-6 flex items-center gap-3 text-sm text-red-500">
+          <p>Couldn't load the dictionary. Check your connection and try again.</p>
+          <button type="button" onClick={loadDictionary} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-current/20 hover:bg-red-500/5">
+            <RotateCw className="w-4 h-4" /> Retry
+          </button>
+        </div>
       )}
 
       {!entry && !notFound && !loadError && recent.length > 0 && (
@@ -132,8 +175,10 @@ export default function Dictionary() {
         </div>
       )}
 
+      {searchError && <p role="alert" className="mt-6 text-sm text-red-500">{searchError}</p>}
+      {searching && <p role="status" className="mt-6 text-sm text-gray-500 dark:text-white/40">Searching…</p>}
       {notFound && (
-        <p className="mt-6 text-gray-500 dark:text-white/40">No entry found for "{query}".</p>
+        <p className="mt-6 text-gray-500 dark:text-white/40">No entry found for "{query}". Try another spelling.</p>
       )}
 
       {entry && (

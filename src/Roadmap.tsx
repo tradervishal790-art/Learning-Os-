@@ -14,6 +14,7 @@ import DeepDiveChat from './DeepDiveChat';
 import HintBubble from './HintBubble';
 import { useTranslation } from './i18n/LanguageContext';
 import { format } from './i18n/format';
+import { getSharedVideoLearningSummaries } from './sharedLearningIntelligence';
 
 const statusIcons: Record<Topic['status'], ReactNode> = {
   mastered: <Star className="w-4 h-4 md:w-5 md:h-5" strokeWidth={2} fill="currentColor" />,
@@ -350,10 +351,11 @@ export default function Roadmap({
       }
 
       const currentTeacherId = getLastTeacherForConcept(selectedTopic.id);
+      const communitySignals = await getSharedVideoLearningSummaries(candidates.map((video) => video.videoId));
       const result = selectPlaylistForConceptV2(candidates, learnerProfile, currentTeacherId, {
         hours: topicHours,
         deadline: topicDeadline,
-      });
+      }, communitySignals);
       if (!result) {
         setPlaylistError('Playlist could not be built, please try again.');
         return;
@@ -559,7 +561,9 @@ export default function Roadmap({
               </button>
             </div>
 
-            <div className="mt-4">
+            <details className="mt-4 rounded-xl border border-gray-200 dark:border-white/10 px-3 py-2.5">
+              <summary className="cursor-pointer list-none text-sm font-medium text-gray-600 dark:text-white/70">Customize time and exam <span className="text-xs font-normal text-gray-400">(optional)</span></summary>
+              <div className="mt-4">
               <label className="block text-sm font-semibold mb-2">
                 {t.roadmap.generateForm.examLabel} <span className="font-normal text-gray-400 dark:text-white/40">{t.roadmap.generateForm.examOptional}</span>
               </label>
@@ -636,7 +640,8 @@ export default function Roadmap({
                 <span>{DEADLINE_UNIT_CONFIG[deadlineUnit].min} {deadlineUnit}</span>
                 <span>{DEADLINE_UNIT_CONFIG[deadlineUnit].max} {deadlineUnit}{DEADLINE_UNIT_CONFIG[deadlineUnit].max > 1 ? 's' : ''}</span>
               </div>
-            </div>
+              </div>
+            </details>
 
             {generateFailed && (
               <div className="mt-3">

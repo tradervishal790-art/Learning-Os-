@@ -28,6 +28,119 @@ service cloud.firestore {
       allow read, write: if signedIn() && request.auth.uid == uid;
     }
 
+
+    function videoMarkerPath(uid, videoId) {
+      return /databases/$(database)/documents/users/$(uid)/learningIntelligence/$(videoId);
+    }
+    function videoAggregatePath(videoId) {
+      return /databases/$(database)/documents/shared_learning_video_stats/$(videoId);
+    }
+    function videoAggregatePaired(videoId, outcome, feedback) {
+      let path = videoAggregatePath(videoId);
+      let afterData = getAfter(path).data;
+      let before = exists(path) ? get(path).data : null;
+      return existsAfter(path)
+        && afterData.sampleCount == (before == null ? 1 : before.sampleCount + 1)
+        && afterData.earlyDropCount == (before == null ? 0 : before.earlyDropCount) + (outcome == 'early-drop' ? 1 : 0)
+        && afterData.partialCount == (before == null ? 0 : before.partialCount) + (outcome == 'partial' ? 1 : 0)
+        && afterData.nearCompleteCount == (before == null ? 0 : before.nearCompleteCount) + (outcome == 'near-complete' ? 1 : 0)
+        && afterData.completedCount == (before == null ? 0 : before.completedCount) + (outcome == 'completed' ? 1 : 0)
+        && afterData.positiveFeedbackCount == (before == null ? 0 : before.positiveFeedbackCount) + (feedback == 'like' ? 1 : 0)
+        && afterData.negativeFeedbackCount == (before == null ? 0 : before.negativeFeedbackCount) + (feedback == 'dislike' ? 1 : 0)
+        && afterData.updatedAt == request.time;
+    }
+    function hasNewVideoMarker(videoId) {
+      let path = videoMarkerPath(request.auth.uid, videoId);
+      let marker = getAfter(path).data;
+      return !exists(path) && existsAfter(path)
+        && marker.keys().hasAll(['outcome', 'feedback', 'submittedAt'])
+        && marker.keys().hasOnly(['outcome', 'feedback', 'submittedAt'])
+        && marker.outcome in ['early-drop', 'partial', 'near-complete', 'completed']
+        && marker.feedback in ['like', 'dislike', 'none']
+        && marker.submittedAt == request.time;
+    }
+    function patternMarkerPath(uid, signalId) {
+      return /databases/$(database)/documents/users/$(uid)/learningPatterns/$(signalId);
+    }
+    function patternAggregatePath(signalId) {
+      return /databases/$(database)/documents/shared_learning_patterns/$(signalId);
+    }
+    function patternAggregatePaired(signalId, bucket) {
+      let path = patternAggregatePath(signalId);
+      let afterData = getAfter(path).data;
+      let before = exists(path) ? get(path).data : null;
+      return existsAfter(path)
+        && afterData.sampleCount == (before == null ? 1 : before.sampleCount + 1)
+        && afterData.lowCount == (before == null ? 0 : before.lowCount) + (bucket == 'low' ? 1 : 0)
+        && afterData.mediumCount == (before == null ? 0 : before.mediumCount) + (bucket == 'medium' ? 1 : 0)
+        && afterData.highCount == (before == null ? 0 : before.highCount) + (bucket == 'high' ? 1 : 0)
+        && afterData.updatedAt == request.time;
+    }
+    function hasNewPatternMarker(signalId) {
+      let path = patternMarkerPath(request.auth.uid, signalId);
+      let marker = getAfter(path).data;
+      return !exists(path) && existsAfter(path)
+        && marker.keys().hasAll(['bucket', 'submittedAt'])
+        && marker.keys().hasOnly(['bucket', 'submittedAt'])
+        && marker.bucket in ['low', 'medium', 'high']
+        && marker.submittedAt == request.time;
+    }
+
+    match /users/{uid}/learningIntelligence/{videoId} {
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow create: if realAccount() && request.auth.uid == uid
+        && videoId.size() == 11 && videoId.matches('[A-Za-z0-9_-]+')
+        && request.resource.data.keys().hasAll(['outcome', 'feedback', 'submittedAt'])
+        && request.resource.data.keys().hasOnly(['outcome', 'feedback', 'submittedAt'])
+        && request.resource.data.outcome in ['early-drop', 'partial', 'near-complete', 'completed']
+        && request.resource.data.feedback in ['like', 'dislike', 'none']
+        && request.resource.data.submittedAt == request.time
+        && videoAggregatePaired(videoId, request.resource.data.outcome, request.resource.data.feedback);
+      allow update, delete: if false;
+    }
+
+    match /shared_learning_video_stats/{videoId} {
+      allow get: if signedIn() && resource.data.sampleCount >= 10;
+      allow list, delete: if false;
+      allow create, update: if realAccount()
+        && videoId.size() == 11 && videoId.matches('[A-Za-z0-9_-]+')
+        && request.resource.data.keys().hasAll([
+          'sampleCount', 'earlyDropCount', 'partialCount', 'nearCompleteCount',
+          'completedCount', 'positiveFeedbackCount', 'negativeFeedbackCount', 'updatedAt'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'sampleCount', 'earlyDropCount', 'partialCount', 'nearCompleteCount',
+          'completedCount', 'positiveFeedbackCount', 'negativeFeedbackCount', 'updatedAt'
+        ])
+        && hasNewVideoMarker(videoId)
+        && videoAggregatePaired(videoId, getAfter(videoMarkerPath(request.auth.uid, videoId)).data.outcome, getAfter(videoMarkerPath(request.auth.uid, videoId)).data.feedback);
+    }
+
+    match /users/{uid}/learningPatterns/{signalId} {
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow create: if realAccount() && request.auth.uid == uid
+        && (signalId.matches('revision_day_(1|3|7|15|30|60)')
+          || signalId == 'question_mcq' || signalId == 'question_subjective')
+        && request.resource.data.keys().hasAll(['bucket', 'submittedAt'])
+        && request.resource.data.keys().hasOnly(['bucket', 'submittedAt'])
+        && request.resource.data.bucket in ['low', 'medium', 'high']
+        && request.resource.data.submittedAt == request.time
+        && patternAggregatePaired(signalId, request.resource.data.bucket);
+      allow update, delete: if false;
+    }
+
+    match /shared_learning_patterns/{signalId} {
+      allow get: if signedIn() && resource.data.sampleCount >= 10;
+      allow list, delete: if false;
+      allow create, update: if realAccount()
+        && (signalId.matches('revision_day_(1|3|7|15|30|60)')
+          || signalId == 'question_mcq' || signalId == 'question_subjective')
+        && request.resource.data.keys().hasAll(['sampleCount', 'lowCount', 'mediumCount', 'highCount', 'updatedAt'])
+        && request.resource.data.keys().hasOnly(['sampleCount', 'lowCount', 'mediumCount', 'highCount', 'updatedAt'])
+        && hasNewPatternMarker(signalId)
+        && patternAggregatePaired(signalId, getAfter(patternMarkerPath(request.auth.uid, signalId)).data.bucket);
+    }
+
     // ---------- shared caches (no owner) ----------
     // Read: any signed-in user (guests too). Write: real accounts only, so an
     // anonymous account cannot poison what every student sees. No client deletes.
