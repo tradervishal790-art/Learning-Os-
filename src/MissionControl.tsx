@@ -271,7 +271,7 @@ export default function MissionControl({
             <button type="button" onClick={() => setMoreOpen((value) => !value)} aria-expanded={moreOpen} className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-medium text-slate-200 transition hover:border-cyan-300/40 hover:bg-white/[0.07]">
               <MoreHorizontal className="h-4 w-4 text-cyan-300" /> More <ChevronDown className={`h-3.5 w-3.5 transition-transform ${moreOpen ? 'rotate-180' : ''}`} />
             </button>
-            {moreOpen && <div className="absolute bottom-0 left-full z-30 ml-2 w-64 max-h-[min(70vh,520px)] overflow-y-auto rounded-xl border border-white/10 bg-[#111d31] p-1.5 shadow-2xl">
+            {moreOpen && <div className="absolute bottom-0 left-[280px] z-30 w-64 max-h-[min(70vh,520px)] overflow-y-auto rounded-xl border border-white/10 bg-[#111d31] p-1.5 shadow-2xl">
               <div className="sticky top-0 z-10 bg-[#111d31] p-1.5"><input value={functionSearch} onChange={(event) => setFunctionSearch(event.target.value)} placeholder="Search all functions..." className="w-full rounded-lg border border-white/10 bg-white/[0.05] px-3 py-2 text-xs text-white outline-none placeholder:text-slate-500 focus:border-cyan-300/40" /></div>
               {filteredMoreItems.map((item) => {
                 const ItemIcon = item.icon;
@@ -298,7 +298,7 @@ export default function MissionControl({
                 const NodeIcon = node.icon;
                 const checked = visibleNodeIds.includes(node.id);
                 return <label key={node.id} className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-3 transition hover:bg-white/[0.05]">
-                  <input type="checkbox" checked={checked} onChange={() => setVisibleNodeIds((current) => checked ? current.filter((id) => id !== node.id) : [...current, node.id])} className="h-4 w-4 accent-cyan-400" />
+                  <input type="checkbox" checked={checked} onChange={() => { setVisibleNodeIds((current) => checked ? current.filter((id) => id !== node.id) : [...current, node.id]); if (checked && selectedEngine === node.id) setSelectedEngine(null); }} className="h-4 w-4 accent-cyan-400" />
                   <span className="flex h-9 w-9 items-center justify-center rounded-lg" style={{ color: node.color, backgroundColor: `${node.color}20` }}><NodeIcon className="h-4 w-4" /></span>
                   <span className="min-w-0 flex-1"><span className="block text-sm font-medium text-slate-100">{node.title}</span><span className="block text-xs text-slate-500">{node.subtitle}</span></span>
                   <span className="text-[10px] text-slate-500">{checked ? 'On map' : 'Add'}</span>
