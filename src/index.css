@@ -162,26 +162,105 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
   }
 }
 
-/* Subtle lift on hover: gives clickable controls a tactile, premium feel.
-   Keep touch devices and reduced-motion preferences calm. */
+/* Learning OS design foundation: restrained surfaces, readable type and predictable controls. */
+:root {
+  --los-accent: 124 92 246;
+  --los-accent-strong: 109 76 211;
+  --los-text: 31 36 48;
+  --los-muted: 105 112 128;
+  --los-border: 148 156 175;
+  --los-surface: 255 255 255;
+  --los-control-radius: 12px;
+}
+.dark {
+  --los-accent: 167 139 250;
+  --los-accent-strong: 196 181 253;
+  --los-text: 238 240 247;
+  --los-muted: 160 166 180;
+  --los-border: 255 255 255;
+  --los-surface: 20 20 25;
+}
+
+/* Shared control primitives. Feature pages can use these without inventing
+   a new button/toggle language each time. */
+@layer components {
+  .los-btn {
+    display: inline-flex;
+    min-height: 40px;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 9px 14px;
+    border: 1px solid rgb(var(--los-border) / 0.14);
+    border-radius: var(--los-control-radius);
+    background: rgb(var(--los-surface) / 0.72);
+    color: rgb(var(--los-text));
+    font-size: 13px;
+    font-weight: 550;
+    line-height: 1.25;
+    transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, transform 150ms ease;
+  }
+  .los-btn:disabled { cursor: not-allowed; opacity: 0.48; }
+  .los-btn-primary {
+    border-color: rgb(var(--los-accent) / 0.22);
+    background: rgb(var(--los-accent) / 0.13);
+    color: rgb(var(--los-accent-strong));
+  }
+  .los-btn-secondary {
+    background: rgb(var(--los-border) / 0.045);
+    color: rgb(var(--los-text) / 0.82);
+  }
+  .los-btn-danger {
+    border-color: rgb(239 68 68 / 0.18);
+    background: rgb(239 68 68 / 0.09);
+    color: rgb(220 38 38);
+  }
+  .dark .los-btn-danger { color: rgb(252 165 165); }
+  .los-chip {
+    display: inline-flex;
+    min-height: 36px;
+    align-items: center;
+    justify-content: center;
+    padding: 7px 12px;
+    border: 1px solid rgb(var(--los-border) / 0.15);
+    border-radius: 10px;
+    background: transparent;
+    color: rgb(var(--los-text) / 0.78);
+    font-size: 12px;
+    line-height: 1.25;
+    transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+  }
+  .los-chip[aria-pressed="true"] {
+    border-color: rgb(var(--los-accent) / 0.3);
+    background: rgb(var(--los-accent) / 0.14);
+    color: rgb(var(--los-accent-strong));
+    font-weight: 600;
+  }
+  .los-btn:focus-visible, .los-chip:focus-visible {
+    outline: 2px solid rgb(var(--los-accent) / 0.72);
+    outline-offset: 2px;
+  }
+}
+
+/* Subtle lift on hover: tactile feedback without making controls jump. */
 @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
   button:not(:disabled),
   a[href],
   [role="button"]:not([aria-disabled="true"]) {
     transition-property: transform, box-shadow, background-color, border-color, color;
-    transition-duration: 180ms;
+    transition-duration: 160ms;
     transition-timing-function: cubic-bezier(0.2, 0.75, 0.25, 1);
   }
 
   button:not(:disabled):hover,
   a[href]:hover,
   [role="button"]:not([aria-disabled="true"]):hover {
-    transform: translateY(-2px);
+    transform: translateY(-1px);
   }
 
   button:not(:disabled):active,
   a[href]:active,
   [role="button"]:not([aria-disabled="true"]):active {
-    transform: translateY(0) scale(0.99);
+    transform: translateY(0);
   }
 }
