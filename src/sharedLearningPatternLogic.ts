@@ -26,3 +26,9 @@ export function buildPatternCounters(bucket: SharedPatternBucket) {
     highCount: bucket === 'high' ? 1 : 0,
   };
 }
+
+export function communityVideoNudge(signal?: { completedRate: number; earlyDropRate: number; sampleCount: number }): number {
+  if (!signal || !Number.isInteger(signal.sampleCount) || signal.sampleCount < 10) return 0;
+  if (![signal.completedRate, signal.earlyDropRate].every((value) => Number.isFinite(value) && value >= 0 && value <= 100)) return 0;
+  return Math.max(-1, Math.min(1, (signal.completedRate - signal.earlyDropRate) / 100)) * 0.08;
+}
