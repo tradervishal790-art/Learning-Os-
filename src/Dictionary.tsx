@@ -32,7 +32,10 @@ export default function Dictionary() {
 
     try {
       const saved = localStorage.getItem(RECENT_KEY);
-      if (saved) setRecent(JSON.parse(saved));
+      if (saved) {
+        const parsed: unknown = JSON.parse(saved);
+        if (Array.isArray(parsed)) setRecent(parsed.filter((word): word is string => typeof word === 'string').slice(0, RECENT_LIMIT));
+      }
     } catch {
       // corrupted/unavailable storage — start fresh, non-critical
     }
