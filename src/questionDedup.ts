@@ -17,8 +17,12 @@ function questionSimilarity(a: string, b: string): number {
   if (a === b) return 1;
   // Avoid fuzzy matches on short stems; common short questions can be distinct.
   if (Math.min(a.length, b.length) < 35) return 0;
-  const aa = new Set(a.split(' ').filter((w) => w.length > 1));
-  const bb = new Set(b.split(' ').filter((w) => w.length > 1));
+  // Keep meaningful one-character tokens (especially algebra variables
+  // such as x/y/z). Ignoring every single character made two different
+  // equations look identical after fuzzy normalization.
+  const significant = (word: string) => word.length > 1 || /^[b-hj-z0-9]$/.test(word);
+  const aa = new Set(a.split(' ').filter(significant));
+  const bb = new Set(b.split(' ').filter(significant));
   if (Math.min(aa.size, bb.size) < 6) return 0;
   let overlap = 0;
   aa.forEach((word) => { if (bb.has(word)) overlap++; });
