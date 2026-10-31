@@ -199,14 +199,11 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   const { isGuest, openSignIn } = useAuthPrompt();
 
   const { theme, toggleTheme } = useTheme();
-  // activePage now mirrors the real URL (/dashboard/:page) instead of being
-  // plain React state — this is what gives every page its own shareable,
-  // bookmarkable, refreshable URL. react-router's BrowserRouter already
-  // maintains the browser/PWA history entries, so the previous manual
-  // window.history.pushState/popstate bookkeeping (which existed only to
-  // stop the hardware back button from closing the app) is no longer
-  // needed — real route entries give the back button the same thing to
-  // land on.
+  // activePage mirrors the URL (/dashboard/:page), so sections remain
+  // shareable and refreshable. Keep one history slot for the active section:
+  // the first section opens from Mission Control, later section switches
+  // replace that slot, and Back returns to Mission Control rather than an
+  // older section the learner visited earlier.
   const location = useLocation();
   const navigate = useNavigate();
   // location.pathname looks like "/dashboard" or "/dashboard/roadmap" — the
