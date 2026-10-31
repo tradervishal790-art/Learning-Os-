@@ -481,6 +481,8 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
   // revisited later) re-triggers, but re-renders of the parent don't loop this.
   useEffect(() => {
     if (!initialPlaylist?.primary) return;
+    invalidateRequests(searchRequestRef);
+    setLoading(false);
     finalizeAndSaveSession();
     setVideos([initialPlaylist.primary, ...initialPlaylist.fallbacks]);
     setSelectedVideo(initialPlaylist.primary);
