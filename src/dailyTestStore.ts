@@ -103,7 +103,7 @@ function isState(x: unknown): x is DailyTestState {
     && typeof s.perDay === 'number' && Number.isFinite(s.perDay) && s.perDay >= 1 && s.perDay <= MAX_PER_DAY
     && typeof s.minutesPerQuestion === 'number' && Number.isFinite(s.minutesPerQuestion) && s.minutesPerQuestion >= 0 && s.minutesPerQuestion <= 10
     && (s.pending === null || isPaperShape(s.pending))
-    && (s.lastCompletedDate === null || (typeof s.lastCompletedDate === 'string' && /^\\d{4}-\\d{2}-\\d{2}$/.test(s.lastCompletedDate)))
+    && (s.lastCompletedDate === null || (typeof s.lastCompletedDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s.lastCompletedDate)))
     && typeof s.daysCompleted === 'number' && Number.isInteger(s.daysCompleted) && s.daysCompleted >= 0;
 }
 
