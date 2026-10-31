@@ -1,5 +1,5 @@
 import { ArrowUpRight, BrainCircuit, CheckCircle2, Compass, GraduationCap, NotebookPen, RotateCcw, Sparkles, Target, Users, Video, Zap, MoreHorizontal, Search, BookOpen, Newspaper, MessageCircle, ChevronDown } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { DashboardPageId } from './types';
 
 interface MissionControlProps {
@@ -59,7 +59,22 @@ const rows = [
   },
 ];
 
-const rowY = [66, 198, 330, 462, 594];
+
+const functionNodes = [
+  { id: 'roadmap', number: '06', title: 'Roadmap', subtitle: 'Your learning direction', color: '#67e8f9', icon: Compass, children: [{ label: 'Learning roadmap', detail: 'Topics and milestones', icon: Compass, action: 'roadmap' as const }] },
+  { id: 'revision', number: '07', title: 'Revision', subtitle: 'Remember what matters', color: '#6ee7b7', icon: RotateCcw, children: [{ label: 'Revision room', detail: 'Recall and review', icon: RotateCcw, action: 'revision' as const }] },
+  { id: 'notes', number: '08', title: 'Notes', subtitle: 'Capture your thinking', color: '#7dd3fc', icon: NotebookPen, children: [{ label: 'Notes workspace', detail: 'Write and organize', icon: NotebookPen, action: 'notes' as const }] },
+  { id: 'test', number: '09', title: 'Tests', subtitle: 'Check your understanding', color: '#e879f9', icon: CheckCircle2, children: [{ label: 'Tests and practice', detail: 'Build a test from questions', icon: CheckCircle2, action: 'test' as const }] },
+  { id: 'videos', number: '10', title: 'Videos', subtitle: 'Learn with focus', color: '#7dd3fc', icon: Video, children: [{ label: 'Video intelligence', detail: 'Personalized learning videos', icon: Video, action: 'videos' as const }] },
+  { id: 'mentor', number: '11', title: 'AI Mentor', subtitle: 'Ask and explore', color: '#67e8f9', icon: MessageCircle, children: [{ label: 'Open AI Mentor', detail: 'Ask your learning mentor', icon: MessageCircle, action: 'mentor' as const }] },
+  { id: 'progress', number: '12', title: 'Progress', subtitle: 'See your growth', color: '#a78bfa', icon: Zap, children: [{ label: 'Growth and progress', detail: 'Track your progress', icon: Zap, action: 'progress' as const }] },
+  { id: 'research', number: '13', title: 'Research', subtitle: 'Explore new ideas', color: '#67e8f9', icon: Search, children: [{ label: 'Research workspace', detail: 'Explore ideas and sources', icon: Search, action: 'research' as const }] },
+  { id: 'dictionary', number: '14', title: 'Dictionary', subtitle: 'Look up concepts', color: '#a78bfa', icon: BookOpen, children: [{ label: 'Open dictionary', detail: 'Find meanings and concepts', icon: BookOpen, action: 'dictionary' as const }] },
+  { id: 'current-affairs', number: '15', title: 'Current Affairs', subtitle: 'Stay informed', color: '#e879f9', icon: Newspaper, children: [{ label: 'Current affairs', detail: 'Read latest updates', icon: Newspaper, action: 'current-affairs' as const }] },
+];
+const allFunctionNodes = [...rows, ...functionNodes];
+const MAP_NODES_STORAGE_KEY = 'learning_os_mission_map_nodes';
+const defaultNodeIds = ['know', 'plan', 'learn', 'retain', 'prove'];
 
 export default function MissionControl({
   name, goalTitle, nextTopic, nextTopicDetail, hasLearningProfile,
@@ -67,6 +82,21 @@ export default function MissionControl({
 }: MissionControlProps) {
   const [selectedEngine, setSelectedEngine] = useState<string | null>(null);
   const [moreOpen, setMoreOpen] = useState(false);
+  const [customizeOpen, setCustomizeOpen] = useState(false);
+  const [functionSearch, setFunctionSearch] = useState('');
+  const [visibleNodeIds, setVisibleNodeIds] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem(MAP_NODES_STORAGE_KEY);
+      const parsed = saved ? JSON.parse(saved) : null;
+      return Array.isArray(parsed) ? parsed.filter((id) => typeof id === 'string' && allFunctionNodes.some((node) => node.id === id)) : defaultNodeIds;
+    } catch { return defaultNodeIds; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem(MAP_NODES_STORAGE_KEY, JSON.stringify(visibleNodeIds)); } catch { /* Best effort */ }
+  }, [visibleNodeIds]);
+  const visibleRows = useMemo(() => allFunctionNodes.filter((node) => visibleNodeIds.includes(node.id)), [visibleNodeIds]);
+  const mapHeight = Math.max(660, visibleRows.length <= 1 ? 660 : 132 + (visibleRows.length - 1) * 132);
+  const rowY = visibleRows.map((_, index) => visibleRows.length === 1 ? mapHeight / 2 : 66 + index * ((mapHeight - 132) / (visibleRows.length - 1)));
   const open = (action: 'profile' | DashboardPageId) => action === 'profile' ? onOpenProfile() : onNavigate(action);
   const moreItems = [
     { label: 'AI Mentor', detail: 'Ask and explore', icon: MessageCircle, action: 'mentor' as const },
