@@ -23,3 +23,29 @@ test('revision cloud merge ignores malformed topics and checkpoint days', () => 
   );
   assert.deepEqual(merged, { react: [1] });
 });
+
+
+test('review completion timestamps are saved and removed with their checkpoint', () => {
+  localStorage.removeItem('learning_os_revision_reviews');
+  localStorage.removeItem('learning_os_revision_review_dates');
+  store.markDayReviewed('react', 1, '2026-10-01T10:00:00.000Z');
+  assert.deepEqual(store.getReviewedDays('react'), [1]);
+  assert.equal(store.getReviewDate('react', 1), '2026-10-01T10:00:00.000Z');
+
+  store.unmarkDayReviewed('react', 1);
+  assert.deepEqual(store.getReviewedDays('react'), []);
+  assert.equal(store.getReviewDate('react', 1), null);
+});
+
+test('review timestamp merge keeps the newest valid date from either device', () => {
+  const merged = store.mergeReviewDateMaps(
+    { react: { 1: '2026-10-01T10:00:00.000Z', 3: 'bad' } },
+    { react: { 1: '2026-10-02T10:00:00.000Z', 7: '2026-10-03T10:00:00.000Z' }, ' ': { 1: '2026-10-01T00:00:00.000Z' } },
+  );
+  assert.deepEqual(merged, {
+    react: {
+      1: '2026-10-02T10:00:00.000Z',
+      7: '2026-10-03T10:00:00.000Z',
+    },
+  });
+});
