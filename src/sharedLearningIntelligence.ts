@@ -87,6 +87,13 @@ export async function contributeSharedVideoSignal(session: EngagementSession): P
   }
 }
 
+/** Fetch community outcomes for a candidate set; unavailable or sub-threshold samples are omitted. */
+export async function getSharedVideoLearningSummaries(videoIds: string[]): Promise<Record<string, SharedVideoLearningSummary>> {
+  const uniqueIds = [...new Set(videoIds)].filter((id) => YOUTUBE_VIDEO_ID.test(id));
+  const entries = await Promise.all(uniqueIds.map(async (id) => [id, await getSharedVideoLearningSummary(id)] as const));
+  return Object.fromEntries(entries.filter((entry): entry is readonly [string, SharedVideoLearningSummary] => entry[1] !== null));
+}
+
 /** Reads only aggregate documents whose cohort has reached the 10-account privacy floor. */
 export async function getSharedVideoLearningSummary(videoId: string): Promise<SharedVideoLearningSummary | null> {
   if (!auth.currentUser || !YOUTUBE_VIDEO_ID.test(videoId)) return null;
