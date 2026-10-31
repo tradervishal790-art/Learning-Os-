@@ -36,7 +36,7 @@ export default function StudyDialog({
         role="dialog"
         aria-modal="true"
         aria-label={t.study.details}
-        className="w-full max-w-md rounded-2xl bg-white dark:bg-neutral-900 border border-gray-200 dark:border-white/10 p-5 space-y-5 shadow-2xl shadow-black/10"
+        className="w-full max-w-md max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain rounded-2xl bg-white dark:bg-neutral-900 border border-gray-200 dark:border-white/10 p-5 space-y-5 shadow-2xl shadow-black/10"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="font-semibold truncate">{note.title || t.untitled}</div>
