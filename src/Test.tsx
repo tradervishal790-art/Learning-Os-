@@ -16,6 +16,7 @@ import ConfirmDialog from './ConfirmDialog';
 import { setImmersive } from './immersive';
 import { completeDailyTest, isDailyPaper, getDailyStatus } from './dailyTestStore';
 import { contributeQuestionPatterns } from './sharedLearningPatterns';
+import SharedLearningInsights from './SharedLearningInsights';
 
 // ============================================================
 // Test.tsx — "Test" tab (Dashboard renders <Test /> with no props).
@@ -293,6 +294,8 @@ export default function Test() {
           <p className="text-gray-500 dark:text-white/60">Take official tests, or build your own for practice.</p>
         </motion.div>
       )}
+
+      <SharedLearningInsights kind="questions" />
 
       {stage === 'list' && (
         <TestList
