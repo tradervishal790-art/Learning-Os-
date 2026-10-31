@@ -1,6 +1,7 @@
 import { getImage } from './attachStore';
 import type { NotePage, NoteVideo } from './notebookStore';
-import { inkToSvg } from './inkSvg';
+import { inkToSvg, renderInk, shapeToSvg } from './inkSvg';
+import { isTemplateId, textLineUnits } from './pageTemplates';
 
 // ============================================================
 // noteExport.ts — turn a note into a file (Part 10).
@@ -171,8 +172,16 @@ export const hasText = (pages: NotePage[]) => pages.some((p) => p.text.trim());
 
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
+/**
+ * The editor's page, for print. `.sheet` is a size container: everything inside is measured against ITS width
+ * (100cqw), exactly like the editor measures against the page width, so text wraps at the same words and the
+ * handwriting (page units, 1000 wide) lands on the same text it was written over.
+ */
+const PAGE_LATE_CSS = `h1{margin:0 0 .5rem;font-size:1.4rem}h2.pg{margin:.5rem 0 0;padding:0;border:0}@media print{body{margin:0;max-width:none;padding:0}}`;
+const PAGE_CSS = `@page{size:A4;margin:10mm}.sheet{container-type:inline-size;width:170mm;max-width:100%;margin:.4rem auto 0;border:1px solid #d1d5db;border-radius:6px;overflow:hidden;background:#fff}.page{position:relative;box-sizing:border-box;padding:1em;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:calc(16 * 100cqw / 768);--note-px:calc(100cqw / 768);line-height:normal;color:#111}:where(.page) *{box-sizing:border-box}:where(.page) :is(p,h1,h2,h3,blockquote,pre,hr,figure){margin:0}:where(.page) :is(h1,h2,h3){font-size:inherit;font-weight:inherit}:where(.page) :is(ul,ol){list-style:none;margin:0;padding:0}:where(.page) img{max-width:100%}:where(.page) :is(strong,b){font-weight:bolder}.page .note-prose{position:relative;z-index:1;line-height:1.7;word-break:break-word}.note-prose>*+*{margin-top:.6em}.note-prose h1{font-size:1.7em;font-weight:800;line-height:1.25}.note-prose h2{font-size:1.4em;font-weight:700;line-height:1.3}.note-prose h3{font-size:1.2em;font-weight:700}.note-prose ul{list-style:disc;padding-left:1.5em}.note-prose ol{list-style:decimal;padding-left:1.5em}.note-prose li>p{margin:0}.note-prose ul[data-type=taskList]{list-style:none;padding-left:.2em}.note-prose ul[data-type=taskList] li{display:flex;gap:.5em;align-items:flex-start}.note-prose ul[data-type=taskList] li>div{flex:1}.note-prose ul[data-type=taskList] li[data-checked=true]>div{opacity:.55;text-decoration:line-through}.note-prose blockquote{border-left:3px solid #9ca3af;padding-left:1em;color:#6b7280}.note-prose code{font-family:ui-monospace,monospace;font-size:.9em;padding:.1em .35em;border-radius:4px;background:rgba(107,114,128,.18)}.note-prose pre{font-family:ui-monospace,monospace;font-size:.88em;padding:.9em 1em;border-radius:10px;background:rgba(107,114,128,.16);overflow:hidden;white-space:pre-wrap}.note-prose hr{border:0;border-top:1px solid rgba(107,114,128,.4);margin:1.2em 0}.note-prose a{text-decoration:underline;color:#2563eb}.note-prose mark{border-radius:3px;padding:0 .1em;color:#111827!important}.note-prose table{border-collapse:collapse;width:100%;table-layout:fixed}.note-prose th,.note-prose td{border:1px solid rgba(107,114,128,.5);padding:.4em .6em;vertical-align:top}.note-prose th{background:rgba(107,114,128,.15);font-weight:700;text-align:left}.note-prose td>p,.note-prose th>p{margin:0}.page.note-gridded{padding-top:max(0px,calc(var(--note-line) / 2 - .47em))}.note-gridded .note-prose{line-height:var(--note-line)}.note-gridded .note-prose>*+*{margin-top:0}.note-gridded .note-prose h1,.note-gridded .note-prose h2,.note-gridded .note-prose h3{line-height:var(--note-line)}.ink-over{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none}img.fp{position:absolute;display:block;height:auto;z-index:0}@media print{.sheet{break-inside:avoid-page;break-after:page}.sheet:last-of-type{break-after:auto}h2.pg{break-after:avoid}}`;
+
 /** A self-contained page for Print / Save as PDF. Scripts, handlers and links to other sites are removed. */
-export function noteToHtml(title: string, pages: NotePage[], opts: { ink?: boolean; images?: Record<string, string> } = {}): string {
+export function noteToHtml(title: string, pages: NotePage[], opts: { ink?: boolean; images?: Record<string, string>; layout?: 'page' | 'flow' } = {}): string {
   const clean = (html: string) => {
     const doc = new DOMParser().parseFromString(html, 'text/html');
     doc.querySelectorAll('script,style,iframe,object,embed,link').forEach((n) => n.remove());
@@ -195,10 +204,40 @@ export function noteToHtml(title: string, pages: NotePage[], opts: { ink?: boole
     });
     return doc.body.innerHTML;
   };
+  const dataUrl = (id: string) => (/^data:image\/(?:png|jpe?g|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(opts.images?.[id] ?? '') ? opts.images![id] : '');
+  // The default layout is the page as it looks in the editor: the text is laid out at the same width, and the handwriting
+  // and photos sit at the same place on top of it (everything is measured against the page width, like on screen).
+  const pageLayout = opts.layout !== 'flow';
   const sections = pages
     .map((p, i) => {
       const h = pageTitle(p, i, pages);
       const body = p.pdf ? `<p>${esc(p.text)}</p>` : clean(pageToHtml(p));
+      if (pageLayout && !p.pdf) {
+        const strokes = opts.ink && p.ink ? p.ink : [];
+        const floating = (p.attachments ?? []).filter((a) => a.kind === 'image' && dataUrl(a.id) && a.x !== undefined && a.y !== undefined && (a.w ?? 0) > 0);
+        const inFlow = (p.attachments ?? []).filter((a) => a.kind === 'image' && dataUrl(a.id) && !floating.includes(a));
+        const hasText = body.replace(/<[^>]*>/g, '').trim().length > 0;
+        if (!hasText && !h && strokes.length === 0 && floating.length === 0 && inFlow.length === 0) return '';
+        const template = isTemplateId(p.template) ? p.template : 'blank';
+        const line = textLineUnits(template);
+        // Same rule as the editor: a sheet is at least A4, and grows when handwriting or a photo reaches its bottom.
+        const photoBottom = floating.reduce((m, a) => Math.max(m, (a.y ?? 0) + (a.w ?? 0) * (a.ar ?? 0.75)), 0);
+        let inkBottom = 0;
+        for (const st of strokes) for (let k = 1; k < st.pts.length; k += 3) if (Number.isFinite(st.pts[k]) && st.pts[k] > inkBottom) inkBottom = st.pts[k];
+        const extent = Math.max(inkBottom, photoBottom);
+        const style = [
+          `min-height:max(calc(100cqw * 1.414), calc(${Math.ceil(extent)} * 100cqw / 1000 + ${extent > 0 ? 160 : 0}px))`,
+          line > 0 ? `--note-line:calc(${line} * 100cqw / 1000)` : '',
+        ].filter(Boolean).join(';');
+        const photos = floating
+          .map((a) => `<img class="fp" src="${dataUrl(a.id)}" alt="${esc(a.name)}" style="left:${(a.x ?? 0) / 10}%;top:calc(${Math.round(a.y ?? 0)} * 100cqw / 1000);width:${(a.w ?? 0) / 10}%">`)
+          .join('');
+        const flow = inFlow.map((a) => `<figure class="photo"><img src="${dataUrl(a.id)}" alt="${esc(a.name)}"></figure>`).join('');
+        const inkSvg = strokes.length
+          ? `<svg class="ink-over" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1414" preserveAspectRatio="xMinYMin meet">${renderInk(strokes, false, 'both').shapes.map(shapeToSvg).join('')}</svg>`
+          : '';
+        return `<section>${h ? `<h2 class="pg">${esc(h)}</h2>` : ''}<div class="sheet"><div class="page${line > 0 ? ' note-gridded' : ''}" style="${style}"><div class="note-prose">${body}</div>${flow}${photos}${inkSvg}</div></div></section>`;
+      }
       // Handwriting (optional): drawn as one picture under the page's text, scaled to the page width.
       const inkHtml = opts.ink && p.ink && p.ink.length > 0 ? `<div class="ink">${inkToSvg(p.ink, {})}</div>` : '';
       // Photos (when the caller loaded them): after the page's text. Only real image data URLs are ever inserted.
@@ -212,7 +251,7 @@ export function noteToHtml(title: string, pages: NotePage[], opts: { ink?: boole
     })
     .join('\n');
   return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title || 'Untitled')}</title>
-<style>body{font:16px/1.6 system-ui,sans-serif;max-width:760px;margin:2rem auto;padding:0 1rem;color:#111}h1{font-size:1.8rem}h2.pg{font-size:.8rem;color:#666;font-weight:600;border-top:1px solid #ddd;padding-top:.6rem;margin-top:2rem}mark{border-radius:3px;padding:0 .1em;color:#111}table{border-collapse:collapse}td,th{border:1px solid #ccc;padding:.3rem .5rem}pre{background:#f4f4f5;padding:.6rem;overflow:auto}img{max-width:100%}@media print{body{margin:0}section{break-inside:avoid-page}}.photo{margin:.8rem 0}.photo img{display:block;max-width:100%;height:auto}.ink{margin:.8rem 0}.ink svg{display:block;width:100%;height:auto}</style></head><body><h1>${esc(title || 'Untitled')}</h1>${sections}</body></html>`;
+<style>${PAGE_CSS}body{font:16px/1.6 system-ui,sans-serif;max-width:760px;margin:2rem auto;padding:0 1rem;color:#111}h1{font-size:1.8rem}h2.pg{font-size:.8rem;color:#666;font-weight:600;border-top:1px solid #ddd;padding-top:.6rem;margin-top:2rem}mark{border-radius:3px;padding:0 .1em;color:#111}table{border-collapse:collapse}td,th{border:1px solid #ccc;padding:.3rem .5rem}pre{background:#f4f4f5;padding:.6rem;overflow:auto}img{max-width:100%}@media print{body{margin:0}section{break-inside:avoid-page}}.photo{margin:.8rem 0}.photo img{display:block;max-width:100%;height:auto}.ink{margin:.8rem 0}.ink svg{display:block;width:100%;height:auto}${pageLayout ? PAGE_LATE_CSS : ''}</style></head><body><h1>${esc(title || 'Untitled')}</h1>${sections}</body></html>`;
 }
 
 export function noteToBackupJson(title: string, pages: NotePage[], video?: NoteVideo | null): string {
