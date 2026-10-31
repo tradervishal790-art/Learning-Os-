@@ -644,7 +644,9 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
             onSwitchGoal={onSwitchGoal}
           />
         )}
-        {activePage === 'study-plan' && <StudyPlanPage />}
+        {activePage === 'study-plan' && (
+          <StudyPlanPage initialSubject={goals.find((goal) => goal.id === activeGoalId)?.title ?? userData?.goal ?? ''} />
+        )}
         {activePage === 'revision' && <Revision goals={goals} />}
         {activePage === 'videos' && (
           <div className="relative">
@@ -663,7 +665,12 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
             onClose={() => setActivePage('dashboard')}
           />
         )}
-        {activePage === 'mentor' && <Mentor />}
+        {activePage === 'mentor' && (
+          <Mentor
+            key={`${activeGoalId ?? 'no-goal'}-${currentTopic?.id ?? 'no-topic'}`}
+            initialContextTopic={currentTopic?.title ?? goals.find((goal) => goal.id === activeGoalId)?.title ?? userData?.goal ?? ''}
+          />
+        )}
         {activePage === 'notes' && <Notes />}
         {activePage === 'test' && <Test />}
         {activePage === 'progress' && <Progress goals={goals} />}
