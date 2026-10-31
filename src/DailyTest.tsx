@@ -88,6 +88,7 @@ export default function DailyTest({ onStart, onExit }: { onStart: (paper: TestPa
     if (preparing) return;
     setPreparing(true);
     setMessage('');
+    let importFailed = false;
     try {
       let current = loadDaily();
       if (!current.pending && getReadyDailyQuestionCount(current.bank) < current.perDay && queuedPhotos > 0) {
@@ -97,13 +98,16 @@ export default function DailyTest({ onStart, onExit }: { onStart: (paper: TestPa
         const result = await processQueuedPhotosForDailyTest(current.perDay, setMessage);
         setQueuedPhotos(result.remainingFiles);
         current = loadDaily();
-        if (result.errors.length) setMessage(`Imported ${result.processedFiles} file(s). ${result.errors[0]} Remaining files are saved for retry.`);
+        if (result.errors.length) {
+          importFailed = true;
+          setMessage(`Imported ${result.processedFiles} file(s). ${result.errors[0]} Remaining files are saved for retry.`);
+        }
         else if (result.processedFiles > 0) setMessage(`Imported ${result.processedFiles} file(s) only when needed. ${result.remainingFiles} file(s) remain queued for later tests.`);
       }
       const paper = getOrCreateTodayTest();
       if (!paper) {
         refresh();
-        if (getReadyDailyQuestionCount(current.bank) === 0) setMessage(current.bank.length > 0 ? 'Questions were saved, but some need answers first. Open Edit question bank and complete their answers before starting a test.' : 'No questions are ready. Add photos/PDFs or type questions first.');
+        if (getReadyDailyQuestionCount(current.bank) === 0 && !importFailed) setMessage(current.bank.length > 0 ? 'Questions were saved, but some need answers first. Open Edit question bank and complete their answers before starting a test.' : 'No questions are ready. Add photos/PDFs or type questions first.');
         return;
       }
       refresh();
