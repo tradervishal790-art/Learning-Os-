@@ -22,6 +22,7 @@ import { setImmersive, setNoteOpen } from './immersive';
 import { useMediaQuery } from './useMediaQuery';
 import { addPageAfter, blankPage, deletePage, duplicatePage, inkOf, movePage, newPageId, patchPage, restorePage } from './pageOps';
 import { describePicture, recognizeHandwriting } from './inkOcrApi';
+import { getInkText, handwritingOf, pagesToRead, readHandwriting } from './inkText';
 import { getClipboard, nextPasteOffset, setClipboard, useClipboardCount } from './inkClipboard';
 import {
   cloneStrokes, deleteSelected, neatenSelected, pickStrokes, recolorSelected, renderStrokesPng, reorderSelected, rewidthSelected,
@@ -839,7 +840,7 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: (untouc
     void Promise.allSettled(
       metas.map(async (m) => {
         const c = await loadNoteContent(m.id);
-        return c ? { id: m.id, title: m.title || t.untitled, text: c.pages.map((p) => p.text).join('\n').slice(0, 200_000) } : null;
+        return c ? { id: m.id, title: m.title || t.untitled, text: [c.pages.map((p) => p.text).join('\n'), handwritingOf(m.id, c.pages)].filter(Boolean).join('\n').slice(0, 200_000) } : null;
       })
     ).then((rs) => {
       if (!alive) return;
@@ -853,9 +854,34 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: (untouc
 
   const getAiSource = () => {
     const sel = active ? active.state.doc.textBetween(active.state.selection.from, active.state.selection.to, '\n') : '';
-    const pageText = latest.current.pages.find((p) => p.id === activePage)?.text ?? '';
-    const noteText = latest.current.pages.map((p) => p.text).join('\n');
+    // Handwriting that has been read (OCR) counts as note text too, so Ask my notes can answer from it.
+    const inked = inkPages();
+    const pageText = [latest.current.pages.find((p) => p.id === activePage)?.text ?? '', getInkText(id, inked.find((p) => p.id === activePage) ?? { id: '' })].filter(Boolean).join('\n');
+    const noteText = [latest.current.pages.map((p) => p.text).join('\n'), handwritingOf(id, inked)].filter(Boolean).join('\n');
     return { selectedText: sel, pageText, noteText, areaText: circleArea };
+  };
+
+  /** Every page with its live handwriting (the editor keeps the newest ink in inkRef). */
+  const inkPages = () => latest.current.pages.map((p) => ({ id: p.id, ink: inkRef.current[p.id] ?? p.ink }));
+  const [hwBusy, setHwBusy] = useState(false);
+  const hwPending = aiOpen && !hwBusy ? pagesToRead(id, inkPages()).length : 0;
+  const readMyHandwriting = async () => {
+    if (hwBusy) return;
+    if (localStorage.getItem(OCR_OK_KEY) !== '1') {
+      if (!(await askConfirm(t.ai.handwritingConsent))) return;
+      try {
+        localStorage.setItem(OCR_OK_KEY, '1');
+      } catch {
+        // ask again next time
+      }
+    }
+    setHwBusy(true);
+    try {
+      const r = await readHandwriting(id, inkPages(), { render: (s) => renderStrokesPng(s)?.data ?? null, recognize: recognizeHandwriting });
+      if (r.failed > 0) flash(t.ai.handwritingFailed);
+    } finally {
+      setHwBusy(false);
+    }
   };
 
   // AI text keeps its structure: "- " lines become a real bullet list, "1." a numbered one, **bold** stays bold.
@@ -1630,6 +1656,7 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: (untouc
               onStartCircle={startCircle}
               initialOp={aiStart?.op}
               preferArea={aiStart?.area}
+              handwriting={{ pending: hwPending, busy: hwBusy, onRead: () => void readMyHandwriting() }}
               labels={t.ai}
             />
           </div>

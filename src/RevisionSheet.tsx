@@ -6,6 +6,8 @@ import { getIndex, loadNoteContent, pageToHtml } from './notebookStore';
 import { addMistake, getMistakes, removeMistake, type Mistake } from './mistakeStore';
 import { extractHighlights, itemsToText, type HighlightItem, type HighlightKind } from './revisionExtract';
 import { askConfirm } from './dialogApi';
+import { inkHighlightRegions } from './inkHighlights';
+import { renderInkCrop } from './renderInkCrop';
 
 // ============================================================
 // RevisionSheet.tsx — every highlight of one note on a single screen,
@@ -34,7 +36,24 @@ export default function RevisionSheet({ id, onBack }: { id: string; onBack: () =
     void loadNoteContent(id).then((c) => {
       if (!alive) return;
       if (!c) return setFailed(true);
-      setItems(extractHighlights(c.pages.map((p) => ({ id: p.id, html: pageToHtml(p) }))));
+      const textItems = extractHighlights(c.pages.map((p) => ({ id: p.id, html: pageToHtml(p) })));
+      // Highlighter-PEN marks have no text: each region becomes a picture card (drawn below, one at a time).
+      const regions = inkHighlightRegions(c.pages);
+      const inkItems: HighlightItem[] = regions.map((r, n) => ({
+        key: `ink|${r.pageId}|${n}`, kind: r.kind, color: r.color, text: '', ink: true, count: 1, pages: [{ pageId: r.pageId, pageNumber: r.pageNumber }],
+      }));
+      const order = (k: HighlightKind) => KINDS.indexOf(k);
+      setItems([...textItems, ...inkItems].sort((a, b) => order(a.kind) - order(b.kind))); // stable: text first, then pen marks of the same colour
+      void (async () => {
+        for (let n = 0; n < regions.length; n++) {
+          if (!alive) return;
+          const r = regions[n];
+          const page = c.pages.find((p) => p.id === r.pageId);
+          const image = await renderInkCrop({ ink: page?.ink ?? [], box: r.box, pdf: page?.pdf ? { fileId: page.pdf.fileId, pageNumber: page.pdf.pageNumber } : undefined });
+          if (!alive || !image) continue;
+          setItems((cur) => (cur ? cur.map((i) => (i.key === inkItems[n].key ? { ...i, image } : i)) : cur));
+        }
+      })();
     });
     return () => {
       alive = false;
@@ -54,7 +73,7 @@ export default function RevisionSheet({ id, onBack }: { id: string; onBack: () =
 
   const copyAll = async () => {
     try {
-      await navigator.clipboard.writeText(itemsToText(shown, { kinds: kindLabel, page: t.page }));
+      await navigator.clipboard.writeText(itemsToText(shown, { kinds: kindLabel, page: t.page, ink: t.inkHighlight }));
       setCopied(true);
       setTimeout(() => setCopied(false), 1800);
     } catch {
@@ -140,12 +159,20 @@ export default function RevisionSheet({ id, onBack }: { id: string; onBack: () =
               >
                 <span className="w-1.5 shrink-0 rounded-full" style={{ background: i.color }} aria-hidden />
                 <div className="min-w-0 flex-1">
+                  {i.ink ? (
+                    i.image ? (
+                      <img src={i.image} alt={t.inkHighlight} draggable={false} className={`max-h-72 max-w-full rounded-lg border border-gray-200 bg-white ${recall && !shownKeys.has(i.key) ? 'blur-xl select-none' : ''}`} />
+                    ) : (
+                      <div className="h-16 w-full max-w-xs animate-pulse rounded-lg bg-gray-100 dark:bg-white/5" aria-label={t.inkHighlight} />
+                    )
+                  ) : (
                   <p className={`text-sm whitespace-pre-wrap break-words ${recall && !shownKeys.has(i.key) ? 'text-transparent select-none rounded' : ''}`} style={recall && !shownKeys.has(i.key) ? { background: i.color } : undefined}>{i.text}</p>
+                  )}
                   <p className="mt-1 text-xs text-gray-400 dark:text-white/40">
                     {kindLabel[i.kind]} · {t.page} {i.pages.map((p) => p.pageNumber).join(', ')}
                     {i.count > 1 ? ` · ×${i.count}` : ''}
                   </p>
-                  {i.kind === 'doubt' && (
+                  {i.kind === 'doubt' && !i.ink && (
                     <button
                       onClick={(e) => {
                         e.stopPropagation();

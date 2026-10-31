@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { RotateCw, Trash2 } from 'lucide-react';
+import { BringToFront, RotateCw, SendToBack, Trash2 } from 'lucide-react';
 import type { PageAttachment } from './notebookStore';
 import { PAGE_UNITS } from './inkEngine';
 import { deleteImage, getImage, putImage } from './attachStore';
@@ -130,6 +130,7 @@ export default function PageImages({
               // A rotated photo has a new height÷width: remember it so the page grows to fit.
               if (a.ar === undefined || Math.abs(a.ar - ar) > 0.01) patch(a.id, { ar: Math.round(ar * 1000) / 1000 });
             }}
+            onToggleBehind={() => patch(a.id, { behind: !a.behind })}
             onRemove={() => remove(a)}
           />
         );
@@ -152,6 +153,7 @@ function FloatingImage({
   onPointerMove,
   onPointerUp,
   onRatio,
+  onToggleBehind,
   onRemove,
 }: {
   a: PageAttachment;
@@ -167,6 +169,7 @@ function FloatingImage({
   onPointerMove: (e: React.PointerEvent) => void;
   onPointerUp: () => void;
   onRatio: (ar: number) => void;
+  onToggleBehind: () => void;
   onRemove: () => void;
 }) {
   const t = (k: string) => labels[k] ?? k;
@@ -214,7 +217,26 @@ function FloatingImage({
     }
   };
 
+  // A photo "behind the text" sits under the typed text and lets clicks through, so the text on top stays
+  // editable. While it is selected it comes to the front so it can be moved and resized; a small chip at its
+  // corner (always on top) is how you select it again.
+  const behind = !!a.behind;
+  const hidden = behind && !selected;
   return (
+    <>
+    {hidden && (
+      <button
+        type="button"
+        data-img-ui
+        aria-label={t('selectPhoto')}
+        title={t('selectPhoto')}
+        onClick={onSelect}
+        className="absolute z-[16] flex h-6 w-6 items-center justify-center rounded-full border border-gray-300 bg-white/85 text-gray-600 opacity-60 hover:opacity-100 focus-visible:opacity-100 dark:border-white/20 dark:bg-gray-900/85 dark:text-white/70"
+        style={{ left: x * scale + 2, top: y * scale + 2 }}
+      >
+        <SendToBack size={13} />
+      </button>
+    )}
     <figure
       data-attach-id={a.id}
       onPointerDown={(e) => {
@@ -233,7 +255,7 @@ function FloatingImage({
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
-      className="absolute z-[15] m-0"
+      className={`absolute m-0 ${hidden ? 'z-[5] pointer-events-none' : 'z-[15]'}`}
       style={{
         left: x * scale,
         top: y * scale,
@@ -261,6 +283,16 @@ function FloatingImage({
 
       {selected && (
         <>
+          <button
+            type="button"
+            data-img-ui
+            aria-label={behind ? t('bringFront') : t('sendBehind')}
+            title={behind ? t('bringFront') : t('sendBehind')}
+            onClick={onToggleBehind}
+            className="absolute -right-2.5 -top-2.5 flex h-6 w-6 items-center justify-center rounded-full border-2 border-blue-500 bg-white text-blue-600"
+          >
+            {behind ? <BringToFront size={13} /> : <SendToBack size={13} />}
+          </button>
           <div
             data-img-ui
             onPointerDown={onStartSize}
@@ -299,5 +331,6 @@ function FloatingImage({
         </>
       )}
     </figure>
+    </>
   );
 }

@@ -1,9 +1,11 @@
 import {
-  LineCapStyle, LineJoinStyle, PDFDocument, PDFName, PDFRef, lineTo, moveTo, popGraphicsState, pushGraphicsState,
-  rgb, setDashPattern, setGraphicsState, setLineCap, setLineJoin, setLineWidth, setStrokingColor, stroke as strokePath,
+  LineCapStyle, LineJoinStyle, PDFDocument, PDFName, PDFRef, appendBezierCurve, closePath, fill, lineTo, moveTo, popGraphicsState, pushGraphicsState,
+  rgb, setDashPattern, setFillingColor, setGraphicsState, setLineCap, setLineJoin, setLineWidth, setStrokingColor, stroke as strokePath,
 } from 'pdf-lib';
 import type { PDFOperator, PDFPage } from 'pdf-lib';
-import type { InkStroke } from './notebookStore';
+import { getStroke } from 'perfect-freehand';
+import { KINDS } from './inkEngine';
+import type { InkKind, InkStroke } from './notebookStore';
 
 export type PageRotation = 0 | 90 | 180 | 270;
 
@@ -48,22 +50,118 @@ function parseColor(color: string) {
   return rgb(parseInt(hex.slice(0, 2), 16) / 255, parseInt(hex.slice(2, 4), 16) / 255, parseInt(hex.slice(4, 6), 16) / 255);
 }
 
+/** One page-unit point -> PDF space (same mapping as strokeToPdfPoints, for any x/y). */
+function mapXY(px: number, py: number, pageW: number, pageH: number, rotate: PageRotation): { x: number; y: number } {
+  const scale = (rotate === 90 || rotate === 270 ? pageH : pageW) / 1000;
+  const dx = px * scale;
+  const dy = py * scale;
+  switch (rotate) {
+    case 90: return { x: dy, y: dx };
+    case 180: return { x: pageW - dx, y: dy };
+    case 270: return { x: pageW - dy, y: pageH - dx };
+    default: return { x: dx, y: pageH - dy };
+  }
+}
+
+/** Opacity used on screen; the textured brushes are drawn as translucent solid strokes here. */
+function opacityOf(kind: InkKind): number {
+  if (kind === 'watercolor' || kind === 'airbrush') return 0.45;
+  return KINDS[kind]?.opacity ?? 1;
+}
+
+/**
+ * Draws a stroke the way the page shows it: the SAME perfect-freehand outline (so pen pressure, thinning and
+ * tapered ends carry over) at the pen's real size (a marker is 3x a ballpoint, a highlighter 6x), filled
+ * with the pen's opacity. The old export drew every pen as a constant-width line, so pressure and pen style
+ * were lost and highlighters / markers came out hair-thin.
+ */
 function drawStroke(page: PDFPage, s: InkStroke, ox: number, oy: number, pageW: number, pageH: number, rot: PageRotation, gs: PDFName | null): void {
-  const pts = strokeToPdfPoints(s, pageW, pageH, rot);
-  if (pts.length < 1) return;
+  const n = Math.floor(s.pts.length / 3);
+  if (n < 1) return;
+  const cfg = KINDS[s.kind];
+  if (!cfg) return;
   const scale = (rot === 90 || rot === 270 ? pageH : pageW) / 1000;
-  const width = Math.max(0.1, s.width * scale);
+  const at = (px: number, py: number) => {
+    const m = mapXY(px, py, pageW, pageH, rot);
+    return { x: m.x + ox, y: m.y + oy };
+  };
   const ops: PDFOperator[] = [pushGraphicsState()];
   if (gs) ops.push(setGraphicsState(gs));
-  ops.push(setStrokingColor(parseColor(s.color)), setLineWidth(width), setLineCap(LineCapStyle.Round), setLineJoin(LineJoinStyle.Round));
-  if (s.kind === 'dotted' && pts.length > 1) ops.push(setDashPattern([Math.max(0.1, width * 0.1), width * 2.2], 0));
-  ops.push(moveTo(pts[0].x + ox, pts[0].y + oy));
-  if (pts.length === 1) {
-    ops.push(lineTo(pts[0].x + ox + 0.01, pts[0].y + oy)); // zero-length round-capped segment = a dot
-  } else {
-    for (let i = 1; i < pts.length; i++) ops.push(lineTo(pts[i].x + ox, pts[i].y + oy));
+  const color = parseColor(s.color);
+
+  if (s.kind === 'dotted') {
+    // dots: zero-length dashes with round caps, like the page
+    const w = Math.max(0.1, s.width * 1.4 * scale);
+    ops.push(setStrokingColor(color), setLineWidth(w), setLineCap(LineCapStyle.Round), setLineJoin(LineJoinStyle.Round));
+    if (n > 1) ops.push(setDashPattern([0, w * 1.8], 0));
+    const p0 = at(s.pts[0], s.pts[1]);
+    ops.push(moveTo(p0.x, p0.y));
+    if (n === 1) ops.push(lineTo(p0.x + 0.01, p0.y));
+    for (let i = 1; i < n; i++) {
+      const p = at(s.pts[i * 3], s.pts[i * 3 + 1]);
+      ops.push(lineTo(p.x, p.y));
+    }
+    ops.push(strokePath(), popGraphicsState());
+    page.pushOperators(...ops);
+    return;
   }
-  ops.push(strokePath(), popGraphicsState());
+
+  ops.push(setFillingColor(color));
+  if (s.kind === 'calligraphy') {
+    // flat nib held at 45 degrees: one parallelogram per segment, filled once
+    const half = (s.width * 3.2) / 2;
+    const dx = Math.cos(-Math.PI / 4) * half;
+    const dy = Math.sin(-Math.PI / 4) * half;
+    if (n === 1) {
+      const a = at(s.pts[0] - dx, s.pts[1] - dy);
+      const b = at(s.pts[0] + dx, s.pts[1] + dy);
+      ops.push(setStrokingColor(color), setLineWidth(Math.max(0.1, s.width * 0.6 * scale)), setLineCap(LineCapStyle.Round), moveTo(a.x, a.y), lineTo(b.x, b.y), strokePath());
+    }
+    for (let i = 1; i < n; i++) {
+      const ax = s.pts[(i - 1) * 3], ay = s.pts[(i - 1) * 3 + 1], bx = s.pts[i * 3], by = s.pts[i * 3 + 1];
+      const q = [at(ax + dx, ay + dy), at(bx + dx, by + dy), at(bx - dx, by - dy), at(ax - dx, ay - dy)];
+      ops.push(moveTo(q[0].x, q[0].y), lineTo(q[1].x, q[1].y), lineTo(q[2].x, q[2].y), lineTo(q[3].x, q[3].y), closePath());
+    }
+    if (n > 1) ops.push(fill());
+    ops.push(popGraphicsState());
+    page.pushOperators(...ops);
+    return;
+  }
+
+  const pts: number[][] = [];
+  for (let i = 0; i < n; i++) {
+    const x = s.pts[i * 3], y = s.pts[i * 3 + 1];
+    if (Number.isFinite(x) && Number.isFinite(y)) pts.push([x, y, s.pts[i * 3 + 2]]);
+  }
+  if (pts.length === 0) return;
+  const size = s.width * cfg.size;
+  const outline = getStroke(pts, {
+    size,
+    thinning: cfg.thinning,
+    smoothing: 0.5 + s.sm * 0.3,
+    streamline: s.sm,
+    simulatePressure: s.sim,
+    last: true,
+    start: cfg.taper ? { taper: size * 1.5, cap: true } : { cap: true },
+    end: cfg.taper ? { taper: size * 3, cap: true } : { cap: true },
+  });
+  if (outline.length < 2) return;
+  // the page smooths the outline with quadratic curves through the midpoints; PDF only has cubic ones
+  const P = outline.map(([x, y]) => at(x, y));
+  const mid = (a: { x: number; y: number }, b: { x: number; y: number }) => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
+  let cur = P[0];
+  ops.push(moveTo(cur.x, cur.y));
+  for (let i = 0; i < P.length; i++) {
+    const q = P[i];
+    const end = mid(q, P[(i + 1) % P.length]);
+    ops.push(appendBezierCurve(
+      cur.x + (2 / 3) * (q.x - cur.x), cur.y + (2 / 3) * (q.y - cur.y),
+      end.x + (2 / 3) * (q.x - end.x), end.y + (2 / 3) * (q.y - end.y),
+      end.x, end.y,
+    ));
+    cur = end;
+  }
+  ops.push(closePath(), fill(), popGraphicsState());
   page.pushOperators(...ops);
 }
 
@@ -77,19 +175,33 @@ export async function exportAnnotatedPdf(
   if (!pages.some((p) => p.strokes.length > 0)) return copyOfOriginal();
 
   const doc = await PDFDocument.load(original.slice(0), { updateMetadata: false }); // a COPY: the input buffer is never touched
-  const highlighterGs: PDFRef = doc.context.register(doc.context.obj({ Type: 'ExtGState', CA: 0.4, ca: 0.4 }));
   const pdfPages = doc.getPages();
+  const gsRefs = new Map<number, PDFRef>(); // one ExtGState per opacity used
 
   for (const entry of pages) {
     const page = pdfPages[entry.pageNumber - 1];
     if (!page || entry.strokes.length === 0) continue;
     const box = page.getCropBox();
     const rot = normalizeRotation(page.getRotation().angle);
-    const gsName = page.node.newExtGState('GS', highlighterGs);
-    const highlighters = entry.strokes.filter((s) => s.kind === 'highlighter');
-    const others = entry.strokes.filter((s) => s.kind !== 'highlighter');
-    for (const s of highlighters) drawStroke(page, s, box.x, box.y, box.width, box.height, rot, gsName);
-    for (const s of others) drawStroke(page, s, box.x, box.y, box.width, box.height, rot, null);
+    const gsNames = new Map<number, PDFName>();
+    const gsFor = (kind: InkKind): PDFName | null => {
+      const o = Math.round(opacityOf(kind) * 100) / 100;
+      if (o >= 1) return null;
+      let name = gsNames.get(o);
+      if (!name) {
+        let ref = gsRefs.get(o);
+        if (!ref) {
+          ref = doc.context.register(doc.context.obj({ Type: 'ExtGState', CA: o, ca: o }));
+          gsRefs.set(o, ref);
+        }
+        name = page.node.newExtGState('GS', ref);
+        gsNames.set(o, name);
+      }
+      return name;
+    };
+    // highlighter underneath, pens on top (as on the page)
+    const ordered = [...entry.strokes.filter((s) => s.kind === 'highlighter'), ...entry.strokes.filter((s) => s.kind !== 'highlighter')];
+    for (const s of ordered) drawStroke(page, s, box.x, box.y, box.width, box.height, rot, KINDS[s.kind] ? gsFor(s.kind) : null);
   }
   return doc.save();
 }

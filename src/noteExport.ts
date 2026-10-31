@@ -198,15 +198,22 @@ export function noteToHtml(title: string, pages: NotePage[], opts: { ink?: boole
     .map((p, i) => {
       const h = pageTitle(p, i, pages);
       const body = p.pdf ? `<p>${esc(p.text)}</p>` : clean(pageToHtml(p));
-      // Handwriting (optional): drawn as one picture under the page's text, scaled to the page width.
-      const inkHtml = opts.ink && p.ink && p.ink.length > 0 ? `<div class="ink">${inkToSvg(p.ink, {})}</div>` : '';
-      return body.replace(/<[^>]*>/g, '').trim() || h || inkHtml
-        ? `<section>${h ? `<h2 class="pg">${esc(h)}</h2>` : ''}${body}${inkHtml}</section>`
+      // Handwriting (optional). On a typed page it is laid OVER the text, in the same page units the editor uses
+      // (page width = 1000), so a circle or an underline lands on the words it was drawn around. (It used to be
+      // one picture placed after the text.) A PDF page has no real layout here, so its ink stays a block below.
+      const inkSvg = opts.ink && p.ink && p.ink.length > 0 ? inkToSvg(p.ink, {}) : '';
+      const overlay = inkSvg && !p.pdf;
+      const inkH = Number(/viewBox="0 0 1000 ([\d.]+)"/.exec(inkSvg)?.[1]) || 1414;
+      const content = overlay
+        ? `<div class="pgbox" style="aspect-ratio:1000/${Math.round(Math.max(1414, inkH))}">${body}<div class="ink-over">${inkSvg}</div></div>`
+        : `${body}${inkSvg ? `<div class="ink">${inkSvg}</div>` : ''}`;
+      return body.replace(/<[^>]*>/g, '').trim() || h || inkSvg
+        ? `<section>${h ? `<h2 class="pg">${esc(h)}</h2>` : ''}${content}</section>`
         : '';
     })
     .join('\n');
   return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title || 'Untitled')}</title>
-<style>body{font:16px/1.6 system-ui,sans-serif;max-width:760px;margin:2rem auto;padding:0 1rem;color:#111}h1{font-size:1.8rem}h2.pg{font-size:.8rem;color:#666;font-weight:600;border-top:1px solid #ddd;padding-top:.6rem;margin-top:2rem}mark{border-radius:3px;padding:0 .1em;color:#111}table{border-collapse:collapse}td,th{border:1px solid #ccc;padding:.3rem .5rem}pre{background:#f4f4f5;padding:.6rem;overflow:auto}img{max-width:100%}@media print{body{margin:0}section{break-inside:avoid-page}}.ink{margin:.8rem 0}.ink svg{display:block;width:100%;height:auto}</style></head><body><h1>${esc(title || 'Untitled')}</h1>${sections}</body></html>`;
+<style>body{font:16px/1.6 system-ui,sans-serif;max-width:760px;margin:2rem auto;padding:0 1rem;color:#111}h1{font-size:1.8rem}h2.pg{font-size:.8rem;color:#666;font-weight:600;border-top:1px solid #ddd;padding-top:.6rem;margin-top:2rem}mark{border-radius:3px;padding:0 .1em;color:#111}table{border-collapse:collapse}td,th{border:1px solid #ccc;padding:.3rem .5rem}pre{background:#f4f4f5;padding:.6rem;overflow:auto}img{max-width:100%}@media print{body{margin:0}section{break-inside:avoid-page}}.ink{margin:.8rem 0}.ink svg{display:block;width:100%;height:auto}.pgbox{position:relative;box-sizing:border-box;padding:1em}.ink-over{position:absolute;left:0;top:0;width:100%;pointer-events:none}.ink-over svg{display:block;width:100%;height:auto}</style></head><body><h1>${esc(title || 'Untitled')}</h1>${sections}</body></html>`;
 }
 
 export function noteToBackupJson(title: string, pages: NotePage[], video?: NoteVideo | null): string {

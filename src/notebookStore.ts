@@ -28,6 +28,7 @@ import type { NoteSnapshot } from './noteTypes';
 import { getVersion, listVersions, saveVersion, deleteVersions, type VersionData } from './noteVersions';
 import { applyUndo, captureUndo, type IndexUndo } from './indexUndo';
 import { serverIso } from './serverClock';
+import { inkPartKey, MAX_INK_PARTS, splitStrokes } from './inkParts';
 
 // ---------- types ----------
 
@@ -119,6 +120,8 @@ export interface PageAttachment {
   y?: number;
   w?: number;
   ar?: number;
+  /** Photo sits BEHIND the typed text (a faded diagram, a template) instead of covering it. */
+  behind?: boolean;
 }
 
 /** Notes made before the rich editor only have `text` — show it as paragraphs. */
@@ -316,7 +319,7 @@ function purgeOldTrash(idx: NotebookIndex): void {
     void idbGet(n.id)
       .catch(() => null)
       .then((c) => {
-        c?.pages.forEach((p) => void deleteFromCloud(cloudInkKey(n.id, p.id)));
+        c?.pages.forEach((p) => deleteInkDocs(cloudInkKey(n.id, p.id), Math.max(0, splitStrokes(p.ink ?? []).length - 1)));
         void idbDelete(n.id);
       });
     void deleteFromCloud(cloudNoteKey(n.id));
@@ -365,6 +368,15 @@ function settleStatus(cloudOk: boolean): void {
 const cloudInkKey = (noteId: string, pageId: string) => `ink_${noteId}_${pageId}`;
 /** Last ink payload (hash) pushed OK per ink doc, so unchanged pages aren't re-uploaded every autosave. */
 const inkSigs = new Map<string, string>();
+/** How many cloud documents each page's ink currently uses (1 for normal pages). */
+const inkPartCounts = new Map<string, number>();
+
+/** Delete a page's ink document and its `extra` additional parts. */
+function deleteInkDocs(key: string, extra: number): void {
+  void deleteFromCloud(key);
+  for (let i = 1; i <= extra; i++) void deleteFromCloud(inkPartKey(key, i));
+  inkPartCounts.delete(key);
+}
 
 function hashStr(str: string): string {
   let h = 5381;
@@ -372,8 +384,8 @@ function hashStr(str: string): string {
   return `${str.length}:${h}`;
 }
 
-/** Push one note to the cloud. Returns true only if EVERYTHING landed. */
-async function pushContent(content: NoteContent): Promise<boolean> {
+/** Push one note to the cloud. Returns true only if EVERYTHING landed. (Exported for tests.) */
+export async function pushContent(content: NoteContent): Promise<boolean> {
   if (isConflicted(content.id)) return false; // held back until the student resolves the conflict
   let ok = true;
   const main: NoteContent = {
@@ -389,19 +401,32 @@ async function pushContent(content: NoteContent): Promise<boolean> {
     if (!p.ink || p.ink.length === 0) {
       if (inkSigs.has(key)) {
         inkSigs.delete(key); // the student cleared this page's ink — drop the cloud copy too
-        void deleteFromCloud(key);
+        deleteInkDocs(key, (inkPartCounts.get(key) ?? 1) - 1);
       }
       continue;
     }
     const json = JSON.stringify(p.ink);
-    if (json.length > MAX_CLOUD_DOC_CHARS) {
-      ok = false; // a single page this heavy stays on this device (status shows "not synced")
-      continue;
-    }
     const sig = hashStr(json);
     if (inkSigs.get(key) === sig) continue;
-    if (await pushToCloudChecked(key, { strokes: p.ink })) inkSigs.set(key, sig);
-    else ok = false;
+    // A page with very heavy ink is split over several documents (inkParts.ts); normal pages stay one document.
+    const parts = json.length <= MAX_CLOUD_DOC_CHARS ? [p.ink] : splitStrokes(p.ink);
+    if (parts.length > MAX_INK_PARTS) {
+      ok = false; // absurdly heavy: stays on this device (status shows "not synced")
+      continue;
+    }
+    let pageOk = true;
+    for (let i = parts.length - 1; i >= 1; i--) {
+      if (!(await pushToCloudChecked(inkPartKey(key, i), { strokes: parts[i] }))) pageOk = false;
+    }
+    // The first document declares how many parts there are and goes LAST: whoever sees it can fetch them all.
+    if (pageOk && (await pushToCloudChecked(key, parts.length > 1 ? { strokes: parts[0], parts: parts.length } : { strokes: parts[0] }))) {
+      inkSigs.set(key, sig);
+      const before = inkPartCounts.get(key) ?? 1;
+      for (let i = parts.length; i < before; i++) void deleteFromCloud(inkPartKey(key, i)); // the page got lighter: drop old parts
+      inkPartCounts.set(key, parts.length);
+    } else {
+      ok = false;
+    }
   }
   // Main doc last: anyone who sees `hasInk` can already fetch the ink doc.
   if (!(await pushToCloudChecked(cloudNoteKey(content.id), main))) ok = false;
@@ -410,7 +435,7 @@ async function pushContent(content: NoteContent): Promise<boolean> {
 }
 
 /** Pull one note from the cloud, ink included. null = missing OR incomplete (never a half note). */
-async function pullContent(id: string): Promise<NoteContent | null> {
+export async function pullContent(id: string): Promise<NoteContent | null> {
   const main = await pullFromCloud<NoteContent>(cloudNoteKey(id));
   if (!main || !Array.isArray(main.pages)) return null;
   const pages: NotePage[] = [];
@@ -419,12 +444,21 @@ async function pullContent(id: string): Promise<NoteContent | null> {
       pages.push(p);
       continue;
     }
-    const doc = await pullFromCloud<{ strokes: InkStroke[] }>(cloudInkKey(id, p.id));
+    const key = cloudInkKey(id, p.id);
+    const doc = await pullFromCloud<{ strokes: InkStroke[]; parts?: number }>(key);
     if (!doc || !Array.isArray(doc.strokes)) return null; // ink not reachable right now — don't store a note missing its handwriting
+    let strokes = doc.strokes;
+    const count = typeof doc.parts === 'number' && doc.parts > 1 ? Math.min(doc.parts, MAX_INK_PARTS) : 1;
+    for (let i = 1; i < count; i++) {
+      const more = await pullFromCloud<{ strokes: InkStroke[] }>(inkPartKey(key, i));
+      if (!more || !Array.isArray(more.strokes)) return null; // a heavy page is only usable whole
+      strokes = strokes.concat(more.strokes);
+    }
     const { hasInk, ...rest } = p;
     void hasInk;
-    pages.push({ ...rest, ink: doc.strokes });
-    inkSigs.set(cloudInkKey(id, p.id), hashStr(JSON.stringify(doc.strokes)));
+    pages.push({ ...rest, ink: strokes });
+    inkSigs.set(key, hashStr(JSON.stringify(strokes)));
+    inkPartCounts.set(key, count);
   }
   return { ...main, pages };
 }
@@ -469,7 +503,7 @@ function cleanRemovedPages(noteId: string): void {
   pending.forEach((pageId) => {
     const key = cloudInkKey(noteId, pageId);
     inkSigs.delete(key);
-    void deleteFromCloud(key);
+    deleteInkDocs(key, (inkPartCounts.get(key) ?? 1) - 1);
   });
   removedPages.delete(noteId);
 }
@@ -694,7 +728,7 @@ export async function deleteNotesForever(ids: string[]): Promise<void> {
   commitIndex({ ...idx, notes: idx.notes.filter((n) => !set.has(n.id)), deleted });
   for (const id of ids) {
     const c = await idbGet(id).catch(() => null);
-    c?.pages.forEach((p) => void deleteFromCloud(cloudInkKey(id, p.id)));
+    c?.pages.forEach((p) => deleteInkDocs(cloudInkKey(id, p.id), Math.max(0, splitStrokes(p.ink ?? []).length - 1)));
     await idbDelete(id);
     void deleteFromCloud(cloudNoteKey(id));
     await deleteVersions(id).catch(() => undefined);

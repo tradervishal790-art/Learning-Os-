@@ -19,6 +19,10 @@ export interface HighlightItem {
   pages: { pageId: string; pageNumber: number }[];
   /** How often it was highlighted in total (repeated highlights = important to the student). */
   count: number;
+  /** A highlighter-PEN mark: it has no text, the sheet shows a picture of the region (see inkHighlights.ts). */
+  ink?: boolean;
+  /** Data URL of that picture once it has been drawn. */
+  image?: string;
 }
 
 /** The four official highlight colours (same values the highlighter palette uses). */
@@ -147,7 +151,7 @@ export function extractHighlights(pages: { id: string; html: string }[]): Highli
 }
 
 /** Plain text for "Copy all": a heading per kind, then "- passage (Page 2, 5) ×3" lines. */
-export function itemsToText(items: HighlightItem[], labels: { kinds: Record<HighlightKind, string>; page: string }): string {
+export function itemsToText(items: HighlightItem[], labels: { kinds: Record<HighlightKind, string>; page: string; ink?: string }): string {
   const lines: string[] = [];
   for (const kind of KIND_ORDER) {
     const group = items.filter((i) => i.kind === kind);
@@ -156,7 +160,7 @@ export function itemsToText(items: HighlightItem[], labels: { kinds: Record<High
     lines.push(labels.kinds[kind]);
     for (const i of group) {
       const pg = i.pages.map((p) => p.pageNumber).join(', ');
-      lines.push(`- ${i.text} (${labels.page} ${pg})${i.count > 1 ? ` ×${i.count}` : ''}`);
+      lines.push(`- ${i.ink ? `[${labels.ink ?? 'Handwritten highlight'}]` : i.text} (${labels.page} ${pg})${i.count > 1 ? ` ×${i.count}` : ''}`);
     }
   }
   return lines.join('\n');

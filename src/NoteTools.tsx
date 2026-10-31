@@ -111,6 +111,21 @@ export function ExportDialog({
       setWorking(false);
     }
   };
+  // A real .pdf file straight away (pages drawn as pictures, so every language and the handwriting come out right).
+  const pdfFile = async () => {
+    if (working) return;
+    setWorking(true);
+    try {
+      const { exportNotePdf } = await import('./exportNotePdf');
+      const bytes = await exportNotePdf(title, pages, { includeInk: inkOn });
+      downloadBlob(fileName(title, 'pdf'), new Blob([bytes as BlobPart], { type: 'application/pdf' }));
+      onMessage(t.exportDone);
+      onClose();
+    } catch {
+      onMessage(t.exportFail);
+      setWorking(false);
+    }
+  };
   const share = async () => {
     try {
       if (navigator.share) {
@@ -152,6 +167,7 @@ export function ExportDialog({
         <Item icon={<FileText size={18} />} name={t.expMd} hint={t.expMdHint} disabled={!text} onClick={() => save('md', md(), 'text/markdown')} />
         <Item icon={<FileText size={18} />} name={t.expTxt} hint={t.expTxtHint} disabled={!text} onClick={() => save('txt', noteToText(title, pages), 'text/plain')} />
         <Item icon={<FileType2 size={18} />} name={t.expDocx} hint={working ? t.exportWorking : t.expDocxHint} disabled={working || (!text && !inkOn)} onClick={() => void word()} />
+        <Item icon={<FileType2 size={18} />} name={t.expPdf} hint={working ? t.exportWorking : t.expPdfHint} disabled={working || (!text && !inkOn && !pages.some((p) => p.pdf || p.attachments?.some((a) => a.kind === 'image')))} onClick={() => void pdfFile()} />
         <Item icon={<Printer size={18} />} name={t.expHtml} hint={t.expHtmlHint} disabled={!text && !inkOn} onClick={print} />
         <Item icon={<FileCode2 size={18} />} name={t.expJson} hint={t.expJsonHint} onClick={() => save('json', noteToBackupJson(title, pages, video), 'application/json')} />
         <Item icon={<Share2 size={18} />} name={t.share} hint={t.shareHint} disabled={!text} onClick={() => void share()} />

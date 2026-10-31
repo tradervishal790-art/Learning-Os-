@@ -57,6 +57,8 @@ interface Props {
   /** Reopen with this tool selected / the circled area as the scope (after circling). */
   initialOp?: NoteAiOp;
   preferArea?: boolean;
+  /** Handwritten pages that "Ask my notes" cannot see until they are read (OCR); `onRead` reads them. */
+  handwriting?: { pending: number; busy: boolean; onRead(): void };
   labels: Record<string, string>;
 }
 
@@ -1114,6 +1116,14 @@ export default function NoteAiPanel(props: Props) {
               className="w-full rounded-xl border border-slate-300 bg-white p-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
             />
           </Field>
+        )}
+        {isAnswer && props.handwriting && (props.handwriting.pending > 0 || props.handwriting.busy) && (
+          <div className="flex flex-wrap items-center gap-2 rounded-xl border border-amber-300/70 bg-amber-50 p-3 dark:border-amber-400/30 dark:bg-amber-400/10">
+            <p className={`${MUTED} min-w-0 flex-1`} role="status">{t('handwritingHint')}</p>
+            <button type="button" disabled={props.handwriting.busy} onClick={props.handwriting.onRead} className={BTN_GHOST}>
+              {props.handwriting.busy ? t('readingHandwriting') : t('readHandwriting')}
+            </button>
+          </div>
         )}
       </div>
 

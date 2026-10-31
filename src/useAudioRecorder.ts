@@ -1,4 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { ChunkBuffer, idbSpool } from './recordingSpool';
+
+const newSpoolId = (): string => `rec_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
 
 export type RecorderState = 'idle' | 'requesting' | 'recording' | 'paused' | 'stopped' | 'denied' | 'unsupported' | 'error';
 export interface RecordingResult { blob: Blob; mime: string; durationSec: number; bookmarks: number[] }
@@ -58,7 +61,8 @@ export function useAudioRecorder(): {
   const stateRef = useRef<RecorderState>('idle');
   const recorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
+  // Chunks live in a buffer that moves long recordings to IndexedDB (see recordingSpool.ts) instead of RAM.
+  const chunksRef = useRef<ChunkBuffer>(new ChunkBuffer(newSpoolId()));
   const clockRef = useRef<ElapsedClock>(new ElapsedClock());
   const mimeRef = useRef('audio/webm');
   const bookmarksRef = useRef<number[]>([]);
@@ -116,17 +120,32 @@ export function useAudioRecorder(): {
     releaseStream();
     const rec = recorderRef.current;
     const mime = (rec && rec.mimeType) || mimeRef.current;
-    const blob = new Blob(chunksRef.current, { type: mime });
     const durationSec = round1(clockRef.current.elapsedMs(now) / 1000);
-    const result: RecordingResult | null = blob.size > 0 ? { blob, mime, durationSec, bookmarks: [...bookmarksRef.current] } : null;
-    resultRef.current = result;
-    if (mountedRef.current) {
-      setElapsedSec(durationSec);
-      if (wasInterrupted) setInterrupted(true);
-      if (!result) setError(wasInterrupted ? 'The recording was interrupted before any audio was captured.' : 'Nothing was recorded.');
+    const buffer = chunksRef.current;
+    const publish = (blob: Blob | null): void => {
+      const result: RecordingResult | null = blob && blob.size > 0 ? { blob, mime, durationSec, bookmarks: [...bookmarksRef.current] } : null;
+      resultRef.current = result;
+      if (mountedRef.current) {
+        setElapsedSec(durationSec);
+        if (wasInterrupted) setInterrupted(true);
+        if (!result) setError(wasInterrupted ? 'The recording was interrupted before any audio was captured.' : 'Nothing was recorded.');
+      }
+      setState(result ? 'stopped' : 'error');
+      resolveWaiters(result);
+    };
+    if (!buffer.spilled) {
+      // short recording: everything is still in memory, finish right away
+      publish(new Blob(buffer.collectInMemory(), { type: mime }));
+      return;
     }
-    setState(result ? 'stopped' : 'error');
-    resolveWaiters(result);
+    // long recording: part of it is in IndexedDB, read it back (the browser keeps those blobs on disk)
+    buffer.collect().then(
+      (parts) => publish(new Blob(parts, { type: mime })),
+      () => {
+        if (mountedRef.current) setError('Could not read the recording back from storage.');
+        publish(null);
+      },
+    );
   }, [clearTimer, releaseStream, setState]);
 
   const start = useCallback(async (): Promise<void> => {
@@ -137,7 +156,9 @@ export function useAudioRecorder(): {
     releaseStream();
     clearTimer();
     const token = ++tokenRef.current;
-    chunksRef.current = [];
+    void chunksRef.current.dispose(); // drop anything left from the previous recording
+    chunksRef.current = new ChunkBuffer(newSpoolId());
+    void idbSpool.clear().catch(() => undefined); // and leftovers of recordings that were never finished
     bookmarksRef.current = [];
     resultRef.current = null;
     finishedRef.current = false;
@@ -182,7 +203,7 @@ export function useAudioRecorder(): {
     }
     streamRef.current = stream;
     recorderRef.current = rec;
-    rec.ondataavailable = (ev: BlobEvent) => { if (ev.data.size > 0) chunksRef.current.push(ev.data); };
+    rec.ondataavailable = (ev: BlobEvent) => { chunksRef.current.add(ev.data); };
     rec.onstop = () => finish(!userStopRef.current);
     rec.onerror = () => {
       setError('The recording failed.');
@@ -260,7 +281,8 @@ export function useAudioRecorder(): {
     recorderRef.current = null;
     releaseStream();
     clearTimer();
-    chunksRef.current = [];
+    void chunksRef.current.dispose();
+    chunksRef.current = new ChunkBuffer(newSpoolId());
     bookmarksRef.current = [];
     resultRef.current = null;
     finishedRef.current = false;
