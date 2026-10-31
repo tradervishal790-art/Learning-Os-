@@ -103,7 +103,9 @@ export async function hydrateChannelsFromCloud(): Promise<void> {
   if (loadChannels().length > 0) return;
   const cloud = await pullFromCloud<SavedChannel[]>(CLOUD_KEY);
   const list = sanitizeChannels(cloud);
-  if (list.length > 0) {
+  // A learner may add a channel while the cloud read is in flight. Never let
+  // this late hydration overwrite the newer choice made on this device.
+  if (list.length > 0 && loadChannels().length === 0) {
     try {
       localStorage.setItem(CHANNELS_KEY, JSON.stringify(list));
     } catch {
