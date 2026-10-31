@@ -2,6 +2,7 @@ import { ArrowUpRight, BrainCircuit, CheckCircle2, Compass, GraduationCap, Noteb
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { DashboardPageId } from './types';
 import { pullFromCloud, pushToCloud } from './cloudSync';
+import { getNextBestStepAction } from './missionControlLogic';
 
 interface MissionControlProps {
   name: string;
@@ -310,7 +311,7 @@ export default function MissionControl({
             </div>
           </div>
         </div>}
-        <button type="button" onClick={() => open(revisionOverdue + revisionDue > 0 ? 'revision' : nextTopic ? 'roadmap' : 'roadmap')} className="mt-1 flex shrink-0 items-center justify-between gap-3 rounded-xl border border-cyan-300/15 bg-cyan-300/[0.06] px-3 py-2 text-left transition hover:bg-cyan-300/10">
+        <button type="button" onClick={() => { const action = getNextBestStepAction({ hasLearningProfile, revisionDue, revisionOverdue }); if (action === 'profile') onOpenProfile(); else open(action); }} className="mt-1 flex shrink-0 items-center justify-between gap-3 rounded-xl border border-cyan-300/15 bg-cyan-300/[0.06] px-3 py-2 text-left transition hover:bg-cyan-300/10">
           <span className="min-w-0"><span className="block text-[9px] uppercase tracking-[0.16em] text-cyan-200/70">Your next best step</span><span className="block truncate text-xs font-medium text-white">{!hasLearningProfile ? 'Set up your learning profile' : activeGoals === 0 ? 'Choose a learning goal' : revisionOverdue > 0 ? `${revisionOverdue} overdue topics to revise` : revisionDue > 0 ? `${revisionDue} topics ready for revision` : nextTopic || 'Open your learning roadmap'}</span></span>
           <ArrowUpRight className="h-4 w-4 shrink-0 text-cyan-200" />
         </button>
