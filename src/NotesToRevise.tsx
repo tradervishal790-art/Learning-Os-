@@ -26,7 +26,7 @@ export default function NotesToRevise() {
 
   if (openId)
     return (
-      <Suspense fallback={null}>
+      <Suspense fallback={<div className="rounded-2xl border border-gray-200 dark:border-white/10 p-4 text-sm text-gray-500 dark:text-white/60" role="status" aria-live="polite">Opening your revision sheet…</div>}>
         <RevisionSheet id={openId} onBack={() => setOpenId(null)} />
       </Suspense>
     );
