@@ -99,11 +99,19 @@ export default function MissionControl({
   const rowY = visibleRows.map((_, index) => visibleRows.length === 1 ? mapHeight / 2 : 66 + index * ((mapHeight - 132) / (visibleRows.length - 1)));
   const open = (action: 'profile' | DashboardPageId) => action === 'profile' ? onOpenProfile() : onNavigate(action);
   const moreItems = [
+    { label: 'Mind blueprint', detail: 'Your learning profile', icon: BrainCircuit, action: 'profile' as const },
+    { label: 'Roadmap', detail: 'Plan topics and milestones', icon: Compass, action: 'roadmap' as const },
+    { label: 'Revision', detail: 'Recall and review', icon: RotateCcw, action: 'revision' as const },
+    { label: 'Notes', detail: 'Capture your thinking', icon: NotebookPen, action: 'notes' as const },
+    { label: 'Tests', detail: 'Practice and check understanding', icon: CheckCircle2, action: 'test' as const },
+    { label: 'Videos', detail: 'Personalized video learning', icon: Video, action: 'videos' as const },
     { label: 'AI Mentor', detail: 'Ask and explore', icon: MessageCircle, action: 'mentor' as const },
+    { label: 'Progress', detail: 'See your growth', icon: Zap, action: 'progress' as const },
     { label: 'Research', detail: 'Explore new ideas', icon: Search, action: 'research' as const },
     { label: 'Dictionary', detail: 'Look up concepts', icon: BookOpen, action: 'dictionary' as const },
     { label: 'Current Affairs', detail: 'Stay informed', icon: Newspaper, action: 'current-affairs' as const },
   ];
+  const filteredMoreItems = moreItems.filter((item) => item.label.toLowerCase().includes(functionSearch.toLowerCase()));
   const currentStep = revisionOverdue + revisionDue > 0
     ? `${revisionOverdue + revisionDue} topics ready for revision`
     : nextTopic || 'Your learning path starts here';
@@ -143,17 +151,18 @@ export default function MissionControl({
           <span className="inline-flex items-center gap-1.5 text-cyan-300/70"><Sparkles className="h-3 w-3" /> Connected learning system</span>
         </div>
 
-        <div className="relative hidden min-h-0 flex-1 overflow-hidden rounded-[24px] border border-white/[0.07] bg-[#0b1221]/65 lg:block">
+        <div className="relative hidden min-h-0 flex-1 overflow-auto rounded-[24px] border border-white/[0.07] bg-[#0b1221]/65 lg:block">
+          <div className="relative min-h-[660px]" style={{ height: `${mapHeight}px` }}>
           <div className="absolute inset-0 opacity-[0.16]" style={{ backgroundImage: 'radial-gradient(#7dd3fc 0.7px, transparent 0.7px)', backgroundSize: '24px 24px' }} />
-          <svg className="absolute inset-0 h-full w-full" viewBox="0 0 1200 660" preserveAspectRatio="none" fill="none" aria-hidden="true">
+          <svg className="absolute inset-0 h-full w-full" viewBox={`0 0 1200 ${mapHeight}`} preserveAspectRatio="none" fill="none" aria-hidden="true">
             <defs>
               <filter id="mindGlow" x="-50%" y="-50%" width="200%" height="200%">
                 <feGaussianBlur stdDeviation="3" result="blur" />
                 <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
               </filter>
-              {rows.map((row) => <linearGradient key={row.id} id={`line-${row.id}`} x1="180" y1="330" x2="950" y2={rowY[rows.indexOf(row)]} gradientUnits="userSpaceOnUse"><stop stopColor="#64748b" stopOpacity=".55" /><stop offset=".52" stopColor={row.color} stopOpacity=".95" /><stop offset="1" stopColor={row.color} stopOpacity=".5" /></linearGradient>)}
+              {visibleRows.map((row) => <linearGradient key={row.id} id={`line-${row.id}`} x1="180" y1="330" x2="950" y2={rowY[rows.indexOf(row)]} gradientUnits="userSpaceOnUse"><stop stopColor="#64748b" stopOpacity=".55" /><stop offset=".52" stopColor={row.color} stopOpacity=".95" /><stop offset="1" stopColor={row.color} stopOpacity=".5" /></linearGradient>)}
             </defs>
-            {rows.map((row, i) => {
+            {visibleRows.map((row, i) => {
               const y = rowY[i];
               return (
                 <g key={row.id} filter="url(#mindGlow)" opacity=".95">
@@ -171,7 +180,7 @@ export default function MissionControl({
             <circle cx="235" cy="330" r="7" fill="#c4b5fd" filter="url(#mindGlow)" />
           </svg>
 
-          <div className="absolute left-[2.5%] top-1/2 z-10 flex h-[132px] w-[17%] -translate-y-1/2 flex-col justify-center rounded-2xl border border-violet-300/50 bg-gradient-to-br from-[#29214d] to-[#151a31] px-4 shadow-[0_0_38px_rgba(139,92,246,.15)]">
+          <div className="absolute left-[2.5%] z-10 flex h-[132px] w-[17%] flex-col justify-center rounded-2xl border border-violet-300/50 bg-gradient-to-br from-[#29214d] to-[#151a31] px-4 shadow-[0_0_38px_rgba(139,92,246,.15)]" style={{ top: '50%', transform: 'translateY(-50%)' }}>
             <div className="flex items-center gap-2 text-[9px] font-semibold uppercase tracking-[0.2em] text-violet-200"><Users className="h-3.5 w-3.5" /> Student</div>
             <div className="mt-2 truncate text-lg font-semibold text-white">{name || 'Learner'}</div>
             <div className="mt-1 line-clamp-2 text-[10px] leading-relaxed text-violet-100/60">{goalTitle ? `Learning ${goalTitle}` : 'Starts with curiosity'}</div>
@@ -180,7 +189,7 @@ export default function MissionControl({
 
           {rows.map((row, i) => {
             const Icon = row.icon;
-            const top = `${(rowY[i] / 660) * 100}%`;
+            const top = `${(rowY[i] / mapHeight) * 100}%`;
             return (
               <div key={row.id}>
                 <button
@@ -209,7 +218,7 @@ export default function MissionControl({
                       className="group absolute left-[75%] z-10 flex h-[42px] w-[22%] -translate-y-1/2 items-center gap-2.5 rounded-xl border border-white/[0.09] bg-[#101a2b]/95 px-3 text-left transition-[opacity,transform,background-color,border-color,box-shadow] duration-[420ms] ease-out hover:border-white/20 hover:bg-[#18263a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"
                       aria-hidden={!isExpanded}
                       tabIndex={isExpanded ? 0 : -1}
-                      style={{ top: `${((rowY[i] + (childIndex === 0 ? -22 : 22)) / 660) * 100}%`, borderColor: `${row.color}35`, opacity: isExpanded ? 1 : 0, pointerEvents: isExpanded ? 'auto' : 'none', transform: isExpanded ? 'translateY(-50%) translateX(0) scale(1)' : 'translateY(calc(-50% + 9px)) translateX(-8px) scale(.985)', transitionDelay: isExpanded ? `${childIndex * 75}ms` : '0ms' }}
+                      style={{ top: `${((rowY[i] + (childIndex === 0 ? -22 : 22)) / mapHeight) * 100}%`, borderColor: `${row.color}35`, opacity: isExpanded ? 1 : 0, pointerEvents: isExpanded ? 'auto' : 'none', transform: isExpanded ? 'translateY(-50%) translateX(0) scale(1)' : 'translateY(calc(-50% + 9px)) translateX(-8px) scale(.985)', transitionDelay: isExpanded ? `${childIndex * 75}ms` : '0ms' }}
                     >
                       <ChildIcon className="h-3.5 w-3.5 shrink-0" style={{ color: row.color }} />
                       <span className="min-w-0">
@@ -229,6 +238,7 @@ export default function MissionControl({
             <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-cyan-300" /> Learning engines</span>
             <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-emerald-300" /> Actions</span>
           </div>
+          </div>
         </div>
 
         <div className="relative min-h-0 flex-1 overflow-y-auto rounded-2xl border border-white/[0.07] bg-[#0b1221]/70 p-3 lg:hidden">
@@ -238,7 +248,7 @@ export default function MissionControl({
               <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-400/15 text-violet-200"><Users className="h-4 w-4" /></span>
               <span><span className="block text-xs font-semibold text-white">{name || 'Student'}</span><span className="block text-[10px] text-violet-200/60">{goalTitle || 'Starts with curiosity'}</span></span>
             </div>
-            {rows.map((row) => {
+            {visibleRows.map((row) => {
               const Icon = row.icon;
               return (
                 <div key={row.id} className="relative ml-5 rounded-xl border bg-[#111d31] p-3" style={{ borderColor: `${row.color}50` }}>
