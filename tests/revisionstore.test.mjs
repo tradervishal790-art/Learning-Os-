@@ -49,3 +49,14 @@ test('review timestamp merge keeps the newest valid date from either device', ()
     },
   });
 });
+
+
+test('hydration merge preserves a checkpoint recorded locally while cloud data was loading', () => {
+  const latestLocal = { react: [1, 7], localOnly: [3] };
+  const cloudSnapshot = { react: [1, 3], cloudOnly: [1] };
+  assert.deepEqual(store.mergeReviewMaps(latestLocal, cloudSnapshot), {
+    cloudOnly: [1],
+    react: [1, 3, 7],
+    localOnly: [3],
+  });
+});
