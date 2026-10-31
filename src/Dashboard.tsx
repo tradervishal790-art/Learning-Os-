@@ -578,7 +578,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
             {activePage !== 'dashboard' && (
               <>
                 <button
-                  onClick={() => (window.history.length > 1 ? navigate(-1) : setActivePage('dashboard'))}
+                  onClick={() => setActivePage('dashboard')}
                   aria-label="Back"
                   className="w-10 h-10 -ml-2 rounded-full flex items-center justify-center flex-shrink-0 hover:bg-gray-100 dark:hover:bg-white/10 active:bg-gray-200 dark:active:bg-white/15 transition-colors"
                 >
