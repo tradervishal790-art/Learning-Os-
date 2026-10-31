@@ -31,7 +31,7 @@ function renderMyNotesMarkdown(raw: string) {
   // seen in production), normalize it here rather than trusting the prompt
   // instruction alone. Doesn't touch real newline characters — only the
   // literal backslash-n sequence.
-  const normalized = raw.replace(/\\n/g, '\n');
+  const normalized = raw.replace(/\n/g, '\n');
   const lines = normalized.split('\n');
   return lines.map((line, i) => {
     const trimmed = line.trim();
@@ -214,7 +214,10 @@ export default function Notes({ videoTitle, videoDescription, videoId }: { video
     try {
       if (videoTitle) {
         const cached = localStorage.getItem(topicCacheKey(videoTitle));
-        if (cached) setNotes(JSON.parse(cached));
+        if (cached) {
+          const parsed = JSON.parse(cached) as DeepNotesData;
+          if (isFreshForLocale(parsed, locale)) setNotes(parsed);
+        }
         return;
       }
       const saved = localStorage.getItem(NOTES_STATE_STORAGE_KEY);
@@ -272,7 +275,7 @@ export default function Notes({ videoTitle, videoDescription, videoId }: { video
         }
       }
 
-      const context = videoDescription ? `Title: ${videoTitle}\\nDescription: ${videoDescription}` : '';
+      const context = videoDescription ? `Title: ${videoTitle}\nDescription: ${videoDescription}` : '';
       const deepNotes = await generateDeepNotes(requestedTopic, context, videoId, locale);
       if (!isLatestRequest(generationRequestRef, requestId)) return;
       deepNotes.locale = locale;
@@ -291,7 +294,7 @@ export default function Notes({ videoTitle, videoDescription, videoId }: { video
   const handleGenerateFromVideo = async () => {
     const requestId = beginRequest(generationRequestRef);
     const requestedUrl = youtubeUrl.trim();
-    const videoId = extractYouTubeId(requestedUrl);
+    const videoId = extractVideoId(requestedUrl);
     if (!videoId) {
       if (isLatestRequest(generationRequestRef, requestId)) {
         setError(t.notes.invalidUrlError);
@@ -316,7 +319,7 @@ export default function Notes({ videoTitle, videoDescription, videoId }: { video
 
       const meta = await fetchVideoMeta(videoId);
       if (!isLatestRequest(generationRequestRef, requestId)) return;
-      const context = `Title: ${meta.title}\\nDescription: ${meta.description.slice(0, 500)}`;
+      const context = `Title: ${meta.title}\nDescription: ${meta.description.slice(0, 500)}`;
       const deepNotes = await generateDeepNotes(meta.title, context, videoId, locale);
       if (!isLatestRequest(generationRequestRef, requestId)) return;
       deepNotes.locale = locale;
