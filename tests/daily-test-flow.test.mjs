@@ -22,6 +22,7 @@ test('daily tests keep a waiting paper stable and consume the remaining round be
   assert.equal(store.getOrCreateTodayTest().id, first.id);
 
   store.completeDailyTest(first.id, first.questions.map((q) => ({ questionId: q.id, isCorrect: true, marksObtained: 1 })));
+  assert.equal(store.getDailyStatus(), 'done');
   const saved = JSON.parse(localStorage.getItem(KEY));
   const firstIds = new Set(first.questions.map((q) => q.id));
   assert.equal(saved.queue.length, 2);
