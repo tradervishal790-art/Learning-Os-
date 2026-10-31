@@ -26,7 +26,9 @@ test('invalid interval input safely falls back to one day', () => {
 });
 
 test('calendar day counting follows dates rather than elapsed 24-hour blocks', () => {
-  assert.equal(calendarDaysBetween('2026-10-30T23:45:00.000Z', new Date('2026-10-31T00:15:00.000Z')), 1);
+  const beforeMidnight = new Date(2026, 9, 30, 23, 45).toISOString();
+  const afterMidnight = new Date(2026, 9, 31, 0, 15);
+  assert.equal(calendarDaysBetween(beforeMidnight, afterMidnight), 1);
   assert.equal(calendarDaysBetween('invalid-date', new Date('2026-10-31T00:15:00.000Z')), 0);
 });
 
