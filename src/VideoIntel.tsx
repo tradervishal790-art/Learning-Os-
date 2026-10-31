@@ -1032,13 +1032,13 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                     {sharedLearningSummary && (
                       <div className="rounded-xl border border-indigo-200/60 dark:border-indigo-400/20 bg-indigo-50/50 dark:bg-indigo-400/5 p-3 mb-4">
                         <p className="text-xs font-semibold text-indigo-700 dark:text-indigo-300 mb-1">
-                          Community learning signal · 10+ learners
+                          Community learning signal · 10+ accounts
                         </p>
                         <p className="text-sm text-gray-700 dark:text-white/80">
                           {sharedLearningSummary.completedRate >= 65
-                            ? 'Most contributing learners reached the end of this video.'
+                            ? 'Most contributing accounts reached the end of this video.'
                             : sharedLearningSummary.earlyDropRate >= 45
-                              ? 'Many contributing learners stopped in the early part of this video.'
+                              ? 'Many contributing accounts stopped in the early part of this video.'
                               : 'Learner outcomes are mixed for this video.'}
                         </p>
                         <p className="text-[11px] text-gray-500 dark:text-white/40 mt-1">
