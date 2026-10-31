@@ -1,5 +1,5 @@
 import { ArrowUpRight, BrainCircuit, CheckCircle2, Compass, GraduationCap, NotebookPen, RotateCcw, Sparkles, Target, Users, Video, Zap, MoreHorizontal, Search, BookOpen, Newspaper, MessageCircle, ChevronDown } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { DashboardPageId } from './types';
 import { pullFromCloud, pushToCloud } from './cloudSync';
 
@@ -23,7 +23,6 @@ const rows = [
     color: '#a78bfa', tint: 'violet', icon: BrainCircuit,
     children: [
       { label: 'Mind blueprint', detail: 'Learning profile', icon: BrainCircuit, action: 'profile' as const },
-      { label: 'Learning preferences', detail: 'Personal settings', icon: Users, action: 'profile' as const },
     ],
   },
   {
@@ -31,7 +30,6 @@ const rows = [
     color: '#67e8f9', tint: 'cyan', icon: Compass,
     children: [
       { label: 'Learning roadmap', detail: 'Your next topics', icon: Compass, action: 'roadmap' as const },
-      { label: 'Goal and milestones', detail: 'Track your path', icon: Target, action: 'roadmap' as const },
     ],
   },
   {
@@ -39,7 +37,8 @@ const rows = [
     color: '#7dd3fc', tint: 'sky', icon: GraduationCap,
     children: [
       { label: 'Video intelligence', detail: 'Learn with focus', icon: Video, action: 'videos' as const },
-      { label: 'Notes and mentor', detail: 'Think it through', icon: NotebookPen, action: 'notes' as const },
+      { label: 'Notes workspace', detail: 'Capture your thinking', icon: NotebookPen, action: 'notes' as const },
+      { label: 'AI Mentor', detail: 'Ask and explore', icon: MessageCircle, action: 'mentor' as const },
     ],
   },
   {
@@ -47,7 +46,6 @@ const rows = [
     color: '#6ee7b7', tint: 'emerald', icon: RotateCcw,
     children: [
       { label: 'Revision room', detail: 'Recall and review', icon: RotateCcw, action: 'revision' as const },
-      { label: 'Memory checkpoints', detail: 'Topics due: dynamic', icon: CheckCircle2, action: 'revision' as const },
     ],
   },
   {
@@ -62,17 +60,10 @@ const rows = [
 
 
 const functionNodes = [
-  { id: 'roadmap', number: '06', title: 'Roadmap', subtitle: 'Your learning direction', color: '#67e8f9', icon: Compass, children: [{ label: 'Learning roadmap', detail: 'Topics and milestones', icon: Compass, action: 'roadmap' as const }] },
-  { id: 'revision', number: '07', title: 'Revision', subtitle: 'Remember what matters', color: '#6ee7b7', icon: RotateCcw, children: [{ label: 'Revision room', detail: 'Recall and review', icon: RotateCcw, action: 'revision' as const }] },
-  { id: 'notes', number: '08', title: 'Notes', subtitle: 'Capture your thinking', color: '#7dd3fc', icon: NotebookPen, children: [{ label: 'Notes workspace', detail: 'Write and organize', icon: NotebookPen, action: 'notes' as const }] },
-  { id: 'test', number: '09', title: 'Tests', subtitle: 'Check your understanding', color: '#e879f9', icon: CheckCircle2, children: [{ label: 'Tests and practice', detail: 'Build a test from questions', icon: CheckCircle2, action: 'test' as const }] },
-  { id: 'videos', number: '10', title: 'Videos', subtitle: 'Learn with focus', color: '#7dd3fc', icon: Video, children: [{ label: 'Video intelligence', detail: 'Personalized learning videos', icon: Video, action: 'videos' as const }] },
-  { id: 'mentor', number: '11', title: 'AI Mentor', subtitle: 'Ask and explore', color: '#67e8f9', icon: MessageCircle, children: [{ label: 'Open AI Mentor', detail: 'Ask your learning mentor', icon: MessageCircle, action: 'mentor' as const }] },
-  { id: 'progress', number: '12', title: 'Progress', subtitle: 'See your growth', color: '#a78bfa', icon: Zap, children: [{ label: 'Growth and progress', detail: 'Track your progress', icon: Zap, action: 'progress' as const }] },
-  { id: 'research', number: '13', title: 'Research', subtitle: 'Explore new ideas', color: '#67e8f9', icon: Search, children: [{ label: 'Research workspace', detail: 'Explore ideas and sources', icon: Search, action: 'research' as const }] },
-  { id: 'dictionary', number: '14', title: 'Dictionary', subtitle: 'Look up concepts', color: '#a78bfa', icon: BookOpen, children: [{ label: 'Open dictionary', detail: 'Find meanings and concepts', icon: BookOpen, action: 'dictionary' as const }] },
-  { id: 'current-affairs', number: '15', title: 'Current Affairs', subtitle: 'Stay informed', color: '#e879f9', icon: Newspaper, children: [{ label: 'Current affairs', detail: 'Read latest updates', icon: Newspaper, action: 'current-affairs' as const }, { label: 'YouTube channel follow-up', detail: 'Follow trusted news channels', icon: Video, action: 'current-affairs' as const }] },
-];
+  { id: 'research', number: '06', title: 'Research', subtitle: 'Explore new ideas', color: '#67e8f9', icon: Search, children: [{ label: 'Research workspace', detail: 'Explore ideas and sources', icon: Search, action: 'research' as const }] },
+  { id: 'dictionary', number: '07', title: 'Dictionary', subtitle: 'Look up concepts', color: '#a78bfa', icon: BookOpen, children: [{ label: 'Open dictionary', detail: 'Find meanings and concepts', icon: BookOpen, action: 'dictionary' as const }] },
+  { id: 'current-affairs', number: '08', title: 'Current Affairs', subtitle: 'Stay informed', color: '#e879f9', icon: Newspaper, children: [{ label: 'Current affairs', detail: 'Read latest updates', icon: Newspaper, action: 'current-affairs' as const }] },
+]
 const allFunctionNodes = [...rows, ...functionNodes];
 const MAP_NODES_STORAGE_KEY = 'learning_os_mission_map_nodes';
 const defaultNodeIds = ['know', 'plan', 'learn', 'retain', 'prove'];
@@ -86,20 +77,26 @@ export default function MissionControl({
   const [customizeOpen, setCustomizeOpen] = useState(false);
   const [functionSearch, setFunctionSearch] = useState('');
   const [mapPrefsHydrated, setMapPrefsHydrated] = useState(false);
+  const mapPrefsEdited = useRef(false);
   const [visibleNodeIds, setVisibleNodeIds] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem(MAP_NODES_STORAGE_KEY);
       const parsed = saved ? JSON.parse(saved) : null;
-      return Array.isArray(parsed) ? parsed.filter((id) => typeof id === 'string' && allFunctionNodes.some((node) => node.id === id)) : defaultNodeIds;
+      if (!Array.isArray(parsed)) return defaultNodeIds;
+      const valid = parsed.filter((id) => typeof id === 'string' && allFunctionNodes.some((node) => node.id === id));
+      return valid.length > 0 || parsed.length === 0 ? valid : defaultNodeIds;
     } catch { return defaultNodeIds; }
   });
   useEffect(() => {
     let active = true;
     void pullFromCloud<string[]>('missionMapNodes').then((cloudNodes) => {
       if (!active) return;
-      if (Array.isArray(cloudNodes)) setVisibleNodeIds(cloudNodes.filter((id) => typeof id === 'string' && allFunctionNodes.some((node) => node.id === id)));
+      if (Array.isArray(cloudNodes) && !mapPrefsEdited.current) {
+        const valid = cloudNodes.filter((id) => typeof id === 'string' && allFunctionNodes.some((node) => node.id === id));
+        setVisibleNodeIds(valid.length > 0 || cloudNodes.length === 0 ? valid : defaultNodeIds);
+      }
       setMapPrefsHydrated(true);
-    });
+    }).catch(() => { if (active) setMapPrefsHydrated(true); });
     return () => { active = false; };
   }, []);
   useEffect(() => {
@@ -111,19 +108,7 @@ export default function MissionControl({
   const mapHeight = Math.max(660, visibleRows.length <= 1 ? 660 : 132 + (visibleRows.length - 1) * 132);
   const rowY = visibleRows.map((_, index) => visibleRows.length === 1 ? mapHeight / 2 : 66 + index * ((mapHeight - 132) / (visibleRows.length - 1)));
   const open = (action: 'profile' | DashboardPageId) => action === 'profile' ? onOpenProfile() : onNavigate(action);
-  const moreItems = [
-    { label: 'Mind blueprint', detail: 'Your learning profile', icon: BrainCircuit, action: 'profile' as const },
-    { label: 'Roadmap', detail: 'Plan topics and milestones', icon: Compass, action: 'roadmap' as const },
-    { label: 'Revision', detail: 'Recall and review', icon: RotateCcw, action: 'revision' as const },
-    { label: 'Notes', detail: 'Capture your thinking', icon: NotebookPen, action: 'notes' as const },
-    { label: 'Tests', detail: 'Practice and check understanding', icon: CheckCircle2, action: 'test' as const },
-    { label: 'Videos', detail: 'Personalized video learning', icon: Video, action: 'videos' as const },
-    { label: 'AI Mentor', detail: 'Ask and explore', icon: MessageCircle, action: 'mentor' as const },
-    { label: 'Progress', detail: 'See your growth', icon: Zap, action: 'progress' as const },
-    { label: 'Research', detail: 'Explore new ideas', icon: Search, action: 'research' as const },
-    { label: 'Dictionary', detail: 'Look up concepts', icon: BookOpen, action: 'dictionary' as const },
-    { label: 'Current Affairs', detail: 'Stay informed', icon: Newspaper, action: 'current-affairs' as const },
-  ];
+  const moreItems = functionNodes.map((node) => ({ ...node.children[0], label: node.title, detail: node.subtitle }));
   const filteredMoreItems = moreItems.filter((item) => item.label.toLowerCase().includes(functionSearch.toLowerCase()));
   const currentStep = revisionOverdue + revisionDue > 0
     ? `${revisionOverdue + revisionDue} topics ready for revision`
@@ -164,7 +149,8 @@ export default function MissionControl({
           <span className="inline-flex items-center gap-1.5 text-cyan-300/70"><Sparkles className="h-3 w-3" /> Connected learning system</span>
         </div>
 
-        <div className="relative hidden flex-none overflow-visible rounded-[24px] border border-white/[0.07] bg-[#0b1221]/65 lg:block" style={{ height: `${mapHeight}px` }}>
+        {visibleRows.length === 0 && <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-center"><p className="text-sm font-medium text-white">Your map is empty</p><p className="mt-1 text-xs text-slate-400">Restore the learning engines to continue.</p><button type="button" onClick={() => { mapPrefsEdited.current = true; setVisibleNodeIds(defaultNodeIds); }} className="mt-3 rounded-lg border border-cyan-300/30 px-3 py-2 text-xs text-cyan-100">Restore learning engines</button></div>}
+        <div className={`relative hidden flex-none overflow-visible rounded-[24px] border border-white/[0.07] bg-[#0b1221]/65 lg:block ${visibleRows.length === 0 ? 'hidden' : ''}`} style={{ height: `${mapHeight}px` }}>
           <div className="relative min-h-[660px]" style={{ height: `${mapHeight}px` }}>
           <div className="absolute inset-0 opacity-[0.16]" style={{ backgroundImage: 'radial-gradient(#7dd3fc 0.7px, transparent 0.7px)', backgroundSize: '24px 24px' }} />
           <svg className="absolute inset-0 h-full w-full" viewBox={`0 0 1200 ${mapHeight}`} preserveAspectRatio="none" fill="none" aria-hidden="true">
@@ -257,7 +243,7 @@ export default function MissionControl({
           </div>
         </div>
 
-        <div className="relative min-h-0 flex-1 overflow-y-auto rounded-2xl border border-white/[0.07] bg-[#0b1221]/70 p-3 lg:hidden">
+        <div className={`relative min-h-0 flex-1 overflow-y-auto rounded-2xl border border-white/[0.07] bg-[#0b1221]/70 p-3 lg:hidden ${visibleRows.length === 0 ? 'hidden' : ''}`}>
           <div className="absolute bottom-8 left-[27px] top-8 w-px bg-gradient-to-b from-violet-400 via-cyan-300 to-fuchsia-400 opacity-60" />
           <div className="relative flex flex-col gap-2.5">
             <div className="mb-1 flex items-center gap-3 rounded-xl border border-violet-300/40 bg-[#211b40] p-3">
@@ -287,8 +273,9 @@ export default function MissionControl({
             <button type="button" onClick={() => setMoreOpen((value) => !value)} aria-expanded={moreOpen} className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-medium text-slate-200 transition hover:border-cyan-300/40 hover:bg-white/[0.07]">
               <MoreHorizontal className="h-4 w-4 text-cyan-300" /> More <ChevronDown className={`h-3.5 w-3.5 transition-transform ${moreOpen ? 'rotate-180' : ''}`} />
             </button>
-            {moreOpen && <div className="absolute bottom-0 left-[280px] z-30 w-64 max-h-[min(70vh,520px)] overflow-y-auto rounded-xl border border-white/10 bg-[#111d31] p-1.5 shadow-2xl">
-              <div className="sticky top-0 z-10 bg-[#111d31] p-1.5"><input value={functionSearch} onChange={(event) => setFunctionSearch(event.target.value)} placeholder="Search all functions..." className="w-full rounded-lg border border-white/10 bg-white/[0.05] px-3 py-2 text-xs text-white outline-none placeholder:text-slate-500 focus:border-cyan-300/40" /></div>
+            {moreOpen && <div className="absolute bottom-full left-0 z-30 mb-2 w-[min(16rem,calc(100vw-2rem))] max-h-[min(70vh,520px)] overflow-y-auto rounded-xl border border-white/10 bg-[#111d31] p-1.5 shadow-2xl">
+              <div className="sticky top-0 z-10 bg-[#111d31] p-1.5"><input value={functionSearch} onChange={(event) => setFunctionSearch(event.target.value)} placeholder="Search personal tools..." className="w-full rounded-lg border border-white/10 bg-white/[0.05] px-3 py-2 text-xs text-white outline-none placeholder:text-slate-500 focus:border-cyan-300/40" /></div>
+              {filteredMoreItems.length === 0 && <p className="px-3 py-4 text-xs text-slate-500">No matching personal tools found.</p>}
               {filteredMoreItems.map((item) => {
                 const ItemIcon = item.icon;
                 return <button key={item.action} type="button" onClick={() => { setMoreOpen(false); open(item.action); }} className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition hover:bg-white/[0.07]">
@@ -300,13 +287,12 @@ export default function MissionControl({
             </div>}
           </div>
           <button type="button" onClick={() => { setCustomizeOpen(true); setMoreOpen(false); }} className="inline-flex items-center gap-2 rounded-xl border border-cyan-300/20 bg-cyan-300/[0.06] px-3 py-2 text-xs font-medium text-cyan-100 transition hover:border-cyan-300/40 hover:bg-cyan-300/10">Customize map</button>
-          <span className="min-w-0 flex-1 truncate text-center">{nextTopic ? `Next topic: ${nextTopic}` : nextTopicDetail}</span>
           <span className="shrink-0">{activeGoals} active goal{activeGoals === 1 ? '' : 's'} · {hasLearningProfile ? 'Profile ready' : 'Profile not set up'}</span>
         </div>
         {customizeOpen && <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="map-customize-title">
           <div className="w-full max-w-lg overflow-hidden rounded-2xl border border-white/10 bg-[#101a2b] shadow-2xl">
             <div className="flex items-center justify-between border-b border-white/[0.08] px-5 py-4">
-              <div><h2 id="map-customize-title" className="text-base font-semibold text-white">Customize your learning map</h2><p className="mt-1 text-xs text-slate-400">Add the functions you use most. Your choices are saved on this device.</p></div>
+              <div><h2 id="map-customize-title" className="text-base font-semibold text-white">Customize your learning map</h2><p className="mt-1 text-xs text-slate-400">Keep the engines you use most. Your map saves locally and syncs when available.</p></div>
               <button type="button" onClick={() => setCustomizeOpen(false)} className="rounded-lg px-2 py-1 text-slate-400 hover:bg-white/10 hover:text-white" aria-label="Close">✕</button>
             </div>
             <div className="max-h-[55vh] overflow-y-auto p-3">
@@ -314,7 +300,7 @@ export default function MissionControl({
                 const NodeIcon = node.icon;
                 const checked = visibleNodeIds.includes(node.id);
                 return <label key={node.id} className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-3 transition hover:bg-white/[0.05]">
-                  <input type="checkbox" checked={checked} onChange={() => { setVisibleNodeIds((current) => checked ? current.filter((id) => id !== node.id) : [...current, node.id]); if (checked && selectedEngine === node.id) setSelectedEngine(null); }} className="h-4 w-4 accent-cyan-400" />
+                  <input type="checkbox" checked={checked} onChange={() => { mapPrefsEdited.current = true; setVisibleNodeIds((current) => checked ? current.filter((id) => id !== node.id) : [...current, node.id]); if (checked && selectedEngine === node.id) setSelectedEngine(null); }} className="h-4 w-4 accent-cyan-400" />
                   <span className="flex h-9 w-9 items-center justify-center rounded-lg" style={{ color: node.color, backgroundColor: `${node.color}20` }}><NodeIcon className="h-4 w-4" /></span>
                   <span className="min-w-0 flex-1"><span className="block text-sm font-medium text-slate-100">{node.title}</span><span className="block text-xs text-slate-500">{node.subtitle}</span></span>
                   <span className="text-[10px] text-slate-500">{checked ? 'On map' : 'Add'}</span>
@@ -322,13 +308,13 @@ export default function MissionControl({
               })}
             </div>
             <div className="flex items-center justify-between border-t border-white/[0.08] px-5 py-3">
-              <button type="button" onClick={() => setVisibleNodeIds(defaultNodeIds)} className="text-xs text-slate-400 transition hover:text-white">Reset default</button>
+              <button type="button" onClick={() => { mapPrefsEdited.current = true; setVisibleNodeIds(defaultNodeIds); }} className="text-xs text-slate-400 transition hover:text-white">Reset default</button>
               <button type="button" onClick={() => setCustomizeOpen(false)} className="rounded-lg bg-cyan-300 px-4 py-2 text-xs font-semibold text-slate-950 transition hover:bg-cyan-200">Done</button>
             </div>
           </div>
         </div>}
-        <button type="button" onClick={() => open(revisionOverdue + revisionDue > 0 ? 'revision' : nextTopic ? 'videos' : 'roadmap')} className="mt-1 flex shrink-0 items-center justify-between gap-3 rounded-xl border border-cyan-300/15 bg-cyan-300/[0.06] px-3 py-2 text-left transition hover:bg-cyan-300/10 md:hidden">
-          <span className="min-w-0"><span className="block text-[9px] uppercase tracking-[0.16em] text-cyan-200/70">Next best step</span><span className="block truncate text-xs font-medium text-white">{currentStep}</span></span>
+        <button type="button" onClick={() => open(revisionOverdue + revisionDue > 0 ? 'revision' : nextTopic ? 'roadmap' : 'roadmap')} className="mt-1 flex shrink-0 items-center justify-between gap-3 rounded-xl border border-cyan-300/15 bg-cyan-300/[0.06] px-3 py-2 text-left transition hover:bg-cyan-300/10">
+          <span className="min-w-0"><span className="block text-[9px] uppercase tracking-[0.16em] text-cyan-200/70">Your next best step</span><span className="block truncate text-xs font-medium text-white">{!hasLearningProfile ? 'Set up your learning profile' : activeGoals === 0 ? 'Choose a learning goal' : revisionOverdue > 0 ? `${revisionOverdue} overdue topics to revise` : revisionDue > 0 ? `${revisionDue} topics ready for revision` : nextTopic || 'Open your learning roadmap'}</span></span>
           <ArrowUpRight className="h-4 w-4 shrink-0 text-cyan-200" />
         </button>
       </section>
