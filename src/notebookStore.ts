@@ -29,6 +29,7 @@ import { getVersion, listVersions, saveVersion, deleteVersions, type VersionData
 import { applyUndo, captureUndo, type IndexUndo } from './indexUndo';
 import { serverIso } from './serverClock';
 import { inkPartKey, MAX_INK_PARTS, splitStrokes } from './inkParts';
+import { deleteImageFromCloud, pushImageToCloud } from './attachStore';
 
 // ---------- types ----------
 
@@ -320,6 +321,7 @@ function purgeOldTrash(idx: NotebookIndex): void {
       .catch(() => null)
       .then((c) => {
         c?.pages.forEach((p) => deleteInkDocs(cloudInkKey(n.id, p.id), Math.max(0, splitStrokes(p.ink ?? []).length - 1)));
+        deleteNotePhotos(c);
         void idbDelete(n.id);
       });
     void deleteFromCloud(cloudNoteKey(n.id));
@@ -431,8 +433,22 @@ export async function pushContent(content: NoteContent): Promise<boolean> {
   // Main doc last: anyone who sees `hasInk` can already fetch the ink doc.
   if (!(await pushToCloudChecked(cloudNoteKey(content.id), main))) ok = false;
   if (ok) markSynced(content.id, content.updatedAt);
+  void pushPhotos(content); // photos follow in the background; they never decide whether the note counts as synced
   return ok;
 }
+
+/** Copy this note's photos to the account so they open on the student's other devices too. */
+async function pushPhotos(content: NoteContent): Promise<void> {
+  for (const p of content.pages) {
+    for (const a of p.attachments ?? []) {
+      if (a.kind === 'image') await pushImageToCloud(a.id).catch(() => false);
+    }
+  }
+}
+
+const deleteNotePhotos = (c: NoteContent | null | undefined): void => {
+  c?.pages.forEach((p) => p.attachments?.forEach((a) => a.kind === 'image' && void deleteImageFromCloud(a.id)));
+};
 
 /** Pull one note from the cloud, ink included. null = missing OR incomplete (never a half note). */
 export async function pullContent(id: string): Promise<NoteContent | null> {
@@ -729,6 +745,7 @@ export async function deleteNotesForever(ids: string[]): Promise<void> {
   for (const id of ids) {
     const c = await idbGet(id).catch(() => null);
     c?.pages.forEach((p) => deleteInkDocs(cloudInkKey(id, p.id), Math.max(0, splitStrokes(p.ink ?? []).length - 1)));
+    deleteNotePhotos(c);
     await idbDelete(id);
     void deleteFromCloud(cloudNoteKey(id));
     await deleteVersions(id).catch(() => undefined);
