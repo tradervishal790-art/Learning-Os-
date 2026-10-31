@@ -118,7 +118,7 @@ export default function MissionControl({
               const y = rowY[i];
               return (
                 <g key={row.id} filter="url(#mindGlow)" opacity=".95">
-                  <path d={`M 205 330 C 330 330, 330 ${y}, 420 ${y}`} stroke={`url(#line-${row.id})`} strokeWidth="2.2" />
+                  <path d={`M 235 330 C 330 330, 330 ${y}, 420 ${y}`} stroke={`url(#line-${row.id})`} strokeWidth="2.2" />
                   <path d={`M 690 ${y} C 790 ${y}, 800 ${y-22}, 900 ${y-22}`} stroke={row.color} strokeOpacity=".72" strokeWidth="1.7" />
                   <path d={`M 690 ${y} C 790 ${y}, 800 ${y+22}, 900 ${y+22}`} stroke={row.color} strokeOpacity=".72" strokeWidth="1.7" />
                   <circle cx="420" cy={y} r="4" fill={row.color} />
@@ -127,7 +127,7 @@ export default function MissionControl({
                 </g>
               );
             })}
-            <circle cx="205" cy="330" r="7" fill="#c4b5fd" filter="url(#mindGlow)" />
+            <circle cx="235" cy="330" r="7" fill="#c4b5fd" filter="url(#mindGlow)" />
           </svg>
 
           <div className="absolute left-[2.5%] top-1/2 z-10 flex h-[132px] w-[17%] -translate-y-1/2 flex-col justify-center rounded-2xl border border-violet-300/50 bg-gradient-to-br from-[#29214d] to-[#151a31] px-4 shadow-[0_0_38px_rgba(139,92,246,.15)]">
