@@ -130,6 +130,11 @@ export async function processQueuedPhotosForDailyTest(targetCount: number, onPro
         extracted.push(...result.questions);
         keys.push(...result.answerKey);
       }
+      if (extracted.length === 0) {
+        // Do not discard a source file when OCR/AI could not read any
+        // question from it. Keep it queued so the learner can retry it.
+        throw new Error('No questions could be read from this file. It is still queued; try a clearer photo or PDF.');
+      }
       const converted = toBuilderQuestions(extracted, keys).questions;
       const merged = dedupeQuestions([...bank, ...converted]).questions;
       if (merged.length > bank.length) {
