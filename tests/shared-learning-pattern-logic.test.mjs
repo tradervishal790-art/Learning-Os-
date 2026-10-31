@@ -7,7 +7,8 @@ const logic = await loadTs('src/sharedLearningPatternLogic.ts');
 test('revision patterns require multiple topic recalls and bucket only coarse ratings', () => {
   assert.equal(logic.bucketRecallRatings(['remembered']), null);
   assert.equal(logic.bucketRecallRatings(['forgot', 'forgot']), 'low');
-  assert.equal(logic.bucketRecallRatings(['forgot', 'partial']), 'medium');
+  assert.equal(logic.bucketRecallRatings(['forgot', 'partial']), 'low');
+  assert.equal(logic.bucketRecallRatings(['forgot', 'remembered']), 'medium');
   assert.equal(logic.bucketRecallRatings(['remembered', 'remembered']), 'high');
 });
 
