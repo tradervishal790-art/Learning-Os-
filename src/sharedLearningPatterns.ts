@@ -2,7 +2,7 @@ import { doc, getDoc, increment, serverTimestamp, writeBatch } from 'firebase/fi
 import { auth, db } from './firebase';
 import { getRecallRecords } from './revisionRecallStore';
 import type { TestAttempt } from './types';
-import { bucketQuestionAccuracy, bucketRecallRatings, buildPatternCounters, isSharedPatternId, type SharedPatternBucket } from './sharedLearningPatternLogic';
+import { bucketQuestionAccuracy, bucketRecallRatings, buildPatternCounters, isAnsweredQuestionOutcome, isSharedPatternId, type SharedPatternBucket } from './sharedLearningPatternLogic';
 import { isSharedLearningEnabled } from './sharedLearningIntelligence';
 
 const MINIMUM_VISIBLE_COHORT = 10;
@@ -56,9 +56,11 @@ export async function contributeQuestionPatterns(attempts: TestAttempt[]): Promi
     let scored = 0;
     for (const attempt of attempts) {
       const questionMap = new Map(attempt.questions.map((question) => [question.id, question]));
+      const answerMap = new Map(attempt.answers.map((answer) => [answer.questionId, answer]));
       for (const result of attempt.results) {
         const question = questionMap.get(result.questionId);
-        if (!question || question.type !== type || result.isCorrect === null) continue;
+        if (!question || question.type !== type) continue;
+        if (!isAnsweredQuestionOutcome(type, answerMap.get(result.questionId), result.isCorrect)) continue;
         scored += 1;
         if (result.isCorrect) correct += 1;
       }
