@@ -106,6 +106,12 @@ export async function hydrateRecallScoresFromCloud(): Promise<void> {
   }
 }
 
+/** Last self-reported recall rating for a checkpoint, if available. */
+export function getRecallRating(topicId: string, day: number): RecallRating | null {
+  const records = getRecallRecords(topicId);
+  return records.find((record) => record.day === day)?.rating ?? null;
+}
+
 /** Overall observed recall percentage; returns null until at least one score exists. */
 export function getRecallAccuracy(): number | null {
   const records = getRecallRecords();
