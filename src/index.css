@@ -240,6 +240,16 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
     line-height: 1.25;
     transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
   }
+  .los-panel {
+    border: 1px solid rgb(var(--los-border) / 0.12);
+    border-radius: 16px;
+    background: rgb(var(--los-surface) / 0.34);
+    padding: 16px;
+  }
+  .los-panel-accent {
+    border-color: rgb(var(--los-accent) / 0.18);
+    background: rgb(var(--los-accent) / 0.07);
+  }
   .los-nav-item {
     display: flex;
     width: 100%;
