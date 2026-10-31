@@ -26,6 +26,9 @@ test('saving a recall rating stores one valid record per topic and checkpoint', 
     { day: 7, rating: 'partial' },
   ]);
   assert.equal(store.getRecallRecords().length, 3);
+  assert.equal(store.getRecallRating('react-hooks', 3), 'remembered');
+  assert.equal(store.getRecallRating('react-hooks', 7), 'partial');
+  assert.equal(store.getRecallRating('react-hooks', 15), null);
 });
 
 test('invalid topic IDs, checkpoint days, and ratings are rejected', () => {
