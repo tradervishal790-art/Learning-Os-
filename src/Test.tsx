@@ -12,6 +12,7 @@ import TestAnalysis from './TestAnalysis';
 import LiveHost from './LiveHost';
 import { loadDraft, saveDraft, clearDraft } from './testDraft';
 import DailyTest from './DailyTest';
+import MathText from './MathText';
 import ConfirmDialog from './ConfirmDialog';
 import { setImmersive } from './immersive';
 import { completeDailyTest, isDailyPaper, getDailyStatus } from './dailyTestStore';
@@ -652,7 +653,7 @@ export function TakingScreen({
                   +{currentQuestion.marks}{currentQuestion.type === 'mcq' ? ` / -${(currentQuestion as MCQQuestion).negativeMarks}` : ''} marks
                 </span>
               </div>
-              <h2 className="text-xl font-semibold mb-6 leading-snug">{currentQuestion.question}</h2>
+              <h2 className="text-xl font-semibold mb-6 leading-relaxed text-[17px] md:text-lg"><MathText>{currentQuestion.question}</MathText></h2>
 
               {currentQuestion.type === 'mcq' ? (
                 <div className="space-y-3">
@@ -668,7 +669,11 @@ export function TakingScreen({
                             : 'bg-white dark:bg-white/5 border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10'
                         }`}
                       >
-                        <span className="text-sm">{String.fromCharCode(65 + i)}. {opt}</span>
+                        <span className="flex items-start gap-3 w-full">
+                          <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${selected ? 'bg-white/20 text-white' : 'bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-white/70'}`}>{String.fromCharCode(65 + i)}</span>
+                          <span className="min-w-0 flex-1 text-[15px] md:text-base leading-relaxed"><MathText>{opt}</MathText></span>
+                          {selected && <CheckCircle2 className="w-5 h-5 shrink-0" />}
+                        </span>
                       </button>
                     );
                   })}
@@ -790,20 +795,22 @@ function ResultsDashboard({
                 ) : (
                   <HelpCircle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
                 )}
-                <p className="font-medium flex-1">Q{i + 1}. {q.question}</p>
+                <p className="font-medium flex-1">Q{i + 1}. <MathText>{q.question}</MathText></p>
                 <span className="text-xs text-gray-400 dark:text-white/40 flex-shrink-0">{result?.marksObtained ?? 0}/{q.marks}</span>
               </div>
 
               {q.type === 'mcq' ? (
-                <div className="ml-8 space-y-1.5 mb-3">
+                <div className="ml-8 grid gap-2 mb-4">
                   {(q as MCQQuestion).options.map((opt, oi) => {
                     const selected = answer && answer.type === 'mcq' && answer.selectedIndex === oi;
                     const correct = oi === (q as MCQQuestion).correctIndex;
                     return (
-                      <p key={oi} className={`text-sm ${correct ? 'text-emerald-600 dark:text-emerald-400 font-medium' : selected ? 'text-red-600 dark:text-red-400 font-medium' : 'text-gray-500 dark:text-white/50'}`}>
-                        {String.fromCharCode(65 + oi)}. {opt}
-                        {correct ? ' (correct)' : selected ? ' (your answer)' : ''}
-                      </p>
+                      <div key={oi} className={`flex items-start gap-3 rounded-xl border px-3.5 py-3 ${correct ? 'border-emerald-300 bg-emerald-50/80 dark:border-emerald-500/30 dark:bg-emerald-500/10' : selected ? 'border-red-300 bg-red-50/80 dark:border-red-500/30 dark:bg-red-500/10' : 'border-gray-200 bg-white/70 dark:border-white/10 dark:bg-white/[0.03]'}`}>
+                        <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${correct ? 'bg-emerald-600 text-white' : selected ? 'bg-red-500 text-white' : 'bg-gray-100 text-gray-600 dark:bg-white/10 dark:text-white/70'}`}>{String.fromCharCode(65 + oi)}</span>
+                        <div className="min-w-0 flex-1 text-sm leading-relaxed text-gray-800 dark:text-white/85"><MathText>{opt}</MathText></div>
+                        {correct && <span className="shrink-0 text-xs font-semibold text-emerald-700 dark:text-emerald-300">Correct</span>}
+                        {selected && !correct && <span className="shrink-0 text-xs font-semibold text-red-600 dark:text-red-300">Your answer</span>}
+                      </div>
                     );
                   })}
                 </div>
@@ -811,12 +818,12 @@ function ResultsDashboard({
                 <div className="ml-8 mb-3 space-y-2 text-sm">
                   <p className="text-gray-600 dark:text-white/70">
                     <span className="font-medium">Your answer: </span>
-                    {answer && answer.type === 'subjective' && answer.text.trim() ? answer.text.trim() : <em>left blank</em>}
+                    {answer && answer.type === 'subjective' && answer.text.trim() ? <MathText>{answer.text.trim()}</MathText> : <em>left blank</em>}
                   </p>
                   {(q as SubjectiveQuestion).modelAnswer && (
                     <p className="text-emerald-600 dark:text-emerald-400">
                       <span className="font-medium">Model answer: </span>
-                      {(q as SubjectiveQuestion).modelAnswer}
+                      <MathText>{(q as SubjectiveQuestion).modelAnswer}</MathText>
                     </p>
                   )}
                   {isCorrect === null && (
@@ -835,7 +842,7 @@ function ResultsDashboard({
               {q.explanation && (
                 <p className="ml-8 text-sm text-gray-500 dark:text-white/60">
                   <span className="font-medium text-gray-700 dark:text-white/80">Why: </span>
-                  {q.explanation}
+                  <MathText>{q.explanation}</MathText>
                 </p>
               )}
             </div>
