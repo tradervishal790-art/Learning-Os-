@@ -172,10 +172,10 @@ export default function PhotoImport({ questions, onAppendQuestions, onReplaceQue
       setError('');
       setInfo('');
       try {
-        const count = await enqueueDailyPhotos(qFiles);
-        setQueuedCount(count);
-        setInfo(`${qFiles.length} file(s) saved for later. No AI was called. ${count} file(s) are waiting for future Daily Tests.`);
-        setQFiles([]);
+        const result = await enqueueDailyPhotos(qFiles);
+        setQueuedCount(result.count);
+        setInfo(`${result.added} file(s) saved for later. No AI was called. ${result.count} file(s) are waiting for future Daily Tests.${result.skipped > 0 ? ` ${result.skipped} file(s) could not be queued because the 200-file limit was reached; they are still selected here.` : ''}`);
+        setQFiles(result.skipped > 0 ? qFiles.slice(result.added) : []);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Could not save these files for later.');
       } finally {
