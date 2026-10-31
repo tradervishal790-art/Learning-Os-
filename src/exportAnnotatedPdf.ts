@@ -4,6 +4,7 @@ import {
 } from 'pdf-lib';
 import type { PDFOperator, PDFPage } from 'pdf-lib';
 import type { InkStroke } from './notebookStore';
+import { KINDS } from './inkEngine';
 
 export type PageRotation = 0 | 90 | 180 | 270;
 
@@ -51,11 +52,25 @@ function parseColor(color: string) {
 function drawStroke(page: PDFPage, s: InkStroke, ox: number, oy: number, pageW: number, pageH: number, rot: PageRotation, gs: PDFName | null): void {
   const pts = strokeToPdfPoints(s, pageW, pageH, rot);
   if (pts.length < 1) return;
+  const cfg = KINDS[s.kind] ?? KINDS.ballpoint;
   const scale = (rot === 90 || rot === 270 ? pageH : pageW) / 1000;
-  const width = Math.max(0.1, s.width * scale);
+  // Same thickness as on screen: the pen's own size factor (marker 3.2x, brush 2.6x, fineliner 0.55x ...) is part of it.
+  const width = Math.max(0.1, s.width * cfg.size * scale);
   const ops: PDFOperator[] = [pushGraphicsState()];
   if (gs) ops.push(setGraphicsState(gs));
   ops.push(setStrokingColor(parseColor(s.color)), setLineWidth(width), setLineCap(LineCapStyle.Round), setLineJoin(LineJoinStyle.Round));
+  // Pens that react to pressure (fountain, brush, pencil ...) are drawn piece by piece so the line swells and thins like on screen.
+  const pressured = cfg.thinning >= 0.3 && !s.sim && pts.length > 2;
+  if (pressured) {
+    for (let i = 1; i < pts.length; i++) {
+      const p = Math.min(1, Math.max(0, (s.pts[i * 3 + 2] + s.pts[(i - 1) * 3 + 2]) / 2));
+      const factor = Math.min(1.15, Math.max(0.3, 1 - cfg.thinning * (1 - Math.min(1, p * 2))));
+      ops.push(setLineWidth(width * factor), moveTo(pts[i - 1].x + ox, pts[i - 1].y + oy), lineTo(pts[i].x + ox, pts[i].y + oy), strokePath());
+    }
+    ops.push(popGraphicsState());
+    page.pushOperators(...ops);
+    return;
+  }
   if (s.kind === 'dotted' && pts.length > 1) ops.push(setDashPattern([Math.max(0.1, width * 0.1), width * 2.2], 0));
   ops.push(moveTo(pts[0].x + ox, pts[0].y + oy));
   if (pts.length === 1) {
@@ -77,7 +92,8 @@ export async function exportAnnotatedPdf(
   if (!pages.some((p) => p.strokes.length > 0)) return copyOfOriginal();
 
   const doc = await PDFDocument.load(original.slice(0), { updateMetadata: false }); // a COPY: the input buffer is never touched
-  const highlighterGs: PDFRef = doc.context.register(doc.context.obj({ Type: 'ExtGState', CA: 0.4, ca: 0.4 }));
+  // One transparency setting per pen opacity (highlighter 0.4, pencil 0.78, marker 0.9 ...), created only when used.
+  const gsRefs = new Map<number, PDFRef>();
   const pdfPages = doc.getPages();
 
   for (const entry of pages) {
@@ -85,11 +101,26 @@ export async function exportAnnotatedPdf(
     if (!page || entry.strokes.length === 0) continue;
     const box = page.getCropBox();
     const rot = normalizeRotation(page.getRotation().angle);
-    const gsName = page.node.newExtGState('GS', highlighterGs);
-    const highlighters = entry.strokes.filter((s) => s.kind === 'highlighter');
-    const others = entry.strokes.filter((s) => s.kind !== 'highlighter');
-    for (const s of highlighters) drawStroke(page, s, box.x, box.y, box.width, box.height, rot, gsName);
-    for (const s of others) drawStroke(page, s, box.x, box.y, box.width, box.height, rot, null);
+    const names = new Map<number, PDFName>();
+    const gsFor = (opacity: number): PDFName | null => {
+      if (opacity >= 1) return null;
+      let name = names.get(opacity);
+      if (!name) {
+        let ref = gsRefs.get(opacity);
+        if (!ref) {
+          ref = doc.context.register(doc.context.obj({ Type: 'ExtGState', CA: opacity, ca: opacity }));
+          gsRefs.set(opacity, ref);
+        }
+        name = page.node.newExtGState('GS', ref);
+        names.set(opacity, name);
+      }
+      return name;
+    };
+    const opacityOf = (st: InkStroke): number => (KINDS[st.kind] ?? KINDS.ballpoint).opacity;
+    const highlighters = entry.strokes.filter((st) => st.kind === 'highlighter');
+    const others = entry.strokes.filter((st) => st.kind !== 'highlighter');
+    for (const st of highlighters) drawStroke(page, st, box.x, box.y, box.width, box.height, rot, gsFor(opacityOf(st)));
+    for (const st of others) drawStroke(page, st, box.x, box.y, box.width, box.height, rot, gsFor(opacityOf(st)));
   }
   return doc.save();
 }

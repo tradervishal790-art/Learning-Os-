@@ -103,12 +103,25 @@ function SizeBox({
   const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
   const wrap = useRef<HTMLDivElement>(null);
 
+  const [bad, setBad] = useState(false);
   const commit = () => {
     if (draft === null) return;
     const n = Math.round(Number(draft.replace(',', '.')) * 10) / 10;
     setDraft(null);
-    if (Number.isFinite(n) && n >= MIN_SIZE && n <= MAX_SIZE) onSet(n);
+    if (Number.isFinite(n) && draft.trim() !== '') {
+      onSet(Math.min(MAX_SIZE, Math.max(MIN_SIZE, n))); // 500 -> the biggest size, 0 -> the smallest
+    } else {
+      setBad(true); // not a number: show it instead of silently doing nothing
+      setTimeout(() => setBad(false), 1200);
+    }
   };
+  // the size list is drawn on <body>: it must not stay behind when the toolbar scrolls
+  useEffect(() => {
+    if (!pos) return undefined;
+    const close = () => setPos(null);
+    window.addEventListener('scroll', close, true);
+    return () => window.removeEventListener('scroll', close, true);
+  }, [pos]);
   const openList = () => {
     const r = wrap.current?.getBoundingClientRect();
     if (r) setPos({ left: r.left, top: r.bottom + 4 });
@@ -132,7 +145,7 @@ function SizeBox({
               commit();
             } else if (e.key === 'Escape') setDraft(null);
           }}
-          className={`${selectCls} w-12 text-center rounded-r-none`}
+          className={`${selectCls} w-12 text-center rounded-r-none ${bad ? 'ring-2 ring-red-400' : ''}`}
         />
         <button
           type="button"
@@ -178,9 +191,11 @@ function SizeBox({
 // ---------- toolbar ----------
 
 export default function EditorToolbar({
-  editor, onFocusMode, onAttach, section = 'all', lead, extra,
+  editor, onFocusMode, onAttach, section = 'all', lead, extra, inkUndo,
 }: {
   editor: Editor | null;
+  /** When the text has nothing left to undo, Undo / Redo take back / redo the last handwriting change instead. */
+  inkUndo?: { canUndo: boolean; canRedo: boolean; undo: () => void; redo: () => void };
   onFocusMode: () => void;
   /** Photo / camera / audio buttons: asks the page being written on to add one. */
   onAttach?: (a: 'photo' | 'camera' | 'audio' | 'screen') => void;
@@ -284,8 +299,8 @@ export default function EditorToolbar({
 
   const history = (
     <>
-        <Btn label={t.undo} disabled={!s.canUndo} onClick={() => c().undo().run()}><Undo2 size={16} /></Btn>
-        <Btn label={t.redo} disabled={!s.canRedo} onClick={() => c().redo().run()}><Redo2 size={16} /></Btn>
+        <Btn label={t.undo} disabled={!s.canUndo && !inkUndo?.canUndo} onClick={() => (s.canUndo ? c().undo().run() : inkUndo?.undo())}><Undo2 size={16} /></Btn>
+        <Btn label={t.redo} disabled={!s.canRedo && !inkUndo?.canRedo} onClick={() => (s.canRedo ? c().redo().run() : inkUndo?.redo())}><Redo2 size={16} /></Btn>
     </>
   );
   const selects = (
@@ -328,7 +343,7 @@ export default function EditorToolbar({
           <Swatches colors={HIGHLIGHT_COLORS} onPick={(col) => c().setHighlight({ color: col }).run()} />
           <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => c().unsetHighlight().run()} className="mt-2 text-xs underline text-gray-600 dark:text-white/70">{t.removeHighlight}</button>
         </Pop>
-        <Btn label={t.clearFormat} onClick={() => c().unsetAllMarks().clearNodes().run()}><Eraser size={16} /></Btn>
+        <Btn label={t.clearFormat} onClick={() => c().unsetAllMarks().setParagraph().unsetTextAlign().run()}><Eraser size={16} /></Btn>
     </>
   );
   const lists = (

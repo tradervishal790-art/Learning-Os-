@@ -2,10 +2,11 @@
 //   record, pause, resume, stop, bookmark, discard, cancel, recording, paused, requesting,
 //   denied, unsupported, interrupted, error, saveInterrupted, bookmarksCount
 import { AlertTriangle, Bookmark, Mic, Pause, Play, Square, Trash2, X } from 'lucide-react';
-import { useAudioRecorder } from './useAudioRecorder';
+import { useEffect, useRef } from 'react';
+import { MAX_RECORDING_SEC, useAudioRecorder } from './useAudioRecorder';
 
 interface Props {
-  onDone(result: { blob: Blob; mime: string; durationSec: number; bookmarks: number[] }): void;
+  onDone(result: { blob: Blob; mime: string; durationSec: number; bookmarks: number[]; limited?: boolean }): void;
   onCancel?(): void;
   labels: Record<string, string>;
 }
@@ -24,16 +25,35 @@ export default function AudioRecorder({ onDone, onCancel, labels }: Props) {
   const { state } = rec;
   const live = state === 'recording' || state === 'paused';
 
+  const limited = useRef(false);
   const finishNow = async (): Promise<void> => {
     const result = await rec.stop();
-    if (result) onDone(result);
+    if (result) onDone(limited.current ? { ...result, limited: true } : result);
   };
+  // A very long recording is stopped and saved by itself instead of filling the device's memory.
+  useEffect(() => {
+    if (live && rec.elapsedSec >= MAX_RECORDING_SEC && !limited.current) {
+      limited.current = true;
+      void finishNow();
+    }
+  });
 
   let message: string | null = null;
   if (state === 'denied') message = t('denied', 'Microphone access was denied. Allow it in your browser settings and try again.');
   else if (state === 'unsupported') message = t('unsupported', 'Audio recording is not supported in this browser.');
   else if (rec.interrupted) message = t('interrupted', 'The recording was interrupted. You can save what was captured so far.');
-  else if (state === 'error') message = rec.error ?? t('error', 'Something went wrong while recording.');
+  else if (state === 'error') {
+    const english: Record<string, string> = {
+      recInterruptedEmpty: 'The recording was interrupted before any audio was captured.',
+      recNothing: 'Nothing was recorded.',
+      recNoMic: 'No microphone was found.',
+      recMicAccess: 'Could not access the microphone.',
+      recMicUnsupported: 'Recording is not supported with this microphone.',
+      recFailed: 'The recording failed.',
+      recStart: 'Could not start recording.',
+    };
+    message = rec.error ? t(rec.error, english[rec.error] ?? rec.error) : t('error', 'Something went wrong while recording.');
+  }
 
   return (
     <div className="flex w-full flex-col items-center gap-5 rounded-2xl border border-slate-200 bg-white p-5 text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100">

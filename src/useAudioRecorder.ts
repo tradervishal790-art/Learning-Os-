@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 export type RecorderState = 'idle' | 'requesting' | 'recording' | 'paused' | 'stopped' | 'denied' | 'unsupported' | 'error';
+/** A recording longer than this is stopped and saved by itself (the whole clip is kept in memory until it is saved). */
+export const MAX_RECORDING_SEC = 3 * 60 * 60;
+
 export interface RecordingResult { blob: Blob; mime: string; durationSec: number; bookmarks: number[] }
 
 /** Elapsed time excluding paused time. Pure: the caller passes the clock reading. */
@@ -123,7 +126,7 @@ export function useAudioRecorder(): {
     if (mountedRef.current) {
       setElapsedSec(durationSec);
       if (wasInterrupted) setInterrupted(true);
-      if (!result) setError(wasInterrupted ? 'The recording was interrupted before any audio was captured.' : 'Nothing was recorded.');
+      if (!result) setError(wasInterrupted ? 'recInterruptedEmpty' : 'recNothing');
     }
     setState(result ? 'stopped' : 'error');
     resolveWaiters(result);
@@ -161,10 +164,10 @@ export function useAudioRecorder(): {
       if (token !== tokenRef.current) return;
       const name = errName(e);
       if (name === 'NotAllowedError' || name === 'SecurityError' || name === 'PermissionDeniedError') {
-        setError('Microphone permission was denied.');
+        setError('denied');
         setState('denied');
       } else {
-        setError(name === 'NotFoundError' ? 'No microphone was found.' : 'Could not access the microphone.');
+        setError(name === 'NotFoundError' ? 'recNoMic' : 'recMicAccess');
         setState('error');
       }
       return;
@@ -176,7 +179,7 @@ export function useAudioRecorder(): {
       rec = new MediaRecorder(stream, { mimeType: mime });
     } catch {
       stream.getTracks().forEach((t) => t.stop());
-      setError('Recording is not supported with this microphone.');
+      setError('recMicUnsupported');
       setState('error');
       return;
     }
@@ -185,7 +188,7 @@ export function useAudioRecorder(): {
     rec.ondataavailable = (ev: BlobEvent) => { if (ev.data.size > 0) chunksRef.current.push(ev.data); };
     rec.onstop = () => finish(!userStopRef.current);
     rec.onerror = () => {
-      setError('The recording failed.');
+      setError('recFailed');
       if (rec.state !== 'inactive') { try { rec.stop(); return; } catch { /* fall through */ } }
       finish(true);
     };
@@ -203,7 +206,7 @@ export function useAudioRecorder(): {
       rec.start(1000);
     } catch {
       detach(rec); recorderRef.current = null; releaseStream();
-      setError('Could not start recording.');
+      setError('recStart');
       setState('error');
       return;
     }

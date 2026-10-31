@@ -67,6 +67,7 @@ export default function PageAttachments({
   const [recording, setRecording] = useState(false);
   const [cropping, setCropping] = useState(false);
   const [error, setError] = useState('');
+  const [info, setInfo] = useState('');
   const rootRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const camRef = useRef<HTMLInputElement>(null);
@@ -161,13 +162,15 @@ export default function PageAttachments({
     // deleting it here would silently break that other attachment. Orphan cleanup can be done safely by a ref-counted sweep.
   };
 
-  const saveRecording = async (r: { blob: Blob; mime: string; durationSec: number; bookmarks: number[] }) => {
+  const saveRecording = async (r: { blob: Blob; mime: string; durationSec: number; bookmarks: number[]; limited?: boolean }) => {
     setError('');
+    setInfo('');
     try {
       const id = newAttachId('au');
       await putAudio(id, r.blob, { mime: r.mime, durationSec: r.durationSec, bookmarks: r.bookmarks, createdAt: new Date().toISOString() });
       push({ id, kind: 'audio', name: t('audioName') });
       setRecording(false);
+      if (r.limited) setInfo(t('recTooLong'));
     } catch {
       setError(t('errStorage'));
     }
@@ -196,7 +199,7 @@ export default function PageAttachments({
           <AudioRecorder onDone={(r) => void saveRecording(r)} onCancel={() => setRecording(false)} labels={labels} />
         </div>
       )}
-      {(busy || error) && (
+      {(busy || error || info) && (
         <div className="flex flex-wrap items-center gap-1.5">
           {busy && <span className="text-xs text-gray-400 dark:text-white/40">…</span>}
           {error && (
@@ -204,6 +207,7 @@ export default function PageAttachments({
               {error}
             </span>
           )}
+          {info && !error && <span className="text-xs text-gray-500 dark:text-white/60">{info}</span>}
         </div>
       )}
       </div>

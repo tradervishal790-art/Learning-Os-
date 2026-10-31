@@ -95,3 +95,43 @@ export function buildZip(files: { name: string; data: Uint8Array }[]): Uint8Arra
   }
   return out;
 }
+
+/**
+ * Read a zip written by buildZip (stored entries, no compression). Anything else -> null (never throws).
+ * Used to restore a "backup with files" (.zip).
+ */
+export function readZip(bytes: Uint8Array): { name: string; data: Uint8Array }[] | null {
+  try {
+    const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    let eocd = -1;
+    for (let i = bytes.length - 22; i >= Math.max(0, bytes.length - 22 - 65535); i--) {
+      if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+    }
+    if (eocd < 0) return null;
+    const count = dv.getUint16(eocd + 10, true);
+    let p = dv.getUint32(eocd + 16, true);
+    const dec = new TextDecoder();
+    const out: { name: string; data: Uint8Array }[] = [];
+    for (let n = 0; n < count; n++) {
+      if (dv.getUint32(p, true) !== 0x02014b50) return null;
+      const method = dv.getUint16(p + 10, true);
+      const crc = dv.getUint32(p + 16, true);
+      const size = dv.getUint32(p + 24, true);
+      const nameLen = dv.getUint16(p + 28, true);
+      const extraLen = dv.getUint16(p + 30, true);
+      const commentLen = dv.getUint16(p + 32, true);
+      const localAt = dv.getUint32(p + 42, true);
+      const name = dec.decode(bytes.subarray(p + 46, p + 46 + nameLen));
+      if (method !== 0) return null;
+      if (dv.getUint32(localAt, true) !== 0x04034b50) return null;
+      const start = localAt + 30 + dv.getUint16(localAt + 26, true) + dv.getUint16(localAt + 28, true);
+      const data = bytes.slice(start, start + size);
+      if (data.length !== size || crc32(data) !== crc) return null;
+      out.push({ name, data });
+      p += 46 + nameLen + extraLen + commentLen;
+    }
+    return out;
+  } catch {
+    return null;
+  }
+}

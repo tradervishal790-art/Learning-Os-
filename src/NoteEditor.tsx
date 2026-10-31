@@ -46,7 +46,7 @@ import { getImage, getPdf, newAttachId, putPdf } from './attachStore';
 import { compressImage, blobToDataUrl } from './imageTools';
 import type { NoteAiOp } from './noteAiTypes';
 import { askConfirm } from './dialogApi';
-import { aiTextToNodes } from './aiTextToNodes';
+import { aiTextToNodes, withBaseMarks } from './aiTextToNodes';
 import { downloadBlob, fileName } from './noteExport';
 
 // ============================================================
@@ -362,6 +362,16 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: (untouc
     return ids.size > 0 ? { pageId: selection.pageId, ids } : null;
   };
 
+  /** The colour / thickness the picked strokes already have (only when they all agree), so the tools show the truth. */
+  const selectedLook = (): { color?: string; width?: number } => {
+    const cur = currentSelection();
+    if (!cur) return {};
+    const picked = (inkRef.current[cur.pageId] ?? []).filter((st) => cur.ids.has(st.id));
+    if (picked.length === 0) return {};
+    const same = <T,>(f: (st: (typeof picked)[number]) => T): T | undefined => (picked.every((st) => f(st) === f(picked[0])) ? f(picked[0]) : undefined);
+    return { color: same((st) => st.color), width: same((st) => st.width) };
+  };
+
   const selectOn = (pageId: string, ids: string[]) => {
     setSelection(ids.length > 0 ? { pageId, ids } : null);
     setActivePage(pageId);
@@ -492,6 +502,30 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: (untouc
     setFocusMode(false);
     chooseMode(modeBeforePresent.current);
   };
+
+  // In Type mode Ctrl+Z / Ctrl+Y belong to the text. Only when the text has nothing left to undo / redo (the editor did
+  // not handle the key) they take back / redo the last handwriting change on the page being written on.
+  useEffect(() => {
+    if (mode !== 'type') return undefined;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.defaultPrevented || !(e.ctrlKey || e.metaKey)) return;
+      const el = e.target as HTMLElement | null;
+      if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) return;
+      const k = e.key.toLowerCase();
+      const h = hist.current[viewPage ?? activePage ?? ''];
+      if (k === 'z' && !e.shiftKey) {
+        if (active?.can().undo() || !h || h.undo.length === 0) return;
+        e.preventDefault();
+        undoInk();
+      } else if ((k === 'z' && e.shiftKey) || k === 'y') {
+        if (active?.can().redo() || !h || h.redo.length === 0) return;
+        e.preventDefault();
+        redoInk();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  });
 
   // Keyboard in a pen mode: Ctrl/Cmd+Z undo, +Shift+Z / +Y redo; in Select: Delete, Ctrl+C / X / V / D.
   useEffect(() => {
@@ -875,7 +909,19 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: (untouc
     if (!ed) return;
     const { from, to } = ed.state.selection;
     if (from === to) return flash(t.ai.noTextHint);
-    const content = text.includes('\n') ? textToNodes(text) : text ? { type: 'text', text } : null;
+    // The new text keeps the font / size / colour of the words it replaces (links and code are not carried over).
+    let base: { type: string; attrs?: Record<string, unknown> }[] = [];
+    ed.state.doc.nodesBetween(from, to, (node) => {
+      if (base.length === 0 && node.isText) {
+        base = node.marks
+          .filter((m) => m.type.name !== 'link' && m.type.name !== 'code' && m.type.spec.inclusive !== false)
+          .map((m) => m.toJSON() as { type: string; attrs?: Record<string, unknown> });
+      }
+      return base.length === 0;
+    });
+    const content = text.includes('\n')
+      ? withBaseMarks(textToNodes(text), base)
+      : text ? { type: 'text', text, ...(base.length ? { marks: base } : {}) } : null;
     if (!content) return;
     ed.chain().focus().insertContentAt({ from, to }, content).run();
     ed.commands.setTextSelection({ from, to: ed.state.selection.to });
@@ -1261,6 +1307,9 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: (untouc
     </div>
   );
 
+  const inkHist = hist.current[viewPage ?? activePage ?? ''];
+  const inkUndoApi = { canUndo: (inkHist?.undo.length ?? 0) > 0, canRedo: (inkHist?.redo.length ?? 0) > 0, undo: undoInk, redo: redoInk };
+
   // A note made only of imported PDF pages has no typed page, so the text tools have nothing to work on:
   // say so and offer one tap to add a page, instead of showing an empty toolbar.
   const pdfOnlyBar =
@@ -1290,6 +1339,7 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: (untouc
       onEraseAll={eraseWholePage}
       select={{
         count: currentSelection()?.ids.size ?? 0,
+        ...selectedLook(),
         canPaste: clipCount > 0,
         notice: '',
         onAll: selectAll,
@@ -1441,7 +1491,7 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: (untouc
         <div className="pb-1.5 border-b border-gray-200 dark:border-white/10 mb-2">
           <ModeSwitch mode={mode} onMode={chooseMode} />
           {mode === 'type' ? (
-            pdfOnlyBar ?? <EditorToolbar editor={active} onAttach={attach} onFocusMode={() => setFocusMode((f) => !f)} />
+            pdfOnlyBar ?? <EditorToolbar editor={active} onAttach={attach} inkUndo={inkUndoApi} onFocusMode={() => setFocusMode((f) => !f)} />
           ) : mode === 'circle' ? (
             circleBar
           ) : (
@@ -1581,7 +1631,7 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: (untouc
       )}
       {!isDesktop && !present && (
         <PhoneRibbon tab={phoneTab} open={ribbonOpen} aiOpen={aiOpen} onTab={pickTab} onHeight={setRibbonH}>
-          {phoneTab === 'home' && (pdfOnlyBar ?? <EditorToolbar editor={active} onAttach={attach} section="home" onFocusMode={() => setFocusMode((f) => !f)} />)}
+          {phoneTab === 'home' && (pdfOnlyBar ?? <EditorToolbar editor={active} onAttach={attach} section="home" inkUndo={inkUndoApi} onFocusMode={() => setFocusMode((f) => !f)} />)}
           {phoneTab === 'insert' && <EditorToolbar editor={active} onAttach={attach} section="insert" extra={insertTools} onFocusMode={() => setFocusMode((f) => !f)} />}
           {phoneTab === 'view' && <EditorToolbar editor={active} onAttach={attach} section="view" lead={viewTools} onFocusMode={() => setFocusMode((f) => !f)} />}
           {phoneTab === 'draw' && (

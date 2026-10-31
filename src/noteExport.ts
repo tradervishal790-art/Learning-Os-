@@ -1,3 +1,4 @@
+import { getImage } from './attachStore';
 import type { NotePage, NoteVideo } from './notebookStore';
 import { inkToSvg } from './inkSvg';
 
@@ -171,7 +172,7 @@ export const hasText = (pages: NotePage[]) => pages.some((p) => p.text.trim());
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 /** A self-contained page for Print / Save as PDF. Scripts, handlers and links to other sites are removed. */
-export function noteToHtml(title: string, pages: NotePage[], opts: { ink?: boolean } = {}): string {
+export function noteToHtml(title: string, pages: NotePage[], opts: { ink?: boolean; images?: Record<string, string> } = {}): string {
   const clean = (html: string) => {
     const doc = new DOMParser().parseFromString(html, 'text/html');
     doc.querySelectorAll('script,style,iframe,object,embed,link').forEach((n) => n.remove());
@@ -200,13 +201,18 @@ export function noteToHtml(title: string, pages: NotePage[], opts: { ink?: boole
       const body = p.pdf ? `<p>${esc(p.text)}</p>` : clean(pageToHtml(p));
       // Handwriting (optional): drawn as one picture under the page's text, scaled to the page width.
       const inkHtml = opts.ink && p.ink && p.ink.length > 0 ? `<div class="ink">${inkToSvg(p.ink, {})}</div>` : '';
-      return body.replace(/<[^>]*>/g, '').trim() || h || inkHtml
-        ? `<section>${h ? `<h2 class="pg">${esc(h)}</h2>` : ''}${body}${inkHtml}</section>`
+      // Photos (when the caller loaded them): after the page's text. Only real image data URLs are ever inserted.
+      const photoHtml = (p.attachments ?? [])
+        .filter((a) => a.kind === 'image' && /^data:image\/(?:png|jpe?g|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(opts.images?.[a.id] ?? ''))
+        .map((a) => `<figure class="photo"><img src="${opts.images![a.id]}" alt="${esc(a.name)}"></figure>`)
+        .join('');
+      return body.replace(/<[^>]*>/g, '').trim() || h || inkHtml || photoHtml
+        ? `<section>${h ? `<h2 class="pg">${esc(h)}</h2>` : ''}${body}${photoHtml}${inkHtml}</section>`
         : '';
     })
     .join('\n');
   return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title || 'Untitled')}</title>
-<style>body{font:16px/1.6 system-ui,sans-serif;max-width:760px;margin:2rem auto;padding:0 1rem;color:#111}h1{font-size:1.8rem}h2.pg{font-size:.8rem;color:#666;font-weight:600;border-top:1px solid #ddd;padding-top:.6rem;margin-top:2rem}mark{border-radius:3px;padding:0 .1em;color:#111}table{border-collapse:collapse}td,th{border:1px solid #ccc;padding:.3rem .5rem}pre{background:#f4f4f5;padding:.6rem;overflow:auto}img{max-width:100%}@media print{body{margin:0}section{break-inside:avoid-page}}.ink{margin:.8rem 0}.ink svg{display:block;width:100%;height:auto}</style></head><body><h1>${esc(title || 'Untitled')}</h1>${sections}</body></html>`;
+<style>body{font:16px/1.6 system-ui,sans-serif;max-width:760px;margin:2rem auto;padding:0 1rem;color:#111}h1{font-size:1.8rem}h2.pg{font-size:.8rem;color:#666;font-weight:600;border-top:1px solid #ddd;padding-top:.6rem;margin-top:2rem}mark{border-radius:3px;padding:0 .1em;color:#111}table{border-collapse:collapse}td,th{border:1px solid #ccc;padding:.3rem .5rem}pre{background:#f4f4f5;padding:.6rem;overflow:auto}img{max-width:100%}@media print{body{margin:0}section{break-inside:avoid-page}}.photo{margin:.8rem 0}.photo img{display:block;max-width:100%;height:auto}.ink{margin:.8rem 0}.ink svg{display:block;width:100%;height:auto}</style></head><body><h1>${esc(title || 'Untitled')}</h1>${sections}</body></html>`;
 }
 
 export function noteToBackupJson(title: string, pages: NotePage[], video?: NoteVideo | null): string {
@@ -232,4 +238,67 @@ export function downloadBlob(name: string, blob: Blob): void {
     // Delay revocation so browsers have time to begin reading the download, even when click throws.
     setTimeout(() => URL.revokeObjectURL(url), 10_000);
   }
+}
+
+/** The photos of these pages as data URLs (id -> url), for an export that must carry them. Photos missing on this device are skipped. */
+export async function imagesAsDataUrls(pages: NotePage[]): Promise<Record<string, string>> {
+  const out: Record<string, string> = {};
+  for (const p of pages) {
+    for (const a of p.attachments ?? []) {
+      if (a.kind !== 'image' || out[a.id]) continue;
+      const blob = await getImage(a.id).catch(() => null);
+      if (!blob) continue;
+      const url = await new Promise<string>((resolve) => {
+        const r = new FileReader();
+        r.onload = () => resolve(typeof r.result === 'string' ? r.result : '');
+        r.onerror = () => resolve('');
+        r.readAsDataURL(blob);
+      });
+      if (url) out[a.id] = url;
+    }
+  }
+  return out;
+}
+
+/**
+ * Open the print dialog for this page of HTML WITHOUT a pop-up window (pop-ups are blocked in installed apps and
+ * on many phones). The text is printed from a hidden frame that is removed afterwards. false = it could not start.
+ */
+export function printHtml(html: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    try {
+      const frame = document.createElement('iframe');
+      frame.setAttribute('aria-hidden', 'true');
+      frame.setAttribute('sandbox', 'allow-same-origin allow-modals'); // no scripts can ever run inside
+      frame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden';
+      let removed = false;
+      const remove = () => {
+        if (removed) return;
+        removed = true;
+        frame.remove();
+      };
+      frame.onload = () => {
+        const w = frame.contentWindow;
+        if (!w) {
+          remove();
+          resolve(false);
+          return;
+        }
+        w.addEventListener('afterprint', () => setTimeout(remove, 500));
+        setTimeout(remove, 10 * 60 * 1000); // never leave it behind
+        try {
+          w.focus();
+          w.print();
+          resolve(true);
+        } catch {
+          remove();
+          resolve(false);
+        }
+      };
+      frame.srcdoc = html;
+      document.body.appendChild(frame);
+    } catch {
+      resolve(false);
+    }
+  });
 }

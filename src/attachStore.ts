@@ -110,3 +110,26 @@ export const deleteImage = (id: string) => del('images', id);
 export const putPdf = (id: string, blob: Blob, name: string) => put('pdfs', id, blob, name);
 export const getPdf = async (id: string): Promise<Blob | null> => (await get('pdfs', id))?.blob ?? null;
 export const deletePdf = (id: string) => del('pdfs', id);
+
+export interface StoredFileInfo { id: string; size: number; createdAt: string }
+
+const list = (store: StoreName) =>
+  run<StoredFileInfo[]>(store, 'readonly', (s, set) => {
+    const out: StoredFileInfo[] = [];
+    set(out);
+    const req = s.openCursor();
+    req.onsuccess = () => {
+      const c = req.result;
+      if (!c) return;
+      const r = c.value as Rec;
+      out.push({ id: r.id, size: r.blob.size, createdAt: r.createdAt });
+      c.continue();
+    };
+  });
+
+export const listImages = () => list('images');
+export const listPdfs = () => list('pdfs');
+
+/** The saved name of a stored file (for a backup). */
+export const getImageName = async (id: string): Promise<string | null> => (await get('images', id))?.name ?? null;
+export const getPdfName = async (id: string): Promise<string | null> => (await get('pdfs', id))?.name ?? null;

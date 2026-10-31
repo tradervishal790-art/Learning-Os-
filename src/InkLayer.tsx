@@ -380,6 +380,10 @@ export default function InkLayer({
     liveRef.current!.setPointerCapture(e.pointerId);
     const [x, y] = toPage(e);
 
+    if (mode === 'select' && selRef.current.length > 0 && box && selectedStrokes.some((st) => strokeHit(st, x, y, 14 / scale))) {
+      startXform(e, 'move', liveRef.current!);
+      return;
+    }
     if (mode === 'select' || mode === 'circle') {
       gesture.current = { type: 'lasso', id: e.pointerId, start: [x, y], pts: [[x, y]], sx: e.clientX, sy: e.clientY, moved: false, ai: mode === 'circle' };
       return;
@@ -416,6 +420,10 @@ export default function InkLayer({
   };
 
   const onMove = (e: React.PointerEvent) => {
+    if (gesture.current?.type === 'xform') {
+      onHandleMove(e);
+      return;
+    }
     if (e.pointerType === 'pen') {
       lastPen.current = Date.now(); // pen hovering = palm rejection window
       // the pen came near while a palm was scrolling / marking: stop the palm at once
@@ -452,7 +460,6 @@ export default function InkLayer({
       else window.scrollBy(dx, dy);
       return;
     }
-    if (g.type === 'xform') return; // handled by the overlay
 
     const native = e.nativeEvent;
     const events = native.getCoalescedEvents?.() ?? [];
@@ -503,7 +510,10 @@ export default function InkLayer({
   const finish = (e: React.PointerEvent, cancelled: boolean) => {
     const g = gesture.current;
     if (!g || g.id !== e.pointerId) return;
-    if (g.type === 'xform') return; // overlay finishes it
+    if (g.type === 'xform') {
+      onHandleUp(e, cancelled); // a drag that started on a selected stroke ends here; one started on a knob ends on the overlay
+      return;
+    }
     if (g.type === 'laser') {
       g.down = false; // the mark stays for a few seconds, then fades by itself and the live canvas is released
       g.strokes[g.strokes.length - 1].end = performance.now();
@@ -581,13 +591,12 @@ export default function InkLayer({
     };
   };
 
-  const onHandleDown = (e: React.PointerEvent) => {
-    const op = (e.target as HTMLElement).dataset.sel as XOp | undefined;
-    if (!op || gesture.current || !box) return;
+  const startXform = (e: React.PointerEvent, op: XOp, el: Element) => {
+    if (gesture.current || !box) return;
     if (e.pointerType === 'pen') lastPen.current = Date.now();
     if (isPalm(e)) return; // palm
     e.stopPropagation();
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    el.setPointerCapture(e.pointerId);
     const [x, y] = toPage(e);
     const cx = (box.x0 + box.x1) / 2;
     const cy = (box.y0 + box.y1) / 2;
@@ -606,6 +615,11 @@ export default function InkLayer({
     liveOn();
     paintLive(selectedStrokes, true);
     setPreview(previewFor(g));
+  };
+
+  const onHandleDown = (e: React.PointerEvent) => {
+    const op = (e.target as HTMLElement).dataset.sel as XOp | undefined;
+    if (op) startXform(e, op, e.target as Element);
   };
 
   const onHandleMove = (e: React.PointerEvent) => {
@@ -679,7 +693,7 @@ export default function InkLayer({
           onPointerUp={(e) => onHandleUp(e, false)}
           onPointerCancel={(e) => onHandleUp(e, true)}
         >
-          <div data-sel="move" className="absolute inset-0 border border-dashed border-blue-500 bg-blue-500/5 pointer-events-auto cursor-move" style={{ touchAction: 'none' }} />
+          <div data-sel="move" className="absolute inset-0 border border-dashed border-blue-500 bg-blue-500/5 pointer-events-none" />
           <div data-sel="nw" className={`${knob} -left-2.5 -top-2.5 cursor-nwse-resize`} style={{ touchAction: 'none' }} />
           <div data-sel="ne" className={`${knob} -right-2.5 -top-2.5 cursor-nesw-resize`} style={{ touchAction: 'none' }} />
           <div data-sel="se" className={`${knob} -right-2.5 -bottom-2.5 cursor-nwse-resize`} style={{ touchAction: 'none' }} />

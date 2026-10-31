@@ -8,10 +8,11 @@ interface Props {
   pageNumber: number;
   width: number; // css px
   onSize?(size: { width: number; height: number }): void; // natural page size in PDF points (rotation applied)
+  labels?: { renderFail?: string; retry?: string }; // `renderFail` has {0} = the page number
   children?: ReactNode; // overlay, expected to be `absolute inset-0`
 }
 
-export default function PdfPage({ pdf, pageNumber, width, onSize, children }: Props) {
+export default function PdfPage({ pdf, pageNumber, width, onSize, labels, children }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const onSizeRef = useRef(onSize);
   const [ratio, setRatio] = useState(Math.SQRT2); // A4 until the real size is known
@@ -50,9 +51,9 @@ export default function PdfPage({ pdf, pageNumber, width, onSize, children }: Pr
       {status === 'error' && (
         <div role="alert" className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-slate-100 p-4 text-center text-sm text-slate-700">
           <AlertTriangle className="h-8 w-8 text-amber-600" aria-hidden />
-          <span>Could not render page {pageNumber}.</span>
+          <span>{(labels?.renderFail ?? 'Could not render page {0}.').replace('{0}', String(pageNumber))}</span>
           <button type="button" className="min-h-[44px] rounded-full bg-indigo-600 px-5 font-medium text-white active:scale-95" onClick={() => setAttempt((a) => a + 1)}>
-            Retry
+            {labels?.retry ?? 'Retry'}
           </button>
         </div>
       )}

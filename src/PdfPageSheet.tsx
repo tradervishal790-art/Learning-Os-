@@ -102,7 +102,7 @@ export default function PdfPageSheet({
           <p>{labels[state === 'missing' ? 'pdfMissing' : 'pdfErrUnknown'] ?? state}</p>
         </div>
       ) : pdf && visible && w > 0 ? (
-        <PdfPage pdf={pdf} pageNumber={pageNumber} width={w} onSize={(s) => setRatio(s.height / s.width)}>
+        <PdfPage pdf={pdf} pageNumber={pageNumber} width={w} onSize={(s) => setRatio(s.height / s.width)} labels={{ renderFail: labels.pdfRenderFail, retry: labels.pdfRetry }}>
           <InkLayer
             strokes={strokes}
             width={w}

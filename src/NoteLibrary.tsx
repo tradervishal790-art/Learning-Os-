@@ -13,6 +13,9 @@ import {
 } from './notebookStore';
 import { SaveChip } from './SaveChip';
 import { buildBackupJson, parseBackup } from './backup';
+import { looksLikeZip, openBackupZip, packFiles, restoreFiles } from './backupFiles';
+import { sweepOrphanFiles, sweepOrphanFilesDaily } from './fileSweep';
+import { buildZip } from './zipStore';
 import type { ConflictInfo } from './conflict';
 import { downloadBlob } from './noteExport';
 import StudyDialog from './StudyDialog';
@@ -45,6 +48,7 @@ interface MenuItem {
 }
 
 function Menu({ items }: { items: MenuItem[] }) {
+  const more = useTranslation().notebook.ink.more;
   const [open, setOpen] = useState(false);
   return (
     <div className="relative">
@@ -54,7 +58,8 @@ function Menu({ items }: { items: MenuItem[] }) {
           setOpen((o) => !o);
         }}
         className="p-1.5 rounded-lg text-gray-500 dark:text-white/60 hover:bg-gray-100 dark:hover:bg-white/10"
-        aria-label="More"
+        aria-label={more}
+        title={more}
       >
         <MoreVertical size={16} />
       </button>
@@ -135,7 +140,7 @@ export default function NoteLibrary() {
 
   // Pull the cloud copy once when the notebook opens (safe offline / signed out).
   useEffect(() => {
-    void hydrateNotebook();
+    void hydrateNotebook().then(() => sweepOrphanFilesDaily());
     // Keep listening afterwards, so edits made on another device show up here without signing in again.
     return startLiveNotebookSync();
   }, []);
@@ -293,12 +298,14 @@ export default function NoteLibrary() {
   const foreverIds = async (ids: string[]) => {
     if (!(await askConfirm(t.confirmDeleteForever, { danger: true }))) return;
     await deleteNotesForever(ids);
+    void sweepOrphanFiles(); // free the photos / recordings / PDFs of the notes that are gone
     exitSelect();
   };
 
   const emptyTrash = async () => {
     if (!(await askConfirm(t.confirmEmptyTrash, { danger: true }))) return;
     await deleteNotesForever(idx.notes.filter((n) => n.trashedAt).map((n) => n.id));
+    void sweepOrphanFiles();
   };
 
   const noteMenu = (n: NoteMeta): MenuItem[] =>
@@ -335,10 +342,18 @@ export default function NoteLibrary() {
         return;
       }
       const day = new Date().toISOString().slice(0, 10);
-      downloadBlob(`learning-os-notes-${day}.json`, new Blob([buildBackupJson(notes)], { type: 'application/json' }));
-      flashToast(
-        format(safety.backupDone, notes.length) + (missing > 0 ? ` ${format(safety.backupSkipped, missing)}` : '') + ` ${safety.backupFiles}`
-      );
+      const json = buildBackupJson(notes);
+      // Photos, recordings and PDFs live in this browser, not in the note: pack them in so a restore brings them back.
+      const packed = await packFiles(notes.flatMap((n) => n.pages));
+      const skipped = missing > 0 ? ` ${format(safety.backupSkipped, missing)}` : '';
+      if (packed.count > 0 && !packed.tooBig) {
+        const zip = buildZip([{ name: 'notes.json', data: new TextEncoder().encode(json) }, ...packed.entries]);
+        downloadBlob(`learning-os-notes-${day}.zip`, new Blob([zip as BlobPart], { type: 'application/zip' }));
+        flashToast(format(safety.backupDone, notes.length) + skipped + ` ${format(safety.backupWithFiles, packed.count)}`);
+      } else {
+        downloadBlob(`learning-os-notes-${day}.json`, new Blob([json], { type: 'application/json' }));
+        flashToast(format(safety.backupDone, notes.length) + skipped + ` ${safety.backupFiles}`);
+      }
     } catch (e) {
       flashToast(format(safety.importFailed, e instanceof Error ? e.message : String(e)));
     } finally {
@@ -349,17 +364,33 @@ export default function NoteLibrary() {
   const importFile = async (file: File) => {
     setSafetyBusy(true);
     try {
-      const parsed = parseBackup(await file.text());
+      // A "backup with files" is a .zip (notes.json + the photos / recordings / PDFs); a plain backup is .json.
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      let fileEntries: { name: string; data: Uint8Array }[] = [];
+      let text: string;
+      if (looksLikeZip(bytes)) {
+        const zip = openBackupZip(bytes);
+        if (!zip) {
+          flashToast(safety.importBad);
+          return;
+        }
+        text = zip.notesJson;
+        fileEntries = zip.files;
+      } else {
+        text = new TextDecoder().decode(bytes);
+      }
+      const parsed = parseBackup(text);
       if (!parsed.ok) {
         flashToast(parsed.error === 'too-new' ? safety.importNew : safety.importBad);
         return;
       }
       const r = await importSnapshots(parsed.notes);
+      const restored = fileEntries.length > 0 ? await restoreFiles(fileEntries) : 0;
       const bad = parsed.warnings.length + r.failed;
       flashToast(
         format(safety.importDone, r.created, r.replaced, r.skipped) +
           (bad > 0 ? ` ${format(safety.importWarn, bad)}` : '') +
-          (parsed.files > 0 ? ` ${safety.importFiles}` : '')
+          (restored > 0 ? ` ${format(safety.importFilesRestored, restored)}` : parsed.files > 0 ? ` ${safety.importFiles}` : '')
       );
     } catch (e) {
       flashToast(format(safety.importFailed, e instanceof Error ? e.message : String(e)));
@@ -514,7 +545,7 @@ export default function NoteLibrary() {
         <input
           ref={importInput}
           type="file"
-          accept="application/json,.json"
+          accept="application/json,application/zip,.json,.zip"
           className="hidden"
           onChange={(e) => {
             const f = e.target.files?.[0];

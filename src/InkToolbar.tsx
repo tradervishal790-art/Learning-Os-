@@ -81,6 +81,9 @@ function Dot({ color, size = 18 }: { color: string; size?: number }) {
 /** Actions for the Select tab. */
 export interface SelectApi {
   count: number;
+  /** Colour / thickness shared by every picked stroke (missing when they differ). */
+  color?: string;
+  width?: number;
   canPaste: boolean;
   notice: string;
   onAll: () => void;
@@ -116,6 +119,11 @@ export default function InkToolbar({
   const [colorOpen, setColorOpen] = useState(false);
   // Laser: the delay + colour options stay hidden until a laser style is tapped, then open in the same row.
   const [selWidth, setSelWidth] = useState(2);
+  // the thickness slider starts at the picked strokes' real thickness (when they all agree)
+  const pickedWidth = select.width;
+  useEffect(() => {
+    if (pickedWidth !== undefined) setSelWidth(pickedWidth);
+  }, [pickedWidth, select.count]);
   const [laserOpts, setLaserOpts] = useState(false);
   useEffect(() => {
     if (mode !== 'laser') setLaserOpts(false);
@@ -196,7 +204,7 @@ export default function InkToolbar({
               <Btn label={t.selDuplicate} onClick={a.onDuplicate}><CopyPlus size={16} /></Btn>
               <Pop trigger={(toggle) => (
                 <button type="button" onClick={toggle} title={t.selColor} aria-label={t.selColor} className="h-9 px-2 rounded-lg flex items-center border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10">
-                  <Dot color="#a855f7" size={18} />
+                  <Dot color={a.color ? resolveColor(a.color, darkTheme) : '#a855f7'} size={18} />
                 </button>
               )}>
                 <Swatches colors={[...INK_COLORS, ...HL_COLORS]} onPick={a.onColor} />

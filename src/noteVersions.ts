@@ -92,19 +92,30 @@ export async function saveVersion(noteId: string, snap: VersionData, kind: Versi
     hash,
   };
   const db = await open();
-  await new Promise<void>((resolve, reject) => {
-    const tx = db.transaction(['meta', 'data'], 'readwrite');
-    tx.objectStore('meta').put(meta);
-    tx.objectStore('data').put({ key: meta.key, data });
-    // keep only the newest KEEP_VERSIONS of this note
-    const drop = [meta, ...existing].slice(KEEP_VERSIONS);
-    for (const d of drop) {
-      tx.objectStore('meta').delete(d.key);
-      tx.objectStore('data').delete(d.key);
-    }
-    tx.oncomplete = () => resolve();
-    tx.onabort = () => reject(tx.error ?? new Error('save-failed'));
-  });
+  const write = (drop: VersionMeta[]) =>
+    new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(['meta', 'data'], 'readwrite');
+      tx.objectStore('meta').put(meta);
+      tx.objectStore('data').put({ key: meta.key, data });
+      for (const d of drop) {
+        tx.objectStore('meta').delete(d.key);
+        tx.objectStore('data').delete(d.key);
+      }
+      tx.oncomplete = () => resolve();
+      tx.onabort = () => reject(tx.error ?? new Error('save-failed'));
+    });
+  // keep only the newest KEEP_VERSIONS of this note
+  const drop = [meta, ...existing].slice(KEEP_VERSIONS);
+  try {
+    await write(drop);
+  } catch (e) {
+    if ((e as { name?: string } | null)?.name !== 'QuotaExceededError') throw e;
+    // The device is nearly full: free the OLDEST half of this note's history (the newest two are never touched) and try once more.
+    const older = existing.slice(2);
+    const free = older.slice(Math.ceil(older.length / 2));
+    if (free.length === 0) throw e;
+    await write([...drop, ...free.filter((f) => !drop.some((d) => d.key === f.key))]);
+  }
   return meta;
 }
 

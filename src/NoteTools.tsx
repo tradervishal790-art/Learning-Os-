@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Copy, FileCode2, FileText, FileType2, History, LoaderCircle, Printer, Share2, X } from 'lucide-react';
 import { format } from './i18n/format';
 import type { NotePage, NoteVideo } from './notebookStore';
-import { downloadBlob, fileName, hasText, noteToBackupJson, noteToHtml, noteToMarkdown, noteToText } from './noteExport';
+import { downloadBlob, fileName, hasText, imagesAsDataUrls, noteToBackupJson, noteToHtml, noteToMarkdown, noteToText, printHtml } from './noteExport';
 import { getVersion, listVersions, saveVersion, type VersionData, type VersionMeta } from './noteVersions';
 import { askConfirm } from './dialogApi';
 
@@ -83,15 +83,20 @@ export function ExportDialog({
       onMessage(t.exportFail);
     }
   };
-  const print = () => {
-    const w = window.open('', '_blank');
-    if (!w) return onMessage(t.popupBlocked);
-    w.document.open();
-    w.document.write(noteToHtml(title, pages, { ink: inkOn }));
-    w.document.close();
-    w.focus();
-    setTimeout(() => w.print(), 300);
-    onClose();
+  const hasPhotos = pages.some((p) => (p.attachments ?? []).some((a) => a.kind === 'image'));
+  const print = async () => {
+    if (working) return;
+    setWorking(true);
+    try {
+      // The photos go in too, and the dialog opens from a hidden frame (a pop-up window is blocked in installed apps).
+      const images = await imagesAsDataUrls(pages);
+      if (await printHtml(noteToHtml(title, pages, { ink: inkOn, images }))) onClose();
+      else onMessage(t.exportFail);
+    } catch {
+      onMessage(t.exportFail);
+    } finally {
+      setWorking(false);
+    }
   };
   const word = async () => {
     if (working) return;
@@ -152,7 +157,7 @@ export function ExportDialog({
         <Item icon={<FileText size={18} />} name={t.expMd} hint={t.expMdHint} disabled={!text} onClick={() => save('md', md(), 'text/markdown')} />
         <Item icon={<FileText size={18} />} name={t.expTxt} hint={t.expTxtHint} disabled={!text} onClick={() => save('txt', noteToText(title, pages), 'text/plain')} />
         <Item icon={<FileType2 size={18} />} name={t.expDocx} hint={working ? t.exportWorking : t.expDocxHint} disabled={working || (!text && !inkOn)} onClick={() => void word()} />
-        <Item icon={<Printer size={18} />} name={t.expHtml} hint={t.expHtmlHint} disabled={!text && !inkOn} onClick={print} />
+        <Item icon={<Printer size={18} />} name={t.expHtml} hint={t.expHtmlHint} disabled={!text && !inkOn && !hasPhotos} onClick={print} />
         <Item icon={<FileCode2 size={18} />} name={t.expJson} hint={t.expJsonHint} onClick={() => save('json', noteToBackupJson(title, pages, video), 'application/json')} />
         <Item icon={<Share2 size={18} />} name={t.share} hint={t.shareHint} disabled={!text} onClick={() => void share()} />
         <Item icon={<Copy size={18} />} name={t.copyText} hint="" disabled={!text} onClick={() => void copy()} />

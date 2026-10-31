@@ -10,7 +10,7 @@ export interface EditorNode {
   attrs?: Record<string, unknown>;
   content?: EditorNode[];
   text?: string;
-  marks?: { type: string }[];
+  marks?: { type: string; attrs?: Record<string, unknown> }[];
 }
 
 const BULLET = /^\s{0,6}(?:[-•*–]|\u2022)\s+(.*)$/;
@@ -61,4 +61,20 @@ export function aiTextToNodes(text: string): EditorNode[] {
     }
   }
   return nodes;
+}
+
+/**
+ * Give every text node the character style (font, size, colour...) of the text it replaces.
+ * A mark the node already has (e.g. **bold** from the AI) is kept and wins over the same kind of base mark.
+ */
+export function withBaseMarks(nodes: EditorNode[], base: { type: string; attrs?: Record<string, unknown> }[]): EditorNode[] {
+  if (base.length === 0) return nodes;
+  const walk = (n: EditorNode): EditorNode => {
+    if (n.type === 'text') {
+      const own = n.marks ?? [];
+      return { ...n, marks: [...base.filter((b) => !own.some((o) => o.type === b.type)), ...own] };
+    }
+    return n.content ? { ...n, content: n.content.map(walk) } : n;
+  };
+  return nodes.map(walk);
 }
