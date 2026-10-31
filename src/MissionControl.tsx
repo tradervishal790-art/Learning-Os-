@@ -158,13 +158,13 @@ export default function MissionControl({
         </div>
       </header>
 
-      <section className="relative z-10 flex min-h-0 flex-1 flex-col px-3 pb-3 pt-2 md:px-6 md:pb-5 md:pt-3">
+      <section className="relative z-10 flex min-h-0 flex-1 flex-col overflow-y-auto px-3 pb-3 pt-2 md:px-6 md:pb-5 md:pt-3">
         <div className="mb-1 flex shrink-0 items-center justify-between px-1 text-[9px] uppercase tracking-[0.2em] text-slate-600 md:px-3">
           <span>Student journey map</span>
           <span className="inline-flex items-center gap-1.5 text-cyan-300/70"><Sparkles className="h-3 w-3" /> Connected learning system</span>
         </div>
 
-        <div className="relative hidden min-h-0 flex-1 overflow-visible rounded-[24px] border border-white/[0.07] bg-[#0b1221]/65 lg:block">
+        <div className="relative hidden flex-none overflow-visible rounded-[24px] border border-white/[0.07] bg-[#0b1221]/65 lg:block" style={{ height: `${mapHeight}px` }}>
           <div className="relative min-h-[660px]" style={{ height: `${mapHeight}px` }}>
           <div className="absolute inset-0 opacity-[0.16]" style={{ backgroundImage: 'radial-gradient(#7dd3fc 0.7px, transparent 0.7px)', backgroundSize: '24px 24px' }} />
           <svg className="absolute inset-0 h-full w-full" viewBox={`0 0 1200 ${mapHeight}`} preserveAspectRatio="none" fill="none" aria-hidden="true">
