@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Trash2, ChevronUp, ChevronDown, ListChecks, PenLine, ClipboardPaste, X, Plus } from 'lucide-react';
 import type { TestPaper, TestQuestion, MCQQuestion, SubjectiveQuestion } from './types';
 import PhotoImport from './PhotoImport';
+import MathText from './MathText';
 import { parseBulkQuestions, BULK_IMPORT_EXAMPLE } from './testBulkImport';
 import { MIN_OPTIONS, MAX_OPTIONS, optionLabel, filledOptionCount, compactMcq, compactQuestion } from './testConfig';
 
@@ -306,6 +307,12 @@ function QuestionCard({
         rows={2}
         className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-2.5 mb-3 resize-none focus:outline-none focus:border-black dark:focus:border-white"
       />
+      {question.question.trim() && /\\\\|\\\\\(|\\\\\[|\$/.test(question.question) && (
+        <div className="rounded-lg bg-indigo-50/70 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20 px-3 py-2 mb-3 text-sm leading-relaxed">
+          <span className="block text-[10px] uppercase tracking-wide text-indigo-600 dark:text-indigo-300 mb-1">Math preview</span>
+          <MathText>{question.question}</MathText>
+        </div>
+      )}
 
       {question.type === 'mcq' ? (
         <div className="space-y-2 mb-3">
@@ -317,16 +324,21 @@ function QuestionCard({
                 onChange={() => onChange({ correctIndex: oi })}
                 aria-label={`Mark option ${oi + 1} correct`}
               />
-              <input
-                value={opt}
-                onChange={(e) => {
-                  const options = [...(question as MCQQuestion).options];
-                  options[oi] = e.target.value;
-                  onChange({ options });
-                }}
-                placeholder={`Option ${optionLabel(oi)}`}
-                className="flex-1 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-black dark:focus:border-white"
-              />
+              <div className="flex-1 min-w-0">
+                <input
+                  value={opt}
+                  onChange={(e) => {
+                    const options = [...(question as MCQQuestion).options];
+                    options[oi] = e.target.value;
+                    onChange({ options });
+                  }}
+                  placeholder={`Option ${optionLabel(oi)}`}
+                  className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-black dark:focus:border-white"
+                />
+                {opt.trim() && /\\\\|\\\\\(|\\\\\[|\$/.test(opt) && (
+                  <p className="px-2 pt-1 text-xs text-gray-600 dark:text-white/70"><MathText>{opt}</MathText></p>
+                )}
+              </div>
               {(question as MCQQuestion).options.length > MIN_OPTIONS && (
                 <button
                   onClick={() => {
