@@ -1,6 +1,6 @@
 import { dedupeQuestions } from './questionDedup';
 import { getReadyDailyQuestionCount, loadDaily, saveBank } from './dailyTestStore';
-import { blobToPhotoPayload, prepareUpload, extractQuestionsFromPhoto, toBuilderQuestions } from './testImport';
+import { applyAnswersInSequence, blobToPhotoPayload, prepareUpload, extractQuestionsFromPhoto, toBuilderQuestions, type ExtractedAnswer } from './testImport';
 import type { TestQuestion } from './types';
 
 const DB_NAME = 'learning-os-daily-photo-queue';
@@ -21,6 +21,9 @@ export interface QueuedPhoto {
   blob: Blob;
   /** Ordered, one-page payloads created lazily when a queued PDF is first processed. */
   parts?: QueuedPhotoPart[];
+  /** Question IDs and a separate printed answer key accumulated across pages of this source PDF. */
+  questionIds?: string[];
+  pendingAnswerKey?: ExtractedAnswer[];
   addedAt: number;
 }
 
@@ -158,6 +161,7 @@ export async function processQueuedPhotosForDailyTest(
     onProgress?.(`Preparing ${item.name} (${i + 1} of ${queued.length})`);
     try {
       let parts = item.parts;
+      let workingItem = item;
       if (!parts?.length) {
         const file = new File([item.blob], item.name, { type: item.type || item.blob.type });
         const payloads = await prepareUpload(file, { pdfPagesPerChunk: 1 });
@@ -178,8 +182,8 @@ export async function processQueuedPhotosForDailyTest(
         try {
           const payload = await blobToPhotoPayload(part.blob, part.type);
           const extracted = await extractQuestionsFromPhoto(payload);
-          if (extracted.questions.length === 0) {
-            throw new Error('No questions could be read from this page. It is still queued; try a clearer photo or PDF.');
+          if (extracted.questions.length === 0 && extracted.answerKey.length === 0) {
+            throw new Error('No questions or answer key could be read from this page. It is still queued; try a clearer photo or PDF.');
           }
           const converted = toBuilderQuestions(extracted.questions, extracted.answerKey).questions;
           const merged = dedupeQuestions([...bank, ...converted]).questions;
@@ -188,8 +192,25 @@ export async function processQueuedPhotosForDailyTest(
             bank = loadDaily().bank;
           }
 
+          // Keep IDs across pages so an answer-key-only page later in the same PDF
+          // can be applied to questions extracted earlier (or vice versa).
+          const questionIds = [...new Set([...(workingItem.questionIds ?? []), ...converted.map((question) => question.id)])];
+          const pendingAnswerKey = extracted.questions.length === 0 && extracted.answerKey.length > 0
+            ? [...(workingItem.pendingAnswerKey ?? []), ...extracted.answerKey]
+            : (workingItem.pendingAnswerKey ?? []);
+          workingItem = { ...workingItem, questionIds, pendingAnswerKey };
+
           const remaining = parts.slice(pageIndex + 1);
-          await saveQueuedPhotoParts(item, remaining);
+          if (remaining.length === 0 && pendingAnswerKey.length > 0 && questionIds.length > 0) {
+            const questionIdSet = new Set(questionIds);
+            const sourceQuestions = bank.filter((question) => questionIdSet.has(question.id));
+            const applied = applyAnswersInSequence(sourceQuestions, pendingAnswerKey);
+            const updatedById = new Map(applied.questions.map((question) => [question.id, question]));
+            const updatedBank = bank.map((question) => updatedById.get(question.id) ?? question);
+            if (!saveBank(updatedBank)) throw new Error('Could not save the printed answer key. Free browser storage and retry.');
+            bank = loadDaily().bank;
+          }
+          await saveQueuedPhotoParts(workingItem, remaining);
           processedPages += 1;
           if (remaining.length === 0) processedFiles += 1;
           if (getReadyDailyQuestionCount(bank) >= target) {
@@ -199,7 +220,7 @@ export async function processQueuedPhotosForDailyTest(
         } catch (error) {
           // Keep this page and every later page. Earlier successful pages are already
           // persisted in the bank and removed from the queue, avoiding repeat AI cost.
-          try { await saveQueuedPhotoParts(item, parts.slice(pageIndex)); } catch { /* original record remains a safe retry */ }
+          try { await saveQueuedPhotoParts(workingItem, parts.slice(pageIndex)); } catch { /* original record remains a safe retry */ }
           errors.push(`${part.name}: ${error instanceof Error ? error.message : 'could not be read'}`);
           fileCompleted = false;
           break;
