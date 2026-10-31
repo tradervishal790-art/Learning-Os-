@@ -18,7 +18,7 @@ export interface SharedLearningSessionInput {
   watchedSeconds: number;
   watchPercentage: number;
   completed: boolean;
-  feedback: SharedLearningFeedback;
+  feedback: SharedLearningFeedback | null;
 }
 
 /** Ignore accidental starts and tiny samples; they are not useful learning evidence. */
