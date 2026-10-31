@@ -1064,6 +1064,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
       </AnimatePresence>
 
       <BottomNav
+        darkMode={isMissionControl}
         items={sidebarItems.map((i) => ({ id: i.id, label: i.label, locked: navState(i.id).isLocked }))}
         activeId={activePage}
         onSelect={(id) => {
