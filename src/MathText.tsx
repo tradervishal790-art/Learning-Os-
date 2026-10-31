@@ -20,6 +20,20 @@ function parseLatex(source: string): ReactNode[] {
     if (source[i] === '}') i++;
     return <mrow>{children}</mrow>;
   };
+  const readTextGroup = (): string => {
+    if (source[i] !== '{') return '';
+    i++;
+    const start = i;
+    let depth = 1;
+    while (i < source.length && depth > 0) {
+      if (source[i] === '{') depth++;
+      else if (source[i] === '}') depth--;
+      if (depth > 0) i++;
+    }
+    const value = source.slice(start, i);
+    if (source[i] === '}') i++;
+    return value;
+  };
   const readAtom = (): ReactNode => {
     if (source[i] === '{') return readGroup();
     if (source[i] === '\\') {
@@ -34,7 +48,7 @@ function parseLatex(source: string): ReactNode[] {
       }
       if (command === 'sqrt') return <msqrt><mrow>{readGroup()}</mrow></msqrt>;
       if (command === 'text' || command === 'mathrm' || command === 'mathbf' || command === 'operatorname') {
-        const value = readGroup();
+        const value = readTextGroup();
         return <mtext>{value}</mtext>;
       }
       if (command === 'left' || command === 'right' || command === 'displaystyle' || command === 'limits') return null;
