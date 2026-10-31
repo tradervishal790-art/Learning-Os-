@@ -1,4 +1,4 @@
-import { ArrowUpRight, BrainCircuit, BookOpenCheck, Compass, GraduationCap, RotateCcw, Sparkles, Target, Zap } from 'lucide-react';
+import { ArrowUpRight, BrainCircuit, Compass, GraduationCap, RotateCcw, Sparkles, Target, Zap } from 'lucide-react';
 import type { DashboardPageId } from './types';
 
 interface MissionControlProps {
