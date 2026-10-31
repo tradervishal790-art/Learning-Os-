@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState, lazy, Suspense } from 'react';
 import type { ComponentType } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, BookOpen, ClipboardCheck, Newspaper, Lock, Settings as SettingsIcon, X as CloseIcon, ArrowLeft } from 'lucide-react';
+import { Search, BookOpen, ClipboardCheck, Newspaper, Lock, Settings as SettingsIcon, ArrowLeft } from 'lucide-react';
 import PagePlaceholder from './PagePlaceholder';
 import MissionControl from './MissionControl';
 import BottomNav from './BottomNav';
@@ -109,34 +109,6 @@ interface Blueprint {
   };
 }
 
-// Simple two-tone "bell" using Web Audio API — no audio file/asset needed,
-// so it works offline and doesn't add anything to the bundle.
-function playReminderBell() {
-  try {
-    const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-    if (!AudioCtx) return;
-    const ctx = new AudioCtx();
-    if (ctx.state === 'suspended') ctx.resume();
-    const playTone = (freq: number, startAt: number, duration: number) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.value = freq;
-      gain.gain.setValueAtTime(0.0001, ctx.currentTime + startAt);
-      gain.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime + startAt + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + startAt + duration);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(ctx.currentTime + startAt);
-      osc.stop(ctx.currentTime + startAt + duration);
-    };
-    playTone(880, 0, 0.35);
-    playTone(1108.73, 0.15, 0.4);
-  } catch {
-    // Audio blocked (autoplay policy / unsupported) — reminder banner still shows silently.
-  }
-}
-
 // Pages that need a real account. Guests (no sign-up yet) can use the home page,
 // the Mind Blueprint, Videos and Dictionary; everything below asks them to sign in.
 // (The server enforces the same split for AI endpoints — see api/_lib/auth.ts.)
@@ -156,8 +128,6 @@ function getSidebarItems(t: ReturnType<typeof useTranslation>): { id: DashboardP
     { id: 'current-affairs', label: t.dashboard.sidebar.currentAffairs, icon: Newspaper },
   ];
 }
-
-const STAT_ICONS = { target: Target, refresh: RotateCcw, streak: Flame } as const;
 
 const roleOptions = ['student', 'developer', 'researcher', 'business', 'exam', 'creator'];
 const languageOptions = ['hindi', 'english', 'hinglish', 'any'];
