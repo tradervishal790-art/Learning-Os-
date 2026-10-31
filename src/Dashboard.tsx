@@ -575,7 +575,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.6 }}
-          className={`border-b px-4 md:px-8 py-2 md:py-4 flex justify-between items-center gap-3 ${isMissionControl ? "border-white/[0.07] bg-[#080d19]" : "border-gray-200 dark:border-white/10"}`}
+          className={`shrink-0 border-b px-4 md:px-8 py-2 md:py-4 flex justify-between items-center gap-3 ${isMissionControl ? "border-white/[0.07] bg-[#080d19]" : "border-gray-200 dark:border-white/10"}`}
         >
           <div className="flex items-center gap-3 min-w-0">
             {activePage !== 'dashboard' && (
