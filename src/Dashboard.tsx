@@ -568,7 +568,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
       </aside>
 
       <div className={`flex-1 min-w-0 ${isMissionControl ? "h-dvh overflow-hidden bg-[#080d19]" : "overflow-auto"} md:pb-0 ${immersive ? "" : "pb-[calc(3.5rem+env(safe-area-inset-bottom))]"}`}>
-        {activePage !== 'dashboard' && !(activePage === 'notes' && noteOpen) && (
+        {!(activePage === 'notes' && noteOpen) && (
         <motion.div
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -598,7 +598,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
             <SignInButton className="px-3 md:px-4 py-2 rounded-full bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white text-sm font-semibold hover:opacity-90 transition" />
-            <button id="onborda-settings-button" onClick={() => { setShowSettings(true); setShowFullProfileReport(false); }} aria-label={t.settingsModal.title} className="w-10 h-10 md:w-auto md:h-auto md:px-4 md:py-2 rounded-full md:border md:border-gray-300 md:dark:border-white/10 text-sm flex items-center justify-center gap-2 hover:bg-gray-100 dark:hover:bg-white/10 active:bg-gray-200 dark:active:bg-white/15 transition-colors">
+            <button id="onborda-settings-button" onClick={() => { setShowSettings(true); setShowFullProfileReport(false); }} aria-label={t.settingsModal.title} className={`w-10 h-10 md:w-auto md:h-auto md:px-4 md:py-2 rounded-full md:border text-sm flex items-center justify-center gap-2 transition-colors ${isMissionControl ? "border-white/10 text-white hover:bg-white/5" : "md:border-gray-300 md:dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10 active:bg-gray-200 dark:active:bg-white/15"}`}>
             <SettingsIcon className="w-[21px] h-[21px] md:w-4 md:h-4" strokeWidth={1.75} />
             <span className="hidden md:inline">{t.settingsModal.title}</span>
           </button>
