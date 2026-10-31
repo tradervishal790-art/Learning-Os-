@@ -14,6 +14,7 @@ import DeepDiveChat from './DeepDiveChat';
 import HintBubble from './HintBubble';
 import { useTranslation } from './i18n/LanguageContext';
 import { format } from './i18n/format';
+import { getSharedVideoLearningSummaries } from './sharedLearningIntelligence';
 
 const statusIcons: Record<Topic['status'], ReactNode> = {
   mastered: <Star className="w-4 h-4 md:w-5 md:h-5" strokeWidth={2} fill="currentColor" />,
@@ -350,10 +351,11 @@ export default function Roadmap({
       }
 
       const currentTeacherId = getLastTeacherForConcept(selectedTopic.id);
+      const communitySignals = await getSharedVideoLearningSummaries(candidates.map((video) => video.videoId));
       const result = selectPlaylistForConceptV2(candidates, learnerProfile, currentTeacherId, {
         hours: topicHours,
         deadline: topicDeadline,
-      });
+      }, communitySignals);
       if (!result) {
         setPlaylistError('Playlist could not be built, please try again.');
         return;
