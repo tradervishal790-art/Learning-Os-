@@ -87,7 +87,7 @@ export default function StudyDialog({
         </div>
 
         <div className="flex justify-end gap-2">
-          <button className={chip()} onClick={onClose}>
+          <button className="los-btn los-btn-secondary" onClick={onClose}>
             {t.cancel}
           </button>
           <button className="los-btn los-btn-primary" onClick={() => onSave({ status, confidence, examDate: date || null })}>
