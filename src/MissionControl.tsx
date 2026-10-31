@@ -1,4 +1,4 @@
-import { ArrowUpRight, BrainCircuit, Compass, GraduationCap, RotateCcw, Sparkles, Target, Zap } from 'lucide-react';
+import { ArrowUpRight, BrainCircuit, BookOpen, CheckCircle2, Compass, GraduationCap, NotebookPen, RotateCcw, Sparkles, Target, Users, Video, Zap } from 'lucide-react';
 import type { DashboardPageId } from './types';
 
 interface MissionControlProps {
@@ -15,172 +15,209 @@ interface MissionControlProps {
   onOpenProfile: () => void;
 }
 
-const engines: {
-  number: string;
-  title: string;
-  description: string;
-  action: string;
-  page: DashboardPageId | null;
-  icon: typeof BrainCircuit;
-  accent: string;
-  glow: string;
-}[] = [
-  { number: '01', title: 'Know me', description: 'Your learning profile', action: 'Explore profile', page: null, icon: BrainCircuit, accent: 'text-violet-300', glow: 'bg-violet-400/15' },
-  { number: '02', title: 'Plan', description: 'A clear path to your goal', action: 'Open roadmap', page: 'roadmap', icon: Compass, accent: 'text-cyan-300', glow: 'bg-cyan-400/15' },
-  { number: '03', title: 'Learn', description: 'Videos, notes and mentor', action: 'Start learning', page: 'videos', icon: GraduationCap, accent: 'text-sky-300', glow: 'bg-sky-400/15' },
-  { number: '04', title: 'Retain', description: 'Recall what you learned', action: 'Review topics', page: 'revision', icon: RotateCcw, accent: 'text-emerald-300', glow: 'bg-emerald-400/15' },
-  { number: '05', title: 'Prove', description: 'Test your understanding', action: 'Take a test', page: 'test', icon: Target, accent: 'text-fuchsia-300', glow: 'bg-fuchsia-400/15' },
+const rows = [
+  {
+    id: 'know', number: '01', title: 'Know Me', subtitle: 'Understand how you learn',
+    color: '#a78bfa', tint: 'violet', icon: BrainCircuit,
+    children: [
+      { label: 'Mind blueprint', detail: 'Learning profile', icon: BrainCircuit, action: 'profile' as const },
+      { label: 'Learning preferences', detail: 'Personal settings', icon: Users, action: 'profile' as const },
+    ],
+  },
+  {
+    id: 'plan', number: '02', title: 'Plan', subtitle: 'Build a clear direction',
+    color: '#67e8f9', tint: 'cyan', icon: Compass,
+    children: [
+      { label: 'Learning roadmap', detail: 'Your next topics', icon: Compass, action: 'roadmap' as const },
+      { label: 'Goal and milestones', detail: 'Track your path', icon: Target, action: 'roadmap' as const },
+    ],
+  },
+  {
+    id: 'learn', number: '03', title: 'Learn', subtitle: 'Turn plans into progress',
+    color: '#7dd3fc', tint: 'sky', icon: GraduationCap,
+    children: [
+      { label: 'Video intelligence', detail: 'Learn with focus', icon: Video, action: 'videos' as const },
+      { label: 'Notes and mentor', detail: 'Think it through', icon: NotebookPen, action: 'notes' as const },
+    ],
+  },
+  {
+    id: 'retain', number: '04', title: 'Retain', subtitle: 'Make learning last',
+    color: '#6ee7b7', tint: 'emerald', icon: RotateCcw,
+    children: [
+      { label: 'Revision room', detail: 'Recall and review', icon: RotateCcw, action: 'revision' as const },
+      { label: 'Memory checkpoints', detail: 'Topics due: dynamic', icon: CheckCircle2, action: 'revision' as const },
+    ],
+  },
+  {
+    id: 'prove', number: '05', title: 'Prove', subtitle: 'See what you can do',
+    color: '#e879f9', tint: 'fuchsia', icon: Target,
+    children: [
+      { label: 'Tests and practice', detail: 'Check understanding', icon: CheckCircle2, action: 'test' as const },
+      { label: 'Growth and progress', detail: 'See your progress', icon: Zap, action: 'progress' as const },
+    ],
+  },
 ];
 
+const rowY = [66, 198, 330, 462, 594];
+
 export default function MissionControl({
-  name,
-  goalTitle,
-  nextTopic,
-  nextTopicDetail,
-  hasLearningProfile,
-  revisionDue,
-  revisionOverdue,
-  streak,
-  activeGoals,
-  onNavigate,
-  onOpenProfile,
+  name, goalTitle, nextTopic, nextTopicDetail, hasLearningProfile,
+  revisionDue, revisionOverdue, streak, activeGoals, onNavigate, onOpenProfile,
 }: MissionControlProps) {
-  const nextPage: DashboardPageId = revisionOverdue + revisionDue > 0 ? 'revision' : nextTopic ? 'videos' : 'roadmap';
-  const nextAction = revisionOverdue + revisionDue > 0
-    ? 'Continue revision'
-    : nextTopic
-      ? 'Continue learning'
-      : 'Build my learning path';
+  const open = (action: 'profile' | DashboardPageId) => action === 'profile' ? onOpenProfile() : onNavigate(action);
+  const currentStep = revisionOverdue + revisionDue > 0
+    ? `${revisionOverdue + revisionDue} topics ready for revision`
+    : nextTopic || 'Your learning path starts here';
 
   return (
-    <main className="relative mx-auto flex w-full max-w-[1500px] flex-col gap-5 px-4 py-5 text-slate-100 md:gap-6 md:px-7 md:py-7">
-      <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[560px] overflow-hidden">
-        <div className="absolute -left-32 -top-36 h-[430px] w-[430px] rounded-full bg-violet-600/[0.10] blur-[110px]" />
-        <div className="absolute right-0 top-0 h-[420px] w-[420px] rounded-full bg-cyan-500/[0.08] blur-[110px]" />
+    <main className="mission-map relative flex h-[calc(100dvh-82px)] min-h-[570px] w-full flex-col overflow-hidden bg-[#080d19] text-slate-100">
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -left-40 top-[-220px] h-[520px] w-[520px] rounded-full bg-violet-600/[0.10] blur-[130px]" />
+        <div className="absolute right-[-120px] top-[10%] h-[480px] w-[480px] rounded-full bg-cyan-500/[0.08] blur-[130px]" />
+        <div className="absolute bottom-[-260px] left-[35%] h-[500px] w-[500px] rounded-full bg-blue-600/[0.06] blur-[130px]" />
       </div>
 
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <div className="mb-2 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.24em] text-cyan-300/80">
+      <header className="relative z-10 flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-white/[0.07] px-5 py-3 md:px-8">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 text-[9px] font-semibold uppercase tracking-[0.24em] text-cyan-300/80">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,.9)]" />
-            Your personal learning system
+            Personal learning network
           </div>
-          <h1 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">Welcome back, {name}</h1>
-          <p className="mt-1.5 text-sm text-slate-400">One connected path. From curiosity to capability.</p>
+          <h1 className="mt-1 text-lg font-semibold tracking-tight text-white md:text-xl">Mission Control</h1>
         </div>
-        <div className="min-w-[190px] rounded-2xl border border-white/[0.09] bg-white/[0.035] px-4 py-3 backdrop-blur">
-          <div className="text-[10px] font-medium uppercase tracking-[0.16em] text-slate-500">Current focus</div>
-          <div className="mt-1 max-w-[240px] truncate text-sm font-semibold text-slate-100">{goalTitle || 'Choose your next skill'}</div>
+        <div className="flex flex-wrap items-center justify-end gap-2 text-[10px] sm:gap-3">
+          <span className="hidden rounded-full border border-white/[0.08] bg-white/[0.035] px-3 py-2 text-slate-400 sm:inline-flex">
+            <span className="mr-1.5 text-cyan-300">●</span> {goalTitle || 'Choose a learning goal'}
+          </span>
+          <span className="rounded-full border border-white/[0.08] bg-white/[0.035] px-3 py-2 text-slate-400">
+            <span className="text-violet-300">{streak}</span> day streak
+          </span>
+          <span className="rounded-full border border-white/[0.08] bg-white/[0.035] px-3 py-2 text-slate-400">
+            <span className="text-emerald-300">{revisionDue + revisionOverdue}</span> to recall
+          </span>
         </div>
       </header>
 
-      <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_290px]">
-        <div className="relative overflow-hidden rounded-[26px] border border-white/[0.09] bg-[#0b1120]/95 p-5 shadow-[0_24px_80px_rgba(0,0,0,.22)] md:p-7">
-          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-300/50 to-transparent" />
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Your learning journey</div>
-              <p className="mt-1 text-sm text-slate-500">Five engines working as one system</p>
-            </div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-cyan-300/15 bg-cyan-300/[0.06] px-3 py-1.5 text-[10px] font-medium text-cyan-200">
-              <Sparkles className="h-3.5 w-3.5" /> Adaptive workspace
-            </div>
+      <section className="relative z-10 flex min-h-0 flex-1 flex-col px-3 pb-3 pt-2 md:px-6 md:pb-5 md:pt-3">
+        <div className="mb-1 flex shrink-0 items-center justify-between px-1 text-[9px] uppercase tracking-[0.2em] text-slate-600 md:px-3">
+          <span>Student journey map</span>
+          <span className="inline-flex items-center gap-1.5 text-cyan-300/70"><Sparkles className="h-3 w-3" /> Connected learning system</span>
+        </div>
+
+        <div className="relative hidden min-h-0 flex-1 overflow-hidden rounded-[24px] border border-white/[0.07] bg-[#0b1221]/65 md:block">
+          <div className="absolute inset-0 opacity-[0.16]" style={{ backgroundImage: 'radial-gradient(#7dd3fc 0.7px, transparent 0.7px)', backgroundSize: '24px 24px' }} />
+          <svg className="absolute inset-0 h-full w-full" viewBox="0 0 1200 660" preserveAspectRatio="none" fill="none" aria-hidden="true">
+            <defs>
+              <filter id="mindGlow" x="-50%" y="-50%" width="200%" height="200%">
+                <feGaussianBlur stdDeviation="3" result="blur" />
+                <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+              </filter>
+              {rows.map((row) => <linearGradient key={row.id} id={`line-${row.id}`} x1="180" y1="330" x2="950" y2={rowY[rows.indexOf(row)]} gradientUnits="userSpaceOnUse"><stop stopColor="#64748b" stopOpacity=".55" /><stop offset=".52" stopColor={row.color} stopOpacity=".95" /><stop offset="1" stopColor={row.color} stopOpacity=".5" /></linearGradient>)}
+            </defs>
+            {rows.map((row, i) => {
+              const y = rowY[i];
+              return (
+                <g key={row.id} filter="url(#mindGlow)" opacity=".95">
+                  <path d={`M 205 330 C 330 330, 330 ${y}, 420 ${y}`} stroke={`url(#line-${row.id})`} strokeWidth="2.2" />
+                  <path d={`M 690 ${y} C 790 ${y}, 800 ${y-22}, 900 ${y-22}`} stroke={row.color} strokeOpacity=".72" strokeWidth="1.7" />
+                  <path d={`M 690 ${y} C 790 ${y}, 800 ${y+22}, 900 ${y+22}`} stroke={row.color} strokeOpacity=".72" strokeWidth="1.7" />
+                  <circle cx="420" cy={y} r="4" fill={row.color} />
+                  <circle cx="900" cy={y-22} r="3" fill={row.color} />
+                  <circle cx="900" cy={y+22} r="3" fill={row.color} />
+                </g>
+              );
+            })}
+            <circle cx="205" cy="330" r="7" fill="#c4b5fd" filter="url(#mindGlow)" />
+          </svg>
+
+          <div className="absolute left-[2.5%] top-1/2 z-10 flex h-[132px] w-[17%] -translate-y-1/2 flex-col justify-center rounded-2xl border border-violet-300/50 bg-gradient-to-br from-[#29214d] to-[#151a31] px-4 shadow-[0_0_38px_rgba(139,92,246,.15)]">
+            <div className="flex items-center gap-2 text-[9px] font-semibold uppercase tracking-[0.2em] text-violet-200"><Users className="h-3.5 w-3.5" /> Student</div>
+            <div className="mt-2 truncate text-lg font-semibold text-white">{name || 'Learner'}</div>
+            <div className="mt-1 line-clamp-2 text-[10px] leading-relaxed text-violet-100/60">{goalTitle ? `Learning ${goalTitle}` : 'Starts with curiosity'}</div>
+            <div className="mt-3 text-[9px] text-violet-200/60">YOU ARE HERE</div>
           </div>
 
-          <div className="relative mt-7">
-            <div aria-hidden="true" className="absolute left-[9%] right-[9%] top-[31px] hidden h-px bg-gradient-to-r from-violet-400/50 via-cyan-300/60 to-fuchsia-400/50 xl:block" />
-            <div aria-hidden="true" className="absolute left-[25px] top-8 bottom-8 w-px bg-gradient-to-b from-violet-400/50 via-cyan-300/60 to-fuchsia-400/50 xl:hidden" />
-            <div className="grid gap-3 xl:grid-cols-5">
-              {engines.map((engine, index) => {
-                const Icon = engine.icon;
-                return (
-                  <button
-                    key={engine.number}
-                    type="button"
-                    onClick={() => engine.page ? onNavigate(engine.page) : onOpenProfile()}
-                    className="group relative flex min-h-[112px] items-center gap-4 rounded-2xl border border-white/[0.08] bg-[#111a2b]/90 p-4 text-left transition duration-200 hover:-translate-y-1 hover:border-white/20 hover:bg-[#172338] hover:shadow-[0_12px_32px_rgba(0,0,0,.22)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 xl:min-h-[190px] xl:flex-col xl:items-start xl:justify-between xl:gap-5 xl:p-4"
-                  >
-                    <span className="absolute left-[19px] top-1/2 z-10 h-3 w-3 -translate-y-1/2 rounded-full border-2 border-[#0b1120] bg-slate-500 xl:left-1/2 xl:top-[25px] xl:-translate-x-1/2 xl:translate-y-0" style={{ backgroundColor: index === 0 ? '#a78bfa' : index === 1 ? '#67e8f9' : index === 2 ? '#7dd3fc' : index === 3 ? '#6ee7b7' : '#e879f9' }} />
-                    <div className={`ml-5 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ring-1 ring-white/[0.07] ${engine.glow} xl:ml-0`}>
-                      <Icon className={`h-5 w-5 ${engine.accent}`} strokeWidth={1.8} />
-                    </div>
-                    <div className="min-w-0 flex-1 xl:w-full xl:flex-none">
-                      <div className="text-[10px] font-semibold tracking-[0.18em] text-slate-500">{engine.number}</div>
-                      <div className="mt-1 text-base font-semibold text-white">{engine.title}</div>
-                      <p className="mt-1 text-xs leading-relaxed text-slate-500">{engine.description}</p>
-                    </div>
-                    <ArrowUpRight className="h-4 w-4 shrink-0 text-slate-600 transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-white xl:self-end" />
+          {rows.map((row, i) => {
+            const Icon = row.icon;
+            const top = `${(rowY[i] / 660) * 100}%`;
+            return (
+              <div key={row.id}>
+                <button
+                  type="button"
+                  onClick={() => open(row.id === 'know' ? 'profile' : row.id === 'plan' ? 'roadmap' : row.id === 'learn' ? 'videos' : row.id === 'retain' ? 'revision' : 'test')}
+                  className="group absolute left-[35%] z-10 flex h-[76px] w-[22%] -translate-y-1/2 items-center gap-3 rounded-2xl border bg-[#111d31]/95 px-4 text-left shadow-[0_10px_35px_rgba(0,0,0,.25)] transition duration-200 hover:-translate-y-[calc(50%+3px)] hover:bg-[#17263d] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"
+                  style={{ top, borderColor: `${row.color}55`, boxShadow: `0 0 22px ${row.color}12` }}
+                >
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl" style={{ backgroundColor: `${row.color}20`, color: row.color }}><Icon className="h-5 w-5" /></span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[9px] font-semibold tracking-[0.18em]" style={{ color: row.color }}>{row.number}</span>
+                    <span className="mt-0.5 block text-sm font-semibold text-white">{row.title}</span>
+                    <span className="mt-0.5 block truncate text-[10px] text-slate-500">{row.subtitle}</span>
+                  </span>
+                  <ArrowUpRight className="h-4 w-4 shrink-0 text-slate-600 transition group-hover:text-white" />
+                </button>
+                {row.children.map((child, childIndex) => {
+                  const ChildIcon = child.icon;
+                  return (
+                    <button
+                      key={child.label}
+                      type="button"
+                      onClick={() => open(child.action)}
+                      className="group absolute left-[75%] z-10 flex h-[42px] w-[22%] -translate-y-1/2 items-center gap-2.5 rounded-xl border border-white/[0.09] bg-[#101a2b]/95 px-3 text-left transition duration-200 hover:border-white/20 hover:bg-[#18263a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"
+                      style={{ top: `${((rowY[i] + (childIndex === 0 ? -22 : 22)) / 660) * 100}%`, borderColor: `${row.color}35` }}
+                    >
+                      <ChildIcon className="h-3.5 w-3.5 shrink-0" style={{ color: row.color }} />
+                      <span className="min-w-0">
+                        <span className="block truncate text-[10px] font-medium text-slate-200">{child.label}</span>
+                        <span className="block truncate text-[8px] text-slate-500">{row.id === 'retain' && childIndex === 1 ? `${revisionDue + revisionOverdue} topics due` : child.detail}</span>
+                      </span>
+                      <ArrowUpRight className="ml-auto h-3 w-3 shrink-0 text-slate-600 opacity-0 transition group-hover:opacity-100" />
+                    </button>
+                  );
+                })}
+              </div>
+            );
+          })}
+
+          <div className="absolute bottom-4 left-5 flex items-center gap-4 text-[9px] text-slate-600">
+            <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-violet-300" /> Student</span>
+            <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-cyan-300" /> Learning engines</span>
+            <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-emerald-300" /> Actions</span>
+          </div>
+        </div>
+
+        <div className="relative min-h-0 flex-1 overflow-y-auto rounded-2xl border border-white/[0.07] bg-[#0b1221]/70 p-3 md:hidden">
+          <div className="absolute bottom-8 left-[27px] top-8 w-px bg-gradient-to-b from-violet-400 via-cyan-300 to-fuchsia-400 opacity-60" />
+          <div className="relative flex flex-col gap-2.5">
+            <div className="mb-1 flex items-center gap-3 rounded-xl border border-violet-300/40 bg-[#211b40] p-3">
+              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-400/15 text-violet-200"><Users className="h-4 w-4" /></span>
+              <span><span className="block text-xs font-semibold text-white">{name || 'Student'}</span><span className="block text-[10px] text-violet-200/60">{goalTitle || 'Starts with curiosity'}</span></span>
+            </div>
+            {rows.map((row) => {
+              const Icon = row.icon;
+              return (
+                <div key={row.id} className="relative ml-5 rounded-xl border bg-[#111d31] p-3" style={{ borderColor: `${row.color}50` }}>
+                  <button type="button" onClick={() => open(row.id === 'know' ? 'profile' : row.id === 'plan' ? 'roadmap' : row.id === 'learn' ? 'videos' : row.id === 'retain' ? 'revision' : 'test')} className="flex w-full items-center gap-3 text-left">
+                    <Icon className="h-5 w-5" style={{ color: row.color }} />
+                    <span className="flex-1"><span className="block text-xs font-semibold text-white">{row.number} · {row.title}</span><span className="block text-[10px] text-slate-500">{row.subtitle}</span></span>
+                    <ArrowUpRight className="h-4 w-4 text-slate-500" />
                   </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-white/[0.07] pt-4 text-[11px] text-slate-500">
-            <span className="inline-flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-violet-300" /> Understand</span>
-            <span className="text-slate-700">→</span>
-            <span className="inline-flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-cyan-300" /> Plan and learn</span>
-            <span className="text-slate-700">→</span>
-            <span className="inline-flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-emerald-300" /> Retain and prove</span>
-          </div>
-        </div>
-
-        <aside className="flex flex-col gap-4">
-          <div className="rounded-[26px] border border-white/[0.09] bg-[#0b1120]/95 p-5">
-            <div className="flex items-center justify-between">
-              <div className="text-xs font-semibold text-slate-300">Learning snapshot</div>
-              <Zap className="h-4 w-4 text-cyan-300" />
-            </div>
-            <div className="mt-5 grid grid-cols-2 gap-3">
-              <div className="rounded-xl border border-white/[0.06] bg-white/[0.025] p-3">
-                <div className="text-2xl font-semibold tabular-nums text-white">{streak}</div>
-                <div className="mt-1 text-[10px] text-slate-500">Day streak</div>
-              </div>
-              <div className="rounded-xl border border-white/[0.06] bg-white/[0.025] p-3">
-                <div className="text-2xl font-semibold tabular-nums text-white">{activeGoals}</div>
-                <div className="mt-1 text-[10px] text-slate-500">Active goals</div>
-              </div>
-              <div className="col-span-2 rounded-xl border border-white/[0.06] bg-white/[0.025] p-3">
-                <div className="flex items-end justify-between gap-3">
-                  <div>
-                    <div className="text-2xl font-semibold tabular-nums text-white">{revisionDue + revisionOverdue}</div>
-                    <div className="mt-1 text-[10px] text-slate-500">Topics ready for recall</div>
+                  <div className="ml-8 mt-2 flex flex-wrap gap-1.5">
+                    {row.children.map((child) => <button key={child.label} onClick={() => open(child.action)} className="rounded-lg border border-white/[0.08] bg-white/[0.035] px-2 py-1.5 text-[9px] text-slate-300">{child.label} ↗</button>)}
                   </div>
-                  <button type="button" onClick={() => onNavigate('revision')} className="text-[11px] font-semibold text-emerald-300 transition hover:text-emerald-200">Review now ↗</button>
                 </div>
-              </div>
-            </div>
+              );
+            })}
           </div>
-
-          <div className="rounded-[26px] border border-violet-300/15 bg-gradient-to-br from-violet-500/[0.12] via-[#111426] to-cyan-500/[0.07] p-5">
-            <div className="flex items-center gap-2 text-xs font-semibold text-violet-200"><BrainCircuit className="h-4 w-4" /> Know your mind</div>
-            <p className="mt-2 text-sm leading-relaxed text-slate-400">
-              {hasLearningProfile ? 'Your learner profile is ready. Use it to understand your learning preferences.' : 'Build your learner profile to make your learning experience more personal.'}
-            </p>
-            <button type="button" onClick={onOpenProfile} className="mt-4 inline-flex items-center gap-2 text-xs font-semibold text-white transition hover:text-cyan-200">
-              {hasLearningProfile ? 'View my profile' : 'Create my profile'} <ArrowUpRight className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        </aside>
-      </section>
-
-      <section className="relative overflow-hidden rounded-[24px] border border-cyan-300/15 bg-gradient-to-r from-[#102333] via-[#111a2b] to-[#17152b] p-5 md:flex md:items-center md:justify-between md:gap-6 md:px-7">
-        <div className="absolute -right-10 -top-20 h-48 w-48 rounded-full bg-cyan-400/[0.08] blur-3xl" />
-        <div className="relative min-w-0">
-          <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-cyan-200/70">Your next best step</div>
-          <h2 className="mt-2 text-lg font-semibold text-white sm:text-xl">
-            {revisionOverdue > 0
-              ? `Bring back ${revisionOverdue} overdue ${revisionOverdue === 1 ? 'topic' : 'topics'}`
-              : revisionDue > 0
-                ? `${revisionDue} ${revisionDue === 1 ? 'topic needs' : 'topics need'} a quick recall`
-                : nextTopic
-                  ? `Continue with ${nextTopic}`
-                  : 'Turn your goal into a learning path'}
-          </h2>
-          <p className="mt-1.5 text-sm text-slate-400">{revisionOverdue + revisionDue > 0 ? 'A short recall session can strengthen what you already learned.' : nextTopicDetail}</p>
         </div>
-        <button type="button" onClick={() => onNavigate(nextPage)} className="relative mt-4 inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-cyan-300 px-5 py-3 text-sm font-semibold text-[#07111c] transition hover:-translate-y-0.5 hover:bg-cyan-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white md:mt-0">
-          {nextAction} <ArrowUpRight className="h-4 w-4" />
+
+        <div className="mt-2 flex shrink-0 flex-wrap items-center justify-between gap-2 px-1 text-[9px] text-slate-500 md:px-3">
+          <span className="truncate">{nextTopic ? `Next topic: ${nextTopic}` : nextTopicDetail}</span>
+          <span className="shrink-0">{activeGoals} active goal{activeGoals === 1 ? '' : 's'} · {hasLearningProfile ? 'Profile ready' : 'Profile not set up'}</span>
+        </div>
+        <button type="button" onClick={() => open(revisionOverdue + revisionDue > 0 ? 'revision' : nextTopic ? 'videos' : 'roadmap')} className="mt-1 flex shrink-0 items-center justify-between gap-3 rounded-xl border border-cyan-300/15 bg-cyan-300/[0.06] px-3 py-2 text-left transition hover:bg-cyan-300/10 md:hidden">
+          <span className="min-w-0"><span className="block text-[9px] uppercase tracking-[0.16em] text-cyan-200/70">Next best step</span><span className="block truncate text-xs font-medium text-white">{currentStep}</span></span>
+          <ArrowUpRight className="h-4 w-4 shrink-0 text-cyan-200" />
         </button>
       </section>
     </main>
