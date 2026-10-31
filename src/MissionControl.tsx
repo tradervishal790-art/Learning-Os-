@@ -1,4 +1,4 @@
-import { ArrowUpRight, BrainCircuit, CheckCircle2, Compass, GraduationCap, NotebookPen, RotateCcw, Sparkles, Target, Users, Video, Zap, MoreHorizontal, Search, BookOpen, Newspaper, MessageCircle, ChevronDown } from 'lucide-react';
+import { ArrowUpRight, BrainCircuit, CheckCircle2, Compass, GraduationCap, NotebookPen, RotateCcw, Sparkles, Target, Users, Video, Zap, MoreHorizontal, Search, BookOpen, Newspaper, MessageCircle, ChevronDown, CalendarDays, PlayCircle } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { DashboardPageId } from './types';
 import { pullFromCloud, pushToCloud } from './cloudSync';
@@ -31,13 +31,15 @@ const rows = [
     color: '#67e8f9', tint: 'cyan', icon: Compass,
     children: [
       { label: 'Learning roadmap', detail: 'Your next topics', icon: Compass, action: 'roadmap' as const },
+      { label: 'Study plan', detail: 'Organize today’s learning', icon: CalendarDays, action: 'study-plan' as const },
     ],
   },
   {
     id: 'learn', number: '03', title: 'Learn', subtitle: 'Turn plans into progress',
     color: '#7dd3fc', tint: 'sky', icon: GraduationCap,
     children: [
-      { label: 'Video intelligence', detail: 'Learn with focus', icon: Video, action: 'videos' as const },
+      { label: 'Video intelligence', detail: 'Choose a lesson that fits', icon: Video, action: 'videos' as const },
+      { label: 'Focus player', detail: 'Study without distractions', icon: PlayCircle, action: 'focus' as const },
       { label: 'Notes workspace', detail: 'Capture your thinking', icon: NotebookPen, action: 'notes' as const },
       { label: 'AI Mentor', detail: 'Ask and explore', icon: MessageCircle, action: 'mentor' as const },
     ],
