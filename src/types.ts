@@ -216,9 +216,11 @@ export interface PageConfig {
 export type DashboardPageId =
   | 'dashboard'
   | 'roadmap'
+  | 'study-plan'
   | 'revision'
   | 'notes'
   | 'videos'
+  | 'focus'
   | 'mentor'
   | 'progress'
   | 'research'

@@ -24,6 +24,16 @@ html, body, #root {
 }
 
 
+/* Mission Control is intentionally dark regardless of the global reading theme. */
+.mission-map {
+  --los-accent: 167 139 250;
+  --los-accent-strong: 221 214 254;
+  --los-text: 238 240 247;
+  --los-muted: 160 166 180;
+  --los-border: 255 255 255;
+  --los-surface: 20 26 39;
+}
+
 /* Current Affairs: light, calm reading surface scoped to this page only. */
 .ca-theme {
   color: #0b132b;
@@ -162,26 +172,243 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
   }
 }
 
-/* Subtle lift on hover: gives clickable controls a tactile, premium feel.
-   Keep touch devices and reduced-motion preferences calm. */
+/* Learning OS design foundation: restrained surfaces, readable type and predictable controls. */
+:root {
+  --los-accent: 124 92 246;
+  --los-accent-strong: 109 76 211;
+  --los-text: 31 36 48;
+  --los-muted: 105 112 128;
+  --los-border: 148 156 175;
+  --los-surface: 255 255 255;
+  --los-control-radius: 12px;
+}
+.dark {
+  --los-accent: 167 139 250;
+  --los-accent-strong: 196 181 253;
+  --los-text: 238 240 247;
+  --los-muted: 160 166 180;
+  --los-border: 255 255 255;
+  --los-surface: 20 20 25;
+}
+
+/* Shared control primitives. Feature pages can use these without inventing
+   a new button/toggle language each time. */
+@layer components {
+  .los-btn {
+    display: inline-flex;
+    min-height: 40px;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 9px 14px;
+    border: 1px solid rgb(var(--los-border) / 0.14);
+    border-radius: var(--los-control-radius);
+    background: rgb(var(--los-surface) / 0.72);
+    color: rgb(var(--los-text));
+    font-size: 13px;
+    font-weight: 550;
+    line-height: 1.25;
+    transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, transform 150ms ease;
+  }
+  .los-btn:disabled { cursor: not-allowed; opacity: 0.48; }
+  .los-btn-primary {
+    border-color: rgb(var(--los-accent) / 0.22);
+    background: rgb(var(--los-accent) / 0.13);
+    color: rgb(var(--los-accent-strong));
+  }
+  .los-btn-secondary {
+    background: rgb(var(--los-border) / 0.045);
+    color: rgb(var(--los-text) / 0.82);
+  }
+  .los-btn-danger {
+    border-color: rgb(239 68 68 / 0.18);
+    background: rgb(239 68 68 / 0.09);
+    color: rgb(220 38 38);
+  }
+  .dark .los-btn-danger { color: rgb(252 165 165); }
+  .los-chip {
+    display: inline-flex;
+    min-height: 36px;
+    align-items: center;
+    justify-content: center;
+    padding: 7px 12px;
+    border: 1px solid rgb(var(--los-border) / 0.15);
+    border-radius: 10px;
+    background: transparent;
+    color: rgb(var(--los-text) / 0.78);
+    font-size: 12px;
+    line-height: 1.25;
+    transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+  }
+  .los-panel {
+    border: 1px solid rgb(var(--los-border) / 0.12);
+    border-radius: 16px;
+    background: rgb(var(--los-surface) / 0.34);
+    padding: 16px;
+  }
+  .los-panel-accent {
+    border-color: rgb(var(--los-accent) / 0.18);
+    background: rgb(var(--los-accent) / 0.07);
+  }
+  .los-nav-item {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border: 1px solid transparent;
+    border-radius: 12px;
+    color: rgb(var(--los-muted));
+    font-size: 13px;
+    font-weight: 500;
+    text-align: left;
+    transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+  }
+  .los-nav-item:hover {
+    background: rgb(var(--los-border) / 0.055);
+    color: rgb(var(--los-text) / 0.92);
+  }
+  .los-nav-item[aria-current="page"] {
+    border-color: rgb(var(--los-accent) / 0.14);
+    background: rgb(var(--los-accent) / 0.12);
+    color: rgb(var(--los-accent-strong));
+  }
+  .los-onboarding-card {
+    position: relative;
+    display: flex;
+    min-height: 142px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    padding: 20px;
+    border: 1px solid rgb(255 255 255 / 0.09);
+    border-radius: 18px;
+    background: rgb(255 255 255 / 0.035);
+    color: rgb(255 255 255 / 0.9);
+    text-align: center;
+    transition: background-color 180ms ease, border-color 180ms ease, transform 180ms ease;
+  }
+  .los-onboarding-card:hover {
+    border-color: rgb(167 139 250 / 0.25);
+    background: rgb(167 139 250 / 0.07);
+  }
+  .los-onboarding-card[aria-pressed="true"] {
+    border-color: rgb(167 139 250 / 0.42);
+    background: rgb(167 139 250 / 0.13);
+  }
+  .los-onboarding-card:focus-visible {
+    outline: 2px solid rgb(196 181 253 / 0.75);
+    outline-offset: 3px;
+  }
+  .los-onboarding-input {
+    width: 100%;
+    padding: 14px 18px;
+    border: 1px solid rgb(255 255 255 / 0.12);
+    border-radius: 14px;
+    background: rgb(255 255 255 / 0.045);
+    color: white;
+    font-size: 18px;
+    text-align: center;
+  }
+  .los-onboarding-input::placeholder { color: rgb(255 255 255 / 0.32); }
+  .los-onboarding-input:focus {
+    border-color: rgb(167 139 250 / 0.48);
+    outline: 2px solid rgb(167 139 250 / 0.12);
+    outline-offset: 2px;
+  }
+  .los-choice {
+    display: block;
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid rgb(var(--los-border) / 0.14);
+    border-radius: 12px;
+    background: rgb(var(--los-surface) / 0.34);
+    color: rgb(var(--los-text) / 0.9);
+    text-align: left;
+    font-size: 13px;
+    line-height: 1.55;
+    transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+  }
+  .los-choice:hover {
+    border-color: rgb(var(--los-accent) / 0.28);
+    background: rgb(var(--los-accent) / 0.07);
+  }
+  .los-field {
+    width: 100%;
+    min-height: 40px;
+    padding: 9px 12px;
+    border: 1px solid rgb(var(--los-border) / 0.15);
+    border-radius: 11px;
+    background: rgb(var(--los-border) / 0.045);
+    color: rgb(var(--los-text));
+    font-size: 13px;
+    line-height: 1.4;
+    transition: border-color 150ms ease, background-color 150ms ease;
+  }
+  .los-field::placeholder { color: rgb(var(--los-muted) / 0.8); }
+  .los-field:focus {
+    border-color: rgb(var(--los-accent) / 0.48);
+    outline: 2px solid rgb(var(--los-accent) / 0.12);
+    outline-offset: 1px;
+  }
+  .los-switch {
+    position: relative;
+    display: inline-flex;
+    width: 44px;
+    height: 26px;
+    flex: 0 0 auto;
+    align-items: center;
+    border: 1px solid rgb(var(--los-border) / 0.16);
+    border-radius: 999px;
+    background: rgb(var(--los-border) / 0.16);
+    transition: background-color 160ms ease, border-color 160ms ease;
+  }
+  .los-switch[aria-pressed="true"] {
+    border-color: rgb(var(--los-accent) / 0.32);
+    background: rgb(var(--los-accent) / 0.34);
+  }
+  .los-switch-thumb {
+    position: absolute;
+    left: 1px;
+    width: 22px;
+    height: 22px;
+    border-radius: 999px;
+    background: white;
+    box-shadow: 0 1px 3px rgb(0 0 0 / 0.18);
+    transition: transform 160ms ease;
+  }
+  .los-chip[aria-pressed="true"] {
+    border-color: rgb(var(--los-accent) / 0.3);
+    background: rgb(var(--los-accent) / 0.14);
+    color: rgb(var(--los-accent-strong));
+    font-weight: 600;
+  }
+  .los-btn:focus-visible, .los-chip:focus-visible, .los-choice:focus-visible, .los-switch:focus-visible {
+    outline: 2px solid rgb(var(--los-accent) / 0.72);
+    outline-offset: 2px;
+  }
+}
+
+/* Subtle lift on hover: tactile feedback without making controls jump. */
 @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
   button:not(:disabled),
   a[href],
   [role="button"]:not([aria-disabled="true"]) {
     transition-property: transform, box-shadow, background-color, border-color, color;
-    transition-duration: 180ms;
+    transition-duration: 160ms;
     transition-timing-function: cubic-bezier(0.2, 0.75, 0.25, 1);
   }
 
   button:not(:disabled):hover,
   a[href]:hover,
   [role="button"]:not([aria-disabled="true"]):hover {
-    transform: translateY(-2px);
+    transform: translateY(-1px);
   }
 
   button:not(:disabled):active,
   a[href]:active,
   [role="button"]:not([aria-disabled="true"]):active {
-    transform: translateY(0) scale(0.99);
+    transform: translateY(0);
   }
 }

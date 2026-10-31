@@ -180,7 +180,7 @@ export default function BlueprintInterview({
       <motion.div
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        className="bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-white/10 rounded-3xl max-w-lg w-full text-black dark:text-white max-h-[85vh] flex flex-col overflow-hidden"
+        className="bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-white/10 rounded-3xl max-w-lg w-full text-black dark:text-white max-h-[calc(100dvh-2rem)] flex flex-col overflow-hidden"
       >
         <div className="flex items-center justify-between px-5 md:px-6 py-4 border-b border-gray-200 dark:border-white/10">
           <div className="flex-1">
@@ -229,7 +229,7 @@ export default function BlueprintInterview({
                     <button
                       key={opt.key}
                       onClick={() => handleSelect(opt.text)}
-                      className="w-full text-left px-4 py-3 rounded-xl border border-gray-200 dark:border-white/10 hover:border-purple-400 hover:bg-purple-50 dark:hover:bg-purple-500/10 transition text-sm leading-relaxed"
+                      className="los-choice"
                     >
                       <span className="font-semibold text-purple-500 mr-2">{opt.key}.</span>
                       {opt.text}
@@ -263,7 +263,7 @@ export default function BlueprintInterview({
             {phase === 'done' && resultProfile && (
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
                 {/* Mind score ring + radar */}
-                <div className="p-4 rounded-xl border border-purple-300/30 dark:border-purple-500/20 bg-purple-50/50 dark:bg-purple-500/5">
+                <div className="los-panel los-panel-accent">
                   <div className="flex items-center justify-between mb-2">
                     <p className="text-xs font-semibold text-purple-700 dark:text-purple-300">{t.blueprintInterview.resultSection.mindMapTitle}</p>
                     <div className="text-right">

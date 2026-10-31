@@ -118,7 +118,7 @@ const PROMPT_UI = [false, false, false, true, false, false];
 /** Strips a leading emoji from a translated label ("👤 You" -> "You"). */
 const stripEmoji = (label: string) => label.replace(/^[\p{Extended_Pictographic}\uFE0F\s]+/u, '');
 
-export default function Mentor() {
+export default function Mentor({ initialContextTopic = '' }: { initialContextTopic?: string }) {
   const t = useTranslation();
   const { locale } = useLanguage();
   const welcome = (): Message => ({
@@ -151,7 +151,7 @@ export default function Mentor() {
     }
   });
   const loading = pending.includes(chatId);
-  const [contextTopic, setContextTopic] = useState('');
+  const [contextTopic, setContextTopic] = useState(initialContextTopic);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   // While the keyboard is up the bottom bar steps aside so the input gets the room.
   const typing = useImmersive();
@@ -174,13 +174,18 @@ export default function Mentor() {
   // Watch history se context nikaal lo — used internally to give Gemini
   // relevant context, NOT shown in the UI (keeps the header clean).
   useEffect(() => {
+    // The active roadmap topic is more relevant than whichever video happened
+    // to be watched most recently. Fall back to watch history when no topic
+    // context was supplied by the dashboard.
+    if (initialContextTopic.trim()) {
+      setContextTopic(initialContextTopic.trim());
+      return;
+    }
     try {
       const history = JSON.parse(localStorage.getItem('video_watch_history') || '[]');
-      if (history.length > 0) {
-        setContextTopic(history[0].title || '');
-      }
+      if (history.length > 0) setContextTopic(history[0].title || '');
     } catch {}
-  }, []);
+  }, [initialContextTopic]);
 
   const sendMessage = async (text: string, ui = false) => {
     if (!text.trim() || loading) return;

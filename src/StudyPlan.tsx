@@ -29,12 +29,10 @@ import { deleteStudyFile, getStudyFile } from './studyFiles';
 import { splitPdfBlob, storeFiles } from './studyPlanFiles';
 import { askConfirm } from './dialogApi';
 
-const card = 'p-4 rounded-2xl card';
-const btn = 'px-3 py-1.5 rounded-lg text-xs font-medium transition-all border';
-const btnPrimary = `${btn} bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white border-transparent hover:opacity-80`;
-const btnGhost = `${btn} border-gray-200 dark:border-white/10 text-gray-600 dark:text-white/70 hover:bg-gray-100 dark:hover:bg-white/10`;
-const inputCls =
-  'px-3 py-2 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-black text-sm text-black dark:text-white';
+const card = 'los-panel p-4 rounded-2xl';
+const btnPrimary = 'los-btn los-btn-primary';
+const btnGhost = 'los-btn los-btn-secondary';
+const inputCls = 'los-field';
 
 function describeExpired(list: ExpiredBox[], s: (typeof studyPlanText)['en']): string {
   if (list.length === 0) return '';
@@ -45,7 +43,7 @@ function describeExpired(list: ExpiredBox[], s: (typeof studyPlanText)['en']): s
 
 type Viewing = { topic: StudyTopic; action: { type: 'learn' } | { type: 'revise'; day: number } };
 
-export default function StudyPlan() {
+export default function StudyPlan({ initialSubject = '' }: { initialSubject?: string }) {
   const { locale } = useLanguage();
   const s = studyPlanText[locale];
   // Expired boxes (original end date passed) are cleared as soon as the page opens; their files are
@@ -58,7 +56,7 @@ export default function StudyPlan() {
     if (swept.expired.length > 0) savePlan(p);
     // First visit: start with one subject and an empty T1 box, ready for files.
     if (p.subjects.length === 0) {
-      const name = studyPlanText[locale].defaultSubject;
+      const name = initialSubject.trim() || studyPlanText[locale].defaultSubject;
       p = addBox(addSubject(p, name), name);
       savePlan(p);
     }

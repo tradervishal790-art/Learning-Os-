@@ -1,6 +1,6 @@
 import {
   House, Route, MessageCircle, ChartNoAxesColumn, LayoutGrid, RotateCcw,
-  NotebookPen, ClipboardCheck, Film, Search, BookOpen, Newspaper,
+  NotebookPen, ClipboardCheck, Film, Search, BookOpen, Newspaper, CalendarDays, PlayCircle,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -8,6 +8,8 @@ import type { LucideIcon } from 'lucide-react';
 export const NAV_ICONS: Record<string, LucideIcon> = {
   dashboard: House,
   roadmap: Route,
+  'study-plan': CalendarDays,
+  focus: PlayCircle,
   mentor: MessageCircle,
   progress: ChartNoAxesColumn,
   revision: RotateCcw,
@@ -27,6 +29,8 @@ export const NAV_TONES: Record<string, string> = {
   notes: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300',
   test: 'bg-sky-100 text-sky-600 dark:bg-sky-500/15 dark:text-sky-300',
   videos: 'bg-fuchsia-100 text-fuchsia-600 dark:bg-fuchsia-500/15 dark:text-fuchsia-300',
+  'study-plan': 'bg-indigo-100 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-300',
+  focus: 'bg-cyan-100 text-cyan-600 dark:bg-cyan-500/15 dark:text-cyan-300',
   research: 'bg-cyan-100 text-cyan-600 dark:bg-cyan-500/15 dark:text-cyan-300',
   dictionary: 'bg-amber-100 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300',
   'current-affairs': 'bg-orange-100 text-orange-600 dark:bg-orange-500/15 dark:text-orange-300',

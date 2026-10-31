@@ -146,7 +146,7 @@ export default function TasteOnboarding({ onComplete, onClose }: TasteOnboarding
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.95, opacity: 0 }}
-        className="bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-white/10 rounded-3xl max-w-lg w-full p-5 md:p-6 text-black dark:text-white max-h-[85vh] overflow-y-auto"
+        className="bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-white/10 rounded-3xl max-w-lg w-full p-5 md:p-6 text-black dark:text-white max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
@@ -223,7 +223,7 @@ export default function TasteOnboarding({ onComplete, onClose }: TasteOnboarding
               <button
                 onClick={handleSubmit}
                 disabled={!canSubmit}
-                className="w-full px-4 py-3.5 md:py-2.5 rounded-lg bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white disabled:opacity-40 text-sm font-semibold transition active:scale-[0.98]"
+                className="los-btn los-btn-primary w-full disabled:opacity-40"
               >
                 {format(t.tasteOnboarding.analyzeCta, filledEntries.length >= MIN_VIDEOS ? filledEntries.length : MIN_VIDEOS)}
               </button>
@@ -277,7 +277,7 @@ export default function TasteOnboarding({ onComplete, onClose }: TasteOnboarding
               </p>
               <button
                 onClick={onClose}
-                className="px-5 py-2.5 rounded-lg bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white text-sm font-medium hover:opacity-80 transition"
+                className="los-btn los-btn-primary"
               >
                 {t.tasteOnboarding.doneCta}
               </button>

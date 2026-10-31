@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState, lazy, Suspense } from 'react';
 import type { ComponentType } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, BookOpen, ClipboardCheck, Newspaper, Lock, Settings as SettingsIcon, ArrowLeft } from 'lucide-react';
+import { Search, BookOpen, ClipboardCheck, Newspaper, Lock, Settings as SettingsIcon, ArrowLeft, CalendarDays, PlayCircle } from 'lucide-react';
 import PagePlaceholder from './PagePlaceholder';
 import MissionControl from './MissionControl';
 import BottomNav from './BottomNav';
@@ -48,6 +48,8 @@ const Research = lazy(() => import('./Research'));
 const Dictionary = lazy(() => import('./Dictionary'));
 const CurrentAffairs = lazy(() => import('./CurrentAffairs'));
 const Test = lazy(() => import('./Test'));
+const StudyPlanPage = lazy(() => import('./StudyPlan'));
+const FocusPlayer = lazy(() => import('./FocusPlayer'));
 
 // Small, centered loading indicator shown while a lazy page's chunk is
 // still downloading — kept intentionally minimal (no new deps).
@@ -115,10 +117,12 @@ function getSidebarItems(t: ReturnType<typeof useTranslation>): { id: DashboardP
   return [
     { id: 'dashboard', label: 'Mission Control' },
     { id: 'roadmap', label: t.dashboard.sidebar.roadmap },
+    { id: 'study-plan', label: 'Study Plan', icon: CalendarDays },
     { id: 'revision', label: t.dashboard.sidebar.revision },
     { id: 'notes', label: t.dashboard.sidebar.notes },
     { id: 'test', label: t.dashboard.sidebar.test, icon: ClipboardCheck },
     { id: 'videos', label: t.dashboard.sidebar.videos },
+    { id: 'focus', label: 'Focus Player', icon: PlayCircle },
     { id: 'mentor', label: t.dashboard.sidebar.mentor },
     { id: 'progress', label: t.dashboard.sidebar.progress },
     { id: 'research', label: t.dashboard.sidebar.research, icon: Search },
@@ -199,14 +203,11 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   const { isGuest, openSignIn } = useAuthPrompt();
 
   const { theme, toggleTheme } = useTheme();
-  // activePage now mirrors the real URL (/dashboard/:page) instead of being
-  // plain React state — this is what gives every page its own shareable,
-  // bookmarkable, refreshable URL. react-router's BrowserRouter already
-  // maintains the browser/PWA history entries, so the previous manual
-  // window.history.pushState/popstate bookkeeping (which existed only to
-  // stop the hardware back button from closing the app) is no longer
-  // needed — real route entries give the back button the same thing to
-  // land on.
+  // activePage mirrors the URL (/dashboard/:page), so sections remain
+  // shareable and refreshable. Keep one history slot for the active section:
+  // the first section opens from Mission Control, later section switches
+  // replace that slot, and Back returns to Mission Control rather than an
+  // older section the learner visited earlier.
   const location = useLocation();
   const navigate = useNavigate();
   // location.pathname looks like "/dashboard" or "/dashboard/roadmap" — the
@@ -214,9 +215,15 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   const activePage = (location.pathname.replace(/^\/dashboard\/?/, '').split('/')[0] || 'dashboard') as DashboardPageId;
   const setActivePage = useCallback(
     (page: DashboardPageId) => {
-      navigate(page === 'dashboard' ? '/dashboard' : `/dashboard/${page}`);
+      const target = page === 'dashboard' ? '/dashboard' : `/dashboard/${page}`;
+      // Keep one history entry for the dashboard session: opening the first
+      // section creates an entry, switching between sections replaces it.
+      // Returning to Mission Control also replaces the section entry. This
+      // prevents browser/device Back from replaying an older dashboard tab.
+      const replace = page === 'dashboard' || activePage !== 'dashboard';
+      navigate(target, { replace });
     },
-    [navigate]
+    [navigate, activePage]
   );
 
   const [streak, setStreak] = useState(0);
@@ -238,6 +245,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   // opened, so each topic keeps its own saved video instead of every topic
   // in a goal sharing one slot (see VideoIntel's activeTopicId).
   const [viewingTopicId, setViewingTopicId] = useState<string | null>(null);
+  const [focusTopicOverride, setFocusTopicOverride] = useState('');
 
   const [showSettings, setShowSettings] = useState(false);
   // Deep-settings: the full learning-profile report is hidden by default,
@@ -307,6 +315,11 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
     setPreloadedPlaylist(null);
     setViewingTopicId(topicId);
     setActivePage('videos');
+  };
+
+  const handleOpenFocus = (topicTitle: string) => {
+    setFocusTopicOverride(topicTitle);
+    setActivePage('focus');
   };
 
   // FIX: Pehle yahan sirf name/role/goal/language/hours bhej rahe the,
@@ -534,19 +547,10 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.1 + i * 0.05, duration: 0.4 }}
               onClick={() => selectNav(item.id, item.label)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
-                isMissionControl
-                  ? isLocked
-                    ? 'text-white/20'
-                    : activePage === item.id
-                    ? 'bg-indigo-500 text-white'
-                    : 'text-white/55 hover:text-white hover:bg-white/5'
-                  : isLocked
-                    ? 'text-gray-300 dark:text-white/20 hover:text-gray-400 dark:hover:text-white/30'
-                    : activePage === item.id
-                      ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white'
-                      : 'text-gray-500 dark:text-white/50 hover:text-black dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5'
-              }`}
+              className={`los-nav-item ${
+                isLocked ? 'opacity-45 cursor-not-allowed' : ''
+              } ${isMissionControl ? 'text-white/60' : ''}`}
+              aria-current={activePage === item.id ? 'page' : undefined}
             >
               {item.icon && <item.icon className="w-4 h-4" />}
               <span className="flex-1 text-left">{item.label}</span>
@@ -575,19 +579,19 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
         {SidebarContent}
       </aside>}
 
-      <div className={`flex-1 min-w-0 ${isMissionControl ? "h-dvh overflow-hidden bg-[#080d19]" : "overflow-auto"} md:pb-0 ${isMissionControl || immersive ? "" : "pb-[calc(3.5rem+env(safe-area-inset-bottom))]"}`}>
+      <div className={`flex-1 min-w-0 ${isMissionControl ? "h-dvh overflow-hidden bg-[#080d19] flex flex-col" : "overflow-auto"} md:pb-0 ${isMissionControl || immersive ? "" : "pb-[calc(3.5rem+env(safe-area-inset-bottom))]"}`}>
         {!(activePage === 'notes' && noteOpen) && (
         <motion.div
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.6 }}
-          className={`border-b px-4 md:px-8 py-2 md:py-4 flex justify-between items-center gap-3 ${isMissionControl ? "border-white/[0.07] bg-[#080d19]" : "border-gray-200 dark:border-white/10"}`}
+          className={`shrink-0 border-b px-4 md:px-8 py-2 md:py-4 flex justify-between items-center gap-3 ${isMissionControl ? "border-white/[0.07] bg-[#080d19]" : "border-gray-200 dark:border-white/10"}`}
         >
           <div className="flex items-center gap-3 min-w-0">
             {activePage !== 'dashboard' && (
               <>
                 <button
-                  onClick={() => (window.history.length > 1 ? navigate(-1) : setActivePage('dashboard'))}
+                  onClick={() => setActivePage('dashboard')}
                   aria-label="Back"
                   className="w-10 h-10 -ml-2 rounded-full flex items-center justify-center flex-shrink-0 hover:bg-gray-100 dark:hover:bg-white/10 active:bg-gray-200 dark:active:bg-white/15 transition-colors"
                 >
@@ -637,6 +641,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
             userData={userData}
             onLaunchPlaylist={handleLaunchPlaylist}
             onOpenSavedVideo={handleOpenSavedVideo}
+            onOpenFocus={handleOpenFocus}
             onGenerateForSubject={onGenerateForSubject}
             lastRoadmapError={lastRoadmapError}
             goals={goals}
@@ -645,6 +650,9 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
             onEndGoal={onEndGoal}
             onSwitchGoal={onSwitchGoal}
           />
+        )}
+        {activePage === 'study-plan' && (
+          <StudyPlanPage initialSubject={goals.find((goal) => goal.id === activeGoalId)?.title ?? userData?.goal ?? ''} />
         )}
         {activePage === 'revision' && <Revision goals={goals} />}
         {activePage === 'videos' && (
@@ -657,7 +665,19 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
             />
           </div>
         )}
-        {activePage === 'mentor' && <Mentor />}
+        {activePage === 'focus' && (
+          <FocusPlayer
+            key={`${activeGoalId ?? 'no-goal'}-${currentTopic?.id ?? 'no-topic'}`}
+            initialTopic={focusTopicOverride || currentTopic?.title || goals.find((goal) => goal.id === activeGoalId)?.title || userData?.goal || ''}
+            onClose={() => { setFocusTopicOverride(''); setActivePage('dashboard'); }}
+          />
+        )}
+        {activePage === 'mentor' && (
+          <Mentor
+            key={`${activeGoalId ?? 'no-goal'}-${currentTopic?.id ?? 'no-topic'}`}
+            initialContextTopic={currentTopic?.title ?? goals.find((goal) => goal.id === activeGoalId)?.title ?? userData?.goal ?? ''}
+          />
+        )}
         {activePage === 'notes' && <Notes />}
         {activePage === 'test' && <Test />}
         {activePage === 'progress' && <Progress goals={goals} />}
@@ -710,9 +730,11 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                   <span className="text-sm font-medium">{t.settingsModal.theme}</span>
                   <button
                     onClick={toggleTheme}
-                    className={`relative w-14 h-8 rounded-full transition-colors ${theme === 'light' ? 'bg-black' : 'bg-gray-300'}`}
+                    aria-label={t.settingsModal.theme}
+                    aria-pressed={theme === 'light'}
+                    className="los-switch"
                   >
-                    <span className={`absolute top-1 w-6 h-6 rounded-full bg-white transition-transform ${theme === 'light' ? 'translate-x-7' : 'translate-x-1'}`} />
+                    <span className="los-switch-thumb" style={{ transform: theme === 'light' ? 'translateX(19px)' : 'translateX(1px)' }} />
                   </button>
                 </div>
 
@@ -722,7 +744,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                     type="text"
                     value={settingsName}
                     onChange={(e) => setSettingsName(e.target.value)}
-                    className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-2.5 focus:outline-none focus:border-purple-500/50"
+                    className="los-field"
                   />
                 </div>
 
@@ -733,7 +755,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                       <button
                         key={r}
                         onClick={() => setSettingsRole(r)}
-                        className={`px-3 py-1.5 rounded-full text-xs border transition ${settingsRole === r ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white border-transparent' : 'border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10'}`}
+                        className="los-chip" aria-pressed={settingsRole === r}
                       >
                         {t.onboarding.roles[r]}
                       </button>
@@ -748,7 +770,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                     value={settingsGoal}
                     onChange={(e) => setSettingsGoal(e.target.value)}
                     placeholder={t.settingsModal.topicPlaceholder}
-                    className="w-full px-3 py-2 rounded-lg text-sm border border-gray-200 dark:border-white/10 bg-transparent focus:outline-none focus:border-black dark:focus:border-white"
+                    className="los-field"
                   />
                 </div>
 
@@ -759,7 +781,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                       <button
                         key={l}
                         onClick={() => setSettingsLanguage(l)}
-                        className={`px-3 py-1.5 rounded-full text-xs border transition ${settingsLanguage === l ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white border-transparent' : 'border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10'}`}
+                        className="los-chip" aria-pressed={settingsLanguage === l}
                       >
                         {t.onboarding.languages[l]}
                       </button>

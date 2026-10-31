@@ -52,6 +52,8 @@ interface RoadmapProps {
   /** Opens the Videos page showing whatever was last searched/watched for
    *  THIS SPECIFIC topic, with no new search — the "Saved video" button. */
   onOpenSavedVideo: (topicId: string) => void;
+  /** Opens the selected roadmap topic in the distraction-free Focus Player. */
+  onOpenFocus?: (topicTitle: string) => void;
   /** Updates userData.goal/hours/deadline to the typed subject + slider
    *  values and generates a roadmap for it directly from this page — powers
    *  the empty-state "type a subject, set your time, and go" form (no
@@ -82,6 +84,7 @@ export default function Roadmap({
   userData,
   onLaunchPlaylist,
   onOpenSavedVideo,
+  onOpenFocus,
   onGenerateForSubject,
   lastRoadmapError,
   goals,
@@ -835,10 +838,19 @@ export default function Roadmap({
                       <button
                         onClick={handleWatchVideos}
                         disabled={playlistLoading}
-                        className="w-full px-4 py-3.5 md:py-2.5 rounded-lg bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white disabled:opacity-40 text-sm font-semibold transition active:scale-[0.98]"
+                        className="los-btn los-btn-primary w-full disabled:opacity-40"
                       >
                         {playlistLoading ? t.roadmap.topicModal.searchingCta : t.roadmap.topicModal.watchVideosCta}
                       </button>
+                      {onOpenFocus && (
+                        <button
+                          type="button"
+                          onClick={() => onOpenFocus(selectedTopic.title)}
+                          className="los-btn los-btn-secondary mt-2 w-full"
+                        >
+                          Open in Focus Player
+                        </button>
+                      )}
                       {hasSavedVideoForTopic(activeGoalId ?? undefined, selectedTopic.id) && (
                         <button
                           onClick={() => onOpenSavedVideo(selectedTopic.id)}
