@@ -1,4 +1,5 @@
-import { ArrowUpRight, BrainCircuit, CheckCircle2, Compass, GraduationCap, NotebookPen, RotateCcw, Sparkles, Target, Users, Video, Zap } from 'lucide-react';
+import { ArrowUpRight, BrainCircuit, CheckCircle2, Compass, GraduationCap, NotebookPen, RotateCcw, Sparkles, Target, Users, Video, Zap, MoreHorizontal, Search, BookOpen, Newspaper, MessageCircle, ChevronDown } from 'lucide-react';
+import { useState } from 'react';
 import type { DashboardPageId } from './types';
 
 interface MissionControlProps {
@@ -64,7 +65,15 @@ export default function MissionControl({
   name, goalTitle, nextTopic, nextTopicDetail, hasLearningProfile,
   revisionDue, revisionOverdue, streak, activeGoals, onNavigate, onOpenProfile,
 }: MissionControlProps) {
+  const [selectedEngine, setSelectedEngine] = useState<string | null>(null);
+  const [moreOpen, setMoreOpen] = useState(false);
   const open = (action: 'profile' | DashboardPageId) => action === 'profile' ? onOpenProfile() : onNavigate(action);
+  const moreItems = [
+    { label: 'AI Mentor', detail: 'Ask and explore', icon: MessageCircle, action: 'mentor' as const },
+    { label: 'Research', detail: 'Explore new ideas', icon: Search, action: 'research' as const },
+    { label: 'Dictionary', detail: 'Look up concepts', icon: BookOpen, action: 'dictionary' as const },
+    { label: 'Current Affairs', detail: 'Stay informed', icon: Newspaper, action: 'current-affairs' as const },
+  ];
   const currentStep = revisionOverdue + revisionDue > 0
     ? `${revisionOverdue + revisionDue} topics ready for revision`
     : nextTopic || 'Your learning path starts here';
@@ -119,11 +128,13 @@ export default function MissionControl({
               return (
                 <g key={row.id} filter="url(#mindGlow)" opacity=".95">
                   <path d={`M 235 330 C 330 330, 330 ${y}, 420 ${y}`} stroke={`url(#line-${row.id})`} strokeWidth="2.2" />
-                  <path d={`M 690 ${y} C 790 ${y}, 800 ${y-22}, 900 ${y-22}`} stroke={row.color} strokeOpacity=".72" strokeWidth="1.7" />
-                  <path d={`M 690 ${y} C 790 ${y}, 800 ${y+22}, 900 ${y+22}`} stroke={row.color} strokeOpacity=".72" strokeWidth="1.7" />
+                  {selectedEngine === row.id && <>
+                    <path d={`M 690 ${y} C 790 ${y}, 800 ${y-22}, 900 ${y-22}`} stroke={row.color} strokeOpacity=".85" strokeWidth="1.9" />
+                    <path d={`M 690 ${y} C 790 ${y}, 800 ${y+22}, 900 ${y+22}`} stroke={row.color} strokeOpacity=".85" strokeWidth="1.9" />
+                    <circle cx="900" cy={y-22} r="3" fill={row.color} />
+                    <circle cx="900" cy={y+22} r="3" fill={row.color} />
+                  </>}
                   <circle cx="420" cy={y} r="4" fill={row.color} />
-                  <circle cx="900" cy={y-22} r="3" fill={row.color} />
-                  <circle cx="900" cy={y+22} r="3" fill={row.color} />
                 </g>
               );
             })}
@@ -144,8 +155,9 @@ export default function MissionControl({
               <div key={row.id}>
                 <button
                   type="button"
-                  onClick={() => open(row.id === 'know' ? 'profile' : row.id === 'plan' ? 'roadmap' : row.id === 'learn' ? 'videos' : row.id === 'retain' ? 'revision' : 'test')}
-                  className="group absolute left-[35%] z-10 flex h-[76px] w-[22%] -translate-y-1/2 items-center gap-3 rounded-2xl border bg-[#111d31]/95 px-4 text-left shadow-[0_10px_35px_rgba(0,0,0,.25)] transition duration-200 hover:-translate-y-[calc(50%+3px)] hover:bg-[#17263d] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"
+                  onClick={() => setSelectedEngine((current) => current === row.id ? null : row.id)}
+                  aria-expanded={selectedEngine === row.id}
+                  className={`group absolute left-[35%] z-10 flex h-[76px] w-[22%] -translate-y-1/2 items-center gap-3 rounded-2xl border bg-[#111d31]/95 px-4 text-left shadow-[0_10px_35px_rgba(0,0,0,.25)] transition duration-200 hover:-translate-y-[calc(50%+3px)] hover:bg-[#17263d] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 ${selectedEngine === row.id ? 'ring-1 ring-white/30 bg-[#1a2940]' : ''}`}
                   style={{ top, borderColor: `${row.color}55`, boxShadow: `0 0 22px ${row.color}12` }}
                 >
                   <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl" style={{ backgroundColor: `${row.color}20`, color: row.color }}><Icon className="h-5 w-5" /></span>
@@ -156,7 +168,7 @@ export default function MissionControl({
                   </span>
                   <ArrowUpRight className="h-4 w-4 shrink-0 text-slate-600 transition group-hover:text-white" />
                 </button>
-                {row.children.map((child, childIndex) => {
+                {selectedEngine === row.id && row.children.map((child, childIndex) => {
                   const ChildIcon = child.icon;
                   return (
                     <button
@@ -197,22 +209,37 @@ export default function MissionControl({
               const Icon = row.icon;
               return (
                 <div key={row.id} className="relative ml-5 rounded-xl border bg-[#111d31] p-3" style={{ borderColor: `${row.color}50` }}>
-                  <button type="button" onClick={() => open(row.id === 'know' ? 'profile' : row.id === 'plan' ? 'roadmap' : row.id === 'learn' ? 'videos' : row.id === 'retain' ? 'revision' : 'test')} className="flex w-full items-center gap-3 text-left">
+                  <button type="button" onClick={() => setSelectedEngine((current) => current === row.id ? null : row.id)} aria-expanded={selectedEngine === row.id} className="flex w-full items-center gap-3 text-left">
                     <Icon className="h-5 w-5" style={{ color: row.color }} />
                     <span className="flex-1"><span className="block text-xs font-semibold text-white">{row.number} · {row.title}</span><span className="block text-[10px] text-slate-500">{row.subtitle}</span></span>
                     <ArrowUpRight className="h-4 w-4 text-slate-500" />
                   </button>
-                  <div className="ml-8 mt-2 flex flex-wrap gap-1.5">
+                  {selectedEngine === row.id && <div className="ml-8 mt-2 flex flex-wrap gap-1.5">
                     {row.children.map((child) => <button key={child.label} onClick={() => open(child.action)} className="rounded-lg border border-white/[0.08] bg-white/[0.035] px-2 py-1.5 text-[9px] text-slate-300">{child.label} ↗</button>)}
-                  </div>
+                  </div>}
                 </div>
               );
             })}
           </div>
         </div>
 
-        <div className="mt-2 flex shrink-0 flex-wrap items-center justify-between gap-2 px-1 text-[9px] text-slate-500 md:px-3">
-          <span className="truncate">{nextTopic ? `Next topic: ${nextTopic}` : nextTopicDetail}</span>
+        <div className="relative mt-2 flex shrink-0 flex-wrap items-center justify-between gap-2 px-1 text-[9px] text-slate-500 md:px-3">
+          <div className="relative">
+            <button type="button" onClick={() => setMoreOpen((value) => !value)} aria-expanded={moreOpen} className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-medium text-slate-200 transition hover:border-cyan-300/40 hover:bg-white/[0.07]">
+              <MoreHorizontal className="h-4 w-4 text-cyan-300" /> More <ChevronDown className={`h-3.5 w-3.5 transition-transform ${moreOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {moreOpen && <div className="absolute bottom-full left-0 z-30 mb-2 w-56 overflow-hidden rounded-xl border border-white/10 bg-[#111d31] p-1.5 shadow-2xl">
+              {moreItems.map((item) => {
+                const ItemIcon = item.icon;
+                return <button key={item.action} type="button" onClick={() => { setMoreOpen(false); open(item.action); }} className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition hover:bg-white/[0.07]">
+                  <ItemIcon className="h-4 w-4 shrink-0 text-cyan-300" />
+                  <span className="min-w-0"><span className="block text-xs font-medium text-white">{item.label}</span><span className="block text-[10px] text-slate-500">{item.detail}</span></span>
+                  <ArrowUpRight className="ml-auto h-3.5 w-3.5 text-slate-600" />
+                </button>;
+              })}
+            </div>}
+          </div>
+          <span className="min-w-0 flex-1 truncate text-center">{nextTopic ? `Next topic: ${nextTopic}` : nextTopicDetail}</span>
           <span className="shrink-0">{activeGoals} active goal{activeGoals === 1 ? '' : 's'} · {hasLearningProfile ? 'Profile ready' : 'Profile not set up'}</span>
         </div>
         <button type="button" onClick={() => open(revisionOverdue + revisionDue > 0 ? 'revision' : nextTopic ? 'videos' : 'roadmap')} className="mt-1 flex shrink-0 items-center justify-between gap-3 rounded-xl border border-cyan-300/15 bg-cyan-300/[0.06] px-3 py-2 text-left transition hover:bg-cyan-300/10 md:hidden">
