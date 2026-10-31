@@ -307,8 +307,7 @@ function QuestionCard({
         rows={2}
         className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-2.5 mb-3 resize-none focus:outline-none focus:border-black dark:focus:border-white"
       />
-      {question.question.trim() && (question.question.includes('\\') || question.question.includes('
-        <div className="rounded-lg bg-indigo-50/70 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20 px-3 py-2 mb-3 text-sm leading-relaxed">
+      {question.question.trim() && (question.question.includes('\\\\') || question.question.includes('$')) && (\n        <div className="rounded-lg bg-indigo-50/70 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20 px-3 py-2 mb-3 text-sm leading-relaxed">
           <span className="block text-[10px] uppercase tracking-wide text-indigo-600 dark:text-indigo-300 mb-1">Math preview</span>
           <MathText>{question.question}</MathText>
         </div>
@@ -335,8 +334,7 @@ function QuestionCard({
                   placeholder={`Option ${optionLabel(oi)}`}
                   className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-black dark:focus:border-white"
                 />
-                {opt.trim() && (opt.includes('\\') || opt.includes('
-                  <p className="px-2 pt-1 text-xs text-gray-600 dark:text-white/70"><MathText>{opt}</MathText></p>
+                {opt.trim() && (opt.includes('\\\\') || opt.includes('$')) && (\n                  <p className="px-2 pt-1 text-xs text-gray-600 dark:text-white/70"><MathText>{opt}</MathText></p>
                 )}
               </div>
               {(question as MCQQuestion).options.length > MIN_OPTIONS && (
