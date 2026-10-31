@@ -492,6 +492,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   const revisionStats = getRevisionStats(getRevisionDataForGoals(t.revisionTasks, goals));
 
   const config = pageConfigs[activePage];
+  const isMissionControl = activePage === 'dashboard';
   // Guests can preview every section; account checks remain on protected actions.
 
   // Two different locks: authLocked = needs a real account (guest);
@@ -561,18 +562,18 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   );
 
   return (
-    <div className="min-h-dvh bg-[#f4f6ff] dark:bg-black flex text-black dark:text-white">
-      <aside className="hidden md:flex w-64 border-r border-gray-200 dark:border-white/10 p-6 flex-col flex-shrink-0">
+    <div className={`min-h-dvh flex text-black dark:text-white ${isMissionControl ? "bg-[#080d19] text-white" : "bg-[#f4f6ff] dark:bg-black"}`}>
+      <aside className={`hidden md:flex w-64 border-r p-6 flex-col flex-shrink-0 ${isMissionControl ? "border-white/[0.07] bg-[#080d19]" : "border-gray-200 dark:border-white/10"}`}>
         {SidebarContent}
       </aside>
 
-      <div className={`flex-1 overflow-auto min-w-0 md:pb-0 ${immersive ? '' : 'pb-[calc(3.5rem+env(safe-area-inset-bottom))]'}`}>
+      <div className={`flex-1 min-w-0 ${isMissionControl ? "h-dvh overflow-hidden bg-[#080d19]" : "overflow-auto"} md:pb-0 ${immersive ? "" : "pb-[calc(3.5rem+env(safe-area-inset-bottom))]"}`}>
         {!(activePage === 'notes' && noteOpen) && (
         <motion.div
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.6 }}
-          className="border-b border-gray-200 dark:border-white/10 px-4 md:px-8 py-2 md:py-6 flex justify-between items-center gap-3"
+          className={`border-b px-4 md:px-8 py-2 md:py-4 flex justify-between items-center gap-3 ${isMissionControl ? "border-white/[0.07] bg-[#080d19]" : "border-gray-200 dark:border-white/10"}`}
         >
           <div className="flex items-center gap-3 min-w-0">
             {activePage !== 'dashboard' && (
@@ -584,13 +585,13 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                 >
                   <ArrowLeft className="w-5 h-5" strokeWidth={1.9} />
                 </button>
-                <h2 className="text-lg md:text-2xl font-bold truncate">
+            <h2 className="text-lg md:text-2xl font-bold truncate text-white">
                   {sidebarItems.find((i) => i.id === activePage)?.label ?? ''}
                 </h2>
               </>
             )}
             {activePage === 'dashboard' && (
-            <h2 className="text-lg md:text-2xl font-bold truncate">
+            <h2 className="text-lg md:text-2xl font-bold truncate text-white">
               Mission Control
             </h2>
             )}
