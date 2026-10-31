@@ -202,6 +202,7 @@ service cloud.firestore {
   }
 }
 )
+        && request.resource.data.keys().hasAll(['outcome', 'feedback', 'submittedAt'])
         && request.resource.data.keys().hasOnly(['outcome', 'feedback', 'submittedAt'])
         && request.resource.data.outcome in ['early-drop', 'partial', 'near-complete', 'completed']
         && request.resource.data.feedback in ['like', 'dislike', 'none']
