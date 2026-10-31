@@ -175,7 +175,14 @@ export function getRevisionDataForGoals(
   });
 
   const statusOrder: Record<RevisionStatus, number> = { overdue: 0, 'due-today': 1, upcoming: 2, mastered: 3 };
-  return merged.sort((a, b) => statusOrder[a.status] - statusOrder[b.status] || a.day - b.day);
+  return merged.sort((a, b) => {
+    const statusDifference = statusOrder[a.status] - statusOrder[b.status];
+    if (statusDifference !== 0) return statusDifference;
+    if (a.status === 'overdue' && b.status === 'overdue') {
+      return a.retention - b.retention || (b.daysOverdue ?? 0) - (a.daysOverdue ?? 0) || a.day - b.day;
+    }
+    return a.day - b.day;
+  });
 }
 
 /** Aggregate counts for the Revision dashboard. */
