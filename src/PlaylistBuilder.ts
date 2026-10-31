@@ -372,6 +372,19 @@ export function rerankRemaining(
 // caller can tag the EngagementSession and drive push-trigger UI.
 // ============================================================
 
+export interface CommunityVideoSignal {
+  completedRate: number;
+  earlyDropRate: number;
+  sampleCount: number;
+}
+
+function communityEffectivenessNudge(videoId: string, signals?: Record<string, CommunityVideoSignal>): number {
+  const signal = signals?.[videoId];
+  if (!signal || signal.sampleCount < 10) return 0;
+  // Small tie-breaker only: engagement is a useful clue, not proof of learning.
+  return Math.max(-1, Math.min(1, (signal.completedRate - signal.earlyDropRate) / 100)) * 0.08;
+}
+
 export interface PlaylistResultV2 extends PlaylistResult {
   variant: 'control' | 'personality_v1';
   /** Only set when variant === 'personality_v1'. */
@@ -382,7 +395,8 @@ export function selectPlaylistForConceptV2(
   candidates: AnalyzedVideo[],
   learnerProfile: LearningProfile,
   currentTeacherId?: string,
-  timing?: PlaylistTiming
+  timing?: PlaylistTiming,
+  communitySignals?: Record<string, CommunityVideoSignal>
 ): PlaylistResultV2 | null {
   const variant = getOrAssignVariant();
 
@@ -403,7 +417,8 @@ export function selectPlaylistForConceptV2(
   const scored = candidates
     .map((video) => ({
       video,
-      score: scoreCandidatePersonality(video, learnerDimensions, currentTeacherId, allSessions, process),
+      score: scoreCandidatePersonality(video, learnerDimensions, currentTeacherId, allSessions, process)
+        + communityEffectivenessNudge(video.videoId, communitySignals),
     }))
     .sort((a, b) => b.score - a.score);
 
