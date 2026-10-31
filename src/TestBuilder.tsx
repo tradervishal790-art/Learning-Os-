@@ -335,7 +335,7 @@ function QuestionCard({
                   placeholder={`Option ${optionLabel(oi)}`}
                   className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-black dark:focus:border-white"
                 />
-                {opt.trim() && (opt.includes('\\') || opt.includes('$'))(
+                {opt.trim() && (opt.includes('\\') || opt.includes('
                   <p className="px-2 pt-1 text-xs text-gray-600 dark:text-white/70"><MathText>{opt}</MathText></p>
                 )}
               </div>
@@ -437,6 +437,253 @@ function QuestionCard({
                   className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-black dark:focus:border-white"
                 />
                 {opt.trim() && (opt.includes('\\') || opt.includes('$'))(
+                  <p className="px-2 pt-1 text-xs text-gray-600 dark:text-white/70"><MathText>{opt}</MathText></p>
+                )}
+              </div>
+              {(question as MCQQuestion).options.length > MIN_OPTIONS && (
+                <button
+                  onClick={() => {
+                    const q = question as MCQQuestion;
+                    const options = q.options.filter((_, i) => i !== oi);
+                    const correctIndex = q.correctIndex === oi ? -1 : q.correctIndex > oi ? q.correctIndex - 1 : q.correctIndex;
+                    onChange({ options, correctIndex });
+                  }}
+                  className="p-1.5 rounded-lg hover:bg-red-100 dark:hover:bg-red-500/10 text-red-500"
+                  aria-label={`Remove option ${optionLabel(oi)}`}
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          ))}
+          {(question as MCQQuestion).options.length < MAX_OPTIONS && (
+            <button
+              onClick={() => onChange({ options: [...(question as MCQQuestion).options, ''] })}
+              className="flex items-center gap-1.5 ml-6 px-3 py-1.5 rounded-lg border border-dashed border-gray-300 dark:border-white/20 text-xs font-medium text-gray-500 dark:text-white/60 hover:bg-gray-100 dark:hover:bg-white/10 transition"
+            >
+              <Plus className="w-3.5 h-3.5" /> Add option
+            </button>
+          )}
+          <p className="text-xs text-gray-400 dark:text-white/40 pl-6">Select the radio button next to the correct option. {MIN_OPTIONS}–{MAX_OPTIONS} options allowed; empty options are dropped when you save.</p>
+        </div>
+      ) : (
+        <textarea
+          value={(question as SubjectiveQuestion).modelAnswer}
+          onChange={(e) => onChange({ modelAnswer: e.target.value })}
+          placeholder="Model answer (shown to you after you submit, for self-grading)"
+          rows={3}
+          className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-2.5 mb-3 resize-none focus:outline-none focus:border-black dark:focus:border-white"
+        />
+      )}
+
+      <textarea
+        value={question.explanation}
+        onChange={(e) => onChange({ explanation: e.target.value })}
+        placeholder="Explanation (optional, shown in results)"
+        rows={2}
+        className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-2.5 mb-3 resize-none focus:outline-none focus:border-black dark:focus:border-white text-sm"
+      />
+
+      <div className="flex items-center gap-4">
+        <label className="flex items-center gap-2 text-sm text-gray-500 dark:text-white/60">
+          Marks
+          <input
+            type="number"
+            value={question.marks}
+            onChange={(e) => onChange({ marks: Number(e.target.value) || 0 })}
+            className="w-16 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-black dark:focus:border-white"
+          />
+        </label>
+        {question.type === 'mcq' && (
+          <label className="flex items-center gap-2 text-sm text-gray-500 dark:text-white/60">
+            Negative marks
+            <input
+              type="number"
+              value={(question as MCQQuestion).negativeMarks}
+              onChange={(e) => onChange({ negativeMarks: Number(e.target.value) || 0 })}
+              className="w-16 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-black dark:focus:border-white"
+            />
+          </label>
+        )}
+      </div>
+    </motion.div>
+  );
+}
+)) && (
+                  <p className="px-2 pt-1 text-xs text-gray-600 dark:text-white/70"><MathText>{opt}</MathText></p>
+                )}
+              </div>
+              {(question as MCQQuestion).options.length > MIN_OPTIONS && (
+                <button
+                  onClick={() => {
+                    const q = question as MCQQuestion;
+                    const options = q.options.filter((_, i) => i !== oi);
+                    const correctIndex = q.correctIndex === oi ? -1 : q.correctIndex > oi ? q.correctIndex - 1 : q.correctIndex;
+                    onChange({ options, correctIndex });
+                  }}
+                  className="p-1.5 rounded-lg hover:bg-red-100 dark:hover:bg-red-500/10 text-red-500"
+                  aria-label={`Remove option ${optionLabel(oi)}`}
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          ))}
+          {(question as MCQQuestion).options.length < MAX_OPTIONS && (
+            <button
+              onClick={() => onChange({ options: [...(question as MCQQuestion).options, ''] })}
+              className="flex items-center gap-1.5 ml-6 px-3 py-1.5 rounded-lg border border-dashed border-gray-300 dark:border-white/20 text-xs font-medium text-gray-500 dark:text-white/60 hover:bg-gray-100 dark:hover:bg-white/10 transition"
+            >
+              <Plus className="w-3.5 h-3.5" /> Add option
+            </button>
+          )}
+          <p className="text-xs text-gray-400 dark:text-white/40 pl-6">Select the radio button next to the correct option. {MIN_OPTIONS}–{MAX_OPTIONS} options allowed; empty options are dropped when you save.</p>
+        </div>
+      ) : (
+        <textarea
+          value={(question as SubjectiveQuestion).modelAnswer}
+          onChange={(e) => onChange({ modelAnswer: e.target.value })}
+          placeholder="Model answer (shown to you after you submit, for self-grading)"
+          rows={3}
+          className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-2.5 mb-3 resize-none focus:outline-none focus:border-black dark:focus:border-white"
+        />
+      )}
+
+      <textarea
+        value={question.explanation}
+        onChange={(e) => onChange({ explanation: e.target.value })}
+        placeholder="Explanation (optional, shown in results)"
+        rows={2}
+        className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-2.5 mb-3 resize-none focus:outline-none focus:border-black dark:focus:border-white text-sm"
+      />
+
+      <div className="flex items-center gap-4">
+        <label className="flex items-center gap-2 text-sm text-gray-500 dark:text-white/60">
+          Marks
+          <input
+            type="number"
+            value={question.marks}
+            onChange={(e) => onChange({ marks: Number(e.target.value) || 0 })}
+            className="w-16 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-black dark:focus:border-white"
+          />
+        </label>
+        {question.type === 'mcq' && (
+          <label className="flex items-center gap-2 text-sm text-gray-500 dark:text-white/60">
+            Negative marks
+            <input
+              type="number"
+              value={(question as MCQQuestion).negativeMarks}
+              onChange={(e) => onChange({ negativeMarks: Number(e.target.value) || 0 })}
+              className="w-16 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-black dark:focus:border-white"
+            />
+          </label>
+        )}
+      </div>
+    </motion.div>
+  );
+}
+)) && (
+        <div className="rounded-lg bg-indigo-50/70 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20 px-3 py-2 mb-3 text-sm leading-relaxed">
+          <span className="block text-[10px] uppercase tracking-wide text-indigo-600 dark:text-indigo-300 mb-1">Math preview</span>
+          <MathText>{question.question}</MathText>
+        </div>
+      )}
+
+      {question.type === 'mcq' ? (
+        <div className="space-y-2 mb-3">
+          {(question as MCQQuestion).options.map((opt, oi) => (
+            <div key={oi} className="flex items-center gap-2">
+              <input
+                type="radio"
+                checked={(question as MCQQuestion).correctIndex === oi}
+                onChange={() => onChange({ correctIndex: oi })}
+                aria-label={`Mark option ${oi + 1} correct`}
+              />
+              <div className="flex-1 min-w-0">
+                <input
+                  value={opt}
+                  onChange={(e) => {
+                    const options = [...(question as MCQQuestion).options];
+                    options[oi] = e.target.value;
+                    onChange({ options });
+                  }}
+                  placeholder={`Option ${optionLabel(oi)}`}
+                  className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-black dark:focus:border-white"
+                />
+                {opt.trim() && (opt.includes('\\') || opt.includes('
+                  <p className="px-2 pt-1 text-xs text-gray-600 dark:text-white/70"><MathText>{opt}</MathText></p>
+                )}
+              </div>
+              {(question as MCQQuestion).options.length > MIN_OPTIONS && (
+                <button
+                  onClick={() => {
+                    const q = question as MCQQuestion;
+                    const options = q.options.filter((_, i) => i !== oi);
+                    const correctIndex = q.correctIndex === oi ? -1 : q.correctIndex > oi ? q.correctIndex - 1 : q.correctIndex;
+                    onChange({ options, correctIndex });
+                  }}
+                  className="p-1.5 rounded-lg hover:bg-red-100 dark:hover:bg-red-500/10 text-red-500"
+                  aria-label={`Remove option ${optionLabel(oi)}`}
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          ))}
+          {(question as MCQQuestion).options.length < MAX_OPTIONS && (
+            <button
+              onClick={() => onChange({ options: [...(question as MCQQuestion).options, ''] })}
+              className="flex items-center gap-1.5 ml-6 px-3 py-1.5 rounded-lg border border-dashed border-gray-300 dark:border-white/20 text-xs font-medium text-gray-500 dark:text-white/60 hover:bg-gray-100 dark:hover:bg-white/10 transition"
+            >
+              <Plus className="w-3.5 h-3.5" /> Add option
+            </button>
+          )}
+          <p className="text-xs text-gray-400 dark:text-white/40 pl-6">Select the radio button next to the correct option. {MIN_OPTIONS}–{MAX_OPTIONS} options allowed; empty options are dropped when you save.</p>
+        </div>
+      ) : (
+        <textarea
+          value={(question as SubjectiveQuestion).modelAnswer}
+          onChange={(e) => onChange({ modelAnswer: e.target.value })}
+          placeholder="Model answer (shown to you after you submit, for self-grading)"
+          rows={3}
+          className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-2.5 mb-3 resize-none focus:outline-none focus:border-black dark:focus:border-white"
+        />
+      )}
+
+      <textarea
+        value={question.explanation}
+        onChange={(e) => onChange({ explanation: e.target.value })}
+        placeholder="Explanation (optional, shown in results)"
+        rows={2}
+        className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-2.5 mb-3 resize-none focus:outline-none focus:border-black dark:focus:border-white text-sm"
+      />
+
+      <div className="flex items-center gap-4">
+        <label className="flex items-center gap-2 text-sm text-gray-500 dark:text-white/60">
+          Marks
+          <input
+            type="number"
+            value={question.marks}
+            onChange={(e) => onChange({ marks: Number(e.target.value) || 0 })}
+            className="w-16 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-black dark:focus:border-white"
+          />
+        </label>
+        {question.type === 'mcq' && (
+          <label className="flex items-center gap-2 text-sm text-gray-500 dark:text-white/60">
+            Negative marks
+            <input
+              type="number"
+              value={(question as MCQQuestion).negativeMarks}
+              onChange={(e) => onChange({ negativeMarks: Number(e.target.value) || 0 })}
+              className="w-16 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-black dark:focus:border-white"
+            />
+          </label>
+        )}
+      </div>
+    </motion.div>
+  );
+}
+)) && (
                   <p className="px-2 pt-1 text-xs text-gray-600 dark:text-white/70"><MathText>{opt}</MathText></p>
                 )}
               </div>
