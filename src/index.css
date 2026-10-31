@@ -247,13 +247,57 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
     border-color: rgb(var(--los-accent) / 0.28);
     background: rgb(var(--los-accent) / 0.07);
   }
+  .los-field {
+    width: 100%;
+    min-height: 40px;
+    padding: 9px 12px;
+    border: 1px solid rgb(var(--los-border) / 0.15);
+    border-radius: 11px;
+    background: rgb(var(--los-border) / 0.045);
+    color: rgb(var(--los-text));
+    font-size: 13px;
+    line-height: 1.4;
+    transition: border-color 150ms ease, background-color 150ms ease;
+  }
+  .los-field::placeholder { color: rgb(var(--los-muted) / 0.8); }
+  .los-field:focus {
+    border-color: rgb(var(--los-accent) / 0.48);
+    outline: 2px solid rgb(var(--los-accent) / 0.12);
+    outline-offset: 1px;
+  }
+  .los-switch {
+    position: relative;
+    display: inline-flex;
+    width: 44px;
+    height: 26px;
+    flex: 0 0 auto;
+    align-items: center;
+    border: 1px solid rgb(var(--los-border) / 0.16);
+    border-radius: 999px;
+    background: rgb(var(--los-border) / 0.16);
+    transition: background-color 160ms ease, border-color 160ms ease;
+  }
+  .los-switch[aria-pressed="true"] {
+    border-color: rgb(var(--los-accent) / 0.32);
+    background: rgb(var(--los-accent) / 0.34);
+  }
+  .los-switch-thumb {
+    position: absolute;
+    left: 1px;
+    width: 22px;
+    height: 22px;
+    border-radius: 999px;
+    background: white;
+    box-shadow: 0 1px 3px rgb(0 0 0 / 0.18);
+    transition: transform 160ms ease;
+  }
   .los-chip[aria-pressed="true"] {
     border-color: rgb(var(--los-accent) / 0.3);
     background: rgb(var(--los-accent) / 0.14);
     color: rgb(var(--los-accent-strong));
     font-weight: 600;
   }
-  .los-btn:focus-visible, .los-chip:focus-visible, .los-choice:focus-visible {
+  .los-btn:focus-visible, .los-chip:focus-visible, .los-choice:focus-visible, .los-switch:focus-visible {
     outline: 2px solid rgb(var(--los-accent) / 0.72);
     outline-offset: 2px;
   }
