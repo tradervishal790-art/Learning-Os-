@@ -21,6 +21,7 @@ import { format } from './i18n/format';
 import { authFetch } from './apiFetch';
 import { pullSharedSearch, pushSharedSearch } from './sharedVideoCache';
 import { contributeSharedVideoSignal, getSharedVideoLearningSummary, type SharedVideoLearningSummary } from './sharedLearningIntelligence';
+import { beginRequest, invalidateRequests, isLatestRequest } from './requestSequence';
 
 declare global {
   interface Window {
@@ -309,6 +310,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
   // the same top results (see fetchMoreVideos()). Reset to null whenever a
   // new manual search runs (searchVideos()).
   const nextPageTokenRef = useRef<string | null>(null);
+  const searchRequestRef = useRef(0);
 
   const playerRef = useRef<any>(null);
   const watchDataRef = useRef<VideoWatchData>({
@@ -364,6 +366,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
     }
 
     return () => {
+      invalidateRequests(searchRequestRef);
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, []);
@@ -380,6 +383,8 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
       isFirstGoalRenderRef.current = false;
       return;
     }
+    invalidateRequests(searchRequestRef);
+    setLoading(false);
     finalizeAndSaveSession();
     try {
       const savedSearch = localStorage.getItem(getSearchStateKey(activeGoalId ?? undefined, activeTopicId ?? undefined));
@@ -700,8 +705,11 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
   
 
   const searchVideos = async () => {
-    if (!searchQuery.trim()) {
+    const requestId = beginRequest(searchRequestRef);
+    const query = searchQuery.trim();
+    if (!query) {
       setErrorMessage(t.videos.errors.searchSomethingFirst);
+      setLoading(false);
       return;
     }
 
@@ -735,9 +743,10 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
       }
 
       const res = await authFetch(
-        `/api/youtube?maxResults=12&q=${encodeURIComponent(searchQuery)}`
+        `/api/youtube?maxResults=12&q=${encodeURIComponent(query)}`
       );
       const data = await res.json();
+      if (!isLatestRequest(searchRequestRef, requestId)) return;
 
       if (!res.ok) {
         throw new Error(data?.error || 'YouTube API error');
@@ -764,10 +773,12 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
       setVideos(mapped);
       pushSharedSearch(searchKey, mapped, nextPageTokenRef.current);
     } catch (err: any) {
-      setErrorMessage(err.message || t.videos.errors.searchFailed);
-      setVideos([]);
+      if (isLatestRequest(searchRequestRef, requestId)) {
+        setErrorMessage(err.message || t.videos.errors.searchFailed);
+        setVideos([]);
+      }
     } finally {
-      setLoading(false);
+      if (isLatestRequest(searchRequestRef, requestId)) setLoading(false);
     }
   };
 
