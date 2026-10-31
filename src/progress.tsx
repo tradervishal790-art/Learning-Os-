@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { ChartNoAxesColumn, Flame, Clock, Brain, Sprout, Target, Star, Check } from 'lucide-react';
 import type { ReactNode } from 'react';
@@ -12,6 +13,7 @@ import {
 } from './progressData';
 import { useTranslation } from './i18n/LanguageContext';
 import { format } from './i18n/format';
+import { hydrateTestAttemptsFromCloud } from './testStore';
 
 interface ProgressProps {
   goals?: Goal[];
@@ -32,6 +34,14 @@ const statusIcon: Record<string, ReactNode> = {
 
 export default function Progress({ goals = [] }: ProgressProps) {
   const t = useTranslation();
+  const [, setAttemptHydrationVersion] = useState(0);
+  useEffect(() => {
+    let active = true;
+    void hydrateTestAttemptsFromCloud()
+      .then(() => { if (active) setAttemptHydrationVersion((version) => version + 1); })
+      .catch(() => { /* Local test history remains available when cloud sync is offline. */ });
+    return () => { active = false; };
+  }, []);
   const streak = getStreakStats();
   const completion = getCompletionStats(goals);
   const time = getTimeStats();
@@ -140,7 +150,7 @@ export default function Progress({ goals = [] }: ProgressProps) {
                 {heatmap.map((topic) => (
                   <div
                     key={topic.topicId}
-                    title={`${topic.title} — ${topic.masteryScore}%${topic.observedRecall === null ? ' estimated from progress' : ` observed recall from ${topic.recallAttempts} rating(s)`}`}
+                    title={`${topic.title} — ${topic.masteryScore}%${topic.observedRecall === null ? ' estimated from progress' : ` observed recall from ${topic.recallAttempts} rating(s)`}${topic.testAccuracy === null ? '' : `; test accuracy ${topic.testAccuracy}% from ${topic.testAttempts} recent test(s)`}`}
                     className={`aspect-[5/4] md:aspect-square rounded-lg ${masteryColor(topic.masteryScore)} flex items-center justify-center text-[10px] font-medium ${topic.masteryScore >= 60 ? 'text-white dark:text-black' : 'text-indigo-400 dark:text-white/60'}`}
                   >
                     {statusIcon[topic.status] ?? ''}
