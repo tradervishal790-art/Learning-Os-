@@ -5093,6 +5093,8 @@ export const translations: Record<Locale, TranslationShape> = {
         dueTitle: "Notes to revise",
         dueHint: "Needs revision, or exam is close",
         open: "Open revision sheet",
+        showAll: "Show all ({0})",
+        showFewer: "Show fewer",
       },
       safety: {
         conflictTitle: "Sync conflict",
