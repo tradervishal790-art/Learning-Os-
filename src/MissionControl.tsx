@@ -271,8 +271,9 @@ export default function MissionControl({
             <button type="button" onClick={() => setMoreOpen((value) => !value)} aria-expanded={moreOpen} className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-medium text-slate-200 transition hover:border-cyan-300/40 hover:bg-white/[0.07]">
               <MoreHorizontal className="h-4 w-4 text-cyan-300" /> More <ChevronDown className={`h-3.5 w-3.5 transition-transform ${moreOpen ? 'rotate-180' : ''}`} />
             </button>
-            {moreOpen && <div className="absolute bottom-full left-0 z-30 mb-2 w-56 overflow-hidden rounded-xl border border-white/10 bg-[#111d31] p-1.5 shadow-2xl">
-              {moreItems.map((item) => {
+            {moreOpen && <div className="absolute bottom-0 left-full z-30 ml-2 w-64 max-h-[min(70vh,520px)] overflow-y-auto rounded-xl border border-white/10 bg-[#111d31] p-1.5 shadow-2xl">
+              <div className="sticky top-0 z-10 bg-[#111d31] p-1.5"><input value={functionSearch} onChange={(event) => setFunctionSearch(event.target.value)} placeholder="Search all functions..." className="w-full rounded-lg border border-white/10 bg-white/[0.05] px-3 py-2 text-xs text-white outline-none placeholder:text-slate-500 focus:border-cyan-300/40" /></div>
+              {filteredMoreItems.map((item) => {
                 const ItemIcon = item.icon;
                 return <button key={item.action} type="button" onClick={() => { setMoreOpen(false); open(item.action); }} className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition hover:bg-white/[0.07]">
                   <ItemIcon className="h-4 w-4 shrink-0 text-cyan-300" />
@@ -282,9 +283,34 @@ export default function MissionControl({
               })}
             </div>}
           </div>
+          <button type="button" onClick={() => { setCustomizeOpen(true); setMoreOpen(false); }} className="inline-flex items-center gap-2 rounded-xl border border-cyan-300/20 bg-cyan-300/[0.06] px-3 py-2 text-xs font-medium text-cyan-100 transition hover:border-cyan-300/40 hover:bg-cyan-300/10">Customize map</button>
           <span className="min-w-0 flex-1 truncate text-center">{nextTopic ? `Next topic: ${nextTopic}` : nextTopicDetail}</span>
           <span className="shrink-0">{activeGoals} active goal{activeGoals === 1 ? '' : 's'} · {hasLearningProfile ? 'Profile ready' : 'Profile not set up'}</span>
         </div>
+        {customizeOpen && <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="map-customize-title">
+          <div className="w-full max-w-lg overflow-hidden rounded-2xl border border-white/10 bg-[#101a2b] shadow-2xl">
+            <div className="flex items-center justify-between border-b border-white/[0.08] px-5 py-4">
+              <div><h2 id="map-customize-title" className="text-base font-semibold text-white">Customize your learning map</h2><p className="mt-1 text-xs text-slate-400">Add the functions you use most. Your choices are saved on this device.</p></div>
+              <button type="button" onClick={() => setCustomizeOpen(false)} className="rounded-lg px-2 py-1 text-slate-400 hover:bg-white/10 hover:text-white" aria-label="Close">✕</button>
+            </div>
+            <div className="max-h-[55vh] overflow-y-auto p-3">
+              {allFunctionNodes.map((node) => {
+                const NodeIcon = node.icon;
+                const checked = visibleNodeIds.includes(node.id);
+                return <label key={node.id} className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-3 transition hover:bg-white/[0.05]">
+                  <input type="checkbox" checked={checked} onChange={() => setVisibleNodeIds((current) => checked ? current.filter((id) => id !== node.id) : [...current, node.id])} className="h-4 w-4 accent-cyan-400" />
+                  <span className="flex h-9 w-9 items-center justify-center rounded-lg" style={{ color: node.color, backgroundColor: `${node.color}20` }}><NodeIcon className="h-4 w-4" /></span>
+                  <span className="min-w-0 flex-1"><span className="block text-sm font-medium text-slate-100">{node.title}</span><span className="block text-xs text-slate-500">{node.subtitle}</span></span>
+                  <span className="text-[10px] text-slate-500">{checked ? 'On map' : 'Add'}</span>
+                </label>;
+              })}
+            </div>
+            <div className="flex items-center justify-between border-t border-white/[0.08] px-5 py-3">
+              <button type="button" onClick={() => setVisibleNodeIds(defaultNodeIds)} className="text-xs text-slate-400 transition hover:text-white">Reset default</button>
+              <button type="button" onClick={() => setCustomizeOpen(false)} className="rounded-lg bg-cyan-300 px-4 py-2 text-xs font-semibold text-slate-950 transition hover:bg-cyan-200">Done</button>
+            </div>
+          </div>
+        </div>}
         <button type="button" onClick={() => open(revisionOverdue + revisionDue > 0 ? 'revision' : nextTopic ? 'videos' : 'roadmap')} className="mt-1 flex shrink-0 items-center justify-between gap-3 rounded-xl border border-cyan-300/15 bg-cyan-300/[0.06] px-3 py-2 text-left transition hover:bg-cyan-300/10 md:hidden">
           <span className="min-w-0"><span className="block text-[9px] uppercase tracking-[0.16em] text-cyan-200/70">Next best step</span><span className="block truncate text-xs font-medium text-white">{currentStep}</span></span>
           <ArrowUpRight className="h-4 w-4 shrink-0 text-cyan-200" />
