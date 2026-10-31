@@ -15,9 +15,6 @@ import GrowthEdgesCard from './GrowthEdgesCard';
 import PersonalityReportCard from './PersonalityReportCard';
 import { computeGrowthEdges } from './growthEdges';
 import { getBehaviourStats } from './behaviourStats';
-import WelcomeBack from './WelcomeBack';
-import CurrentAffairsChip from './CurrentAffairsChip';
-import DailyHabit from './DailyHabit';
 import { analyzeAttempt, analyzeHistory } from './testAnalytics';
 import { getTestAttempts } from './testStore';
 import { getLearningProfile, saveLearningProfile, clearLearningProfile } from './learningProfileStore';
@@ -615,7 +612,6 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
 
         <Suspense fallback={<PageLoading />}>
                 {activePage === 'dashboard' && (
-          <>
           <MissionControl
             name={displayName}
             goalTitle={goals.find((goal) => goal.id === activeGoalId)?.title ?? userData?.goal ?? ''}
@@ -629,12 +625,6 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
             onNavigate={setActivePage}
             onOpenProfile={handleOpenLearningProfile}
           />
-          <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-3 px-4 pb-6 md:px-8">
-            <WelcomeBack goals={goals} revisionTasks={t.revisionTasks} onOpen={setActivePage} />
-            <DailyHabit />
-            <CurrentAffairsChip onOpen={() => setActivePage('current-affairs')} />
-          </div>
-          </>
         )}
 
         {activePage === 'roadmap' && (
