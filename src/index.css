@@ -24,6 +24,16 @@ html, body, #root {
 }
 
 
+/* Mission Control is intentionally dark regardless of the global reading theme. */
+.mission-map {
+  --los-accent: 167 139 250;
+  --los-accent-strong: 221 214 254;
+  --los-text: 238 240 247;
+  --los-muted: 160 166 180;
+  --los-border: 255 255 255;
+  --los-surface: 20 26 39;
+}
+
 /* Current Affairs: light, calm reading surface scoped to this page only. */
 .ca-theme {
   color: #0b132b;
