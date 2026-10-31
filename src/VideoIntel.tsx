@@ -734,8 +734,9 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
 
     try {
       // Shared cache first — same search by any earlier user = 0 YouTube quota.
-      const searchKey = `search_${searchQuery.trim().toLowerCase().replace(/\s+/g, ' ').slice(0, 150)}`;
+      const searchKey = `search_${query.toLowerCase().replace(/\s+/g, ' ').slice(0, 150)}`;
       const shared = await pullSharedSearch<Video>(searchKey);
+      if (!isLatestRequest(searchRequestRef, requestId)) return;
       if (shared) {
         nextPageTokenRef.current = shared.nextPageToken;
         setVideos(shared.items);
