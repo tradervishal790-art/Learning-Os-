@@ -23,5 +23,6 @@ test('normal imports keep a small PDF together within the normal page limit', as
 });
 
 test('page limits are enforced even when the PDF is small', async () => {
-  await assert.rejects(() => splitPdfIntoChunks(makePdf(31), 10_000_000, 30, 1), /limit is 30/);
+  const source = await makePdf(31);
+  await assert.rejects(() => splitPdfIntoChunks(source, 10_000_000, 30, 1), /limit is 30/);
 });
