@@ -115,7 +115,7 @@ interface Blueprint {
 
 function getSidebarItems(t: ReturnType<typeof useTranslation>): { id: DashboardPageId; label: string; icon?: ComponentType<{ className?: string }> }[] {
   return [
-    { id: 'dashboard', label: t.dashboard.sidebar.home },
+    { id: 'dashboard', label: 'Mission Control' },
     { id: 'roadmap', label: t.dashboard.sidebar.roadmap },
     { id: 'revision', label: t.dashboard.sidebar.revision },
     { id: 'notes', label: t.dashboard.sidebar.notes },
