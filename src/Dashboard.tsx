@@ -533,11 +533,17 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
               transition={{ delay: 0.1 + i * 0.05, duration: 0.4 }}
               onClick={() => selectNav(item.id, item.label)}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
-                isLocked
-                  ? 'text-gray-300 dark:text-white/20 hover:text-gray-400 dark:hover:text-white/30'
-                  : activePage === item.id
-                  ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white'
-                  : 'text-gray-500 dark:text-white/50 hover:text-black dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5'
+                isMissionControl
+                  ? isLocked
+                    ? 'text-white/20'
+                    : activePage === item.id
+                    ? 'bg-indigo-500 text-white'
+                    : 'text-white/55 hover:text-white hover:bg-white/5'
+                  : isLocked
+                    ? 'text-gray-300 dark:text-white/20 hover:text-gray-400 dark:hover:text-white/30'
+                    : activePage === item.id
+                      ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white'
+                      : 'text-gray-500 dark:text-white/50 hover:text-black dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5'
               }`}
             >
               {item.icon && <item.icon className="w-4 h-4" />}
@@ -547,7 +553,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
           );
         })}
       </nav>
-      <div className="mt-auto pt-6 border-t border-gray-200 dark:border-white/10">
+      <div className={`mt-auto pt-6 border-t ${isMissionControl ? "border-white/10" : "border-gray-200 dark:border-white/10"}`}>
         <div className="flex items-center gap-3 px-2">
           <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400 flex items-center justify-center text-sm font-bold text-white flex-shrink-0">
             {displayName.charAt(0).toUpperCase()}
