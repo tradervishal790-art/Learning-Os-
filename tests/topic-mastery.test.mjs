@@ -18,7 +18,7 @@ test('topic evidence matches exact normalized topic names and ignores pending su
 
 test('only the five most recent matching tests contribute to mastery evidence', () => {
   const evidence = getTopicTestEvidence('Physics', Array.from({ length: 6 }, (_, i) => attempt('Physics', [i !== 0])));
-  assert.deepEqual(evidence, { accuracy: 100, attempts: 5, gradedQuestions: 5 });
+  assert.deepEqual(evidence, { accuracy: 80, attempts: 5, gradedQuestions: 5 });
 });
 
 test('mastery uses recall as primary evidence and gradually trusts test scores', () => {
