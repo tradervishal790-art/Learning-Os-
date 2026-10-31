@@ -28,54 +28,87 @@ service cloud.firestore {
       allow read, write: if signedIn() && request.auth.uid == uid;
     }
 
-    match /users/{uid}/learningIntelligence/{videoId} {
-      allow read: if signedIn() && request.auth.uid == uid;
-      allow create: if realAccount() && request.auth.uid == uid
-        && videoId.matches('^[A-Za-z0-9_-]{11}
-    function learningContributionPath(videoId) {
-      return /databases/$(database)/documents/users/$(request.auth.uid)/learningIntelligence/$(videoId);
+
+    // ---------- opt-in shared learning intelligence ----------
+    function videoMarkerPath(uid, videoId) {
+      return /databases/$(database)/documents/users/$(uid)/learningIntelligence/$(videoId);
     }
 
-    function hasNewLearningContribution(videoId) {
-      let path = learningContributionPath(videoId);
-      let contribution = getAfter(path).data;
+    function videoAggregatePath(videoId) {
+      return /databases/$(database)/documents/shared_learning_video_stats/$(videoId);
+    }
+
+    function validVideoAggregateAfter(videoId, outcome, feedback) {
+      let path = videoAggregatePath(videoId);
+      let afterData = getAfter(path).data;
+      let beforeCount = exists(path) ? get(path).data.sampleCount : 0;
+      let beforeEarly = exists(path) ? get(path).data.earlyDropCount : 0;
+      let beforePartial = exists(path) ? get(path).data.partialCount : 0;
+      let beforeNear = exists(path) ? get(path).data.nearCompleteCount : 0;
+      let beforeCompleted = exists(path) ? get(path).data.completedCount : 0;
+      let beforePositive = exists(path) ? get(path).data.positiveFeedbackCount : 0;
+      let beforeNegative = exists(path) ? get(path).data.negativeFeedbackCount : 0;
+      return existsAfter(path)
+        && afterData.sampleCount == beforeCount + 1
+        && afterData.earlyDropCount == beforeEarly + (outcome == 'early-drop' ? 1 : 0)
+        && afterData.partialCount == beforePartial + (outcome == 'partial' ? 1 : 0)
+        && afterData.nearCompleteCount == beforeNear + (outcome == 'near-complete' ? 1 : 0)
+        && afterData.completedCount == beforeCompleted + (outcome == 'completed' ? 1 : 0)
+        && afterData.positiveFeedbackCount == beforePositive + (feedback == 'like' ? 1 : 0)
+        && afterData.negativeFeedbackCount == beforeNegative + (feedback == 'dislike' ? 1 : 0)
+        && afterData.updatedAt == request.time;
+    }
+
+    function hasNewVideoMarker(videoId) {
+      let path = videoMarkerPath(request.auth.uid, videoId);
+      let marker = getAfter(path).data;
       return !exists(path)
         && existsAfter(path)
-        && contribution.keys().hasOnly(['outcome', 'feedback', 'submittedAt'])
-        && contribution.outcome in ['early-drop', 'partial', 'near-complete', 'completed']
-        && contribution.feedback in ['like', 'dislike', 'none']
-        && contribution.submittedAt == request.time;
+        && marker.keys().hasAll(['outcome', 'feedback', 'submittedAt'])
+        && marker.keys().hasOnly(['outcome', 'feedback', 'submittedAt'])
+        && marker.outcome in ['early-drop', 'partial', 'near-complete', 'completed']
+        && marker.feedback in ['like', 'dislike', 'none']
+        && marker.submittedAt == request.time;
     }
 
-    function validInitialLearningAggregate(videoId) {
-      let contribution = getAfter(learningContributionPath(videoId)).data;
-      return request.resource.data.sampleCount == 1
-        && request.resource.data.earlyDropCount == (contribution.outcome == 'early-drop' ? 1 : 0)
-        && request.resource.data.partialCount == (contribution.outcome == 'partial' ? 1 : 0)
-        && request.resource.data.nearCompleteCount == (contribution.outcome == 'near-complete' ? 1 : 0)
-        && request.resource.data.completedCount == (contribution.outcome == 'completed' ? 1 : 0)
-        && request.resource.data.positiveFeedbackCount == (contribution.feedback == 'like' ? 1 : 0)
-        && request.resource.data.negativeFeedbackCount == (contribution.feedback == 'dislike' ? 1 : 0);
+    function patternMarkerPath(uid, signalId) {
+      return /databases/$(database)/documents/users/$(uid)/learningPatterns/$(signalId);
     }
 
-    function validUpdatedLearningAggregate(videoId) {
-      let contribution = getAfter(learningContributionPath(videoId)).data;
-      return request.resource.data.sampleCount == resource.data.sampleCount + 1
-        && request.resource.data.earlyDropCount == resource.data.earlyDropCount + (contribution.outcome == 'early-drop' ? 1 : 0)
-        && request.resource.data.partialCount == resource.data.partialCount + (contribution.outcome == 'partial' ? 1 : 0)
-        && request.resource.data.nearCompleteCount == resource.data.nearCompleteCount + (contribution.outcome == 'near-complete' ? 1 : 0)
-        && request.resource.data.completedCount == resource.data.completedCount + (contribution.outcome == 'completed' ? 1 : 0)
-        && request.resource.data.positiveFeedbackCount == resource.data.positiveFeedbackCount + (contribution.feedback == 'like' ? 1 : 0)
-        && request.resource.data.negativeFeedbackCount == resource.data.negativeFeedbackCount + (contribution.feedback == 'dislike' ? 1 : 0);
+    function patternAggregatePath(signalId) {
+      return /databases/$(database)/documents/shared_learning_patterns/$(signalId);
     }
 
-    // ---------- shared learning intelligence ----------
-    // Aggregate docs contain coarse counters only. Individual video stats
-    // remain hidden until at least 10 distinct accounts have contributed.
-    match /shared_learning_video_stats/{videoId} {
-      allow get: if signedIn() && resource.data.sampleCount >= 10;
-      allow list, delete: if false;
+    function validPatternAggregateAfter(signalId, bucket) {
+      let path = patternAggregatePath(signalId);
+      let afterData = getAfter(path).data;
+      let beforeCount = exists(path) ? get(path).data.sampleCount : 0;
+      let beforeLow = exists(path) ? get(path).data.lowCount : 0;
+      let beforeMedium = exists(path) ? get(path).data.mediumCount : 0;
+      let beforeHigh = exists(path) ? get(path).data.highCount : 0;
+      return existsAfter(path)
+        && afterData.sampleCount == beforeCount + 1
+        && afterData.lowCount == beforeLow + (bucket == 'low' ? 1 : 0)
+        && afterData.mediumCount == beforeMedium + (bucket == 'medium' ? 1 : 0)
+        && afterData.highCount == beforeHigh + (bucket == 'high' ? 1 : 0)
+        && afterData.updatedAt == request.time;
+    }
+
+    function hasNewPatternMarker(signalId) {
+      let path = patternMarkerPath(request.auth.uid, signalId);
+      let marker = getAfter(path).data;
+      return !exists(path)
+        && existsAfter(path)
+        && marker.keys().hasAll(['bucket', 'submittedAt'])
+        && marker.keys().hasOnly(['bucket', 'submittedAt'])
+        && marker.bucket in ['low', 'medium', 'high']
+        && marker.submittedAt == request.time;
+    }
+
+    match /users/{uid}/learningIntelligence/{videoId} {
+      allow read: if signedIn() && request.auth.uid == uid;
       allow create: if realAccount()
+        && request.auth.uid == uid
         && videoId.matches('^[A-Za-z0-9_-]{11}
     // Read: any signed-in user (guests too). Write: real accounts only, so an
     // anonymous account cannot poison what every student sees. No client deletes.
@@ -206,11 +239,16 @@ service cloud.firestore {
         && request.resource.data.keys().hasOnly(['outcome', 'feedback', 'submittedAt'])
         && request.resource.data.outcome in ['early-drop', 'partial', 'near-complete', 'completed']
         && request.resource.data.feedback in ['like', 'dislike', 'none']
-        && request.resource.data.submittedAt == request.time;
+        && request.resource.data.submittedAt == request.time
+        && validVideoAggregateAfter(videoId, request.resource.data.outcome, request.resource.data.feedback);
       allow update, delete: if false;
     }
 
-    // ---------- shared caches (no owner) ----------
+    match /shared_learning_video_stats/{videoId} {
+      allow get: if signedIn() && resource.data.sampleCount >= 10;
+      allow list, delete: if false;
+      allow create: if realAccount()
+        && videoId.matches('^[A-Za-z0-9_-]{11}
     // Read: any signed-in user (guests too). Write: real accounts only, so an
     // anonymous account cannot poison what every student sees. No client deletes.
     match /shared_current_affairs/{id} {
@@ -344,9 +382,16 @@ service cloud.firestore {
           'sampleCount', 'earlyDropCount', 'partialCount', 'nearCompleteCount',
           'completedCount', 'positiveFeedbackCount', 'negativeFeedbackCount', 'updatedAt'
         ])
+        && request.resource.data.sampleCount == 1
+        && request.resource.data.earlyDropCount >= 0
+        && request.resource.data.partialCount >= 0
+        && request.resource.data.nearCompleteCount >= 0
+        && request.resource.data.completedCount >= 0
+        && request.resource.data.positiveFeedbackCount >= 0
+        && request.resource.data.negativeFeedbackCount >= 0
         && request.resource.data.updatedAt == request.time
-        && hasNewLearningContribution(videoId)
-        && validInitialLearningAggregate(videoId);
+        && hasNewVideoMarker(videoId)
+        && validVideoAggregateAfter(videoId, getAfter(videoMarkerPath(request.auth.uid, videoId)).data.outcome, getAfter(videoMarkerPath(request.auth.uid, videoId)).data.feedback);
       allow update: if realAccount()
         && videoId.matches('^[A-Za-z0-9_-]{11}
     // Read: any signed-in user (guests too). Write: real accounts only, so an
@@ -474,139 +519,6 @@ service cloud.firestore {
   }
 }
 )
-        && request.resource.data.keys().hasOnly(['outcome', 'feedback', 'submittedAt'])
-        && request.resource.data.outcome in ['early-drop', 'partial', 'near-complete', 'completed']
-        && request.resource.data.feedback in ['like', 'dislike', 'none']
-        && request.resource.data.submittedAt == request.time;
-      allow update, delete: if false;
-    }
-
-    // ---------- shared caches (no owner) ----------
-    // Read: any signed-in user (guests too). Write: real accounts only, so an
-    // anonymous account cannot poison what every student sees. No client deletes.
-    match /shared_current_affairs/{id} {
-      allow read: if signedIn();
-      allow create, update: if realAccount();
-    }
-    match /shared_channel_days/{id} {
-      allow read: if signedIn();
-      allow create, update: if realAccount();
-    }
-    match /shared_video_summaries/{id} {
-      allow read: if signedIn();
-      allow create, update: if realAccount();
-    }
-    match /shared_video_analysis/{id} {
-      allow read: if signedIn();
-      allow create, update: if realAccount();
-    }
-    match /shared_topic_pools/{id} {
-      allow read: if signedIn();
-      allow create, update: if realAccount();
-    }
-
-    // ---------- live tests ----------
-    match /liveTests/{code} {
-
-      function sessionPath() {
-        return /databases/$(database)/documents/liveTests/$(code);
-      }
-
-      function isHost() {
-        return signedIn() && get(sessionPath()).data.hostUid == request.auth.uid;
-      }
-
-      // Public session doc: questions here have the answer key stripped
-      // (publicQuestion in liveTest.ts); the real key lives in private/paper.
-      // get only: the 6-character code is the secret, so sessions cannot be listed.
-      allow get: if signedIn();
-      allow create: if signedIn()
-        && code.matches('[A-Z0-9]{6}')
-        && request.resource.data.hostUid == request.auth.uid;
-      // The host can only end the session (status/endedAt); hostUid never changes.
-      allow update: if signedIn()
-        && resource.data.hostUid == request.auth.uid
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'endedAt']);
-
-      // Answer key — host only. Students must never be able to read it.
-      match /private/{docId} {
-        allow read, write: if isHost();
-      }
-
-      // Host's guest list. Students may read their own entry only after their
-      // player document proves ownership of that phone-number slot.
-      match /allowed/{phone} {
-        allow get: if isHost()
-          || (signedIn()
-            && exists(/databases/$(database)/documents/liveTests/$(code)/players/$(phone))
-            && get(/databases/$(database)/documents/liveTests/$(code)/players/$(phone)).data.uid == request.auth.uid);
-        allow list: if isHost();
-        allow create, update: if isHost()
-          && request.resource.data.keys().hasOnly(['phone', 'name'])
-          && request.resource.data.phone == phone;
-        allow delete: if isHost();
-      }
-
-      // One doc per phone number; locks that number to the first device (uid).
-      // A different uid hitting the update rule gets permission-denied, which
-      // joinLiveSession() turns into OTHER_DEVICE.
-      match /players/{phone} {
-        allow get: if isHost() || resource.data.uid == request.auth.uid;
-        allow list: if isHost();
-
-        allow create: if signedIn()
-          && exists(/databases/$(database)/documents/liveTests/$(code)/allowed/$(phone))
-          && request.resource.data.keys().hasOnly(['uid', 'name', 'phone', 'joinedAt'])
-          && request.resource.data.uid == request.auth.uid
-          && request.resource.data.phone == phone;
-
-        // Re-join (merge) or Start. startedAt can be set once, to the server
-        // time, and never changed — so the personal timer cannot be reset.
-        allow update: if signedIn()
-          && resource.data.uid == request.auth.uid
-          && request.resource.data.keys().hasOnly(['uid', 'name', 'phone', 'joinedAt', 'startedAt'])
-          && request.resource.data.uid == resource.data.uid
-          && request.resource.data.phone == phone
-          && (resource.data.get('startedAt', null) != null
-              ? request.resource.data.startedAt == resource.data.startedAt
-              : (request.resource.data.get('startedAt', null) == null
-                 || request.resource.data.startedAt == request.time));
-
-        // Host frees a number locked to a lost device (resetPlayer).
-        allow delete: if isHost();
-      }
-
-      // Answers. Create-only: a second write to the same phone is an update
-      // and is denied, so a student cannot resubmit. Only the host reads them.
-      match /submissions/{phone} {
-        allow read: if isHost() || (signedIn() && resource.data.uid == request.auth.uid);
-        allow create: if signedIn()
-          && request.resource.data.keys().hasOnly(['uid', 'name', 'phone', 'answers', 'timeTakenSeconds', 'submittedAt'])
-          && request.resource.data.uid == request.auth.uid
-          && request.resource.data.phone == phone
-          && request.resource.data.timeTakenSeconds is number
-          && get(/databases/$(database)/documents/liveTests/$(code)/players/$(phone)).data.uid == request.auth.uid
-          && !exists(/databases/$(database)/documents/liveTests/$(code)/done/$(phone));
-      }
-
-      // "Already finished" marker. The host can read all markers; students
-      // can read only their own marker. Missing markers remain readable as
-      // missing so a participant can check whether they have already finished.
-      match /done/{phone} {
-        allow get: if isHost()
-          || !exists(/databases/$(database)/documents/liveTests/$(code)/done/$(phone))
-          || (signedIn() && resource.data.uid == request.auth.uid);
-        allow list: if isHost();
-        allow create: if signedIn()
-          && request.resource.data.keys().hasOnly(['uid', 'phone'])
-          && request.resource.data.uid == request.auth.uid
-          && request.resource.data.phone == phone
-          && get(/databases/$(database)/documents/liveTests/$(code)/players/$(phone)).data.uid == request.auth.uid;
-      }
-    }
-  }
-}
-)
         && request.resource.data.keys().hasAll([
           'sampleCount', 'earlyDropCount', 'partialCount', 'nearCompleteCount',
           'completedCount', 'positiveFeedbackCount', 'negativeFeedbackCount', 'updatedAt'
@@ -615,12 +527,23 @@ service cloud.firestore {
           'sampleCount', 'earlyDropCount', 'partialCount', 'nearCompleteCount',
           'completedCount', 'positiveFeedbackCount', 'negativeFeedbackCount', 'updatedAt'
         ])
+        && request.resource.data.sampleCount == resource.data.sampleCount + 1
+        && request.resource.data.earlyDropCount >= resource.data.earlyDropCount
+        && request.resource.data.partialCount >= resource.data.partialCount
+        && request.resource.data.nearCompleteCount >= resource.data.nearCompleteCount
+        && request.resource.data.completedCount >= resource.data.completedCount
+        && request.resource.data.positiveFeedbackCount >= resource.data.positiveFeedbackCount
+        && request.resource.data.negativeFeedbackCount >= resource.data.negativeFeedbackCount
         && request.resource.data.updatedAt == request.time
-        && hasNewLearningContribution(videoId)
-        && validUpdatedLearningAggregate(videoId);
+        && hasNewVideoMarker(videoId)
+        && validVideoAggregateAfter(videoId, getAfter(videoMarkerPath(request.auth.uid, videoId)).data.outcome, getAfter(videoMarkerPath(request.auth.uid, videoId)).data.feedback);
     }
 
-    // ---------- shared caches (no owner) ----------
+    match /users/{uid}/learningPatterns/{signalId} {
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow create: if realAccount()
+        && request.auth.uid == uid
+        && (signalId.matches('^revision_day_(1|3|7|15|30|60)
     // Read: any signed-in user (guests too). Write: real accounts only, so an
     // anonymous account cannot poison what every student sees. No client deletes.
     match /shared_current_affairs/{id} {
@@ -746,11 +669,295 @@ service cloud.firestore {
   }
 }
 )
-        && request.resource.data.keys().hasOnly(['outcome', 'feedback', 'submittedAt'])
-        && request.resource.data.outcome in ['early-drop', 'partial', 'near-complete', 'completed']
-        && request.resource.data.feedback in ['like', 'dislike', 'none']
-        && request.resource.data.submittedAt == request.time;
+          || signalId == 'question_mcq'
+          || signalId == 'question_subjective')
+        && request.resource.data.keys().hasAll(['bucket', 'submittedAt'])
+        && request.resource.data.keys().hasOnly(['bucket', 'submittedAt'])
+        && request.resource.data.bucket in ['low', 'medium', 'high']
+        && request.resource.data.submittedAt == request.time
+        && validPatternAggregateAfter(signalId, request.resource.data.bucket);
       allow update, delete: if false;
+    }
+
+    match /shared_learning_patterns/{signalId} {
+      allow get: if signedIn() && resource.data.sampleCount >= 10;
+      allow list, delete: if false;
+      allow create: if realAccount()
+        && (signalId.matches('^revision_day_(1|3|7|15|30|60)
+    // Read: any signed-in user (guests too). Write: real accounts only, so an
+    // anonymous account cannot poison what every student sees. No client deletes.
+    match /shared_current_affairs/{id} {
+      allow read: if signedIn();
+      allow create, update: if realAccount();
+    }
+    match /shared_channel_days/{id} {
+      allow read: if signedIn();
+      allow create, update: if realAccount();
+    }
+    match /shared_video_summaries/{id} {
+      allow read: if signedIn();
+      allow create, update: if realAccount();
+    }
+    match /shared_video_analysis/{id} {
+      allow read: if signedIn();
+      allow create, update: if realAccount();
+    }
+    match /shared_topic_pools/{id} {
+      allow read: if signedIn();
+      allow create, update: if realAccount();
+    }
+
+    // ---------- live tests ----------
+    match /liveTests/{code} {
+
+      function sessionPath() {
+        return /databases/$(database)/documents/liveTests/$(code);
+      }
+
+      function isHost() {
+        return signedIn() && get(sessionPath()).data.hostUid == request.auth.uid;
+      }
+
+      // Public session doc: questions here have the answer key stripped
+      // (publicQuestion in liveTest.ts); the real key lives in private/paper.
+      // get only: the 6-character code is the secret, so sessions cannot be listed.
+      allow get: if signedIn();
+      allow create: if signedIn()
+        && code.matches('[A-Z0-9]{6}')
+        && request.resource.data.hostUid == request.auth.uid;
+      // The host can only end the session (status/endedAt); hostUid never changes.
+      allow update: if signedIn()
+        && resource.data.hostUid == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'endedAt']);
+
+      // Answer key — host only. Students must never be able to read it.
+      match /private/{docId} {
+        allow read, write: if isHost();
+      }
+
+      // Host's guest list. Students may read their own entry only after their
+      // player document proves ownership of that phone-number slot.
+      match /allowed/{phone} {
+        allow get: if isHost()
+          || (signedIn()
+            && exists(/databases/$(database)/documents/liveTests/$(code)/players/$(phone))
+            && get(/databases/$(database)/documents/liveTests/$(code)/players/$(phone)).data.uid == request.auth.uid);
+        allow list: if isHost();
+        allow create, update: if isHost()
+          && request.resource.data.keys().hasOnly(['phone', 'name'])
+          && request.resource.data.phone == phone;
+        allow delete: if isHost();
+      }
+
+      // One doc per phone number; locks that number to the first device (uid).
+      // A different uid hitting the update rule gets permission-denied, which
+      // joinLiveSession() turns into OTHER_DEVICE.
+      match /players/{phone} {
+        allow get: if isHost() || resource.data.uid == request.auth.uid;
+        allow list: if isHost();
+
+        allow create: if signedIn()
+          && exists(/databases/$(database)/documents/liveTests/$(code)/allowed/$(phone))
+          && request.resource.data.keys().hasOnly(['uid', 'name', 'phone', 'joinedAt'])
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.phone == phone;
+
+        // Re-join (merge) or Start. startedAt can be set once, to the server
+        // time, and never changed — so the personal timer cannot be reset.
+        allow update: if signedIn()
+          && resource.data.uid == request.auth.uid
+          && request.resource.data.keys().hasOnly(['uid', 'name', 'phone', 'joinedAt', 'startedAt'])
+          && request.resource.data.uid == resource.data.uid
+          && request.resource.data.phone == phone
+          && (resource.data.get('startedAt', null) != null
+              ? request.resource.data.startedAt == resource.data.startedAt
+              : (request.resource.data.get('startedAt', null) == null
+                 || request.resource.data.startedAt == request.time));
+
+        // Host frees a number locked to a lost device (resetPlayer).
+        allow delete: if isHost();
+      }
+
+      // Answers. Create-only: a second write to the same phone is an update
+      // and is denied, so a student cannot resubmit. Only the host reads them.
+      match /submissions/{phone} {
+        allow read: if isHost() || (signedIn() && resource.data.uid == request.auth.uid);
+        allow create: if signedIn()
+          && request.resource.data.keys().hasOnly(['uid', 'name', 'phone', 'answers', 'timeTakenSeconds', 'submittedAt'])
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.phone == phone
+          && request.resource.data.timeTakenSeconds is number
+          && get(/databases/$(database)/documents/liveTests/$(code)/players/$(phone)).data.uid == request.auth.uid
+          && !exists(/databases/$(database)/documents/liveTests/$(code)/done/$(phone));
+      }
+
+      // "Already finished" marker. The host can read all markers; students
+      // can read only their own marker. Missing markers remain readable as
+      // missing so a participant can check whether they have already finished.
+      match /done/{phone} {
+        allow get: if isHost()
+          || !exists(/databases/$(database)/documents/liveTests/$(code)/done/$(phone))
+          || (signedIn() && resource.data.uid == request.auth.uid);
+        allow list: if isHost();
+        allow create: if signedIn()
+          && request.resource.data.keys().hasOnly(['uid', 'phone'])
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.phone == phone
+          && get(/databases/$(database)/documents/liveTests/$(code)/players/$(phone)).data.uid == request.auth.uid;
+      }
+    }
+  }
+}
+)
+          || signalId == 'question_mcq'
+          || signalId == 'question_subjective')
+        && request.resource.data.keys().hasAll(['sampleCount', 'lowCount', 'mediumCount', 'highCount', 'updatedAt'])
+        && request.resource.data.keys().hasOnly(['sampleCount', 'lowCount', 'mediumCount', 'highCount', 'updatedAt'])
+        && request.resource.data.sampleCount == 1
+        && request.resource.data.lowCount >= 0
+        && request.resource.data.mediumCount >= 0
+        && request.resource.data.highCount >= 0
+        && request.resource.data.updatedAt == request.time
+        && hasNewPatternMarker(signalId)
+        && validPatternAggregateAfter(signalId, getAfter(patternMarkerPath(request.auth.uid, signalId)).data.bucket);
+      allow update: if realAccount()
+        && (signalId.matches('^revision_day_(1|3|7|15|30|60)
+    // Read: any signed-in user (guests too). Write: real accounts only, so an
+    // anonymous account cannot poison what every student sees. No client deletes.
+    match /shared_current_affairs/{id} {
+      allow read: if signedIn();
+      allow create, update: if realAccount();
+    }
+    match /shared_channel_days/{id} {
+      allow read: if signedIn();
+      allow create, update: if realAccount();
+    }
+    match /shared_video_summaries/{id} {
+      allow read: if signedIn();
+      allow create, update: if realAccount();
+    }
+    match /shared_video_analysis/{id} {
+      allow read: if signedIn();
+      allow create, update: if realAccount();
+    }
+    match /shared_topic_pools/{id} {
+      allow read: if signedIn();
+      allow create, update: if realAccount();
+    }
+
+    // ---------- live tests ----------
+    match /liveTests/{code} {
+
+      function sessionPath() {
+        return /databases/$(database)/documents/liveTests/$(code);
+      }
+
+      function isHost() {
+        return signedIn() && get(sessionPath()).data.hostUid == request.auth.uid;
+      }
+
+      // Public session doc: questions here have the answer key stripped
+      // (publicQuestion in liveTest.ts); the real key lives in private/paper.
+      // get only: the 6-character code is the secret, so sessions cannot be listed.
+      allow get: if signedIn();
+      allow create: if signedIn()
+        && code.matches('[A-Z0-9]{6}')
+        && request.resource.data.hostUid == request.auth.uid;
+      // The host can only end the session (status/endedAt); hostUid never changes.
+      allow update: if signedIn()
+        && resource.data.hostUid == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'endedAt']);
+
+      // Answer key — host only. Students must never be able to read it.
+      match /private/{docId} {
+        allow read, write: if isHost();
+      }
+
+      // Host's guest list. Students may read their own entry only after their
+      // player document proves ownership of that phone-number slot.
+      match /allowed/{phone} {
+        allow get: if isHost()
+          || (signedIn()
+            && exists(/databases/$(database)/documents/liveTests/$(code)/players/$(phone))
+            && get(/databases/$(database)/documents/liveTests/$(code)/players/$(phone)).data.uid == request.auth.uid);
+        allow list: if isHost();
+        allow create, update: if isHost()
+          && request.resource.data.keys().hasOnly(['phone', 'name'])
+          && request.resource.data.phone == phone;
+        allow delete: if isHost();
+      }
+
+      // One doc per phone number; locks that number to the first device (uid).
+      // A different uid hitting the update rule gets permission-denied, which
+      // joinLiveSession() turns into OTHER_DEVICE.
+      match /players/{phone} {
+        allow get: if isHost() || resource.data.uid == request.auth.uid;
+        allow list: if isHost();
+
+        allow create: if signedIn()
+          && exists(/databases/$(database)/documents/liveTests/$(code)/allowed/$(phone))
+          && request.resource.data.keys().hasOnly(['uid', 'name', 'phone', 'joinedAt'])
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.phone == phone;
+
+        // Re-join (merge) or Start. startedAt can be set once, to the server
+        // time, and never changed — so the personal timer cannot be reset.
+        allow update: if signedIn()
+          && resource.data.uid == request.auth.uid
+          && request.resource.data.keys().hasOnly(['uid', 'name', 'phone', 'joinedAt', 'startedAt'])
+          && request.resource.data.uid == resource.data.uid
+          && request.resource.data.phone == phone
+          && (resource.data.get('startedAt', null) != null
+              ? request.resource.data.startedAt == resource.data.startedAt
+              : (request.resource.data.get('startedAt', null) == null
+                 || request.resource.data.startedAt == request.time));
+
+        // Host frees a number locked to a lost device (resetPlayer).
+        allow delete: if isHost();
+      }
+
+      // Answers. Create-only: a second write to the same phone is an update
+      // and is denied, so a student cannot resubmit. Only the host reads them.
+      match /submissions/{phone} {
+        allow read: if isHost() || (signedIn() && resource.data.uid == request.auth.uid);
+        allow create: if signedIn()
+          && request.resource.data.keys().hasOnly(['uid', 'name', 'phone', 'answers', 'timeTakenSeconds', 'submittedAt'])
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.phone == phone
+          && request.resource.data.timeTakenSeconds is number
+          && get(/databases/$(database)/documents/liveTests/$(code)/players/$(phone)).data.uid == request.auth.uid
+          && !exists(/databases/$(database)/documents/liveTests/$(code)/done/$(phone));
+      }
+
+      // "Already finished" marker. The host can read all markers; students
+      // can read only their own marker. Missing markers remain readable as
+      // missing so a participant can check whether they have already finished.
+      match /done/{phone} {
+        allow get: if isHost()
+          || !exists(/databases/$(database)/documents/liveTests/$(code)/done/$(phone))
+          || (signedIn() && resource.data.uid == request.auth.uid);
+        allow list: if isHost();
+        allow create: if signedIn()
+          && request.resource.data.keys().hasOnly(['uid', 'phone'])
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.phone == phone
+          && get(/databases/$(database)/documents/liveTests/$(code)/players/$(phone)).data.uid == request.auth.uid;
+      }
+    }
+  }
+}
+)
+          || signalId == 'question_mcq'
+          || signalId == 'question_subjective')
+        && request.resource.data.keys().hasAll(['sampleCount', 'lowCount', 'mediumCount', 'highCount', 'updatedAt'])
+        && request.resource.data.keys().hasOnly(['sampleCount', 'lowCount', 'mediumCount', 'highCount', 'updatedAt'])
+        && request.resource.data.sampleCount == resource.data.sampleCount + 1
+        && request.resource.data.lowCount >= resource.data.lowCount
+        && request.resource.data.mediumCount >= resource.data.mediumCount
+        && request.resource.data.highCount >= resource.data.highCount
+        && request.resource.data.updatedAt == request.time
+        && hasNewPatternMarker(signalId)
+        && validPatternAggregateAfter(signalId, getAfter(patternMarkerPath(request.auth.uid, signalId)).data.bucket);
     }
 
     // ---------- shared caches (no owner) ----------
