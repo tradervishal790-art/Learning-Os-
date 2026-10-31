@@ -87,3 +87,20 @@ test('seven-day trend keeps days without recall attempts null, not zero', () => 
   assert.equal(trend[0].accuracy, null);
   assert.equal(trend[0].attempts, 0);
 });
+
+
+test('cloud hydration merge preserves newer local ratings recorded during the request', () => {
+  const cloud = {
+    react: [{ topicId: 'react', day: 1, rating: 'forgot', recordedAt: '2026-10-01T10:00:00.000Z' }],
+    cloudOnly: [{ topicId: 'cloudOnly', day: 3, rating: 'partial', recordedAt: '2026-10-02T10:00:00.000Z' }],
+  };
+  const latestLocal = {
+    react: [{ topicId: 'react', day: 1, rating: 'remembered', recordedAt: '2026-10-03T10:00:00.000Z' }],
+    localOnly: [{ topicId: 'localOnly', day: 7, rating: 'partial', recordedAt: '2026-10-04T10:00:00.000Z' }],
+  };
+  assert.deepEqual(store.mergeRecallMaps(latestLocal, cloud), {
+    react: [{ topicId: 'react', day: 1, rating: 'remembered', recordedAt: '2026-10-03T10:00:00.000Z' }],
+    cloudOnly: [{ topicId: 'cloudOnly', day: 3, rating: 'partial', recordedAt: '2026-10-02T10:00:00.000Z' }],
+    localOnly: [{ topicId: 'localOnly', day: 7, rating: 'partial', recordedAt: '2026-10-04T10:00:00.000Z' }],
+  });
+});
