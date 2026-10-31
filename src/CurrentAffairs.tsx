@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Newspaper, X, RotateCw, CirclePlay, Bookmark, ExternalLink, Landmark, Globe, TrendingUp, Trophy, FlaskConical, LayoutGrid } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useTranslation, useLanguage } from './i18n/LanguageContext';
@@ -67,7 +67,7 @@ export default function CurrentAffairs() {
       {view === 'news' ? (
         <NewspaperCurrentAffairs />
       ) : (
-        <Suspense fallback={null}>
+        <Suspense fallback={<p role="status" className="mt-6 text-sm text-gray-500 dark:text-white/50">Opening your channel digest…</p>}>
           <ChannelDigest />
         </Suspense>
       )}
@@ -89,26 +89,30 @@ function NewspaperCurrentAffairs() {
   const [saved, setSaved] = useState<SavedPoint[]>(() => loadSaved());
   const [showSaved, setShowSaved] = useState(false);
   const [selectedArticle, setSelectedArticle] = useState<CAPoint | null>(null);
+  const loadIdRef = useRef(0);
   const savedKeys = useMemo(() => new Set(saved.map((x) => savedKey(x.date, x))), [saved]);
 
   const load = useCallback(async () => {
+    const requestId = ++loadIdRef.current;
     setLoading(true);
     setError('');
     setDay(null);
     try {
       const result = await loadCurrentAffairsDay(date, locale, date === today);
+      if (requestId !== loadIdRef.current) return;
       if (!result) setError(c.dayNotAvailable);
       setDay(result);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong');
+      if (requestId === loadIdRef.current) setError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
-      setLoading(false);
+      if (requestId === loadIdRef.current) setLoading(false);
     }
   }, [date, locale, today, c.dayNotAvailable]);
 
   useEffect(() => {
     setTab('all');
     void load();
+    return () => { loadIdRef.current += 1; };
   }, [load]);
 
   const visiblePoints = useMemo(() => (day ? day.points.filter((p) => tab === 'all' || p.category === tab) : []), [day, tab]);
