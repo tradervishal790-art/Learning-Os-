@@ -1,6 +1,7 @@
 import { ArrowUpRight, BrainCircuit, CheckCircle2, Compass, GraduationCap, NotebookPen, RotateCcw, Sparkles, Target, Users, Video, Zap, MoreHorizontal, Search, BookOpen, Newspaper, MessageCircle, ChevronDown } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import type { DashboardPageId } from './types';
+import { pullFromCloud, pushToCloud } from './cloudSync';
 
 interface MissionControlProps {
   name: string;
@@ -84,6 +85,7 @@ export default function MissionControl({
   const [moreOpen, setMoreOpen] = useState(false);
   const [customizeOpen, setCustomizeOpen] = useState(false);
   const [functionSearch, setFunctionSearch] = useState('');
+  const [mapPrefsHydrated, setMapPrefsHydrated] = useState(false);
   const [visibleNodeIds, setVisibleNodeIds] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem(MAP_NODES_STORAGE_KEY);
@@ -92,8 +94,19 @@ export default function MissionControl({
     } catch { return defaultNodeIds; }
   });
   useEffect(() => {
+    let active = true;
+    void pullFromCloud<string[]>('missionMapNodes').then((cloudNodes) => {
+      if (!active) return;
+      if (Array.isArray(cloudNodes)) setVisibleNodeIds(cloudNodes.filter((id) => typeof id === 'string' && allFunctionNodes.some((node) => node.id === id)));
+      setMapPrefsHydrated(true);
+    });
+    return () => { active = false; };
+  }, []);
+  useEffect(() => {
+    if (!mapPrefsHydrated) return;
     try { localStorage.setItem(MAP_NODES_STORAGE_KEY, JSON.stringify(visibleNodeIds)); } catch { /* Best effort */ }
-  }, [visibleNodeIds]);
+    void pushToCloud('missionMapNodes', visibleNodeIds);
+  }, [visibleNodeIds, mapPrefsHydrated]);
   const visibleRows = useMemo(() => allFunctionNodes.filter((node) => visibleNodeIds.includes(node.id)), [visibleNodeIds]);
   const mapHeight = Math.max(660, visibleRows.length <= 1 ? 660 : 132 + (visibleRows.length - 1) * 132);
   const rowY = visibleRows.map((_, index) => visibleRows.length === 1 ? mapHeight / 2 : 66 + index * ((mapHeight - 132) / (visibleRows.length - 1)));
