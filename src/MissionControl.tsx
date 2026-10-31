@@ -160,7 +160,7 @@ export default function MissionControl({
                 <feGaussianBlur stdDeviation="3" result="blur" />
                 <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
               </filter>
-              {visibleRows.map((row) => <linearGradient key={row.id} id={`line-${row.id}`} x1="180" y1="330" x2="950" y2={rowY[rows.indexOf(row)]} gradientUnits="userSpaceOnUse"><stop stopColor="#64748b" stopOpacity=".55" /><stop offset=".52" stopColor={row.color} stopOpacity=".95" /><stop offset="1" stopColor={row.color} stopOpacity=".5" /></linearGradient>)}
+              {visibleRows.map((row, index) => <linearGradient key={row.id} id={`line-${row.id}`} x1="180" y1={mapHeight / 2} x2="950" y2={rowY[index]} gradientUnits="userSpaceOnUse"><stop stopColor="#64748b" stopOpacity=".55" /><stop offset=".52" stopColor={row.color} stopOpacity=".95" /><stop offset="1" stopColor={row.color} stopOpacity=".5" /></linearGradient>)}
             </defs>
             {visibleRows.map((row, i) => {
               const y = rowY[i];
@@ -187,7 +187,7 @@ export default function MissionControl({
             <div className="mt-3 text-[9px] text-violet-200/60">YOU ARE HERE</div>
           </div>
 
-          {rows.map((row, i) => {
+          {visibleRows.map((row, i) => {
             const Icon = row.icon;
             const top = `${(rowY[i] / mapHeight) * 100}%`;
             return (
