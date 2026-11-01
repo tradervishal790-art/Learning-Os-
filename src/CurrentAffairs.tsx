@@ -8,6 +8,7 @@ import {
 } from './currentAffairsStore';
 import type { CACategory, CADay, CAPoint } from './currentAffairsStore';
 import { loadSaved, toggleSaved, savedKey } from './caSavedStore';
+import { safeArticleUrl } from './newsReader';
 import type { SavedPoint } from './caSavedStore';
 
 const ChannelDigest = lazy(() => import('./ChannelDigest'));
@@ -91,6 +92,7 @@ function NewspaperCurrentAffairs() {
   const [selectedArticle, setSelectedArticle] = useState<CAPoint | null>(null);
   const loadIdRef = useRef(0);
   const savedKeys = useMemo(() => new Set(saved.map((x) => savedKey(x.date, x))), [saved]);
+  const articleUrl = safeArticleUrl(selectedArticle?.link);
 
   const load = useCallback(async () => {
     const requestId = ++loadIdRef.current;
@@ -249,16 +251,28 @@ function NewspaperCurrentAffairs() {
               </div>
               <button type="button" onClick={() => setSelectedArticle(null)} aria-label="Close reader" className="ca-reader-close"><X className="w-5 h-5" /></button>
             </header>
+            {articleUrl ? (
+              <div className="ca-reader-frame-wrap">
+                <iframe
+                  className="ca-reader-frame"
+                  src={articleUrl}
+                  title={`${c.reader.articleView}: ${selectedArticle.source}`}
+                  loading="lazy"
+                  referrerPolicy="no-referrer"
+                  sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+                />
+              </div>
+            ) : null}
             <div className="ca-reader-summary">
-              <p className="text-xs font-semibold uppercase tracking-wider text-blue-700">Quick read · News summary</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-blue-700">{c.reader.articleView} · {selectedArticle.source}</p>
               <p className="mt-2 text-base leading-relaxed text-slate-800">{selectedArticle.text}</p>
-              <p className="mt-3 text-xs leading-relaxed text-slate-500">This is the news brief available in Learning OS, not the publisher's full article. Some publishers block their pages from being displayed inside other apps.</p>
+              <p className="mt-3 text-xs leading-relaxed text-slate-500">{c.reader.fallback}</p>
             </div>
             <footer className="ca-reader-footer">
-              {selectedArticle.link && /^https?:\/\//i.test(selectedArticle.link) ? (
-                <a href={selectedArticle.link} target="_blank" rel="noopener noreferrer" className="ca-reader-open"><ExternalLink className="w-4 h-4" /> Read full article on {selectedArticle.source}</a>
+              {articleUrl ? (
+                <a href={articleUrl} target="_blank" rel="noopener noreferrer" className="ca-reader-open"><ExternalLink className="w-4 h-4" /> {c.reader.openOriginal}</a>
               ) : (
-                <p className="text-sm text-slate-500">The original article link is not available for this news item.</p>
+                <p className="text-sm text-slate-500">{c.reader.unavailable}</p>
               )}
             </footer>
           </section>
