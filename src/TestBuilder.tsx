@@ -312,14 +312,18 @@ function QuestionCard({
           <p className="text-xs font-medium text-gray-500 dark:text-white/60">Options · select the correct answer</p>
           {(question as MCQQuestion).options.map((opt, oi) => (
             <div key={oi} className="flex items-center gap-2">
-              <span className="w-7 h-7 flex-shrink-0 rounded-lg bg-gray-100 dark:bg-white/10 flex items-center justify-center text-xs font-semibold text-gray-600 dark:text-white/70">{optionLabel(oi)}</span>
-              <input
-                type="radio"
-                checked={(question as MCQQuestion).correctIndex === oi}
-                onChange={() => onChange({ correctIndex: oi })}
-                aria-label={`Set option ${optionLabel(oi)} as correct answer`}
-                title={`Correct answer: ${optionLabel(oi)}`}
-              />
+              <label className={`flex h-10 min-w-[88px] flex-shrink-0 cursor-pointer items-center gap-2 rounded-lg border px-2 transition-colors ${(question as MCQQuestion).correctIndex === oi ? 'border-indigo-400 bg-indigo-50 dark:border-indigo-400/60 dark:bg-indigo-500/10' : 'border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5'}`}>
+                <input
+                  type="radio"
+                  name={`correct-${question.id}`}
+                  checked={(question as MCQQuestion).correctIndex === oi}
+                  onChange={() => onChange({ correctIndex: oi })}
+                  aria-label={`Set option ${optionLabel(oi)} as correct answer`}
+                  className="h-4 w-4 accent-indigo-600"
+                />
+                <span className="text-xs font-semibold">{optionLabel(oi)}</span>
+                <span className="text-[10px] text-gray-500 dark:text-white/50">{(question as MCQQuestion).correctIndex === oi ? 'Correct' : 'Set correct'}</span>
+              </label>
               <input
                 value={opt}
                 onChange={(e) => {
