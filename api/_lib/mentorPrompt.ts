@@ -15,6 +15,8 @@ interface RawContext {
   goals?: unknown;
   currentTopic?: unknown;
   weakTopics?: unknown;
+  dueReviews?: unknown;
+  recentRecall?: unknown;
 }
 
 function clean(v: unknown, max: number): string {
@@ -25,6 +27,10 @@ function clean(v: unknown, max: number): string {
     .replace(/\s+/g, ' ')
     .trim()
     .slice(0, max);
+}
+
+export function cleanMentorTopic(value: unknown): string {
+  return clean(value, 120);
 }
 
 function list(v: unknown, maxItems: number): unknown[] {
@@ -71,10 +77,36 @@ export function formatStudentContext(raw: unknown): string {
     .map((w) => {
       const o = (w ?? {}) as Record<string, unknown>;
       const title = clean(o.title, 80);
-      return title ? title : '';
+      const mastery = typeof o.mastery === 'number' && Number.isFinite(o.mastery)
+        ? Math.max(0, Math.min(100, Math.round(o.mastery)))
+        : null;
+      return title ? (mastery === null ? title : `${title} (estimated mastery ${mastery}/100)`) : '';
     })
     .filter(Boolean);
-  if (weak.length) lines.push(`- Topics they are struggling with: ${weak.join(', ')}`);
+  if (weak.length) lines.push(`- Topics needing more practice: ${weak.join(', ')}`);
+
+  const dueReviews = list(c.dueReviews, 3)
+    .map((review) => {
+      const o = (review ?? {}) as Record<string, unknown>;
+      const title = clean(o.title, 80);
+      if (!title || (o.status !== 'overdue' && o.status !== 'due-today')) return '';
+      const day = typeof o.checkpointDay === 'number' && Number.isInteger(o.checkpointDay)
+        ? Math.max(1, Math.min(365, o.checkpointDay))
+        : null;
+      const task = clean(o.task, 160);
+      return `${title} (${o.status}${day ? `, checkpoint day ${day}` : ''})${task ? `: ${task}` : ''}`;
+    })
+    .filter(Boolean);
+  if (dueReviews.length) lines.push(`- Revision due now: ${dueReviews.join(' | ')}`);
+
+  const recentRecall = list(c.recentRecall, 3)
+    .map((record) => {
+      const o = (record ?? {}) as Record<string, unknown>;
+      if (o.rating !== 'forgot' && o.rating !== 'partial' && o.rating !== 'remembered') return '';
+      return o.rating;
+    })
+    .filter(Boolean);
+  if (recentRecall.length) lines.push(`- Recent self-reported recall (newest first): ${recentRecall.join(', ')}`);
 
   if (lines.length === 0) return '';
 
@@ -86,7 +118,10 @@ ${lines.join('\n')}
 How to use it:
 - Adapt your explanation style, pacing and tone to the context above, silently. "Study temperament" shapes HOW you answer (length, structure, how you encourage), not what you say.
 - Never tell the student that you have a "profile", "score" or personality result on them, and never label them with a personality type.
-- Only bring up their current topic or weak topics when it helps answer what they asked; do not force them into every reply.
+- Only bring up their current topic, weak topics or revision queue when it helps answer what they asked; do not force them into every reply.
+- When they are stuck, identify ONE likely missing prerequisite, explain it in a small step, then ask one quick check question. Do not dump a full lecture.
+- If a review is due and relevant, offer an active-recall question before revealing the answer. Never claim a review is completed unless the student confirms it in the app.
+- Treat mastery estimates and recall ratings as imperfect signals, not proof of ability. If the learner says the profile is wrong, follow their current preference.
 - If the student's question is clearly about something else, answer that and ignore the context.`;
 }
 
