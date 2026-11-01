@@ -148,6 +148,8 @@ export default function Roadmap({
     getRoadmapProgress(roadmap);
   const currentTopic = roadmap.children?.find((topic) => topic.status === 'learning');
   const currentTopicIndex = currentTopic ? roadmap.children?.findIndex((topic) => topic.id === currentTopic.id) ?? -1 : -1;
+  // If there is no active step (for example, the journey is complete), never hide the entire roadmap.
+  const isJourneyExpanded = showFullJourney || !currentTopic;
 
   // No roadmap yet — either never generated, or a previous attempt failed.
   // Either way, the fix is the same: let the user type a subject + set
@@ -725,21 +727,25 @@ export default function Roadmap({
         )}
       </motion.div>
 
-      {/* Keep attention on the active step; the full sequence remains one tap away. */}
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+      {totalTopics > 0 && (
+        <>
+          {/* Keep attention on the active step; the full sequence remains one tap away. */}
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-sm font-semibold text-gray-700 dark:text-white/75">{t.roadmap.journey.journeyTitle}</h2>
-        <button
-          type="button"
-          onClick={() => setShowFullJourney((visible) => !visible)}
-          aria-expanded={showFullJourney}
-          className="rounded-lg px-3 py-2 text-xs font-medium text-indigo-600 transition hover:bg-indigo-500/10 dark:text-indigo-300"
-        >
-          {showFullJourney ? t.roadmap.journey.showLess : format(t.roadmap.journey.showAll, totalTopics)}
-        </button>
-      </div>
-      <div>
-        {roadmap.children?.map((topic, i) => {
-          if (!showFullJourney && topic.status !== 'learning') return null;
+        {currentTopic && (
+            <button
+              type="button"
+              onClick={() => setShowFullJourney((visible) => !visible)}
+              aria-expanded={isJourneyExpanded}
+              className="rounded-lg px-3 py-2 text-xs font-medium text-indigo-600 transition hover:bg-indigo-500/10 dark:text-indigo-300"
+            >
+              {isJourneyExpanded ? t.roadmap.journey.showLess : format(t.roadmap.journey.showAll, totalTopics)}
+            </button>
+          )}
+          </div>
+          <div>
+            {roadmap.children?.map((topic, i) => {
+              if (!isJourneyExpanded && topic.status !== 'learning') return null;
           const status = { ...statusStyles[topic.status], icon: statusIcons[topic.status], label: statusLabels[topic.status] };
           const isLast = i === (roadmap.children?.length ?? 0) - 1;
           const isLocked = topic.status === 'locked';
@@ -809,8 +815,10 @@ export default function Roadmap({
               </button>
             </div>
           );
-        })}
-      </div>
+            })}
+          </div>
+        </>
+      )}
 
       {/* Modal */}
       <AnimatePresence>
