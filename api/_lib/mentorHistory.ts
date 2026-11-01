@@ -53,7 +53,7 @@ export function buildMentorContents(
     const role = m.role === 'user' ? 'user' : 'model';
     const prev = contents[contents.length - 1];
     if (prev && prev.role === role) {
-      prev.parts[0].text += `\\n\\n${m.content}`;
+      prev.parts[0].text += `\n\n${m.content}`;
     } else {
       contents.push({ role, parts: [{ text: m.content }] });
     }
