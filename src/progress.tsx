@@ -150,6 +150,8 @@ export default function Progress({ goals = [] }: ProgressProps) {
                 {heatmap.map((topic) => (
                   <div
                     key={topic.topicId}
+                    role="img"
+                    aria-label={`${topic.title}: ${topic.masteryScore}% mastery`}
                     title={`${topic.title} — ${topic.masteryScore}%${topic.observedRecall === null ? ' estimated from progress' : ` observed recall from ${topic.recallAttempts} rating(s)`}${topic.testAccuracy === null ? '' : `; test accuracy ${topic.testAccuracy}% from ${topic.testAttempts} recent test(s)`}`}
                     className={`aspect-[5/4] md:aspect-square rounded-lg ${masteryColor(topic.masteryScore)} flex items-center justify-center text-[10px] font-medium ${topic.masteryScore >= 60 ? 'text-white dark:text-black' : 'text-indigo-400 dark:text-white/60'}`}
                   >
