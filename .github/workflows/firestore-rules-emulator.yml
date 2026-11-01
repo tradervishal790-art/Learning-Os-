@@ -1,0 +1,31 @@
+name: Firestore Rules Emulator
+
+on:
+  push:
+    branches: [main, "phase-*", "feat/*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  firestore-rules:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - name: Install project dependencies
+        run: npm ci
+      - name: Install temporary emulator test tools
+        run: npm install --no-save --package-lock=false firebase-tools @firebase/rules-unit-testing
+      - name: Validate Firestore rules against the emulator
+        run: npx firebase emulators:exec --only firestore --project demo-learning-os "node scripts/firestore-rules-emulator.mjs"
