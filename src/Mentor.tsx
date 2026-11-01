@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { MENTOR_PREFILL_KEY } from './mentorPrefill';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Lightbulb, BookOpenText, Link2, ListChecks, Hammer, Bug, SendHorizontal, SquarePen, History, Trash2, X, CircleHelp } from 'lucide-react';
+import { Lightbulb, BookOpenText, Link2, ListChecks, Hammer, SendHorizontal, SquarePen, History, Trash2, X, CircleHelp } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { setImmersive, useImmersive } from './immersive';
 import { useTranslation, useLanguage } from './i18n/LanguageContext';
