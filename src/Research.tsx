@@ -100,7 +100,7 @@ export default function Research({ embedded = false, onClose }: ResearchProps) {
   }, [embedded, query, result, history]);
 
   const handleSearch = async (requestedQuery = query) => {
-    const q = requestedQuery.trim().replace(/\\s+/g, ' ').slice(0, 200);
+    const q = requestedQuery.trim().replace(/\s+/g, ' ').slice(0, 200);
     if (!q || loading) return;
 
     const requestId = ++requestIdRef.current;
