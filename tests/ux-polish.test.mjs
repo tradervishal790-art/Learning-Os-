@@ -23,5 +23,7 @@ test('mobile More navigation remains viewport-bounded and exposes readable label
 
 test('dashboard page changes use a short, low-displacement transition', async () => {
   const dashboard = await read('../src/Dashboard.tsx');
-  assert.match(dashboard, /key=\{activePage\}[\s\S]{0,220}initial=\{\{ opacity: 0 \}\}[\s\S]{0,180}duration: 0\.16/);
+  assert.match(dashboard, /useReducedMotion/);
+  assert.match(dashboard, /initial=\{prefersReducedMotion \? false : \{ opacity: 0 \}\}/);
+  assert.match(dashboard, /duration: prefersReducedMotion \? 0 : 0\.16/);
 });
