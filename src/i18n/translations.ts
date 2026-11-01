@@ -788,8 +788,6 @@ export interface TranslationShape {
   currentAffairs: {
     title: string;
     subtitle: string;
-    streak: string; // "{0}-day streak"
-    previousDays: string;
     today: string;
     loading: string;
     retry: string;
@@ -2416,8 +2414,6 @@ export const translations: Record<Locale, TranslationShape> = {
     currentAffairs: {
       title: 'Current Affairs',
       subtitle: "Today's key news for competitive exams, in short points",
-      streak: '{0}-day streak',
-      previousDays: 'Previous days',
       today: 'Today',
       loading: "Preparing today's Current Affairs…",
       retry: 'Try again',
@@ -4036,8 +4032,6 @@ export const translations: Record<Locale, TranslationShape> = {
     currentAffairs: {
       title: 'करंट अफेयर्स',
       subtitle: 'प्रतियोगी परीक्षाओं के लिए आज की मुख्य खबरें, छोटे पॉइंट्स में',
-      streak: '{0} दिन की स्ट्रीक',
-      previousDays: 'पिछले दिन',
       today: 'आज',
       loading: 'आज के करंट अफेयर्स तैयार हो रहे हैं…',
       retry: 'फिर कोशिश करें',
@@ -5659,8 +5653,6 @@ export const translations: Record<Locale, TranslationShape> = {
     currentAffairs: {
       title: 'Current Affairs',
       subtitle: 'Competitive exams ke liye aaj ki main khabrein, chhote points mein',
-      streak: '{0} din ki streak',
-      previousDays: 'Pichhle din',
       today: 'Aaj',
       loading: 'Aaj ka Current Affairs ban raha hai…',
       retry: 'Phir se try karo',
