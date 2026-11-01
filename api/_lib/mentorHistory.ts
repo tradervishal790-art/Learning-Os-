@@ -39,7 +39,10 @@ export function buildMentorContents(
   userMessage: string
 ): Content[] {
   const current = userMessage.trim().slice(0, MAX_MESSAGE_CHARS);
-  const prior = sanitizeMentorHistory(history);
+  let prior = sanitizeMentorHistory(history);
+  while (prior.length > 0 && prior[0].role !== 'user') {
+    prior = prior.slice(1);
+  }
   const last = prior[prior.length - 1];
   const withoutDuplicate = last?.role === 'user' && last.content === current
     ? prior.slice(0, -1)
