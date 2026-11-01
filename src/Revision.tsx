@@ -210,7 +210,7 @@ export default function Revision({ goals = [] }: RevisionProps) {
           { label: t.revision.stats.dueToday, value: String(stats.dueToday), Icon: Flame },
           { label: t.revision.stats.overdue, value: String(stats.overdue), Icon: TriangleAlert },
           { label: t.revision.stats.mastered, value: String(stats.mastered), Icon: Star },
-          { label: 'Recall accuracy', value: recallAccuracy === null ? '—' : `${recallAccuracy}%`, Icon: Gauge },
+          { label: t.revision.recall.accuracy, value: recallAccuracy === null ? '—' : `${recallAccuracy}%`, Icon: Gauge },
         ].map(({ label, value, Icon }) => (
           <div key={label} title={label} aria-label={`${label}: ${value}`} className="px-2 md:px-4 py-3 md:py-4 text-center md:text-left min-w-0">
             <Icon className="md:hidden w-5 h-5 mx-auto mb-1 text-gray-500 dark:text-white/50" strokeWidth={1.75} />
@@ -223,17 +223,17 @@ export default function Revision({ goals = [] }: RevisionProps) {
       <SharedLearningInsights kind="revision" />
 
       {/* Observed recall trend — blank days are intentionally not treated as failures. */}
-      <section className="rounded-2xl card border border-gray-200 dark:border-white/10 p-4 mb-5 md:mb-6" aria-label="Seven-day recall trend">
+      <section className="rounded-2xl card border border-gray-200 dark:border-white/10 p-4 mb-5 md:mb-6" aria-label={t.revision.recall.trendTitle}>
         <div className="flex items-center justify-between gap-3 mb-3">
-          <h2 className="text-sm font-semibold">7-day recall trend</h2>
-          <span className="text-xs text-gray-400 dark:text-white/50">Based on your ratings</span>
+          <h2 className="text-sm font-semibold">{t.revision.recall.trendTitle}</h2>
+          <span className="text-xs text-gray-400 dark:text-white/50">{t.revision.recall.trendHint}</span>
         </div>
         <div className="grid grid-cols-7 gap-2 items-end">
           {recallTrend.map((point) => (
             <div key={point.date} className="min-w-0 text-center">
               <div className="h-12 flex items-end justify-center mb-1">
                 <div
-                  title={point.accuracy === null ? 'No ratings' : `${point.accuracy}% recall accuracy · ${point.attempts} rating(s)`}
+                  title={point.accuracy === null ? t.revision.recall.noRatings : format(t.revision.recall.trendTooltip, point.accuracy, point.attempts)}
                   className={`w-full max-w-8 rounded-t-md ${point.accuracy === null ? 'bg-gray-200 dark:bg-white/10' : 'bg-indigo-500 dark:bg-indigo-400'}`}
                   style={{ height: point.accuracy === null ? '4px' : `${Math.max(6, Math.round(point.accuracy * 0.44))}px` }}
                 />
@@ -329,12 +329,12 @@ export default function Revision({ goals = [] }: RevisionProps) {
                       <p className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-white/60 mb-1"><PenLine className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.75} /><span className="min-w-0">{item.task}</span></p>
                     )}
                     {isReviewing && item.status !== 'mastered' && (
-                      <div className="mt-3 flex flex-wrap gap-2" aria-label="How well did you recall this topic?">
-                        <span className="w-full text-xs text-gray-500 dark:text-white/60">How well did you remember it?</span>
+                      <div className="mt-3 flex flex-wrap gap-2" aria-label={t.revision.recall.prompt}>
+                        <span className="w-full text-xs text-gray-500 dark:text-white/60">{t.revision.recall.prompt}</span>
                         {([
-                          ['forgot', 'Forgot'],
-                          ['partial', 'Some of it'],
-                          ['remembered', 'Remembered'],
+                          ['forgot', t.revision.recall.forgot],
+                          ['partial', t.revision.recall.partial],
+                          ['remembered', t.revision.recall.remembered],
                         ] as [RecallRating, string][]).map(([rating, label]) => (
                           <button key={rating} onClick={() => handleRecallRating(item, rating)} className="rounded-full border border-gray-200 dark:border-white/15 px-3 py-1.5 text-xs font-medium hover:bg-indigo-50 dark:hover:bg-indigo-500/15 transition">
                             {label}
