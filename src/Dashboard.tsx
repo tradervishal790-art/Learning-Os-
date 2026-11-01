@@ -628,6 +628,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
             activeGoals={goals.filter((goal) => goal.status === 'active').length}
             onNavigate={setActivePage}
             onOpenProfile={handleOpenLearningProfile}
+            onContinueLearning={() => currentTopic ? handleOpenSavedVideo(currentTopic.id) : setActivePage('roadmap')}
           />
         )}
 
