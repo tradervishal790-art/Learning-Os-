@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { RotateCcw, Route, FileText, Flame, TriangleAlert, CalendarDays, Star, LayoutGrid, Target, PenLine, Check, Play, Sprout, PartyPopper, Gauge } from 'lucide-react';
 import type { ReactNode } from 'react';
 import NotesToRevise from './NotesToRevise';
-import { getRevisionStats, getRevisionDataForGoals } from './revisionData';
+import { getRevisionStats, getRevisionDataForGoals, getDueRevisionItems } from './revisionData';
 import { markDayReviewed, hydrateRevisionFromCloud } from './revisionstore';
 import { getRecallAccuracy, getRecallTrend, hydrateRecallScoresFromCloud, saveRecallRating, type RecallRating, type RecallTrendPoint } from './revisionRecallStore';
 import { markTopicFinished } from './roadmapData';
@@ -37,7 +37,7 @@ const difficultyConfig: Record<RevisionDifficulty, string> = {
   Hard: 'text-gray-700 dark:text-white/80',
 };
 
-type FilterId = 'all' | RevisionStatus;
+type FilterId = 'all' | 'due' | RevisionStatus;
 
 interface RevisionProps {
   /** All goals — used to pull spaced-repetition items from EVERY active
@@ -62,7 +62,7 @@ export default function Revision({ goals = [] }: RevisionProps) {
     Medium: t.revision.difficultyLabels.medium,
     Hard: t.revision.difficultyLabels.hard,
   };
-  const [filter, setFilter] = useState<FilterId>('all');
+  const [filter, setFilter] = useState<FilterId>('due');
   // Live-computed from the actual roadmap(s) (see revisionData.ts) — held in
   // state (not recomputed on every render) so "Mark Done" can trigger a
   // real refresh after persisting to revisionStore.
@@ -114,8 +114,24 @@ export default function Revision({ goals = [] }: RevisionProps) {
   };
 
   const stats = getRevisionStats(items);
+  const dueItems = getDueRevisionItems(items);
+  const nextReviewItem = dueItems[0];
 
-  const filteredItems = filter === 'all' ? items : items.filter((i) => i.status === filter);
+  const filteredItems = filter === 'all'
+    ? items
+    : filter === 'due'
+      ? dueItems
+      : items.filter((i) => i.status === filter);
+
+  const handleStartDailyReview = () => {
+    if (!nextReviewItem) return;
+    setFilter('due');
+    setReviewingId(nextReviewItem.id);
+    requestAnimationFrame(() => {
+      document.getElementById(`revision-item-${encodeURIComponent(nextReviewItem.id)}`)
+        ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+  };
 
   return (
     <div className="p-4 md:p-8 max-w-6xl mx-auto text-black dark:text-white">
@@ -148,6 +164,39 @@ export default function Revision({ goals = [] }: RevisionProps) {
           </button>
         ))}
       </div>
+
+      {mode === 'roadmap' && (
+        <section className="mx-auto mb-5 rounded-2xl border border-indigo-500/20 bg-indigo-500/[0.045] p-4 md:p-5" aria-label="Daily revision focus">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-gray-500 dark:text-white/60">
+                <span>{t.revision.filters.dueToday}</span>
+                <span>·</span>
+                <span>{stats.overdue} {t.revision.filters.overdue.toLowerCase()}</span>
+                <span>·</span>
+                <span>{stats.dueToday} {t.revision.filters.dueToday.toLowerCase()}</span>
+              </div>
+              <h2 className="mt-1 text-base font-semibold">
+                {nextReviewItem?.topic ?? (items.length === 0 ? t.revision.emptyState.noRevisionTitle : t.revision.emptyState.allCaughtUpTitle)}
+              </h2>
+              <p className="mt-1 text-xs leading-relaxed text-gray-500 dark:text-white/60">
+                {nextReviewItem?.task ?? t.revision.emptyState.allCaughtUpBody}
+              </p>
+            </div>
+            {nextReviewItem && (
+              <button
+                type="button"
+                onClick={handleStartDailyReview}
+                className="inline-flex min-h-10 flex-shrink-0 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-500 active:scale-[0.98] dark:bg-indigo-500 dark:hover:bg-indigo-400"
+              >
+                <Play className="h-4 w-4" />
+                {t.revision.card.reviewNowCta}
+                <span className="rounded-full bg-white/15 px-1.5 py-0.5 text-xs tabular-nums">{dueItems.length}</span>
+              </button>
+            )}
+          </div>
+        </section>
+      )}
 
       {mode === 'files' ? (
         <StudyPlan />
@@ -199,8 +248,8 @@ export default function Revision({ goals = [] }: RevisionProps) {
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2, duration: 0.5 }} className="flex gap-2 mb-4 md:mb-6 overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {(
           [
+            { id: 'due', label: t.revision.filters.dueToday, count: stats.dueToday + stats.overdue },
             { id: 'all', label: t.revision.filters.all, count: stats.total },
-            { id: 'due-today', label: t.revision.filters.dueToday, count: stats.dueToday },
             { id: 'overdue', label: t.revision.filters.overdue, count: stats.overdue },
             { id: 'upcoming', label: t.revision.filters.upcoming, count: stats.upcoming },
             { id: 'mastered', label: t.revision.filters.mastered, count: stats.mastered },
@@ -237,6 +286,7 @@ export default function Revision({ goals = [] }: RevisionProps) {
             const isReviewing = reviewingId === item.id;
             return (
               <motion.div
+                id={`revision-item-${encodeURIComponent(item.id)}`}
                 key={item.id}
                 layout
                 initial={{ opacity: 0, x: -20 }}
@@ -316,22 +366,22 @@ export default function Revision({ goals = [] }: RevisionProps) {
                     ) : (
                       <>
                         <button
-                          onClick={() => handleMarkDone(item)}
-                          aria-label={t.revision.card.doneCta}
-                          title={t.revision.card.doneCta}
-                          className="w-11 h-11 md:w-auto md:h-auto md:px-3 md:py-1.5 flex items-center justify-center rounded-full md:rounded-lg text-xs font-medium transition-all border bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white border-transparent hover:opacity-80"
-                        >
-                          <Check className="w-5 h-5 md:hidden" strokeWidth={2.2} />
-                          <span className="hidden md:inline">{t.revision.card.doneCta}</span>
-                        </button>
-                        <button
                           onClick={() => handleReviewNow(item.id)}
                           aria-label={isReviewing ? t.revision.card.reviewingCta : t.revision.card.reviewNowCta}
                           title={isReviewing ? t.revision.card.reviewingCta : t.revision.card.reviewNowCta}
-                          className="w-11 h-11 md:w-auto md:h-auto md:px-3 md:py-1.5 flex items-center justify-center rounded-full md:rounded-lg border border-gray-200 dark:border-white/10 text-gray-600 dark:text-white/70 text-xs font-medium hover:bg-gray-100 dark:hover:bg-white/10 transition"
+                          className="w-11 h-11 md:w-auto md:h-auto md:px-3 md:py-1.5 flex items-center justify-center rounded-full md:rounded-lg text-xs font-medium transition-all border bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white border-transparent hover:bg-indigo-500 dark:hover:bg-indigo-400"
                         >
                           <Play className="w-5 h-5 md:hidden" strokeWidth={1.75} fill={isReviewing ? 'currentColor' : 'none'} />
                           <span className="hidden md:inline">{isReviewing ? t.revision.card.reviewingCta : t.revision.card.reviewNowCta}</span>
+                        </button>
+                        <button
+                          onClick={() => handleMarkDone(item)}
+                          aria-label={t.revision.card.doneCta}
+                          title={t.revision.card.doneCta}
+                          className="w-11 h-11 md:w-auto md:h-auto md:px-3 md:py-1.5 flex items-center justify-center rounded-full md:rounded-lg border border-gray-200 dark:border-white/10 text-gray-600 dark:text-white/70 text-xs font-medium hover:bg-gray-100 dark:hover:bg-white/10 transition"
+                        >
+                          <Check className="w-5 h-5 md:hidden" strokeWidth={2.2} />
+                          <span className="hidden md:inline">{t.revision.card.doneCta}</span>
                         </button>
                       </>
                     )}
