@@ -34,3 +34,12 @@ test('untrusted learner strings are normalized and length-capped', () => {
   assert.ok(topic.length <= 120);
   assert.doesNotMatch(topic, /[<>\x00-\x1f]/);
 });
+
+test('stuck-learning quick prompt is available in all supported languages', async () => {
+  const translations = await loadTs('src/i18n/translations.ts');
+  for (const locale of ['en', 'hi', 'hinglish']) {
+    const prompts = translations.translations[locale].mentor.suggestedPrompts;
+    assert.equal(prompts.length, 6);
+    assert.match(prompts[5].prompt, /stuck|अटक|atak/i);
+  }
+});
