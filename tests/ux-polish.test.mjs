@@ -27,3 +27,14 @@ test('dashboard page changes use a short, low-displacement transition', async ()
   assert.match(dashboard, /initial=\{prefersReducedMotion \? false : \{ opacity: 0 \}\}/);
   assert.match(dashboard, /duration: prefersReducedMotion \? 0 : 0\.16/);
 });
+
+test('muted primary indigo keeps white button text above WCAG AA contrast', async () => {
+  const css = await read('../src/index.css');
+  const match = css.match(/button\[class~="bg-indigo-600"\],[\s\S]*?background-color:\s*(#[0-9a-f]{6})/i);
+  assert.ok(match, 'primary button color token exists');
+  const channel = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255).map((v) => v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
+  const [r, g, b] = channel(match[1]);
+  const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  const contrast = 1.05 / (luminance + 0.05);
+  assert.ok(contrast >= 4.5, 'white text contrast is ' + contrast.toFixed(2) + ':1');
+});
