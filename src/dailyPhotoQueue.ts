@@ -189,9 +189,8 @@ export async function processQueuedPhotosForDailyTest(
         try {
           const payload = await blobToPhotoPayload(part.blob, part.type);
           const extracted = await extract(payload);
-          if (extracted.questions.length === 0 && extracted.answerKey.length === 0) {
-            throw new Error('No questions or answer key could be read from this page. It is still queued; try a clearer photo or PDF.');
-          }
+          // Cover, instruction and blank pages are valid parts of a PDF. Skip them
+          // without blocking later question pages in the same source document.
           const converted = toBuilderQuestions(extracted.questions, extracted.answerKey).questions;
           const merged = dedupeQuestions([...bank, ...converted]).questions;
           if (merged.length > bank.length) {
@@ -206,6 +205,9 @@ export async function processQueuedPhotosForDailyTest(
           workingItem = { ...workingItem, questionIds, pendingAnswerKey };
 
           const remaining = parts.slice(pageIndex + 1);
+          if (remaining.length === 0 && questionIds.length === 0 && pendingAnswerKey.length === 0) {
+            errors.push(`${item.name}: No questions were found in this file.`);
+          }
           if (remaining.length === 0 && pendingAnswerKey.length > 0 && questionIds.length > 0) {
             const questionIdSet = new Set(questionIds);
             const sourceQuestions = bank.filter((question) => questionIdSet.has(question.id));
