@@ -330,6 +330,8 @@ export interface TranslationShape {
       completedTitle: string;
       nextUnlocked: string; // "{0}" = next topic title
       allComplete: string;
+      showAll: string; // "{0}" = total step count
+      showLess: string;
     };
     topicModal: {
       overviewTab: string;
@@ -1561,6 +1563,8 @@ export const translations: Record<Locale, TranslationShape> = {
         completedTitle: 'Step completed',
         nextUnlocked: 'Next up: {0}',
         allComplete: 'You have completed this learning journey.',
+        showAll: 'View all {0} steps',
+        showLess: 'Show only the current step',
       },
       topicModal: {
         overviewTab: 'Overview',
@@ -3187,6 +3191,8 @@ export const translations: Record<Locale, TranslationShape> = {
         completedTitle: 'चरण पूरा हुआ',
         nextUnlocked: 'अगला चरण: {0}',
         allComplete: 'आपने यह सीखने की यात्रा पूरी कर ली है।',
+        showAll: 'सभी {0} चरण देखें',
+        showLess: 'केवल वर्तमान चरण दिखाएं',
       },
       topicModal: {
         overviewTab: 'ओवरव्यू',
@@ -4812,6 +4818,8 @@ export const translations: Record<Locale, TranslationShape> = {
         completedTitle: 'Step complete ho gaya',
         nextUnlocked: 'Ab agla: {0}',
         allComplete: 'Aapne ye learning journey complete kar li.',
+        showAll: 'Saare {0} steps dekhein',
+        showLess: 'Sirf current step dikhao',
       },
       topicModal: {
         overviewTab: 'Overview',
