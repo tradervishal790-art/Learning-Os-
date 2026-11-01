@@ -29,3 +29,11 @@ test('mastery uses recall as primary evidence and gradually trusts test scores',
   assert.equal(combineTopicMasteryScore(75, null, 25, 5), 45);
   assert.equal(combineTopicMasteryScore(75, null, null, 0), 75);
 });
+test('ungraded attempts do not displace the most recent scored tests', () => {
+  const evidence = getTopicTestEvidence('Biology', [
+    attempt('Biology', [null, null]),
+    attempt('Biology', [true, false]),
+    attempt('Biology', [true]),
+  ]);
+  assert.deepEqual(evidence, { accuracy: 67, attempts: 2, gradedQuestions: 3 });
+});
