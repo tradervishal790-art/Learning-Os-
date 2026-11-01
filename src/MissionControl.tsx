@@ -1,4 +1,4 @@
-import { ArrowUpRight, BrainCircuit, CheckCircle2, Compass, GraduationCap, NotebookPen, RotateCcw, Sparkles, Target, Users, Video, Zap, MoreHorizontal, Search, BookOpen, Newspaper, MessageCircle, ChevronDown } from 'lucide-react';
+import { ArrowUpRight, BrainCircuit, CheckCircle2, Compass, GraduationCap, NotebookPen, RotateCcw, Target, Users, Video, Zap, MoreHorizontal, Search, BookOpen, Newspaper, MessageCircle, ChevronDown } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { DashboardPageId } from './types';
 import { pullFromCloud, pushToCloud } from './cloudSync';
