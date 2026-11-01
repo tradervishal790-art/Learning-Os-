@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LayoutGrid, Lock } from 'lucide-react';
 import { NAV_ICONS, NAV_TONES } from './navIcons';
@@ -38,6 +38,19 @@ export default function BottomNav({ items, activeId, onSelect, darkMode = false 
   const [moreOpen, setMoreOpen] = useState(false);
   const immersive = useImmersive();
 
+  useEffect(() => {
+    if (!moreOpen) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMoreOpen(false);
+    };
+    window.addEventListener('keydown', closeOnEscape);
+    return () => window.removeEventListener('keydown', closeOnEscape);
+  }, [moreOpen]);
+
+  useEffect(() => {
+    setMoreOpen(false);
+  }, [activeId]);
+
   const primary = PRIMARY_IDS.map((id) => items.find((i) => i.id === id)).filter(
     (i): i is NavEntry => Boolean(i),
   );
@@ -74,6 +87,9 @@ export default function BottomNav({ items, activeId, onSelect, darkMode = false 
               exit={{ y: 24, opacity: 0 }}
               transition={{ duration: 0.2, ease: 'easeOut' }}
               onClick={(e) => e.stopPropagation()}
+              id="mobile-more-menu"
+              role="group"
+              aria-label="More navigation"
               className={`mobile-more-menu absolute inset-x-3 rounded-3xl border p-3 grid grid-cols-4 gap-1 ${darkMode ? "bg-[#101a2b] border-white/10" : "bg-white dark:bg-neutral-900 border-gray-200 dark:border-white/10"}`}
               style={{ bottom: 'calc(3.5rem + env(safe-area-inset-bottom) + 0.5rem)' }}
             >
@@ -138,6 +154,7 @@ export default function BottomNav({ items, activeId, onSelect, darkMode = false 
             onClick={() => setMoreOpen((v) => !v)}
             aria-label="More"
             aria-expanded={moreOpen}
+            aria-controls="mobile-more-menu"
             title="More"
             className={`relative w-14 h-14 flex items-center justify-center transition-colors ${tone(moreOpen || moreActive, false)}`}
           >
