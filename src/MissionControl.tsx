@@ -16,6 +16,7 @@ interface MissionControlProps {
   activeGoals: number;
   onNavigate: (page: DashboardPageId) => void;
   onOpenProfile: () => void;
+  onContinueLearning: () => void;
 }
 
 const rows = [
@@ -70,8 +71,8 @@ const MAP_NODES_STORAGE_KEY = 'learning_os_mission_map_nodes';
 const defaultNodeIds = ['know', 'plan', 'learn', 'retain', 'prove'];
 
 export default function MissionControl({
-  name, goalTitle, nextTopic, hasLearningProfile,
-  revisionDue, revisionOverdue, streak, activeGoals, onNavigate, onOpenProfile,
+  name, goalTitle, nextTopic, nextTopicDetail, hasLearningProfile,
+  revisionDue, revisionOverdue, streak, activeGoals, onNavigate, onOpenProfile, onContinueLearning,
 }: MissionControlProps) {
   const [selectedEngine, setSelectedEngine] = useState<string | null>(null);
   const [moreOpen, setMoreOpen] = useState(false);
@@ -141,7 +142,23 @@ export default function MissionControl({
         </div>
       </header>
 
-      <section className="relative z-10 flex min-h-0 flex-1 flex-col overflow-y-auto px-3 pb-3 pt-2 md:px-6 md:pb-5 md:pt-3">
+      <section className="relative z-10 flex min-h-0 flex-1 flex-col overflow-y-auto px-3 pb-3 pt-3 md:px-6 md:pb-5 md:pt-4">
+        <div className="mb-3 grid shrink-0 gap-2 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
+          <button type="button" onClick={onContinueLearning} className="group flex min-h-[104px] items-center justify-between gap-4 rounded-2xl border border-violet-300/25 bg-gradient-to-r from-violet-500/[0.14] to-indigo-500/[0.08] px-4 py-4 text-left transition-[transform,border-color,background-color] duration-200 hover:-translate-y-0.5 hover:border-violet-200/45 hover:bg-violet-400/[0.12] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300 md:px-5">
+            <span className="min-w-0">
+              <span className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-violet-200/80">Pick up where you left off</span>
+              <span className="mt-1 block truncate text-base font-semibold text-white md:text-lg">Continue learning</span>
+              <span className="mt-1 block truncate text-xs text-slate-400">{nextTopic ? nextTopic + ' · ' + nextTopicDetail : goalTitle ? 'Continue with ' + goalTitle : 'Choose a goal and build your first learning path'}</span>
+            </span>
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-300/15 text-violet-100 transition-transform duration-200 group-hover:translate-x-0.5"><ArrowUpRight className="h-5 w-5" /></span>
+          </button>
+          <div className="grid grid-cols-3 gap-2">
+            <button type="button" onClick={() => onNavigate('revision')} className="flex min-h-[104px] flex-col items-start justify-between rounded-2xl border border-white/[0.08] bg-white/[0.035] p-3 text-left transition-[transform,border-color,background-color] duration-200 hover:-translate-y-0.5 hover:border-emerald-300/30 hover:bg-emerald-300/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300"><RotateCcw className="h-4 w-4 text-emerald-200" /><span><span className="block text-xs font-semibold text-white">Revision</span><span className="mt-1 block text-[10px] text-slate-500">{revisionDue + revisionOverdue > 0 ? revisionDue + revisionOverdue + ' due' : 'Review'}</span></span></button>
+            <button type="button" onClick={() => onNavigate('test')} className="flex min-h-[104px] flex-col items-start justify-between rounded-2xl border border-white/[0.08] bg-white/[0.035] p-3 text-left transition-[transform,border-color,background-color] duration-200 hover:-translate-y-0.5 hover:border-fuchsia-300/30 hover:bg-fuchsia-300/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-300"><CheckCircle2 className="h-4 w-4 text-fuchsia-200" /><span><span className="block text-xs font-semibold text-white">Tests</span><span className="mt-1 block text-[10px] text-slate-500">Practice</span></span></button>
+            <button type="button" onClick={() => onNavigate('mentor')} className="flex min-h-[104px] flex-col items-start justify-between rounded-2xl border border-white/[0.08] bg-white/[0.035] p-3 text-left transition-[transform,border-color,background-color] duration-200 hover:-translate-y-0.5 hover:border-cyan-300/30 hover:bg-cyan-300/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"><MessageCircle className="h-4 w-4 text-cyan-200" /><span><span className="block text-xs font-semibold text-white">AI Mentor</span><span className="mt-1 block text-[10px] text-slate-500">Ask</span></span></button>
+          </div>
+        </div>
+        <button type="button" onClick={() => { const action = getNextBestStepAction({ hasLearningProfile, revisionDue, revisionOverdue }); if (action === 'profile') onOpenProfile(); else open(action); }} className="mb-3 flex shrink-0 items-center justify-between gap-3 rounded-xl border border-cyan-300/12 bg-cyan-300/[0.035] px-3 py-2.5 text-left transition hover:border-cyan-300/25 hover:bg-cyan-300/[0.07] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"><span className="min-w-0"><span className="block text-[9px] uppercase tracking-[0.16em] text-cyan-200/65">Suggested next step</span><span className="block truncate text-xs font-medium text-slate-100">{!hasLearningProfile ? 'Set up your learning profile' : activeGoals === 0 ? 'Choose a learning goal' : revisionOverdue > 0 ? revisionOverdue + ' overdue topics to revise' : revisionDue > 0 ? revisionDue + ' topics ready for revision' : nextTopic || 'Open your learning roadmap'}</span></span><ArrowUpRight className="h-4 w-4 shrink-0 text-cyan-200/80" /></button>
         <div className="mb-1 flex shrink-0 items-center justify-between px-1 text-[9px] uppercase tracking-[0.2em] text-slate-600 md:px-3">
           <span>Student journey map</span>
           <span className="inline-flex items-center gap-1.5 text-cyan-300/70"><Sparkles className="h-3 w-3" /> Connected learning system</span>
@@ -311,10 +328,6 @@ export default function MissionControl({
             </div>
           </div>
         </div>}
-        <button type="button" onClick={() => { const action = getNextBestStepAction({ hasLearningProfile, revisionDue, revisionOverdue }); if (action === 'profile') onOpenProfile(); else open(action); }} className="mt-1 flex shrink-0 items-center justify-between gap-3 rounded-xl border border-cyan-300/15 bg-cyan-300/[0.06] px-3 py-2 text-left transition hover:bg-cyan-300/10">
-          <span className="min-w-0"><span className="block text-[9px] uppercase tracking-[0.16em] text-cyan-200/70">Your next best step</span><span className="block truncate text-xs font-medium text-white">{!hasLearningProfile ? 'Set up your learning profile' : activeGoals === 0 ? 'Choose a learning goal' : revisionOverdue > 0 ? `${revisionOverdue} overdue topics to revise` : revisionDue > 0 ? `${revisionDue} topics ready for revision` : nextTopic || 'Open your learning roadmap'}</span></span>
-          <ArrowUpRight className="h-4 w-4 shrink-0 text-cyan-200" />
-        </button>
       </section>
     </main>
   );
