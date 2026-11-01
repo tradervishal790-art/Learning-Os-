@@ -98,6 +98,8 @@ export default function Roadmap({
     locked: t.roadmap.statusLabels.locked,
   };
   const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null);
+  const [completionFeedback, setCompletionFeedback] = useState<{ completed: string; next: string | null } | null>(null);
+  const [showFullJourney, setShowFullJourney] = useState(false);
   // Which teaching process is currently active for the launched playlist —
   // only set on the 'personality_v1' path, used to decide the push-trigger
   // behavior in handleMarkComplete/handleWatchVideos below. Control-group
@@ -144,6 +146,10 @@ export default function Roadmap({
   const roadmap = getRoadmapData(activeGoalId);
   const { total: totalTopics, completed: completedTopics, learning: learningTopics, percent: progressPercent } =
     getRoadmapProgress(roadmap);
+  const currentTopic = roadmap.children?.find((topic) => topic.status === 'learning');
+  const currentTopicIndex = currentTopic ? roadmap.children?.findIndex((topic) => topic.id === currentTopic.id) ?? -1 : -1;
+  // If there is no active step (for example, the journey is complete), never hide the entire roadmap.
+  const isJourneyExpanded = showFullJourney || !currentTopic;
 
   // No roadmap yet — either never generated, or a previous attempt failed.
   // Either way, the fix is the same: let the user type a subject + set
@@ -254,6 +260,10 @@ export default function Roadmap({
       return;
     }
 
+    const completedTitle = selectedTopic.title;
+    const topicIndex = (roadmap.children ?? []).findIndex((topic) => topic.id === selectedTopic.id);
+    const nextTopic = topicIndex >= 0 ? roadmap.children?.slice(topicIndex + 1).find((topic) => topic.status === 'locked') : undefined;
+    setCompletionFeedback({ completed: completedTitle, next: nextTopic?.title ?? null });
     markTopicFinished(activeGoalId ?? undefined, selectedTopic.id, 'completed');
     setSelectedTopic(null);
     setActiveTeachingProcess(null);
@@ -518,6 +528,66 @@ export default function Roadmap({
         </div>
       </motion.div>
 
+      {completionFeedback && (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-4 flex items-start gap-3 rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-3"
+          role="status"
+          aria-live="polite"
+        >
+          <CircleCheck className="mt-0.5 h-5 w-5 flex-shrink-0 text-emerald-500" />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">{t.roadmap.journey.completedTitle}: {completionFeedback.completed}</p>
+            <p className="mt-0.5 text-xs text-gray-600 dark:text-white/60">
+              {completionFeedback.next
+                ? format(t.roadmap.journey.nextUnlocked, completionFeedback.next)
+                : t.roadmap.journey.allComplete}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setCompletionFeedback(null)}
+            aria-label="Dismiss completion message"
+            className="rounded-lg p-1 text-gray-400 transition hover:bg-black/5 hover:text-gray-700 dark:hover:bg-white/10 dark:hover:text-white"
+          >
+            <CloseIcon className="h-4 w-4" />
+          </button>
+        </motion.div>
+      )}
+
+      {currentTopic && (
+        <motion.section
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.12, duration: 0.35 }}
+          aria-labelledby="roadmap-next-step-title"
+          className="mb-5 rounded-2xl border border-indigo-500/25 bg-indigo-500/[0.045] p-4 md:p-5"
+        >
+          <div className="mb-3 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-indigo-600 dark:text-indigo-300">
+            <Target className="h-4 w-4" strokeWidth={1.8} />
+            {t.roadmap.journey.nextUp}
+          </div>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <p className="mb-1 text-[10px] text-gray-400 dark:text-white/40">
+                {format(t.roadmap.step, currentTopicIndex + 1)} · {currentTopic.estimatedTime}
+              </p>
+              <h2 id="roadmap-next-step-title" className="text-base font-semibold leading-snug md:text-lg">{currentTopic.title}</h2>
+              <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-gray-500 dark:text-white/55">{currentTopic.description}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => openTopic(currentTopic)}
+              className="inline-flex min-h-10 flex-shrink-0 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-500 active:scale-[0.98] dark:bg-indigo-500 dark:hover:bg-indigo-400"
+            >
+              {t.roadmap.journey.openStep}
+              <Target className="h-4 w-4" />
+            </button>
+          </div>
+        </motion.section>
+      )}
+
       {/* Main path card */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.5 }} className="p-4 md:p-6 rounded-2xl card mb-4 md:mb-6">
         <div className="flex items-start justify-between gap-3">
@@ -657,9 +727,25 @@ export default function Roadmap({
         )}
       </motion.div>
 
-      {/* Topic list — vertical timeline: status circle on a rail, card beside it */}
-      <div>
-        {roadmap.children?.map((topic, i) => {
+      {totalTopics > 0 && (
+        <>
+          {/* Keep attention on the active step; the full sequence remains one tap away. */}
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <h2 className="text-sm font-semibold text-gray-700 dark:text-white/75">{t.roadmap.journey.journeyTitle}</h2>
+        {currentTopic && (
+            <button
+              type="button"
+              onClick={() => setShowFullJourney((visible) => !visible)}
+              aria-expanded={isJourneyExpanded}
+              className="rounded-lg px-3 py-2 text-xs font-medium text-indigo-600 transition hover:bg-indigo-500/10 dark:text-indigo-300"
+            >
+              {isJourneyExpanded ? t.roadmap.journey.showLess : format(t.roadmap.journey.showAll, totalTopics)}
+            </button>
+          )}
+          </div>
+          <div>
+            {roadmap.children?.map((topic, i) => {
+              if (!isJourneyExpanded && topic.status !== 'learning') return null;
           const status = { ...statusStyles[topic.status], icon: statusIcons[topic.status], label: statusLabels[topic.status] };
           const isLast = i === (roadmap.children?.length ?? 0) - 1;
           const isLocked = topic.status === 'locked';
@@ -729,8 +815,10 @@ export default function Roadmap({
               </button>
             </div>
           );
-        })}
-      </div>
+            })}
+          </div>
+        </>
+      )}
 
       {/* Modal */}
       <AnimatePresence>

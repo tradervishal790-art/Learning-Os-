@@ -323,6 +323,16 @@ export interface TranslationShape {
     statusLabels: { mastered: string; completed: string; learning: string; locked: string };
     examWeightage: Record<'high' | 'medium' | 'low', string>;
     step: string; // "{0}" = step number
+    journey: {
+      nextUp: string;
+      openStep: string;
+      journeyTitle: string;
+      completedTitle: string;
+      nextUnlocked: string; // "{0}" = next topic title
+      allComplete: string;
+      showAll: string; // "{0}" = total step count
+      showLess: string;
+    };
     topicModal: {
       overviewTab: string;
       whyTab: string;
@@ -1546,6 +1556,16 @@ export const translations: Record<Locale, TranslationShape> = {
       statusLabels: { mastered: 'Mastered', completed: 'Done', learning: 'In Progress', locked: 'Locked' },
       examWeightage: { high: 'High weightage', medium: 'Medium weightage', low: 'Low weightage' },
       step: 'STEP {0}',
+      journey: {
+        nextUp: 'YOUR NEXT STEP',
+        openStep: 'Open this step',
+        journeyTitle: 'Your learning journey',
+        completedTitle: 'Step completed',
+        nextUnlocked: 'Next up: {0}',
+        allComplete: 'You have completed this learning journey.',
+        showAll: 'View all {0} steps',
+        showLess: 'Show only the current step',
+      },
       topicModal: {
         overviewTab: 'Overview',
         whyTab: 'Why',
@@ -3164,6 +3184,16 @@ export const translations: Record<Locale, TranslationShape> = {
       statusLabels: { mastered: 'महारत', completed: 'पूरा', learning: 'जारी है', locked: 'लॉक्ड' },
       examWeightage: { high: 'ज़्यादा वेटेज', medium: 'मध्यम वेटेज', low: 'कम वेटेज' },
       step: 'चरण {0}',
+      journey: {
+        nextUp: 'आपका अगला कदम',
+        openStep: 'यह चरण खोलें',
+        journeyTitle: 'आपकी सीखने की यात्रा',
+        completedTitle: 'चरण पूरा हुआ',
+        nextUnlocked: 'अगला चरण: {0}',
+        allComplete: 'आपने यह सीखने की यात्रा पूरी कर ली है।',
+        showAll: 'सभी {0} चरण देखें',
+        showLess: 'केवल वर्तमान चरण दिखाएं',
+      },
       topicModal: {
         overviewTab: 'ओवरव्यू',
         whyTab: 'क्यों',
@@ -4781,6 +4811,16 @@ export const translations: Record<Locale, TranslationShape> = {
       statusLabels: { mastered: 'Mastered', completed: 'Done', learning: 'In Progress', locked: 'Locked' },
       examWeightage: { high: 'High weightage', medium: 'Medium weightage', low: 'Low weightage' },
       step: 'STEP {0}',
+      journey: {
+        nextUp: 'AGLA STEP',
+        openStep: 'Is step ko kholo',
+        journeyTitle: 'Aapki learning journey',
+        completedTitle: 'Step complete ho gaya',
+        nextUnlocked: 'Ab agla: {0}',
+        allComplete: 'Aapne ye learning journey complete kar li.',
+        showAll: 'Saare {0} steps dekhein',
+        showLess: 'Sirf current step dikhao',
+      },
       topicModal: {
         overviewTab: 'Overview',
         whyTab: 'Why',
