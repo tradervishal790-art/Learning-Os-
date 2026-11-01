@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { MENTOR_PREFILL_KEY } from './mentorPrefill';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Lightbulb, BookOpenText, Link2, ListChecks, Hammer, Bug, SendHorizontal, SquarePen, History, Trash2, X } from 'lucide-react';
+import { Lightbulb, BookOpenText, Link2, ListChecks, Hammer, Bug, SendHorizontal, SquarePen, History, Trash2, X, CircleHelp } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { setImmersive, useImmersive } from './immersive';
 import { useTranslation, useLanguage } from './i18n/LanguageContext';
@@ -111,7 +111,7 @@ async function generateMentorResponse(
 }
 
 // Quick-prompt icons by position (the translation data still carries emoji; the UI uses these instead).
-const PROMPT_ICONS: LucideIcon[] = [Lightbulb, BookOpenText, Link2, ListChecks, Hammer, Bug];
+const PROMPT_ICONS: LucideIcon[] = [Lightbulb, BookOpenText, Link2, ListChecks, Hammer, CircleHelp];
 // Same positions: which quick prompts get an interactive (OpenUI) answer. "Quiz me" -> clickable quiz.
 const PROMPT_UI = [false, false, false, true, false, false];
 
@@ -176,8 +176,8 @@ export default function Mentor() {
   useEffect(() => {
     try {
       const history = JSON.parse(localStorage.getItem('video_watch_history') || '[]');
-      if (history.length > 0) {
-        setContextTopic(history[0].title || '');
+      if (Array.isArray(history) && typeof history[0]?.title === 'string') {
+        setContextTopic(history[0].title.slice(0, 120));
       }
     } catch {}
   }, []);
@@ -434,6 +434,7 @@ export default function Mentor() {
           <div className="px-4 pb-3 md:px-0 md:py-3 flex gap-2">
             <input
               type="text"
+              maxLength={4000}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && sendMessage(input)}
