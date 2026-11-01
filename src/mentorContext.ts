@@ -23,6 +23,9 @@ import { getRoadmapData, getCurrentTopic } from './roadmapData';
 import { getMasteryHeatmap, getWeakAreas } from './progressData';
 import { getPersonalityProfile } from './personalityProfileStore';
 import { buildPersonalityBrief } from './personalityBrief';
+import { getDueRevisionItems, getRevisionDataForGoals } from './revisionData';
+import { getRecallRecords } from './revisionRecallStore';
+import { translations } from './i18n/translations';
 
 export interface MentorStudentContext {
   teaching?: {
@@ -36,6 +39,8 @@ export interface MentorStudentContext {
   goals?: { title: string; exam?: string; deadline?: string }[];
   currentTopic?: string;
   weakTopics?: { title: string; mastery: number }[];
+  dueReviews?: { title: string; status: 'overdue' | 'due-today'; checkpointDay: number; task: string }[];
+  recentRecall?: { rating: 'forgot' | 'partial' | 'remembered'; recordedAt: string }[];
 }
 
 function level(n: number, low: string, high: string): string | null {
@@ -111,6 +116,22 @@ export function buildMentorStudentContext(): MentorStudentContext {
     if (weak.length > 0) {
       ctx.weakTopics = weak.map((w) => ({ title: w.title, mastery: w.masteryScore }));
     }
+
+    // Give the mentor a small, live snapshot of what needs revision now.
+    // Reuse the same scheduler as the Revision page; never create a second queue.
+    const revisionItems = getRevisionDataForGoals(translations.en.revisionTasks, goals);
+    ctx.dueReviews = getDueRevisionItems(revisionItems).slice(0, 3).map((item) => ({
+      title: item.topic,
+      status: item.status as 'overdue' | 'due-today',
+      checkpointDay: item.day,
+      task: item.task,
+    }));
+
+    // Recent recall is a learning signal, not a personality label.
+    ctx.recentRecall = getRecallRecords()
+      .sort((a, b) => Date.parse(b.recordedAt) - Date.parse(a.recordedAt))
+      .slice(0, 3)
+      .map(({ rating, recordedAt }) => ({ rating, recordedAt }));
   } catch {
     // Missing/corrupt goal or roadmap data — skip that part.
   }
