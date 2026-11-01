@@ -169,7 +169,7 @@ export default function MissionControl({
         </div>
 
         {mapExpanded && visibleRows.length === 0 && <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-center"><p className="text-sm font-medium text-white">Your map is empty</p><p className="mt-1 text-xs text-slate-400">Restore the learning engines to continue.</p><button type="button" onClick={() => { mapPrefsEdited.current = true; setVisibleNodeIds(defaultNodeIds); }} className="mt-3 rounded-lg border border-cyan-300/30 px-3 py-2 text-xs text-cyan-100">Restore learning engines</button></div>}
-        <div className={`relative flex-none overflow-visible rounded-[24px] border border-white/[0.07] bg-[#0b1221]/65 ${mapExpanded ? 'lg:block' : 'hidden'} ${visibleRows.length === 0 ? 'hidden' : ''}`} style={{ height: `${mapHeight}px` }}>
+        <div className={`relative hidden flex-none overflow-visible rounded-[24px] border border-white/[0.07] bg-[#0b1221]/65 ${mapExpanded ? 'lg:block' : ''} ${visibleRows.length === 0 ? 'hidden' : ''}`} style={{ height: `${mapHeight}px` }}>
           <div className="relative min-h-[660px]" style={{ height: `${mapHeight}px` }}>
           <div className="absolute inset-0 opacity-[0.16]" style={{ backgroundImage: 'radial-gradient(#7dd3fc 0.7px, transparent 0.7px)', backgroundSize: '24px 24px' }} />
           <svg className="absolute inset-0 h-full w-full" viewBox={`0 0 1200 ${mapHeight}`} preserveAspectRatio="none" fill="none" aria-hidden="true">
