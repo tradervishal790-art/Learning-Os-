@@ -90,3 +90,34 @@ test('answer-key-only PDF pages can complete questions extracted from earlier pa
   await queue.clearQueuedDailyPhotos();
   localStorage.removeItem(DAILY_KEY);
 });
+test('a failed page stays queued and a retry does not re-read completed pages', async () => {
+  await queue.clearQueuedDailyPhotos();
+  localStorage.removeItem(DAILY_KEY);
+  await queue.enqueueDailyPhotos([new File(['original-pdf'], 'retry.pdf', { type: 'application/pdf' })]);
+
+  let pageTwoCalls = 0;
+  const dependencies = {
+    prepareUpload: async () => ['page-1', 'page-2', 'page-3'].map((page) => ({ mimeType: 'application/pdf', data: btoa(page) })),
+    extractQuestionsFromPhoto: async (payload) => {
+      const page = atob(payload.data);
+      if (page === 'page-2' && pageTwoCalls++ === 0) throw new Error('temporary extraction failure');
+      return { questions: [pageQuestion(page)], answerKey: [] };
+    },
+  };
+
+  const first = await queue.processQueuedPhotosForDailyTest(3, undefined, dependencies);
+  assert.equal(first.errors.length, 1);
+  assert.equal(first.processedPages, 1);
+  assert.equal(first.bank.length, 1);
+  assert.equal(first.remainingFiles, 1);
+
+  const retry = await queue.processQueuedPhotosForDailyTest(3, undefined, dependencies);
+  assert.equal(retry.errors.length, 0);
+  assert.equal(retry.processedPages, 2);
+  assert.equal(retry.bank.length, 3);
+  assert.equal(retry.remainingFiles, 0);
+  assert.equal(pageTwoCalls, 2);
+
+  await queue.clearQueuedDailyPhotos();
+  localStorage.removeItem(DAILY_KEY);
+});
