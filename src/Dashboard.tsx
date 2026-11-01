@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Search, BookOpen, ClipboardCheck, Newspaper, Lock, Settings as SettingsIcon, ArrowLeft } from 'lucide-react';
 import PagePlaceholder from './PagePlaceholder';
 import MissionControl from './MissionControl';
+import { getContinueLearningTarget } from './missionControlLogic';
 import BottomNav from './BottomNav';
 import { useImmersive, useNoteOpen } from './immersive';
 import { getRoadmapData, getCurrentTopic } from './roadmapData';
@@ -628,6 +629,10 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
             activeGoals={goals.filter((goal) => goal.status === 'active').length}
             onNavigate={setActivePage}
             onOpenProfile={handleOpenLearningProfile}
+            onContinueLearning={() => {
+              if (getContinueLearningTarget(Boolean(currentTopic)) === 'videos' && currentTopic) handleOpenSavedVideo(currentTopic.id);
+              else setActivePage('roadmap');
+            }}
           />
         )}
 

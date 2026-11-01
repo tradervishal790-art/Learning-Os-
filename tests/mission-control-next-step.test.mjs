@@ -16,3 +16,12 @@ test('next best step prioritizes overdue or due revision after profile setup', (
 test('next best step points to the roadmap when no revision is due', () => {
   assert.equal(logic.getNextBestStepAction({ hasLearningProfile: true, revisionDue: 0, revisionOverdue: 0 }), 'roadmap');
 });
+
+
+test('continue learning resumes the current topic when one exists', () => {
+  assert.equal(logic.getContinueLearningTarget(true), 'videos');
+});
+
+test('continue learning guides a learner without a current topic to the roadmap', () => {
+  assert.equal(logic.getContinueLearningTarget(false), 'roadmap');
+});

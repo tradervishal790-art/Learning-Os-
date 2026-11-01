@@ -9,3 +9,9 @@ export function getNextBestStepAction(input: {
   if (input.revisionDue + input.revisionOverdue > 0) return 'revision';
   return 'roadmap';
 }
+
+export type ContinueLearningTarget = 'videos' | 'roadmap';
+
+export function getContinueLearningTarget(hasCurrentTopic: boolean): ContinueLearningTarget {
+  return hasCurrentTopic ? 'videos' : 'roadmap';
+}
