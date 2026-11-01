@@ -797,14 +797,8 @@ export interface TranslationShape {
     tabs: { all: string; national: string; international: string; economy: string; sports: string; scitech: string };
     sourceLabel: string;
     aiNote: string;
-    quizTitle: string;
-    quizSubtitle: string;
-    correct: string;
-    wrong: string;
-    scoreLine: string; // "You scored {0} / {1}"
-    streakDone: string;
-    mistakesTitle: string;
-    correctAnswerLabel: string;
+    reader: { articleView: string; fallback: string; openOriginal: string; unavailable: string };
+
   };
   channelDigest: {
     switchNews: string;
@@ -4058,14 +4052,7 @@ export const translations: Record<Locale, TranslationShape> = {
       tabs: { all: 'सभी', national: 'राष्ट्रीय', international: 'अंतरराष्ट्रीय', economy: 'अर्थव्यवस्था', sports: 'खेल', scitech: 'विज्ञान और तकनीक' },
       sourceLabel: 'स्रोत',
       aiNote: 'यह सार्वजनिक खबरों से AI द्वारा संक्षेप में तैयार किया गया है। ज़रूरी बात के लिए मूल स्रोत ज़रूर देखें।',
-      quizTitle: 'क्विक क्विज़',
-      quizSubtitle: 'आज के पॉइंट्स से 5 सवाल',
-      correct: 'सही!',
-      wrong: 'सही नहीं।',
-      scoreLine: 'आपका स्कोर {0} / {1}',
-      streakDone: 'आज के करंट अफेयर्स पूरे',
-      mistakesTitle: 'जो सवाल छूट गए',
-      correctAnswerLabel: 'सही उत्तर',
+      reader: { articleView: 'लेख पढ़ें', fallback: 'कुछ समाचार वेबसाइटें ऐप के अंदर खुलने से रोकती हैं। लेख न दिखे तो मूल पेज खोलें।', openOriginal: 'मूल लेख खोलें', unavailable: 'मूल लेख का लिंक उपलब्ध नहीं है।' },
     },
     channelDigest: {
       switchNews: 'अखबार',
@@ -5688,14 +5675,7 @@ export const translations: Record<Locale, TranslationShape> = {
       tabs: { all: 'Sab', national: 'National', international: 'International', economy: 'Economy', sports: 'Sports', scitech: 'Sci & Tech' },
       sourceLabel: 'Source',
       aiNote: 'Ye public news se AI ne short mein banaya hai. Zaroori baat ke liye original source zaroor check karo.',
-      quizTitle: 'Quick quiz',
-      quizSubtitle: 'Aaj ke points se 5 sawaal',
-      correct: 'Sahi!',
-      wrong: 'Sahi nahi.',
-      scoreLine: 'Tumhara score {0} / {1}',
-      streakDone: 'Aaj ka Current Affairs complete',
-      mistakesTitle: 'Jo sawaal chhoot gaye',
-      correctAnswerLabel: 'Sahi jawab',
+      reader: { articleView: 'Article padho', fallback: 'Kuch news websites app ke andar khulne se rok deti hain. Article na dikhe to original page kholo.', openOriginal: 'Original article kholo', unavailable: 'Original article ka link available nahi hai.' },
     },
     channelDigest: {
       switchNews: 'Newspapers',
