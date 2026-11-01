@@ -776,6 +776,7 @@ export interface TranslationShape {
     weakAreas: { title: string; noneFound: string };
   };
   dictionary: {
+    subtitle: string;
     searchPlaceholder: string;
     searchAria: string;
     loading: string;
@@ -790,6 +791,8 @@ export interface TranslationShape {
     discoverySubtitle: string;
     surpriseMe: string;
     pronunciation: string;
+    explore: string;
+    searchError: string;
   };
   research: {
     header: { title: string; subtitle: string };
@@ -2417,6 +2420,7 @@ export const translations: Record<Locale, TranslationShape> = {
       weakAreas: { title: 'Weak Areas', noneFound: 'No weak topics found — everything is going well.' },
     },
     dictionary: {
+      subtitle: 'Find meanings, pronunciation and related language roots.',
       searchPlaceholder: 'Search an English word…',
       searchAria: 'Search dictionary',
       loading: 'Loading dictionary…',
@@ -2431,6 +2435,8 @@ export const translations: Record<Locale, TranslationShape> = {
       discoverySubtitle: 'A few words from the dictionary, ready to explore.',
       surpriseMe: 'Surprise me',
       pronunciation: 'Play pronunciation',
+      explore: 'Explore',
+      searchError: 'The word could not be loaded. Please try again.',
     },
     research: {
       header: { title: 'Research', subtitle: 'Search any topic — from the internet, for deeper reading' },
@@ -4052,6 +4058,7 @@ export const translations: Record<Locale, TranslationShape> = {
       weakAreas: { title: 'कमजोर टॉपिक', noneFound: 'कोई कमजोर टॉपिक नहीं मिला — सब कुछ ठीक चल रहा है।' },
     },
     dictionary: {
+      subtitle: 'शब्दों के अर्थ, उच्चारण और भाषा से जुड़े रूप जानें।',
       searchPlaceholder: 'अंग्रेज़ी शब्द खोजें…',
       searchAria: 'शब्दकोश में खोजें',
       loading: 'शब्दकोश लोड हो रहा है…',
@@ -4066,6 +4073,8 @@ export const translations: Record<Locale, TranslationShape> = {
       discoverySubtitle: 'शब्दकोश से चुने गए कुछ शब्द।',
       surpriseMe: 'नए शब्द दिखाएँ',
       pronunciation: 'उच्चारण सुनें',
+      explore: 'देखें',
+      searchError: 'शब्द लोड नहीं हो पाया। फिर कोशिश करें।',
     },
     research: {
       header: { title: 'रिसर्च', subtitle: 'कोई भी टॉपिक खोजें — इंटरनेट से, गहराई से पढ़ने के लिए' },
@@ -5688,6 +5697,7 @@ export const translations: Record<Locale, TranslationShape> = {
       weakAreas: { title: 'Weak Areas', noneFound: 'Koi weak topic nahi mila — sab theek chal raha hai.' },
     },
     dictionary: {
+      subtitle: 'Meaning, pronunciation aur word roots dekho.',
       searchPlaceholder: 'English word search karo…',
       searchAria: 'Dictionary search',
       loading: 'Dictionary load ho rahi hai…',
@@ -5702,6 +5712,8 @@ export const translations: Record<Locale, TranslationShape> = {
       discoverySubtitle: 'Dictionary se chune hue kuch words.',
       surpriseMe: 'Naye words dikhao',
       pronunciation: 'Pronunciation suno',
+      explore: 'Explore karo',
+      searchError: 'Word load nahi hua. Phir try karo.',
     },
     research: {
       header: { title: 'Research', subtitle: 'Koi bhi topic search karo — internet se, deeper reading ke liye' },
