@@ -60,7 +60,7 @@ export default function Dictionary() {
   }, [loading, loadError, discoveryRound]);
   useEffect(() => {
     const q = query.trim();
-    if (!q) {
+    if (!q || entry || searching) {
       setSuggestions([]);
       return;
     }
@@ -73,7 +73,7 @@ export default function Dictionary() {
     return () => {
       cancelled = true;
     };
-  }, [query]);
+  }, [query, entry, searching]);
 
   const search = async (word: string) => {
     const w = word.trim();
@@ -104,7 +104,7 @@ export default function Dictionary() {
         setNotFound(true);
       }
     } catch {
-      if (requestId === searchIdRef.current) setSearchError('The word could not be loaded. Please try again.');
+      if (requestId === searchIdRef.current) setSearchError(t.dictionary.searchError);
     } finally {
       if (requestId === searchIdRef.current) setSearching(false);
     }
@@ -123,6 +123,10 @@ export default function Dictionary() {
 
   return (
     <div className="mx-auto w-full min-w-0 max-w-3xl break-words [overflow-wrap:anywhere]">
+      <header className="mb-5">
+        <h1 className="text-2xl md:text-3xl font-semibold">{t.dashboard.sidebar.dictionary}</h1>
+        <p className="text-sm text-gray-500 dark:text-white/45 mt-1">{t.dictionary.subtitle}</p>
+      </header>
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-white/40" />
         <input
@@ -137,7 +141,8 @@ export default function Dictionary() {
             setSearchError('');
           }}
           onKeyDown={(e) => e.key === 'Enter' && void search(query)}
-          placeholder={t.dictionary.searchPlaceholder}
+          placeholder={loading ? t.dictionary.loading : t.dictionary.searchPlaceholder}
+          maxLength={80}
           disabled={loading || loadError}
           autoFocus
           className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg pl-9 pr-12 py-2.5 placeholder-gray-400 dark:placeholder-white/40 focus:outline-none focus:border-black dark:focus:border-white disabled:opacity-50"
@@ -190,7 +195,7 @@ export default function Dictionary() {
             {discoveryWords.map((word) => (
               <button key={word} type="button" onClick={() => void search(word)} className="min-w-0 text-left rounded-lg border border-gray-200 dark:border-white/10 px-3 py-2.5 hover:bg-gray-100 dark:hover:bg-white/10 transition group">
                 <span className="block text-sm font-medium truncate">{word}</span>
-                <span className="mt-1 flex items-center gap-1 text-[10px] text-gray-400 dark:text-white/40 group-hover:text-indigo-500"><span>Explore</span><ArrowRight className="w-3 h-3" /></span>
+                <span className="mt-1 flex items-center gap-1 text-[10px] text-gray-400 dark:text-white/40 group-hover:text-indigo-500"><span>{t.dictionary.explore}</span><ArrowRight className="w-3 h-3" /></span>
               </button>
             ))}
           </div>
