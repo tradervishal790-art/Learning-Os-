@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Search, X } from 'lucide-react';
 import { useTranslation, useLanguage } from './i18n/LanguageContext';
 import { authFetch } from './apiFetch';
+import { isSafeResearchUrl, normalizeResearchHistory, normalizeResearchResponse, readResearchCache, writeResearchCache } from './researchCache';
 
 interface SerpResult {
   title: string;
@@ -17,20 +18,6 @@ interface ResearchResponse {
 }
 
 const RESEARCH_STATE_STORAGE_KEY = 'learning_os_research_state';
-const RESEARCH_CACHE_PREFIX = 'learning_os_research_cache_';
-
-function cacheKey(query: string, locale: string): string {
-  return `${RESEARCH_CACHE_PREFIX}${locale}_${query.trim().toLowerCase()}`;
-}
-
-function isSafeExternalUrl(url: string): boolean {
-  try {
-    return ['http:', 'https:'].includes(new URL(url).protocol);
-  } catch {
-    return false;
-  }
-}
-
 function displayUrl(url: string): string {
   try {
     const u = new URL(url);
@@ -53,7 +40,7 @@ async function runResearch(query: string, genericErrorMsg: string, locale: strin
     throw new Error(data?.error || `${genericErrorMsg} (${response.status})`);
   }
 
-  return { query, results: data.results ?? [], grounded: !!data.grounded };
+  const normalized = normalizeResearchResponse(data, query);\n  if (!normalized) throw new Error(genericErrorMsg);\n  return normalized;
 }
 
 interface ResearchProps {
@@ -79,6 +66,8 @@ export default function Research({ embedded = false, onClose }: ResearchProps) {
   useEffect(() => {
     requestIdRef.current += 1;
     setLoading(false);
+    setResult(null);
+    setError('');
     return () => { requestIdRef.current += 1; };
   }, [locale, embedded]);
 
@@ -89,10 +78,11 @@ export default function Research({ embedded = false, onClose }: ResearchProps) {
     try {
       const saved = localStorage.getItem(RESEARCH_STATE_STORAGE_KEY);
       if (saved) {
-        const parsed = JSON.parse(saved) as { query: string; result: ResearchResponse | null; history: string[] };
-        if (parsed.query) setQuery(parsed.query);
-        if (parsed.result) setResult(parsed.result);
-        if (parsed.history) setHistory(parsed.history);
+        const parsed = JSON.parse(saved) as { query?: unknown; result?: unknown; history?: unknown };
+        if (typeof parsed.query === 'string') setQuery(parsed.query.slice(0, 200));
+        const restored = normalizeResearchResponse(parsed.result, typeof parsed.query === 'string' ? parsed.query : '');
+        if (restored) setResult(restored);
+        setHistory(normalizeResearchHistory(parsed.history));
       }
     } catch {
       // Corrupted storage — ignore, start fresh.
@@ -110,7 +100,7 @@ export default function Research({ embedded = false, onClose }: ResearchProps) {
   }, [embedded, query, result, history]);
 
   const handleSearch = async (requestedQuery = query) => {
-    const q = requestedQuery.trim();
+    const q = requestedQuery.trim().replace(/\\s+/g, ' ').slice(0, 200);
     if (!q || loading) return;
 
     const requestId = ++requestIdRef.current;
@@ -119,33 +109,17 @@ export default function Research({ embedded = false, onClose }: ResearchProps) {
     setResult(null);
 
     try {
-      let cached: string | null = null;
-      try {
-        cached = localStorage.getItem(cacheKey(q, locale));
-      } catch {
-        // Private browsing or storage limits must not block a live search.
-      }
+      const cached = readResearchCache(localStorage, q, locale);
       if (cached) {
-        try {
-          const parsed = JSON.parse(cached) as ResearchResponse;
-          if (parsed && Array.isArray(parsed.results)) {
-            if (requestId === requestIdRef.current) {
-              setResult({ ...parsed, query: q });
-              if (!embedded) setHistory((prev) => [q, ...prev.filter((h) => h.toLowerCase() !== q.toLowerCase())].slice(0, 8));
-            }
-            return;
-          }
-        } catch {
-          // Ignore a corrupted cache entry and fetch a fresh result.
+        if (requestId === requestIdRef.current) {
+          setResult({ ...cached, query: q });
+          if (!embedded) setHistory((prev) => [q, ...prev.filter((h) => h.toLowerCase() !== q.toLowerCase())].slice(0, 8));
         }
+        return;
       }
 
       const res = await runResearch(q, t.research.genericError, locale);
-      try {
-        localStorage.setItem(cacheKey(q, locale), JSON.stringify(res));
-      } catch {
-        // Results remain usable even when the browser cannot persist cache.
-      }
+      writeResearchCache(localStorage, q, locale, res);
       if (requestId === requestIdRef.current) {
         setResult(res);
         if (!embedded) {
@@ -169,6 +143,7 @@ export default function Research({ embedded = false, onClose }: ResearchProps) {
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && void handleSearch()}
           placeholder={t.research.searchPlaceholder}
+          maxLength={200}
           autoFocus={embedded}
           className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg pl-9 pr-4 py-2.5 placeholder-gray-400 dark:placeholder-white/40 focus:outline-none focus:border-black dark:focus:border-white"
         />
@@ -208,7 +183,7 @@ export default function Research({ embedded = false, onClose }: ResearchProps) {
       )}
       {result.results.map((r, i) => (
         <motion.div key={i} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
-          {r.url && isSafeExternalUrl(r.url) ? (
+          {r.url && isSafeResearchUrl(r.url) ? (
             <a href={r.url} target="_blank" rel="noopener noreferrer" className="group block">
               <p className="text-xs text-gray-400 dark:text-white/40 truncate mb-0.5">{displayUrl(r.url)}</p>
               <h3 className="text-base font-medium underline-offset-2 group-hover:underline">{r.title}</h3>
