@@ -19,6 +19,8 @@ test('mobile More navigation remains viewport-bounded and exposes readable label
   assert.match(nav, /mobile-more-menu/);
   assert.match(nav, /\{item\.label\}/);
   assert.match(nav, /aria-current=\{active \? 'page' : undefined\}/);
+  assert.match(nav, /closeOnEscape/);
+  assert.match(nav, /aria-controls="mobile-more-menu"/);
 });
 
 test('dashboard page changes use a short, low-displacement transition', async () => {
