@@ -183,13 +183,14 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 /* Primary indigo actions stay clear without making every action visually shout. */
 button[class~="bg-indigo-600"],
 button[class~="bg-indigo-500"],
-button[class~="dark:bg-indigo-500"] { background-color: rgb(99 102 241 / 0.88); }
+button[class~="dark:bg-indigo-500"] { background-color: #625fdb; }
 button[class~="bg-indigo-600"]:hover,
 button[class~="bg-indigo-500"]:hover,
-button[class~="dark:bg-indigo-500"]:hover { background-color: rgb(99 102 241 / 0.96); }
+button[class~="dark:bg-indigo-500"]:hover { background-color: #5956d1; }
 
 /* Keep the mobile More sheet inside short screens and scroll it as one surface. */
 .mobile-more-menu {
+  max-height: calc(100vh - 5.5rem - env(safe-area-inset-bottom) - 1rem);
   max-height: calc(100dvh - 5.5rem - env(safe-area-inset-bottom) - 1rem);
   overflow-y: auto;
   overscroll-behavior: contain;

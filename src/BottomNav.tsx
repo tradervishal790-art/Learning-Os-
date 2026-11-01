@@ -94,7 +94,7 @@ export default function BottomNav({ items, activeId, onSelect, darkMode = false 
                       <Icon className="w-5 h-5" strokeWidth={active ? 2.2 : 1.75} />
                       {item.locked && <LockBadge />}
                     </span>
-                    <span className="max-w-full px-1 text-center text-[10px] font-medium leading-tight text-gray-600 dark:text-white/65 break-words">{item.label}</span>
+                    <span className="max-w-full px-1 text-center text-[11px] font-medium leading-tight text-gray-600 dark:text-white/65 break-words">{item.label}</span>
                   </button>
                 );
               })}
