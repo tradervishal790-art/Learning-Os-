@@ -351,7 +351,7 @@ export interface TranslationShape {
   revision: {
     header: { title: string; subtitle: string };
     stats: { dueToday: string; overdue: string; mastered: string; retention: string };
-    filters: { all: string; dueToday: string; overdue: string; upcoming: string; mastered: string };
+    filters: { all: string; needsReview: string; dueToday: string; overdue: string; upcoming: string; mastered: string };
     difficultyLabels: { easy: string; medium: string; hard: string };
     card: {
       day: string;
@@ -1589,7 +1589,7 @@ export const translations: Record<Locale, TranslationShape> = {
     revision: {
       header: { title: 'Revision', subtitle: 'Comes back to you on a schedule — 1, 3, 7, 15, 30, 60 days' },
       stats: { dueToday: 'Due Today', overdue: 'Overdue', mastered: 'Mastered', retention: 'Retention' },
-      filters: { all: 'All', dueToday: 'Due Today', overdue: 'Overdue', upcoming: 'Upcoming', mastered: 'Mastered' },
+      filters: { all: 'All', needsReview: 'Needs review', dueToday: 'Due Today', overdue: 'Overdue', upcoming: 'Upcoming', mastered: 'Mastered' },
       difficultyLabels: { easy: 'Easy', medium: 'Medium', hard: 'Hard' },
       card: {
         day: 'Day',
@@ -3217,7 +3217,7 @@ export const translations: Record<Locale, TranslationShape> = {
     revision: {
       header: { title: 'रिवीज़न', subtitle: '1, 3, 7, 15, 30, 60 दिन के शेड्यूल पर वापस आता है' },
       stats: { dueToday: 'आज देय', overdue: 'बकाया', mastered: 'महारत', retention: 'रिटेंशन' },
-      filters: { all: 'सभी', dueToday: 'आज देय', overdue: 'बकाया', upcoming: 'आने वाला', mastered: 'महारत' },
+      filters: { all: 'सभी', needsReview: 'रिवीज़न बाकी', dueToday: 'आज देय', overdue: 'बकाया', upcoming: 'आने वाला', mastered: 'महारत' },
       difficultyLabels: { easy: 'आसान', medium: 'मध्यम', hard: 'कठिन' },
       card: {
         day: 'दिन',
@@ -4844,7 +4844,7 @@ export const translations: Record<Locale, TranslationShape> = {
     revision: {
       header: { title: 'Revision', subtitle: 'Comes back to you on a schedule — 1, 3, 7, 15, 30, 60 days' },
       stats: { dueToday: 'Due Today', overdue: 'Overdue', mastered: 'Mastered', retention: 'Retention' },
-      filters: { all: 'All', dueToday: 'Due Today', overdue: 'Overdue', upcoming: 'Upcoming', mastered: 'Mastered' },
+      filters: { all: 'All', needsReview: 'Review baaki', dueToday: 'Due Today', overdue: 'Overdue', upcoming: 'Upcoming', mastered: 'Mastered' },
       difficultyLabels: { easy: 'Easy', medium: 'Medium', hard: 'Hard' },
       card: {
         day: 'Day',
