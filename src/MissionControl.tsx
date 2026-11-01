@@ -75,6 +75,7 @@ export default function MissionControl({
   revisionDue, revisionOverdue, streak, activeGoals, onNavigate, onOpenProfile, onContinueLearning,
 }: MissionControlProps) {
   const [selectedEngine, setSelectedEngine] = useState<string | null>(null);
+  const [mapExpanded, setMapExpanded] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const [customizeOpen, setCustomizeOpen] = useState(false);
   const [functionSearch, setFunctionSearch] = useState('');
@@ -136,9 +137,6 @@ export default function MissionControl({
           <span className="rounded-full border border-white/[0.08] bg-white/[0.035] px-3 py-2 text-slate-400">
             <span className="text-violet-300">{streak}</span> day streak
           </span>
-          <span className="rounded-full border border-white/[0.08] bg-white/[0.035] px-3 py-2 text-slate-400">
-            <span className="text-emerald-300">{revisionDue + revisionOverdue}</span> to recall
-          </span>
         </div>
       </header>
 
@@ -159,13 +157,19 @@ export default function MissionControl({
           </div>
         </div>
         <button type="button" onClick={() => { const action = getNextBestStepAction({ hasLearningProfile, revisionDue, revisionOverdue }); if (action === 'profile') onOpenProfile(); else open(action); }} className="mb-3 flex shrink-0 items-center justify-between gap-3 rounded-xl border border-cyan-300/12 bg-cyan-300/[0.035] px-3 py-2.5 text-left transition hover:border-cyan-300/25 hover:bg-cyan-300/[0.07] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"><span className="min-w-0"><span className="block text-[9px] uppercase tracking-[0.16em] text-cyan-200/65">Suggested next step</span><span className="block truncate text-xs font-medium text-slate-100">{!hasLearningProfile ? 'Set up your learning profile' : activeGoals === 0 ? 'Choose a learning goal' : revisionOverdue > 0 ? revisionOverdue + ' overdue topics to revise' : revisionDue > 0 ? revisionDue + ' topics ready for revision' : nextTopic || 'Open your learning roadmap'}</span></span><ArrowUpRight className="h-4 w-4 shrink-0 text-cyan-200/80" /></button>
-        <div className="mb-1 flex shrink-0 items-center justify-between px-1 text-[9px] uppercase tracking-[0.2em] text-slate-600 md:px-3">
-          <span>Student journey map</span>
-          <span className="inline-flex items-center gap-1.5 text-cyan-300/70"><Sparkles className="h-3 w-3" /> Connected learning system</span>
+        <div className="mb-2 flex shrink-0 items-center justify-between px-1 md:px-3">
+          <div className="min-w-0">
+            <span className="block text-[9px] uppercase tracking-[0.2em] text-slate-600">Your learning space</span>
+            <span className="mt-0.5 block text-xs text-slate-400">Your tools, in one place</span>
+          </div>
+          <button type="button" onClick={() => setMapExpanded((value) => !value)} aria-expanded={mapExpanded} className="inline-flex items-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.035] px-3 py-2 text-[11px] font-medium text-slate-300 transition hover:border-cyan-300/25 hover:bg-white/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300">
+            {mapExpanded ? 'Hide learning map' : 'Explore learning map'}
+            <ChevronDown className={mapExpanded ? "h-3.5 w-3.5 rotate-180 transition-transform duration-200" : "h-3.5 w-3.5 transition-transform duration-200"} />
+          </button>
         </div>
 
-        {visibleRows.length === 0 && <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-center"><p className="text-sm font-medium text-white">Your map is empty</p><p className="mt-1 text-xs text-slate-400">Restore the learning engines to continue.</p><button type="button" onClick={() => { mapPrefsEdited.current = true; setVisibleNodeIds(defaultNodeIds); }} className="mt-3 rounded-lg border border-cyan-300/30 px-3 py-2 text-xs text-cyan-100">Restore learning engines</button></div>}
-        <div className={`relative hidden flex-none overflow-visible rounded-[24px] border border-white/[0.07] bg-[#0b1221]/65 lg:block ${visibleRows.length === 0 ? 'hidden' : ''}`} style={{ height: `${mapHeight}px` }}>
+        {mapExpanded && visibleRows.length === 0 && <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-center"><p className="text-sm font-medium text-white">Your map is empty</p><p className="mt-1 text-xs text-slate-400">Restore the learning engines to continue.</p><button type="button" onClick={() => { mapPrefsEdited.current = true; setVisibleNodeIds(defaultNodeIds); }} className="mt-3 rounded-lg border border-cyan-300/30 px-3 py-2 text-xs text-cyan-100">Restore learning engines</button></div>}
+        <div className={`relative flex-none overflow-visible rounded-[24px] border border-white/[0.07] bg-[#0b1221]/65 ${mapExpanded ? 'lg:block' : 'hidden'} ${visibleRows.length === 0 ? 'hidden' : ''}`} style={{ height: `${mapHeight}px` }}>
           <div className="relative min-h-[660px]" style={{ height: `${mapHeight}px` }}>
           <div className="absolute inset-0 opacity-[0.16]" style={{ backgroundImage: 'radial-gradient(#7dd3fc 0.7px, transparent 0.7px)', backgroundSize: '24px 24px' }} />
           <svg className="absolute inset-0 h-full w-full" viewBox={`0 0 1200 ${mapHeight}`} preserveAspectRatio="none" fill="none" aria-hidden="true">
@@ -258,7 +262,7 @@ export default function MissionControl({
           </div>
         </div>
 
-        <div className={`relative min-h-0 flex-1 overflow-y-auto rounded-2xl border border-white/[0.07] bg-[#0b1221]/70 p-3 lg:hidden ${visibleRows.length === 0 ? 'hidden' : ''}`}>
+        <div className={`relative min-h-0 flex-1 overflow-y-auto rounded-2xl border border-white/[0.07] bg-[#0b1221]/70 p-3 ${mapExpanded ? 'lg:hidden' : 'hidden'} ${visibleRows.length === 0 ? 'hidden' : ''}`}>
           <div className="absolute bottom-8 left-[27px] top-8 w-px bg-gradient-to-b from-violet-400 via-cyan-300 to-fuchsia-400 opacity-60" />
           <div className="relative flex flex-col gap-2.5">
             <div className="mb-1 flex items-center gap-3 rounded-xl border border-violet-300/40 bg-[#211b40] p-3">
