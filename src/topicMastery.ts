@@ -19,7 +19,8 @@ export function getTopicTestEvidence(
 ): TopicTestEvidence {
   const key = normalizeTopicName(topicTitle);
   if (!key) return { accuracy: null, attempts: 0, gradedQuestions: 0 };
-  const recent = attempts.filter((attempt) => normalizeTopicName(attempt.topic) === key).slice(0, 5);
+  const recent = attempts.filter((attempt) => normalizeTopicName(attempt.topic) === key
+    && attempt.results.some((result) => typeof result.isCorrect === 'boolean')).slice(0, 5);
   let correct = 0;
   let incorrect = 0;
   let scoredAttempts = 0;
