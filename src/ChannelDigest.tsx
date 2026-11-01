@@ -39,6 +39,7 @@ export default function ChannelDigest() {
   const [videos, setVideos] = useState<DayVideo[] | null>(null);
   const [summaries, setSummaries] = useState<Record<string, VideoSummary>>({});
   const [failed, setFailed] = useState<Record<string, string>>({});
+  const [retrying, setRetrying] = useState(false);
   const [listLoading, setListLoading] = useState(false);
   const [listError, setListError] = useState('');
   const [tab, setTab] = useState<Tab>('all');
@@ -88,6 +89,7 @@ export default function ChannelDigest() {
     setVideos(null);
     setSummaries({});
     setFailed({});
+    setRetrying(false);
     setListError('');
     setTab('all');
     if (!selected) {
@@ -123,11 +125,17 @@ export default function ChannelDigest() {
     return cancelRun;
   }, [start, cancelRun]);
 
-  function retryFailed() {
+  async function retryFailed() {
     const ids = Object.keys(failed);
-    if (ids.length === 0) return;
+    if (ids.length === 0 || retrying) return;
+    const runId = runIdRef.current;
+    setRetrying(true);
     setFailed({});
-    void summariseMany(ids, runIdRef.current);
+    try {
+      await summariseMany(ids, runId);
+    } finally {
+      if (runIdRef.current === runId) setRetrying(false);
+    }
   }
 
   async function onAdd() {
@@ -267,11 +275,12 @@ export default function ChannelDigest() {
                 </div>
                 {failedCount > 0 && (
                   <button
-                    onClick={retryFailed}
-                    className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10 transition"
+                    onClick={() => void retryFailed()}
+                    disabled={retrying}
+                    className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10 disabled:opacity-50 transition"
                   >
                     <RotateCw className="w-3.5 h-3.5" />
-                    {format(c.retryFailed, failedCount)}
+                    {retrying ? c.loading : format(c.retryFailed, failedCount)}
                   </button>
                 )}
               </div>

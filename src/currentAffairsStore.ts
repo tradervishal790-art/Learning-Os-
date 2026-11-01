@@ -2,6 +2,7 @@ import { auth, db } from './firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { authFetch } from './apiFetch';
 import { pushToCloud, pullFromCloud } from './cloudSync';
+import { isCurrentAffairsCacheEntry } from './currentAffairsLogic';
 
 // ============================================================
 // currentAffairsStore.ts
@@ -61,8 +62,10 @@ function readLocal(date: string, locale: string): CADay | null {
   try {
     const raw = localStorage.getItem(localKey(date, locale));
     if (!raw) return null;
-    const parsed = JSON.parse(raw) as CADay;
-    return Array.isArray(parsed?.points) && parsed.points.length > 0 ? parsed : null;
+    const parsed: unknown = JSON.parse(raw);
+    // The key includes date + locale, but validate the payload too: a stale
+    // or malformed cache must never show yesterday's/language's news here.
+    return isCurrentAffairsCacheEntry(parsed, date, locale) ? parsed as CADay : null;
   } catch {
     return null;
   }

@@ -149,6 +149,8 @@ export default function Dictionary() {
         )}
       </div>
 
+      {loading && <p role="status" className="mt-3 text-xs text-gray-500 dark:text-white/40">Loading dictionary…</p>}
+
       {loadError && (
         <div className="mt-6 flex items-center gap-3 text-sm text-red-500">
           <p>Couldn't load the dictionary. Check your connection and try again.</p>
@@ -175,7 +177,19 @@ export default function Dictionary() {
         </div>
       )}
 
-      {searchError && <p role="alert" className="mt-6 text-sm text-red-500">{searchError}</p>}
+      {searchError && (
+        <div className="mt-6 flex flex-wrap items-center gap-3 text-sm text-red-500">
+          <p role="alert">{searchError}</p>
+          <button
+            type="button"
+            onClick={() => void search(query)}
+            disabled={searching || !query.trim()}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-current/20 hover:bg-red-500/5 disabled:opacity-50"
+          >
+            <RotateCw className="w-4 h-4" /> Retry
+          </button>
+        </div>
+      )}
       {searching && <p role="status" className="mt-6 text-sm text-gray-500 dark:text-white/40">Searching…</p>}
       {notFound && (
         <p className="mt-6 text-gray-500 dark:text-white/40">No entry found for "{query}". Try another spelling.</p>
