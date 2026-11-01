@@ -67,3 +67,15 @@ test('forgotten material returns sooner than the normal spaced interval', () => 
   assert.equal(item.status, 'overdue');
   assert.equal(item.dueDate, 'Yesterday');
 });
+
+test('daily revision queue includes overdue and due-today topics only', () => {
+  const items = [
+    { topic: 'Later', status: 'upcoming' },
+    { topic: 'Today', status: 'due-today' },
+    { topic: 'Mastered', status: 'mastered' },
+    { topic: 'Missed', status: 'overdue' },
+  ];
+
+  assert.deepEqual(data.getDueRevisionItems(items).map((item) => item.topic), ['Today', 'Missed']);
+});
+

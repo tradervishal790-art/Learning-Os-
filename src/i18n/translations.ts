@@ -351,7 +351,8 @@ export interface TranslationShape {
   revision: {
     header: { title: string; subtitle: string };
     stats: { dueToday: string; overdue: string; mastered: string; retention: string };
-    filters: { all: string; dueToday: string; overdue: string; upcoming: string; mastered: string };
+    recall: { accuracy: string; trendTitle: string; trendHint: string; noRatings: string; trendTooltip: string; prompt: string; forgot: string; partial: string; remembered: string };
+    filters: { all: string; needsReview: string; dueToday: string; overdue: string; upcoming: string; mastered: string };
     difficultyLabels: { easy: string; medium: string; hard: string };
     card: {
       day: string;
@@ -1589,7 +1590,8 @@ export const translations: Record<Locale, TranslationShape> = {
     revision: {
       header: { title: 'Revision', subtitle: 'Comes back to you on a schedule — 1, 3, 7, 15, 30, 60 days' },
       stats: { dueToday: 'Due Today', overdue: 'Overdue', mastered: 'Mastered', retention: 'Retention' },
-      filters: { all: 'All', dueToday: 'Due Today', overdue: 'Overdue', upcoming: 'Upcoming', mastered: 'Mastered' },
+      recall: { accuracy: 'Recall accuracy', trendTitle: '7-day recall trend', trendHint: 'Based on your ratings', noRatings: 'No ratings', trendTooltip: '{0}% recall accuracy · {1} rating(s)', prompt: 'How well did you remember it?', forgot: 'Forgot', partial: 'Some of it', remembered: 'Remembered' },
+      filters: { all: 'All', needsReview: 'Needs review', dueToday: 'Due Today', overdue: 'Overdue', upcoming: 'Upcoming', mastered: 'Mastered' },
       difficultyLabels: { easy: 'Easy', medium: 'Medium', hard: 'Hard' },
       card: {
         day: 'Day',
@@ -3217,7 +3219,8 @@ export const translations: Record<Locale, TranslationShape> = {
     revision: {
       header: { title: 'रिवीज़न', subtitle: '1, 3, 7, 15, 30, 60 दिन के शेड्यूल पर वापस आता है' },
       stats: { dueToday: 'आज देय', overdue: 'बकाया', mastered: 'महारत', retention: 'रिटेंशन' },
-      filters: { all: 'सभी', dueToday: 'आज देय', overdue: 'बकाया', upcoming: 'आने वाला', mastered: 'महारत' },
+      recall: { accuracy: 'याद रखने की सटीकता', trendTitle: '7 दिनों का याद रखने का रुझान', trendHint: 'आपकी रेटिंग के आधार पर', noRatings: 'कोई रेटिंग नहीं', trendTooltip: '{0}% याद रखने की सटीकता · {1} रेटिंग', prompt: 'आपको यह टॉपिक कितना याद रहा?', forgot: 'याद नहीं रहा', partial: 'कुछ हिस्सा', remembered: 'अच्छे से याद रहा' },
+      filters: { all: 'सभी', needsReview: 'रिवीज़न बाकी', dueToday: 'आज देय', overdue: 'बकाया', upcoming: 'आने वाला', mastered: 'महारत' },
       difficultyLabels: { easy: 'आसान', medium: 'मध्यम', hard: 'कठिन' },
       card: {
         day: 'दिन',
@@ -4844,7 +4847,8 @@ export const translations: Record<Locale, TranslationShape> = {
     revision: {
       header: { title: 'Revision', subtitle: 'Comes back to you on a schedule — 1, 3, 7, 15, 30, 60 days' },
       stats: { dueToday: 'Due Today', overdue: 'Overdue', mastered: 'Mastered', retention: 'Retention' },
-      filters: { all: 'All', dueToday: 'Due Today', overdue: 'Overdue', upcoming: 'Upcoming', mastered: 'Mastered' },
+      recall: { accuracy: 'Recall accuracy', trendTitle: '7 din ka recall trend', trendHint: 'Tumhari ratings ke basis par', noRatings: 'Abhi koi rating nahi', trendTooltip: '{0}% recall accuracy · {1} rating(s)', prompt: 'Tumhe ye topic kitna yaad raha?', forgot: 'Yaad nahi raha', partial: 'Thoda yaad raha', remembered: 'Achhe se yaad raha' },
+      filters: { all: 'All', needsReview: 'Review baaki', dueToday: 'Due Today', overdue: 'Overdue', upcoming: 'Upcoming', mastered: 'Mastered' },
       difficultyLabels: { easy: 'Easy', medium: 'Medium', hard: 'Hard' },
       card: {
         day: 'Day',
