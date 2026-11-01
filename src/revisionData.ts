@@ -175,6 +175,11 @@ export function getRevisionDataForGoals(
   return merged.sort((a, b) => statusOrder[a.status] - statusOrder[b.status] || a.day - b.day);
 }
 
+/** Keep the daily queue limited to reviews that need attention now. */
+export function getDueRevisionItems<T extends Pick<RevisionItem, 'status'>>(items: T[]): T[] {
+  return items.filter((item) => item.status === 'overdue' || item.status === 'due-today');
+}
+
 /** Aggregate counts for the Revision dashboard. */
 export function getRevisionStats(items: RevisionItem[]) {
   const total = items.length;
