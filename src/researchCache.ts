@@ -22,7 +22,7 @@ const HISTORY_LIMIT = 8;
 const QUERY_LIMIT = 200;
 
 export function researchCacheKey(query: string, locale: string): string {
-  return `${locale.trim().toLowerCase()}:${query.trim().replace(/\\s+/g, ' ').toLowerCase()}`;
+  return `${locale.trim().toLowerCase()}:${query.trim().replace(/\s+/g, ' ').toLowerCase()}`;
 }
 
 export function isSafeResearchUrl(value: unknown): value is string {
@@ -61,7 +61,7 @@ export function normalizeResearchHistory(value: unknown): string[] {
   const result: string[] = [];
   for (const item of value) {
     if (typeof item !== 'string') continue;
-    const query = item.trim().replace(/\\s+/g, ' ').slice(0, QUERY_LIMIT);
+    const query = item.trim().replace(/\s+/g, ' ').slice(0, QUERY_LIMIT);
     const key = query.toLowerCase();
     if (!query || seen.has(key)) continue;
     seen.add(key);
