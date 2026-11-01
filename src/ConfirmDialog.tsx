@@ -24,8 +24,9 @@ export default function ConfirmDialog({
     <div className={`fixed inset-0 ${layer} bg-black/40 flex items-center justify-center p-4`} onClick={onCancel}>
       <div
         role="alertdialog"
+        aria-modal="true"
         aria-label={message}
-        className="w-full max-w-sm rounded-2xl bg-white dark:bg-neutral-900 border border-gray-200 dark:border-white/10 p-5"
+        className="dialog-surface w-full max-w-sm rounded-2xl bg-white dark:bg-neutral-900 border border-gray-200 dark:border-white/10 p-5"
         onClick={(e) => e.stopPropagation()}
       >
         <p className="text-sm leading-relaxed mb-5">{message}</p>

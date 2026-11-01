@@ -38,3 +38,19 @@ test('muted primary indigo keeps white button text above WCAG AA contrast', asyn
   const contrast = 1.05 / (luminance + 0.05);
   assert.ok(contrast >= 4.5, 'white text contrast is ' + contrast.toFixed(2) + ':1');
 });
+
+test('shared dialog surfaces stay scrollable on short screens and declare modal semantics', async () => {
+  const [css, appDialogs, confirmDialog, studyDialog, unsavedDialog] = await Promise.all([
+    read('../src/index.css'),
+    read('../src/appDialogs.tsx'),
+    read('../src/ConfirmDialog.tsx'),
+    read('../src/StudyDialog.tsx'),
+    read('../src/UnsavedDialog.tsx'),
+  ]);
+  assert.match(css, /\.dialog-surface\s*\{[^}]*max-height:\s*min\(88dvh/);
+  assert.match(css, /\.dialog-surface\s*\{[^}]*overflow-y:\s*auto/);
+  for (const source of [appDialogs, confirmDialog, studyDialog, unsavedDialog]) {
+    assert.match(source, /aria-modal="true"/);
+    assert.match(source, /dialog-surface/);
+  }
+});

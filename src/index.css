@@ -188,6 +188,14 @@ button[class~="bg-indigo-600"]:hover,
 button[class~="bg-indigo-500"]:hover,
 button[class~="dark:bg-indigo-500"]:hover { background-color: #5956d1; }
 
+/* Dialogs with long copy remain fully reachable on short screens and small tablets. */
+.dialog-surface {
+  max-height: min(88vh, 44rem);
+  max-height: min(88dvh, 44rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
 /* Keep the mobile More sheet inside short screens and scroll it as one surface. */
 .mobile-more-menu {
   max-height: calc(100vh - 5.5rem - env(safe-area-inset-bottom) - 1rem);

@@ -39,8 +39,9 @@ export default function StudyDialog({
     <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
       <div
         role="dialog"
+        aria-modal="true"
         aria-label={t.study.details}
-        className="w-full max-w-md rounded-2xl bg-white dark:bg-neutral-900 border border-gray-200 dark:border-white/10 p-5 space-y-5"
+        className="dialog-surface w-full max-w-md rounded-2xl bg-white dark:bg-neutral-900 border border-gray-200 dark:border-white/10 p-5 space-y-5"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="font-semibold truncate">{note.title || t.untitled}</div>
