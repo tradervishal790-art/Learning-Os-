@@ -40,7 +40,9 @@ async function runResearch(query: string, genericErrorMsg: string, locale: strin
     throw new Error(data?.error || `${genericErrorMsg} (${response.status})`);
   }
 
-  const normalized = normalizeResearchResponse(data, query);\n  if (!normalized) throw new Error(genericErrorMsg);\n  return normalized;
+  const normalized = normalizeResearchResponse(data, query);
+  if (!normalized) throw new Error(genericErrorMsg);
+  return normalized;
 }
 
 interface ResearchProps {
