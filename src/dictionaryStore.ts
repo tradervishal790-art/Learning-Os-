@@ -1,3 +1,5 @@
+import { selectDiscoveryWords } from './dictionaryDiscovery';
+
 // Client-side English–Hindi dictionary: fetches the pre-built static JSON
 // once (public/data/dictionary.json, ~19MB — served gzip/brotli-compressed
 // over the wire by Vercel automatically, no client decompression needed),
@@ -181,4 +183,11 @@ export async function suggestWords(prefix: string, limit = 8): Promise<string[]>
     else break;
   }
   return results;
+}
+
+
+/** Small deterministic discovery list sourced from the same loaded headwords. */
+export async function getDictionaryDiscoveryWords(seed: string, limit = 5): Promise<string[]> {
+  await loadDictionary();
+  return selectDiscoveryWords(sortedWords ?? [], seed, limit);
 }

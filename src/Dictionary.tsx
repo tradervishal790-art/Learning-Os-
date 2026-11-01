@@ -1,12 +1,19 @@
 import { useEffect, useRef, useState } from 'react';
-import { Search, Volume2, RotateCw } from 'lucide-react';
-import { ensureDictionaryLoaded, lookupWord, suggestWords } from './dictionaryStore';
+import { Search, Volume2, RotateCw, Sparkles, Shuffle, ArrowRight } from 'lucide-react';
+import { ensureDictionaryLoaded, getDictionaryDiscoveryWords, lookupWord, suggestWords } from './dictionaryStore';
 import type { DictionaryEntry } from './dictionaryStore';
+import { useTranslation } from './i18n/LanguageContext';
 
 const RECENT_KEY = 'learning_os_dictionary_recent';
 const RECENT_LIMIT = 10;
 
+function localDateSeed(): string {
+  const now = new Date();
+  return [now.getFullYear(), String(now.getMonth() + 1).padStart(2, '0'), String(now.getDate()).padStart(2, '0')].join('-');
+}
+
 export default function Dictionary() {
+  const t = useTranslation();
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [entry, setEntry] = useState<DictionaryEntry | null>(null);
@@ -16,6 +23,8 @@ export default function Dictionary() {
   const [searchError, setSearchError] = useState('');
   const [searching, setSearching] = useState(false);
   const [recent, setRecent] = useState<string[]>([]);
+  const [discoveryWords, setDiscoveryWords] = useState<string[]>([]);
+  const [discoveryRound, setDiscoveryRound] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const searchIdRef = useRef(0);
 
@@ -42,8 +51,16 @@ export default function Dictionary() {
   }, []);
 
   useEffect(() => {
+    if (loading || loadError) return;
+    let cancelled = false;
+    void getDictionaryDiscoveryWords(localDateSeed() + ':' + discoveryRound, 5)
+      .then((words) => { if (!cancelled) setDiscoveryWords(words); })
+      .catch(() => { if (!cancelled) setDiscoveryWords([]); });
+    return () => { cancelled = true; };
+  }, [loading, loadError, discoveryRound]);
+  useEffect(() => {
     const q = query.trim();
-    if (!q) {
+    if (!q || entry || searching) {
       setSuggestions([]);
       return;
     }
@@ -56,7 +73,7 @@ export default function Dictionary() {
     return () => {
       cancelled = true;
     };
-  }, [query]);
+  }, [query, entry, searching]);
 
   const search = async (word: string) => {
     const w = word.trim();
@@ -87,7 +104,7 @@ export default function Dictionary() {
         setNotFound(true);
       }
     } catch {
-      if (requestId === searchIdRef.current) setSearchError('The word could not be loaded. Please try again.');
+      if (requestId === searchIdRef.current) setSearchError(t.dictionary.searchError);
     } finally {
       if (requestId === searchIdRef.current) setSearching(false);
     }
@@ -106,6 +123,10 @@ export default function Dictionary() {
 
   return (
     <div className="mx-auto w-full min-w-0 max-w-3xl break-words [overflow-wrap:anywhere]">
+      <header className="mb-5">
+        <h1 className="text-2xl md:text-3xl font-semibold">{t.dashboard.sidebar.dictionary}</h1>
+        <p className="text-sm text-gray-500 dark:text-white/45 mt-1">{t.dictionary.subtitle}</p>
+      </header>
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-white/40" />
         <input
@@ -120,7 +141,8 @@ export default function Dictionary() {
             setSearchError('');
           }}
           onKeyDown={(e) => e.key === 'Enter' && void search(query)}
-          placeholder={loading ? 'Loading dictionary…' : 'Search an English word…'}
+          placeholder={loading ? t.dictionary.loading : t.dictionary.searchPlaceholder}
+          maxLength={80}
           disabled={loading || loadError}
           autoFocus
           className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg pl-9 pr-12 py-2.5 placeholder-gray-400 dark:placeholder-white/40 focus:outline-none focus:border-black dark:focus:border-white disabled:opacity-50"
@@ -129,7 +151,7 @@ export default function Dictionary() {
           type="button"
           onClick={() => void search(query)}
           disabled={loading || loadError || searching || !query.trim()}
-          aria-label="Search dictionary"
+          aria-label={t.dictionary.searchAria}
           className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-md text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10 disabled:opacity-40"
         >
           {searching ? <span className="text-xs">…</span> : <Search className="w-4 h-4" />}
@@ -151,16 +173,38 @@ export default function Dictionary() {
 
       {loadError && (
         <div className="mt-6 flex items-center gap-3 text-sm text-red-500">
-          <p>Couldn't load the dictionary. Check your connection and try again.</p>
+          <p>{t.dictionary.loadError}</p>
           <button type="button" onClick={loadDictionary} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-current/20 hover:bg-red-500/5">
-            <RotateCw className="w-4 h-4" /> Retry
+            <RotateCw className="w-4 h-4" /> {t.dictionary.retry}
           </button>
         </div>
       )}
 
+      {!entry && !notFound && !loadError && discoveryWords.length > 0 && (
+        <section className="mt-6 rounded-xl card p-4">
+          <div className="flex items-start justify-between gap-3 mb-3">
+            <div className="min-w-0">
+              <h2 className="font-semibold flex items-center gap-2"><Sparkles className="w-4 h-4 text-indigo-500" /> {t.dictionary.discoveryTitle}</h2>
+              <p className="text-xs text-gray-500 dark:text-white/45 mt-1">{t.dictionary.discoverySubtitle}</p>
+            </div>
+            <button type="button" onClick={() => setDiscoveryRound((round) => round + 1)} className="shrink-0 inline-flex items-center gap-1.5 text-xs px-2.5 py-2 rounded-lg border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10 transition">
+              <Shuffle className="w-3.5 h-3.5" /> {t.dictionary.surpriseMe}
+            </button>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+            {discoveryWords.map((word) => (
+              <button key={word} type="button" onClick={() => void search(word)} className="min-w-0 text-left rounded-lg border border-gray-200 dark:border-white/10 px-3 py-2.5 hover:bg-gray-100 dark:hover:bg-white/10 transition group">
+                <span className="block text-sm font-medium truncate">{word}</span>
+                <span className="mt-1 flex items-center gap-1 text-[10px] text-gray-400 dark:text-white/40 group-hover:text-indigo-500"><span>{t.dictionary.explore}</span><ArrowRight className="w-3 h-3" /></span>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
       {!entry && !notFound && !loadError && recent.length > 0 && (
         <div className="mt-6">
-          <p className="text-sm text-gray-500 dark:text-white/40 mb-2">Recent</p>
+          <p className="text-sm text-gray-500 dark:text-white/40 mb-2">{t.dictionary.recent}</p>
           <div className="flex flex-wrap gap-2">
             {recent.map((r) => (
               <button
@@ -176,9 +220,9 @@ export default function Dictionary() {
       )}
 
       {searchError && <p role="alert" className="mt-6 text-sm text-red-500">{searchError}</p>}
-      {searching && <p role="status" className="mt-6 text-sm text-gray-500 dark:text-white/40">Searching…</p>}
+      {searching && <p role="status" className="mt-6 text-sm text-gray-500 dark:text-white/40">{t.dictionary.searching}</p>}
       {notFound && (
-        <p className="mt-6 text-gray-500 dark:text-white/40">No entry found for "{query}". Try another spelling.</p>
+        <p className="mt-6 text-gray-500 dark:text-white/40">{t.dictionary.noEntry.replace("{0}", query)}</p>
       )}
 
       {entry && (
@@ -190,7 +234,7 @@ export default function Dictionary() {
               <>
                 <button
                   onClick={playAudio}
-                  aria-label="Play pronunciation"
+                  aria-label={t.dictionary.pronunciation}
                   className="p-1.5 rounded-full border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10 transition"
                 >
                   <Volume2 className="w-4 h-4" />
@@ -207,11 +251,11 @@ export default function Dictionary() {
 
           <div className="rounded-lg card p-4 space-y-1">
             <p>
-              <span className="text-gray-500 dark:text-white/40">Hindi: </span>
+              <span className="text-gray-500 dark:text-white/40">{t.dictionary.hindi}: </span>
               <span className="text-lg">{hindiSummary.join(', ') || '—'}</span>
             </p>
             <p>
-              <span className="text-gray-500 dark:text-white/40">Sanskrit: </span>
+              <span className="text-gray-500 dark:text-white/40">{t.dictionary.sanskrit}: </span>
               <span className="text-lg">
                 {entry.sanskritMatches?.map((m) => m.devanagari).join(', ') || '—'}
               </span>
@@ -239,7 +283,7 @@ export default function Dictionary() {
           </div>
 
           <div className="border border-gray-200 dark:border-white/10 rounded-lg p-4">
-            <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-white/40 mb-2">Sanskrit</p>
+            <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-white/40 mb-2">{t.dictionary.sanskrit}</p>
             {entry.sanskritMatches && entry.sanskritMatches.length > 0 ? (
               <>
                 <div className="space-y-2">

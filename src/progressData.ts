@@ -6,6 +6,7 @@ import { getRecallRecords } from './revisionRecallStore';
 import { getTestAttempts } from './testStore';
 import { combineTopicMasteryScore, getTopicTestEvidence } from './topicMastery';
 import type { TranslationShape } from './i18n/translations';
+import { calculateCurrentStreak, normalizeActiveDays, summarizeEngagementTime } from './progressMetrics';
 
 // ============================================================
 // progressData.ts
@@ -30,23 +31,18 @@ export interface StreakStats {
 }
 
 export function getStreakStats(): StreakStats {
-  let activeDays: string[] = [];
+  let activeDays: unknown = [];
   try {
     const saved = localStorage.getItem(ACTIVE_DAYS_STORAGE_KEY);
-    activeDays = saved ? (JSON.parse(saved) as string[]) : [];
+    activeDays = saved ? JSON.parse(saved) : [];
   } catch {
     activeDays = [];
   }
-  const activeSet = new Set(activeDays);
-  let streak = 0;
-  const cursor = new Date();
-  while (true) {
-    const key = cursor.toISOString().slice(0, 10);
-    if (!activeSet.has(key)) break;
-    streak += 1;
-    cursor.setDate(cursor.getDate() - 1);
-  }
-  return { currentStreak: streak, totalActiveDays: activeDays.length };
+  const normalizedDays = normalizeActiveDays(activeDays);
+  return {
+    currentStreak: calculateCurrentStreak(normalizedDays),
+    totalActiveDays: normalizedDays.length,
+  };
 }
 
 // ---------- Completion % (merged across every active goal) ----------
@@ -84,42 +80,9 @@ export interface TimeStats {
   sessionCount: number;
 }
 
-function isSameDay(iso: string, day: Date): boolean {
-  const d = new Date(iso);
-  return d.toDateString() === day.toDateString();
-}
 
 export function getTimeStats(sessions: EngagementSession[] = getEngagementSessions()): TimeStats {
-  const totalSeconds = sessions.reduce((sum, s) => sum + (s.watchedSeconds || 0), 0);
-  const totalHours = Math.round((totalSeconds / 3600) * 10) / 10;
-
-  const today = new Date();
-  const todaySeconds = sessions
-    .filter((s) => isSameDay(s.sessionTimestamp, today))
-    .reduce((sum, s) => sum + (s.watchedSeconds || 0), 0);
-
-  const dailyMinutes: { label: string; minutes: number }[] = [];
-  let last7DaysSeconds = 0;
-  for (let i = 6; i >= 0; i--) {
-    const day = new Date();
-    day.setDate(day.getDate() - i);
-    const daySeconds = sessions
-      .filter((s) => isSameDay(s.sessionTimestamp, day))
-      .reduce((sum, s) => sum + (s.watchedSeconds || 0), 0);
-    last7DaysSeconds += daySeconds;
-    dailyMinutes.push({
-      label: day.toLocaleDateString('en-US', { weekday: 'short' }),
-      minutes: Math.round(daySeconds / 60),
-    });
-  }
-
-  return {
-    totalHours,
-    todayMinutes: Math.round(todaySeconds / 60),
-    last7DaysMinutes: Math.round(last7DaysSeconds / 60),
-    dailyMinutes,
-    sessionCount: sessions.length,
-  };
+  return summarizeEngagementTime(sessions);
 }
 
 // ---------- Mastery heatmap + Weak areas (topic-level, driven by roadmap status + real watch signal) ----------

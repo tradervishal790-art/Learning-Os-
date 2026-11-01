@@ -775,6 +775,25 @@ export interface TranslationShape {
     retentionDetail: { title: string; dueToday: string; overdue: string; mastered: string };
     weakAreas: { title: string; noneFound: string };
   };
+  dictionary: {
+    subtitle: string;
+    searchPlaceholder: string;
+    searchAria: string;
+    loading: string;
+    loadError: string;
+    retry: string;
+    recent: string;
+    searching: string;
+    noEntry: string;
+    hindi: string;
+    sanskrit: string;
+    discoveryTitle: string;
+    discoverySubtitle: string;
+    surpriseMe: string;
+    pronunciation: string;
+    explore: string;
+    searchError: string;
+  };
   research: {
     header: { title: string; subtitle: string };
     searchPlaceholder: string;
@@ -2400,6 +2419,25 @@ export const translations: Record<Locale, TranslationShape> = {
       retentionDetail: { title: 'Retention', dueToday: 'Due Today', overdue: 'Overdue', mastered: 'Mastered' },
       weakAreas: { title: 'Weak Areas', noneFound: 'No weak topics found — everything is going well.' },
     },
+    dictionary: {
+      subtitle: 'Find meanings, pronunciation and related language roots.',
+      searchPlaceholder: 'Search an English word…',
+      searchAria: 'Search dictionary',
+      loading: 'Loading dictionary…',
+      loadError: "Couldn't load the dictionary. Check your connection and try again.",
+      retry: 'Retry',
+      recent: 'Recent',
+      searching: 'Searching…',
+      noEntry: 'No entry found for "{0}". Try another spelling.',
+      hindi: 'Hindi',
+      sanskrit: 'Sanskrit',
+      discoveryTitle: 'Discover a word',
+      discoverySubtitle: 'A few words from the dictionary, ready to explore.',
+      surpriseMe: 'Surprise me',
+      pronunciation: 'Play pronunciation',
+      explore: 'Explore',
+      searchError: 'The word could not be loaded. Please try again.',
+    },
     research: {
       header: { title: 'Research', subtitle: 'Search any topic — from the internet, for deeper reading' },
       searchPlaceholder: 'What do you want to know?',
@@ -4018,6 +4056,25 @@ export const translations: Record<Locale, TranslationShape> = {
       masteryHeatmap: { title: 'महारत हीटमैप', legendWeak: 'कमजोर', legendOk: 'ठीक', legendStrong: 'मजबूत' },
       retentionDetail: { title: 'रिटेंशन', dueToday: 'आज देय', overdue: 'बकाया', mastered: 'महारत' },
       weakAreas: { title: 'कमजोर टॉपिक', noneFound: 'कोई कमजोर टॉपिक नहीं मिला — सब कुछ ठीक चल रहा है।' },
+    },
+    dictionary: {
+      subtitle: 'शब्दों के अर्थ, उच्चारण और भाषा से जुड़े रूप जानें।',
+      searchPlaceholder: 'अंग्रेज़ी शब्द खोजें…',
+      searchAria: 'शब्दकोश में खोजें',
+      loading: 'शब्दकोश लोड हो रहा है…',
+      loadError: 'शब्दकोश लोड नहीं हो पाया। इंटरनेट जांचें और फिर कोशिश करें।',
+      retry: 'फिर कोशिश करें',
+      recent: 'हाल ही में खोजे गए',
+      searching: 'खोज रहे हैं…',
+      noEntry: '"{0}" का अर्थ नहीं मिला। दूसरी स्पेलिंग आज़माएँ।',
+      hindi: 'हिंदी',
+      sanskrit: 'संस्कृत',
+      discoveryTitle: 'आज एक नया शब्द खोजें',
+      discoverySubtitle: 'शब्दकोश से चुने गए कुछ शब्द।',
+      surpriseMe: 'नए शब्द दिखाएँ',
+      pronunciation: 'उच्चारण सुनें',
+      explore: 'देखें',
+      searchError: 'शब्द लोड नहीं हो पाया। फिर कोशिश करें।',
     },
     research: {
       header: { title: 'रिसर्च', subtitle: 'कोई भी टॉपिक खोजें — इंटरनेट से, गहराई से पढ़ने के लिए' },
@@ -5638,6 +5695,25 @@ export const translations: Record<Locale, TranslationShape> = {
       masteryHeatmap: { title: 'Mastery Heatmap', legendWeak: 'Weak', legendOk: 'OK', legendStrong: 'Strong' },
       retentionDetail: { title: 'Retention', dueToday: 'Due Today', overdue: 'Overdue', mastered: 'Mastered' },
       weakAreas: { title: 'Weak Areas', noneFound: 'Koi weak topic nahi mila — sab theek chal raha hai.' },
+    },
+    dictionary: {
+      subtitle: 'Meaning, pronunciation aur word roots dekho.',
+      searchPlaceholder: 'English word search karo…',
+      searchAria: 'Dictionary search',
+      loading: 'Dictionary load ho rahi hai…',
+      loadError: 'Dictionary load nahi hui. Internet check karke phir try karo.',
+      retry: 'Phir try karo',
+      recent: 'Recent searches',
+      searching: 'Search ho raha hai…',
+      noEntry: '"{0}" ka meaning nahi mila. Spelling check karo.',
+      hindi: 'Hindi',
+      sanskrit: 'Sanskrit',
+      discoveryTitle: 'Aaj ek naya word discover karo',
+      discoverySubtitle: 'Dictionary se chune hue kuch words.',
+      surpriseMe: 'Naye words dikhao',
+      pronunciation: 'Pronunciation suno',
+      explore: 'Explore karo',
+      searchError: 'Word load nahi hua. Phir try karo.',
     },
     research: {
       header: { title: 'Research', subtitle: 'Koi bhi topic search karo — internet se, deeper reading ke liye' },
