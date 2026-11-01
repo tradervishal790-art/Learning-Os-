@@ -121,3 +121,24 @@ test('a failed page stays queued and a retry does not re-read completed pages', 
   await queue.clearQueuedDailyPhotos();
   localStorage.removeItem(DAILY_KEY);
 });
+
+test('blank and instruction pages do not block later question pages', async () => {
+  await queue.clearQueuedDailyPhotos();
+  localStorage.removeItem(DAILY_KEY);
+  await queue.enqueueDailyPhotos([new File(['original-pdf'], 'worksheet.pdf', { type: 'application/pdf' })]);
+
+  const dependencies = {
+    prepareUpload: async () => ['cover-page', 'question-page'].map((page) => ({ mimeType: 'application/pdf', data: btoa(page) })),
+    extractQuestionsFromPhoto: async (payload) => atob(payload.data) === 'cover-page'
+      ? { questions: [], answerKey: [] }
+      : { questions: [pageQuestion('question-page')], answerKey: [] },
+  };
+  const result = await queue.processQueuedPhotosForDailyTest(1, undefined, dependencies);
+  assert.equal(result.errors.length, 0);
+  assert.equal(result.processedPages, 2);
+  assert.equal(result.bank.length, 1);
+  assert.equal(result.remainingFiles, 0);
+
+  await queue.clearQueuedDailyPhotos();
+  localStorage.removeItem(DAILY_KEY);
+});
