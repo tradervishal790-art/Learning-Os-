@@ -43,7 +43,8 @@ export function displayResearchUrl(value: string): string {
   try {
     const url = new URL(value);
     const path = url.pathname.endsWith('/') ? url.pathname.slice(0, -1) : url.pathname;
-    return url.hostname.replace(/^www\\./, '') + path;
+    const hostname = url.hostname.startsWith('www.') ? url.hostname.slice(4) : url.hostname;
+    return hostname + path;
   } catch {
     return value;
   }
