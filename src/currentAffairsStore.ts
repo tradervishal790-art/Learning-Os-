@@ -26,21 +26,14 @@ export interface CAPoint {
   source: string;
   link?: string; // original article (absent on very old cached days)
 }
-export interface CAQuizQuestion {
-  question: string;
-  options: string[];
-  correctIndex: number;
-  explanation: string;
-}
 export interface CADay {
   date: string; // IST date, YYYY-MM-DD
   locale: string;
   points: CAPoint[];
-  quiz: CAQuizQuestion[];
 }
 
 // Bump when the content format changes so older cached/shared copies are ignored.
-const CONTENT_VERSION = 'v2';
+const CONTENT_VERSION = 'v3';
 const DAY_KEY_PREFIX = 'learning_os_ca_day_';
 const PROGRESS_KEY = 'learning_os_ca_progress';
 const CLOUD_KEY = 'currentAffairsProgress';
@@ -91,7 +84,7 @@ async function pullShared(date: string, locale: string): Promise<CADay | null> {
     if (!snap.exists()) return null;
     const d = snap.data();
     if (!Array.isArray(d?.points) || d.points.length === 0) return null;
-    return { date, locale, points: d.points as CAPoint[], quiz: Array.isArray(d.quiz) ? (d.quiz as CAQuizQuestion[]) : [] };
+    return { date, locale, points: d.points as CAPoint[] };
   } catch {
     return null; // offline / rules not deployed yet
   }
@@ -101,7 +94,6 @@ function pushShared(day: CADay): void {
   if (!auth.currentUser || auth.currentUser.isAnonymous) return; // guests may not write shared caches
   void setDoc(doc(db, 'shared_current_affairs', `${day.date}_${day.locale}_${CONTENT_VERSION}`), {
     points: day.points,
-    quiz: day.quiz,
     updatedAt: new Date().toISOString(),
   }).catch(() => {
     // Best-effort — this student still has it locally.
@@ -132,7 +124,7 @@ export async function loadCurrentAffairsDay(date: string, locale: string, genera
   if (!response.ok) throw new Error(data?.error || `Could not load Current Affairs (${response.status})`);
   if (!Array.isArray(data?.points) || data.points.length === 0) throw new Error('Current Affairs came back empty — please try again.');
 
-  const day: CADay = { date, locale, points: data.points, quiz: Array.isArray(data.quiz) ? data.quiz : [] };
+  const day: CADay = { date, locale, points: data.points };
   writeLocal(day);
   pushShared(day);
   return day;
