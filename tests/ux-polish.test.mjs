@@ -56,3 +56,12 @@ test('shared dialog surfaces stay scrollable on short screens and declare modal 
     assert.match(source, /dialog-surface/);
   }
 });
+
+
+test('Mission Control learning map stays visible on desktop and mobile without a hide toggle', async () => {
+  const map = await read('../src/MissionControl.tsx');
+  assert.doesNotMatch(map, /mapExpanded|Hide learning map|Explore learning map/);
+  assert.match(map, /bg-\[#0b1221\]\/65 lg:block/);
+  assert.match(map, /min-h-\[480px\] shrink-0 overflow-visible[\s\S]*lg:hidden/);
+  assert.match(map, /visibleRows\.length === 0 &&/);
+});
