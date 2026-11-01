@@ -25,6 +25,7 @@ const statusIcons: Record<RevisionStatus, ReactNode> = {
 
 const FILTER_ICONS: Record<FilterId, typeof Flame> = {
   all: LayoutGrid,
+  due: Flame,
   'due-today': Flame,
   overdue: TriangleAlert,
   upcoming: CalendarDays,
