@@ -74,7 +74,7 @@ export default function BottomNav({ items, activeId, onSelect, darkMode = false 
               exit={{ y: 24, opacity: 0 }}
               transition={{ duration: 0.2, ease: 'easeOut' }}
               onClick={(e) => e.stopPropagation()}
-              className={`absolute inset-x-3 rounded-3xl border p-3 grid grid-cols-4 gap-1 ${darkMode ? "bg-[#101a2b] border-white/10" : "bg-white dark:bg-neutral-900 border-gray-200 dark:border-white/10"}`}
+              className={`mobile-more-menu absolute inset-x-3 rounded-3xl border p-3 grid grid-cols-4 gap-1 ${darkMode ? "bg-[#101a2b] border-white/10" : "bg-white dark:bg-neutral-900 border-gray-200 dark:border-white/10"}`}
               style={{ bottom: 'calc(3.5rem + env(safe-area-inset-bottom) + 0.5rem)' }}
             >
               {more.map((item) => {
@@ -87,12 +87,14 @@ export default function BottomNav({ items, activeId, onSelect, darkMode = false 
                     onClick={() => pick(item.id)}
                     aria-label={item.label}
                     title={item.label}
-                    className={`relative h-16 rounded-2xl flex items-center justify-center transition active:scale-95 ${item.locked ? 'opacity-50' : ''}`}
+                    className={`relative min-h-16 rounded-2xl flex flex-col items-center justify-center gap-1 py-2 transition active:scale-95 ${item.locked ? 'opacity-50' : ''}`}
+                    aria-current={active ? 'page' : undefined}
                   >
-                    <span className={`relative w-12 h-12 rounded-2xl flex items-center justify-center ${NAV_TONES[item.id] ?? NAV_TONES.revision} ${active ? 'ring-2 ring-indigo-500 dark:ring-indigo-400' : ''}`}>
-                      <Icon className="w-6 h-6" strokeWidth={active ? 2.2 : 1.75} />
+                    <span className={`relative w-10 h-10 rounded-xl flex items-center justify-center ${NAV_TONES[item.id] ?? NAV_TONES.revision} ${active ? 'ring-2 ring-indigo-500 dark:ring-indigo-400' : ''}`}>
+                      <Icon className="w-5 h-5" strokeWidth={active ? 2.2 : 1.75} />
                       {item.locked && <LockBadge />}
                     </span>
+                    <span className="max-w-full px-1 text-center text-[10px] font-medium leading-tight text-gray-600 dark:text-white/65 break-words">{item.label}</span>
                   </button>
                 );
               })}

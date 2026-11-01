@@ -162,26 +162,37 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
   }
 }
 
-/* Subtle lift on hover: gives clickable controls a tactile, premium feel.
-   Keep touch devices and reduced-motion preferences calm. */
+/* Subtle, composable hover feedback.
+   Use the independent CSS translate property so Tailwind and Framer Motion transforms never fight. */
 @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
   button:not(:disabled),
   a[href],
   [role="button"]:not([aria-disabled="true"]) {
-    transition-property: transform, box-shadow, background-color, border-color, color;
+    transition-property: translate, transform, box-shadow, background-color, border-color, color;
     transition-duration: 180ms;
     transition-timing-function: cubic-bezier(0.2, 0.75, 0.25, 1);
   }
-
   button:not(:disabled):hover,
   a[href]:hover,
-  [role="button"]:not([aria-disabled="true"]):hover {
-    transform: translateY(-2px);
-  }
-
+  [role="button"]:not([aria-disabled="true"]):hover { translate: 0 -1px; }
   button:not(:disabled):active,
   a[href]:active,
-  [role="button"]:not([aria-disabled="true"]):active {
-    transform: translateY(0) scale(0.99);
-  }
+  [role="button"]:not([aria-disabled="true"]):active { translate: 0 0; }
+}
+
+/* Primary indigo actions stay clear without making every action visually shout. */
+button[class~="bg-indigo-600"],
+button[class~="bg-indigo-500"] { background-color: rgb(99 102 241 / 0.88); }
+button[class~="bg-indigo-600"]:hover,
+button[class~="bg-indigo-500"]:hover { background-color: rgb(99 102 241 / 0.96); }
+
+/* Keep the mobile More sheet inside short screens and scroll it as one surface. */
+.mobile-more-menu {
+  max-height: calc(100dvh - 5.5rem - env(safe-area-inset-bottom) - 1rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+@media (prefers-reduced-motion: reduce) {
+  .page-content-transition { animation: none !important; transition: none !important; }
 }

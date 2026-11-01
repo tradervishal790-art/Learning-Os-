@@ -616,6 +616,13 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
         )}
 
         <Suspense fallback={<PageLoading />}>
+          <motion.div
+            key={activePage}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.16, ease: 'easeOut' }}
+            className="page-content-transition min-w-0"
+          >
                 {activePage === 'dashboard' && (
           <MissionControl
             name={displayName}
@@ -679,6 +686,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
             status={config.status}
           />
         )}
+          </motion.div>
         </Suspense>
       </div>
 
