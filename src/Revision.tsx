@@ -170,7 +170,7 @@ export default function Revision({ goals = [] }: RevisionProps) {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-gray-500 dark:text-white/60">
-                <span>{t.revision.filters.dueToday}</span>
+                <span>{t.revision.filters.needsReview}</span>
                 <span>·</span>
                 <span>{stats.overdue} {t.revision.filters.overdue.toLowerCase()}</span>
                 <span>·</span>
@@ -248,7 +248,7 @@ export default function Revision({ goals = [] }: RevisionProps) {
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2, duration: 0.5 }} className="flex gap-2 mb-4 md:mb-6 overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {(
           [
-            { id: 'due', label: t.revision.filters.dueToday, count: stats.dueToday + stats.overdue },
+            { id: 'due', label: t.revision.filters.needsReview, count: stats.dueToday + stats.overdue },
             { id: 'all', label: t.revision.filters.all, count: stats.total },
             { id: 'overdue', label: t.revision.filters.overdue, count: stats.overdue },
             { id: 'upcoming', label: t.revision.filters.upcoming, count: stats.upcoming },
