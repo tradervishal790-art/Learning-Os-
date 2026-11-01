@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState, lazy, Suspense } from 'react';
 import type { ComponentType } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { Search, BookOpen, ClipboardCheck, Newspaper, Lock, Settings as SettingsIcon, ArrowLeft } from 'lucide-react';
 import PagePlaceholder from './PagePlaceholder';
 import MissionControl from './MissionControl';
@@ -197,6 +197,7 @@ function trackAndComputeStreak(): number {
 
 function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGenerateForSubject, roadmapVersion, lastRoadmapError, goals, activeGoalId, onAddGoal, onEndGoal, onSwitchGoal }: DashboardProps) {
   const t = useTranslation();
+  const prefersReducedMotion = useReducedMotion();
   const { isGuest, openSignIn } = useAuthPrompt();
 
   const { theme, toggleTheme } = useTheme();
@@ -616,6 +617,13 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
         )}
 
         <Suspense fallback={<PageLoading />}>
+          <motion.div
+            key={activePage}
+            initial={prefersReducedMotion ? false : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: prefersReducedMotion ? 0 : 0.16, ease: 'easeOut' }}
+            className="page-content-transition min-w-0"
+          >
                 {activePage === 'dashboard' && (
           <MissionControl
             name={displayName}
@@ -679,6 +687,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
             status={config.status}
           />
         )}
+          </motion.div>
         </Suspense>
       </div>
 

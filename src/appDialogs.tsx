@@ -27,8 +27,9 @@ function TextBox({ message, initial, okLabel, cancelLabel, onDone }: {
     <div className={`fixed inset-0 ${LAYER} bg-black/40 flex items-center justify-center p-4`} onClick={() => onDone(null)}>
       <div
         role="dialog"
+        aria-modal="true"
         aria-label={message}
-        className="w-full max-w-sm rounded-2xl bg-white dark:bg-neutral-900 border border-gray-200 dark:border-white/10 p-5"
+        className="dialog-surface w-full max-w-sm rounded-2xl bg-white dark:bg-neutral-900 border border-gray-200 dark:border-white/10 p-5"
         onClick={(e) => e.stopPropagation()}
         onKeyDown={(e) => {
           if (e.key === 'Escape') onDone(null);
