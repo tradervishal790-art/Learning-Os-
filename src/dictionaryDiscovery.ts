@@ -16,9 +16,8 @@ function gcd(a: number, b: number): number {
 export function selectDiscoveryWords(words: readonly string[], seed: string, limit = 5): string[] {
   const unique = [...new Set(words
     .filter((word): word is string => typeof word === 'string')
-    .map((word) => word.trim())
-    .filter((word) => /^[\\p{L}][\\p{L}'-]{0,39}$/u.test(word))
-    .map((word) => word.toLowerCase()))];
+    .map((word) => word.trim().toLowerCase())
+    .filter((word) => /^[\\p{L}][\\p{L}'-]{0,39}$/u.test(word)))];
   if (unique.length === 0 || !Number.isFinite(limit) || limit <= 0) return [];
 
   const count = Math.min(Math.floor(limit), unique.length);
