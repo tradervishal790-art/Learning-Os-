@@ -53,7 +53,7 @@ function Root() {
   const { pathname } = useLocation()
   if (pathname.startsWith('/live/')) {
     return (
-      <Suspense fallback={null}>
+      <Suspense fallback={<div className="min-h-screen bg-black text-white flex items-center justify-center text-sm text-white/60">Loading Learning OS…</div>}>
         <LiveJoin />
       </Suspense>
     )
@@ -61,7 +61,7 @@ function Root() {
   if (pathname.startsWith('/focus')) {
     return (
       <AuthGate>
-        <Suspense fallback={null}>
+        <Suspense fallback={<div className="min-h-screen bg-black text-white flex items-center justify-center text-sm text-white/60">Loading Learning OS…</div>}>
           <FocusPlayer />
         </Suspense>
       </AuthGate>
