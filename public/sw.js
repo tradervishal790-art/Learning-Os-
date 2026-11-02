@@ -5,7 +5,7 @@
  *  - /api/* and everything cross-origin (Firebase, YouTube, Gemini proxy): never touched.
  * The dictionary uses its own cache ('learning-os-data-v1', see dictionaryStore.ts);
  * this file only manages caches prefixed "los-". */
-const VERSION = 'v2';
+const VERSION = 'v3';
 const ASSETS = 'los-assets-' + VERSION;
 const PAGES = 'los-pages-' + VERSION;
 const MAX_ASSETS = 600;
@@ -23,7 +23,7 @@ async function precacheAll() {
         try {
           if (await cache.match(f)) return;
           const r = await fetch(f);
-          if (r.status === 200) await cache.put(f, r);
+          if (isValidAssetResponse(r)) await cache.put(f, r);
         } catch (e) {}
       })
     );
@@ -50,6 +50,14 @@ self.addEventListener('activate', (event) => {
   );
 });
 
+function isValidAssetResponse(response) {
+  if (!response || response.status !== 200 || response.type === 'opaque') return false;
+  const contentType = response.headers.get('content-type')?.toLowerCase() ?? '';
+  // Vercel's SPA fallback can return index.html for a missing chunk. Never
+  // persist that HTML document under a JavaScript/CSS/image asset URL.
+  return !contentType.includes('text/html');
+}
+
 async function trim(cache, max) {
   const keys = await cache.keys();
   for (let i = 0; i < keys.length - max; i++) await cache.delete(keys[i]);
@@ -58,9 +66,10 @@ async function trim(cache, max) {
 async function cacheFirst(request) {
   const cache = await caches.open(ASSETS);
   const hit = await cache.match(request);
-  if (hit) return hit;
+  if (hit && isValidAssetResponse(hit)) return hit;
+  if (hit) await cache.delete(request);
   const res = await fetch(request);
-  if (res.status === 200) {
+  if (isValidAssetResponse(res)) {
     cache.put(request, res.clone()).then(() => trim(cache, MAX_ASSETS)).catch(() => {});
   }
   return res;
