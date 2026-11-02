@@ -17,27 +17,43 @@ const LiveJoin = lazy(() => import('./LiveJoin.tsx'))
 // Focus Player: standalone distraction-free player (sits inside AuthGate, which gives visitors a guest session if they have none).
 const FocusPlayer = lazy(() => import('./FocusPlayer.tsx'))
 
-// After a new deploy, a tab that was already open still points at old hashed chunk
-// files that no longer exist, so the next lazy screen (note editor, live test, focus
-// player...) fails to load. Vite fires `vite:preloadError` for that. Reload ONCE to pick
-// up the new version instead of showing the student a crash screen; the sessionStorage
-// guard stops a reload loop if the file is genuinely missing.
+// A tab can retain old Vite chunk URLs after a deployment. If a lazy import
+// fails, reload once to fetch the current index.html and asset manifest. The
+// timestamp expires after 30 seconds so a later, unrelated deploy can recover
+// too; a genuinely missing chunk cannot trigger an endless reload loop.
+const CHUNK_RELOAD_KEY = 'learning_os_chunk_reload';
+const CHUNK_RELOAD_WINDOW_MS = 30_000;
+
 window.addEventListener('vite:preloadError', (event) => {
   try {
-    if (sessionStorage.getItem('learning_os_chunk_reload')) return;
-    sessionStorage.setItem('learning_os_chunk_reload', String(Date.now()));
+    const previousAttempt = Number(sessionStorage.getItem(CHUNK_RELOAD_KEY));
+    if (Number.isFinite(previousAttempt) && Date.now() - previousAttempt < CHUNK_RELOAD_WINDOW_MS) {
+      return; // A retry already happened recently: let ErrorBoundary show the failure.
+    }
+    sessionStorage.setItem(CHUNK_RELOAD_KEY, String(Date.now()));
   } catch {
-    return; // can't guard against a loop -> let the error boundary handle it
+    return; // Storage unavailable: avoid an unguarded reload loop.
   }
   event.preventDefault();
   window.location.reload();
 });
 
+// Remove an expired retry marker on startup. This keeps recovery available
+// for future deployments without clearing user data or other session state.
+try {
+  const previousAttempt = Number(sessionStorage.getItem(CHUNK_RELOAD_KEY));
+  if (!Number.isFinite(previousAttempt) || Date.now() - previousAttempt >= CHUNK_RELOAD_WINDOW_MS) {
+    sessionStorage.removeItem(CHUNK_RELOAD_KEY);
+  }
+} catch {
+  // Session storage is optional; normal application startup must continue.
+}
+
 function Root() {
   const { pathname } = useLocation()
   if (pathname.startsWith('/live/')) {
     return (
-      <Suspense fallback={null}>
+      <Suspense fallback={<div className="min-h-screen bg-black text-white flex items-center justify-center text-sm text-white/60">Loading Learning OS…</div>}>
         <LiveJoin />
       </Suspense>
     )
@@ -45,7 +61,7 @@ function Root() {
   if (pathname.startsWith('/focus')) {
     return (
       <AuthGate>
-        <Suspense fallback={null}>
+        <Suspense fallback={<div className="min-h-screen bg-black text-white flex items-center justify-center text-sm text-white/60">Loading Learning OS…</div>}>
           <FocusPlayer />
         </Suspense>
       </AuthGate>
