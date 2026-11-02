@@ -30,6 +30,7 @@ export function duplicatePage(pages: NotePage[], id: string): { pages: NotePage[
   const src = pages[at];
   const copy: NotePage = { ...src, id: newPageId(), ink: cloneStrokes(src.ink ?? []) };
   delete copy.hasInk;
+  delete copy.bookmarked; // a duplicate is not a second starred page
   return { pages: [...pages.slice(0, at + 1), copy, ...pages.slice(at + 1)], copy };
 }
 

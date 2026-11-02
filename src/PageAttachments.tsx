@@ -54,6 +54,7 @@ export default function PageAttachments({
   onChange,
   labels,
   layoutScale = 1,
+  onRecordingLost,
 }: {
   pageId: string;
   attachments: PageAttachment[];
@@ -61,6 +62,8 @@ export default function PageAttachments({
   labels: Record<string, string>;
   /** Page width ÷ reference width. The audio / older-photo block is laid out at the reference width and scaled, so its height (and everything below it) matches the ink at any screen size. */
   layoutScale?: number;
+  /** The page was closed while a recording was running: the recording so far, so the note can keep it. */
+  onRecordingLost?: (r: { blob: Blob; mime: string; durationSec: number; bookmarks: number[] }) => void;
 }) {
   const t = (k: string) => labels[k] ?? k;
   const [busy, setBusy] = useState(false);
@@ -196,7 +199,7 @@ export default function PageAttachments({
       )}
       {recording && (
         <div className="mb-2">
-          <AudioRecorder onDone={(r) => void saveRecording(r)} onCancel={() => setRecording(false)} labels={labels} />
+          <AudioRecorder onDone={(r) => void saveRecording(r)} onCancel={() => setRecording(false)} onAbandon={onRecordingLost} labels={labels} />
         </div>
       )}
       {(busy || error || info) && (

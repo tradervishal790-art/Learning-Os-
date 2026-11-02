@@ -85,6 +85,8 @@ export interface InkStroke {
   sim: boolean;
   /** Smoothing 0..1 used while drawing. */
   sm: number;
+  /** Highlighter pen only: the words that were under the stroke when it was drawn (read by Revision). */
+  txt?: string;
 }
 
 /** Parts 4-5 extend this (template). `html` = the rich-text body (Part 2);
@@ -444,7 +446,10 @@ async function pushContent(content: NoteContent): Promise<boolean> {
   }
   // Main doc last: anyone who sees `hasInk` can already fetch the ink doc.
   if (!(await pushToCloudChecked(cloudNoteKey(content.id), main))) ok = false;
-  if (ok) markSynced(content.id, content.updatedAt);
+  if (ok) {
+    markSynced(content.id, content.updatedAt);
+    flushInkCleanup(content);
+  }
   return ok;
 }
 
@@ -521,6 +526,72 @@ function cleanRemovedPages(noteId: string): void {
     inkParts.delete(key);
   });
   removedPages.delete(noteId);
+}
+
+// ---- cloud ink documents that must go away, remembered across restarts ----
+// `removedPages` / `inkSigs` live in memory only. If the app was closed between "the student cleared / deleted this
+// page's handwriting" and the next cloud push, the page's ink document would stay in the cloud forever. This list is
+// kept in localStorage so the clean-up still happens in the next session.
+const INK_CLEANUP_KEY = 'learning_os_ink_cleanup';
+interface InkCleanup { key: string; parts: number }
+
+function readInkCleanup(): InkCleanup[] {
+  try {
+    const v: unknown = JSON.parse(window.localStorage.getItem(INK_CLEANUP_KEY) ?? '[]');
+    return Array.isArray(v) ? v.filter((x): x is InkCleanup => !!x && typeof x.key === 'string' && typeof x.parts === 'number') : [];
+  } catch {
+    return [];
+  }
+}
+function writeInkCleanup(list: InkCleanup[]): void {
+  try {
+    if (list.length === 0) window.localStorage.removeItem(INK_CLEANUP_KEY);
+    else window.localStorage.setItem(INK_CLEANUP_KEY, JSON.stringify(list.slice(-500)));
+  } catch {
+    /* storage unavailable: the in-memory clean-up still runs */
+  }
+}
+
+/** Pages that had handwriting in `previous` (page id -> cloud parts) and have none in `next` (cleared, or the page is gone). */
+export function pagesThatLostInk(previous: Map<string, number>, next: NotePage[]): { pageId: string; parts: number }[] {
+  const withInk = new Set(next.filter((p) => (p.ink?.length ?? 0) > 0).map((p) => p.id));
+  return [...previous].filter(([pageId]) => !withInk.has(pageId)).map(([pageId, parts]) => ({ pageId, parts }));
+}
+
+/** Which pages of each note had handwriting at the last save (page id -> number of cloud parts). */
+const inkKnown = new Map<string, Map<string, number>>();
+
+function queueInkCleanup(noteId: string, lost: { pageId: string; parts: number }[]): void {
+  if (lost.length === 0) return;
+  const queue = readInkCleanup();
+  for (const l of lost) {
+    const key = cloudInkKey(noteId, l.pageId);
+    const parts = Math.max(l.parts, inkParts.get(key) ?? 1);
+    const at = queue.findIndex((q) => q.key === key);
+    if (at >= 0) queue[at] = { key, parts: Math.max(queue[at].parts, parts) };
+    else queue.push({ key, parts });
+  }
+  writeInkCleanup(queue);
+}
+
+/** After a note landed in the cloud: delete the ink documents of pages that no longer have handwriting. */
+function flushInkCleanup(content: NoteContent): void {
+  const prefix = `ink_${content.id}_`;
+  const queue = readInkCleanup();
+  if (!queue.some((q) => q.key.startsWith(prefix))) return;
+  const live = new Set(content.pages.filter((p) => (p.ink?.length ?? 0) > 0).map((p) => cloudInkKey(content.id, p.id)));
+  const rest: InkCleanup[] = [];
+  for (const q of queue) {
+    if (!q.key.startsWith(prefix)) {
+      rest.push(q);
+      continue;
+    }
+    if (live.has(q.key)) continue; // the page has handwriting again: nothing to clean up
+    inkSigs.delete(q.key);
+    deleteInkDocs(q.key, q.parts);
+    inkParts.delete(q.key);
+  }
+  writeInkCleanup(rest);
 }
 
 function scheduleContentPush(id: string, content: NoteContent): void {
@@ -623,7 +694,12 @@ export async function saveNoteContent(
   if (video) content.video = video;
   setStatus('saving');
   let previous = knownPageIds.get(id);
-  if (!previous) previous = (await idbGet(id).catch(() => null))?.pages.map((p) => p.id);
+  let previousInk = inkKnown.get(id);
+  if (!previous || !previousInk) {
+    const before = await idbGet(id).catch(() => null);
+    previous ??= before?.pages.map((p) => p.id);
+    previousInk ??= new Map((before?.pages ?? []).filter((p) => (p.ink?.length ?? 0) > 0).map((p) => [p.id, splitStrokes(p.ink ?? []).length] as [string, number]));
+  }
   try {
     await idbPut(id, content);
   } catch {
@@ -631,6 +707,9 @@ export async function saveNoteContent(
     return false;
   }
   trackPages(id, pages, previous);
+  // Handwriting that was there and now is not (cleared / page deleted) must also disappear from the cloud — even after a restart.
+  queueInkCleanup(id, pagesThatLostInk(previousInk, pages));
+  inkKnown.set(id, new Map(pages.filter((p) => (p.ink?.length ?? 0) > 0).map((p) => [p.id, previousInk.get(p.id) ?? 1] as [string, number])));
   const idx = getIndex();
   commitIndex(
     {
@@ -745,6 +824,8 @@ export async function deleteNotesForever(ids: string[]): Promise<void> {
     const c = await idbGet(id).catch(() => null);
     c?.pages.forEach((p) => deleteInkDocs(cloudInkKey(id, p.id), Math.max(inkParts.get(cloudInkKey(id, p.id)) ?? 1, splitStrokes(p.ink ?? []).length)));
     await idbDelete(id);
+    inkKnown.delete(id);
+    writeInkCleanup(readInkCleanup().filter((q) => !q.key.startsWith(`ink_${id}_`)));
     void deleteFromCloud(cloudNoteKey(id));
     await deleteVersions(id).catch(() => undefined);
     forgetSyncState(id);

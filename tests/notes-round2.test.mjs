@@ -120,3 +120,27 @@ test('Reset pen only touches the pen, not the eraser, highlighter, laser or save
   for (const kept of ['hlColor', 'eraserSize', 'laserColor', 'favorites', 'recentColors']) assert.ok(!body.includes(kept), kept + ' must not be reset');
   for (const reset of ['kind', 'color', 'width', 'smoothing', 'shapeSnap']) assert.ok(body.includes(reset), reset + ' should be reset');
 });
+
+test('a duplicated page is a fresh page: it does not copy the bookmark star, but keeps text, ink and paper', async () => {
+  const { duplicatePage } = await loadTs('src/pageOps.ts');
+  const page = { id: 'p1', text: 'a', html: '<p>a</p>', bookmarked: true, template: 'ruled', paper: 'cream', ink: [{ id: 's', kind: 'ballpoint', color: '#000000', width: 2, pts: [1, 2, 0.5], sim: true, sm: 0.5 }] };
+  const out = duplicatePage([page], 'p1');
+  assert.equal(out.copy.bookmarked, undefined);
+  assert.equal(out.pages[0].bookmarked, true); // the original keeps its star
+  assert.equal(out.copy.template, 'ruled');
+  assert.equal(out.copy.paper, 'cream');
+  assert.equal(out.copy.ink.length, 1);
+  assert.notEqual(out.copy.id, 'p1');
+});
+
+test('pasted pt / em / rem sizes are SHOWN as their real pixel size; the stored-size reader is unchanged', async () => {
+  const ext = await loadTs('src/editorExtensions.ts');
+  assert.equal(ext.cssToDisplaySize('12pt'), 16);
+  assert.equal(ext.cssToDisplaySize('1.5em'), 24);
+  assert.equal(ext.cssToDisplaySize('2rem'), 32);
+  assert.equal(ext.cssToDisplaySize('20px'), 20);
+  assert.equal(ext.cssToDisplaySize(ext.sizeToCss(18)), 18);
+  assert.equal(ext.cssToDisplaySize('large'), null);
+  assert.equal(ext.cssToDisplaySize(undefined), null);
+  assert.equal(ext.cssToSize('2em'), null); // unchanged: the stored form only knows its own units
+});

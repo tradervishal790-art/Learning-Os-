@@ -10,7 +10,7 @@ import {
 import { useTranslation } from './i18n/LanguageContext';
 import { format } from './i18n/format';
 import {
-  ALL_FONTS, BASE_SIZE, FONT_GROUPS, HIGHLIGHT_COLORS, MAX_SIZE, MIN_SIZE, SIZE_PRESETS, TEXT_COLORS, cssToSize, sizeToCss, stepSize,
+  ALL_FONTS, BASE_SIZE, FONT_GROUPS, HIGHLIGHT_COLORS, MAX_SIZE, MIN_SIZE, SIZE_PRESETS, TEXT_COLORS, cssToDisplaySize, sizeToCss, stepSize,
 } from './editorExtensions';
 import { Btn, Pop, Swatches, Sep, selectCls } from './toolbarParts';
 import { canCaptureScreen } from './ScreenCrop';
@@ -237,7 +237,7 @@ export default function EditorToolbar({
       justify: !!e?.isActive({ textAlign: 'justify' }),
       heading: e?.isActive('heading', { level: 1 }) ? '1' : e?.isActive('heading', { level: 2 }) ? '2' : e?.isActive('heading', { level: 3 }) ? '3' : 'p',
       // When a heading has no explicit text-size mark, show its actual CSS size rather than the body default.
-      size: cssToSize(e?.getAttributes('textStyle').fontSize as string | undefined)
+      size: cssToDisplaySize(e?.getAttributes('textStyle').fontSize as string | undefined)
         ?? (e?.isActive('heading', { level: 1 }) ? 27.2 : e?.isActive('heading', { level: 2 }) ? 22.4 : e?.isActive('heading', { level: 3 }) ? 19.2 : null),
       font: (e?.getAttributes('textStyle').fontFamily as string | undefined) ?? '',
       canUndo: !!e?.can().undo(),

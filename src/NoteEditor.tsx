@@ -43,6 +43,7 @@ import MomentList from './MomentList';
 import { newMomentId, parseYouTubeUrl, timestampUrl, type MomentKind } from './videoTime';
 import { cloneAttachment } from './attachClone';
 import { getImage, getPdf, newAttachId, putPdf } from './attachStore';
+import { putAudio } from './audioStore';
 import { compressImage, blobToDataUrl } from './imageTools';
 import type { NoteAiOp } from './noteAiTypes';
 import { askConfirm } from './dialogApi';
@@ -942,6 +943,27 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: (untouc
   // Where the next page goes while the "choose a page type" dialog is open (null = dialog closed).
   const [addAfter, setAddAfter] = useState<{ afterId: string | null } | null>(null);
 
+  /**
+   * The student left the note (or the page closed) while a recording was running. Keep what was recorded: it is saved
+   * on the page it was started on, so it is there the next time the note is opened. Uses the editor's latest content
+   * (a ref), so it still works after this screen is gone and never overwrites the newest text.
+   */
+  const recoverRecording = (pageId: string, r: { blob: Blob; mime: string; durationSec: number; bookmarks: number[] }): void => {
+    void (async () => {
+      try {
+        const audioId = newAttachId('au');
+        await putAudio(audioId, r.blob, { mime: r.mime, durationSec: r.durationSec, bookmarks: r.bookmarks, createdAt: new Date().toISOString() });
+        const cur = latest.current;
+        if (!cur.pages.some((p) => p.id === pageId)) return;
+        const pages = patchPage(cur.pages, pageId, { attachments: [...(cur.pages.find((p) => p.id === pageId)?.attachments ?? []), { id: audioId, kind: 'audio', name: t.attach.audioName ?? 'Recording' }] });
+        latest.current = { ...cur, pages };
+        await saveNoteContent(id, cur.title, pages, cur.video, { cloud: false });
+      } catch {
+        /* storage full: nothing more can be done here */
+      }
+    })();
+  };
+
   const addPageAt = (afterId: string | null, template?: string, paper?: string) => {
     const page = blankPage({ template, paper });
     inkRef.current = { ...inkRef.current, [page.id]: [] };
@@ -1269,6 +1291,7 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: (untouc
                     zoom={zoom}
                     selectedIds={selection?.pageId === p.id ? selection.ids : []}
                     onSelect={selectOn}
+                    onRecordingLost={recoverRecording}
                     onEditor={(pageId, ed) => (editors.current[pageId] = ed)}
                     onChange={changePage}
                     onActive={(ed, pageId) => {

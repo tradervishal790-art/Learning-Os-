@@ -119,14 +119,17 @@ test('AI text replacing styled words keeps their font; its own bold stays', asyn
 test('print export draws each page like the editor: sheet, handwriting on top, photos at their place', async () => {
   const exp = await loadTs('src/noteExport.ts');
   const good = 'data:image/png;base64,iVBORw0KGgo=';
-  const stroke = { id: 's', kind: 'highlighter', color: '#fde047', width: 20, pts: [100, 300, 0.5, 400, 300, 0.5], sim: true, sm: 0.5 };
-  const page = { id: 'p1', text: 'hello', html: '<p>hello</p>', ink: [stroke], attachments: [
+  const stroke = { id: 's', kind: 'ballpoint', color: '#dc2626', width: 3, pts: [100, 300, 0.5, 400, 300, 0.5], sim: true, sm: 0.5 };
+  const marker = { id: 'm', kind: 'highlighter', color: '#fde047', width: 20, pts: [100, 200, 0.5, 400, 200, 0.5], sim: true, sm: 0.5 };
+  const page = { id: 'p1', text: 'hello', html: '<p>hello</p>', ink: [stroke, marker], attachments: [
     { id: 'f', kind: 'image', name: 'placed', x: 250, y: 400, w: 300, ar: 0.5 },
     { id: 'o', kind: 'image', name: 'old', },
   ] };
   const html = exp.noteToHtml('T', [page], { ink: true, images: { f: good, o: good } });
   assert.match(html, /class="sheet"/);
   assert.match(html, /<svg class="ink-over"[^>]*viewBox="0 0 1000 1414"/);
+  assert.match(html, /<svg class="ink-under"/); // the highlighter sits under the words, the pen over them
+  assert.ok(html.indexOf('class="ink-under"') < html.indexOf('class="note-prose"') && html.indexOf('class="note-prose"') < html.indexOf('class="ink-over"'));
   assert.match(html, /<img class="fp"[^>]*style="left:25%;top:calc\(400 \* 100cqw \/ 1000\);width:30%"/); // placed photo: same spot as on screen
   assert.equal((html.match(/<figure class="photo">/g) ?? []).length, 1); // an old photo with no position stays in the flow
   // the sheet grows (like the editor) when ink reaches below A4
@@ -138,4 +141,16 @@ test('print export draws each page like the editor: sheet, handwriting on top, p
   assert.ok(!flow.includes('class="sheet"') && flow.includes('class="ink"'));
   // imported PDF pages keep the plain layout (their page picture is not part of this export)
   assert.ok(!exp.noteToHtml('T', [{ id: 'x', text: 'pdf text', pdf: { fileId: 'f', pageNumber: 1, name: 'a.pdf' } }], { ink: true }).includes('class="sheet"'));
+});
+
+test('print pages carry the paper: lines for ruled / grid / Cornell, the paper colour, nothing for blank', async () => {
+  const exp = await loadTs('src/noteExport.ts');
+  const mk = (template, paper) => exp.noteToHtml('T', [{ id: 'p', text: 'a', html: '<p>a</p>', template, paper }], { ink: true });
+  assert.match(mk('ruled'), /<svg class="paper"[\s\S]*id="ruled"/);
+  assert.match(mk('grid'), /fill="url\(#grid\)"/);
+  assert.match(mk('cornell'), /summary|<line x1="0" y1="1159/); // frame lines of the Cornell layout
+  assert.ok(!mk('blank').includes('<svg class="paper"'));
+  assert.match(mk('ruled', 'cream'), /background:#fbf4e3/);
+  assert.match(mk('ruled', 'charcoal'), /background:#ffffff/); // a dark paper is printed white
+  assert.match(mk('ruled'), /--note-line:calc\(40 \* 100cqw \/ 1000\)/); // the text sits on the lines
 });

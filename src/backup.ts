@@ -134,7 +134,9 @@ function parseStroke(raw: unknown, where: string, w: Warnings): InkStroke | null
     pts[i] = v;
   }
   if (arr.length > LIMIT.ptsValues) w.add(`${where}: stroke ${id} was shortened (too many points)`);
-  return { id, kind: raw.kind as InkKind, color: raw.color, width: raw.width, pts, sim: raw.sim === true, sm: isNum(raw.sm) ? Math.min(1, Math.max(0, raw.sm)) : 0 };
+  const stroke: InkStroke = { id, kind: raw.kind as InkKind, color: raw.color, width: raw.width, pts, sim: raw.sim === true, sm: isNum(raw.sm) ? Math.min(1, Math.max(0, raw.sm)) : 0 };
+  if (typeof raw.txt === 'string' && raw.txt.trim() !== '') stroke.txt = raw.txt.slice(0, 300); // the words under a highlighter pen stroke
+  return stroke;
 }
 
 function parseAttachments(raw: unknown, where: string, w: Warnings): PageAttachment[] {

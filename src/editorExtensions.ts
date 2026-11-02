@@ -152,6 +152,17 @@ export function cssToSize(v: string | undefined | null): number | null {
   const m = /^calc\(\s*(\d+(?:\.\d+)?)\s*\*\s*var\(\s*--note-px\s*,\s*1px\s*\)\s*\)$/.exec(v.trim()) ?? /^(\d+(?:\.\d+)?)px$/.exec(v.trim());
   return m ? Number(m[1]) : null;
 }
+/**
+ * The size to SHOW in the toolbar. Text pasted from Word or a web page keeps its own units (pt / em / rem): those are
+ * shown as the pixel size they really are, instead of "16" (the default) as if the size were unknown.
+ */
+export function cssToDisplaySize(v: string | undefined | null): number | null {
+  const own = cssToSize(v);
+  if (own !== null || !v) return own;
+  const u = /^(\d+(?:\.\d+)?)(pt|em|rem)$/.exec(v.trim());
+  if (!u) return null;
+  return Math.round(Number(u[1]) * (u[2] === 'pt' ? 4 / 3 : 16) * 10) / 10;
+}
 /** Next size up / down the ladder, like PowerPoint's grow / shrink font buttons. */
 export function stepSize(cur: number, dir: 1 | -1): number {
   const next = dir === 1 ? SIZE_PRESETS.find((p) => p > cur) : [...SIZE_PRESETS].reverse().find((p) => p < cur);

@@ -8,6 +8,8 @@ import { MAX_RECORDING_SEC, useAudioRecorder } from './useAudioRecorder';
 interface Props {
   onDone(result: { blob: Blob; mime: string; durationSec: number; bookmarks: number[]; limited?: boolean }): void;
   onCancel?(): void;
+  /** The screen was closed while recording: the recording so far (so the caller can still keep it). */
+  onAbandon?(result: { blob: Blob; mime: string; durationSec: number; bookmarks: number[] }): void;
   labels: Record<string, string>;
 }
 
@@ -19,8 +21,8 @@ const formatTime = (sec: number): string => {
 const base = 'inline-flex min-h-[56px] min-w-[56px] items-center justify-center gap-2 rounded-full px-6 text-base font-medium transition active:scale-95 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-500 dark:focus-visible:ring-offset-slate-900';
 const small = 'inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full px-4 text-sm font-medium transition active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500';
 
-export default function AudioRecorder({ onDone, onCancel, labels }: Props) {
-  const rec = useAudioRecorder();
+export default function AudioRecorder({ onDone, onCancel, onAbandon, labels }: Props) {
+  const rec = useAudioRecorder({ onAbandon });
   const t = (key: string, fallback: string): string => labels[key] ?? fallback;
   const { state } = rec;
   const live = state === 'recording' || state === 'paused';
@@ -30,6 +32,16 @@ export default function AudioRecorder({ onDone, onCancel, labels }: Props) {
     const result = await rec.stop();
     if (result) onDone(limited.current ? { ...result, limited: true } : result);
   };
+  // Closing the tab / window while recording: the browser asks first (the recording is only in memory until it is saved).
+  useEffect(() => {
+    if (!live) return undefined;
+    const warn = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [live]);
   // A very long recording is stopped and saved by itself instead of filling the device's memory.
   useEffect(() => {
     if (live && rec.elapsedSec >= MAX_RECORDING_SEC && !limited.current) {

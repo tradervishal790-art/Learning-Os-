@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { EditorContent, useEditor, type Editor } from '@tiptap/react';
 import { buildExtensions } from './editorExtensions';
 import { pageToHtml, type InkStroke, type NotePage, type PageAttachment } from './notebookStore';
+import { textUnderHighlight, withHighlightText } from './inkText';
 import type { InkMode, InkPrefs } from './inkPrefs';
 import { PAGE_RATIO, PAGE_UNITS, TEXT_REF_WIDTH, inkExtentY } from './inkEngine';
 import { pickStrokes, selectInPolygon } from './inkEdit';
@@ -50,6 +51,7 @@ export default function PageEditor({
   onInk,
   onSelect,
   onAttachments,
+  onRecordingLost,
   attachLabels,
   onSeekVideo,
   onCircle,
@@ -72,6 +74,8 @@ export default function PageEditor({
   onInk: (pageId: string, next: InkStroke[]) => void;
   onSelect: (pageId: string, ids: string[]) => void;
   onAttachments: (pageId: string, next: PageAttachment[]) => void;
+  /** A recording was running when this page closed (the student left the note). */
+  onRecordingLost?: (pageId: string, r: { blob: Blob; mime: string; durationSec: number; bookmarks: number[] }) => void;
   attachLabels: Record<string, string>;
   /** A time chip in the text was clicked (Part 7). */
   onSeekVideo?: (seconds: number, videoId: string | null) => void;
@@ -182,7 +186,7 @@ export default function PageEditor({
       <div className="relative z-10">
         <EditorContent editor={editor} />
       </div>
-      <PageAttachments pageId={page.id} attachments={page.attachments ?? []} onChange={(next) => onAttachments(page.id, next)} labels={attachLabels} layoutScale={size.w > 0 ? size.w / TEXT_REF_WIDTH : 1} />
+      <PageAttachments pageId={page.id} attachments={page.attachments ?? []} onChange={(next) => onAttachments(page.id, next)} labels={attachLabels} layoutScale={size.w > 0 ? size.w / TEXT_REF_WIDTH : 1} onRecordingLost={(r) => onRecordingLost?.(page.id, r)} />
       {size.w > 0 && (
         <PageImages attachments={page.attachments ?? []} width={size.w} onChange={(next) => onAttachments(page.id, next)} labels={attachLabels} />
       )}
@@ -196,7 +200,12 @@ export default function PageEditor({
           paperDark={darkPaper}
           selectedIds={selectedIds}
           onSelect={(ids) => onSelect(page.id, ids)}
-          onCommit={(next) => onInk(page.id, next)}
+          onCommit={(next) => {
+            // A finished highlighter-PEN stroke remembers the words under it, so Revision can use it like a typed highlight.
+            const box = sheet.current?.getBoundingClientRect();
+            const known = new Set(strokes.map((st) => st.id));
+            onInk(page.id, editor && box ? withHighlightText(next, known, (st) => textUnderHighlight(editor, box, st)) : next);
+          }}
           onActivate={() => editor && onActive(editor, page.id)}
           onCircle={
             onCircle

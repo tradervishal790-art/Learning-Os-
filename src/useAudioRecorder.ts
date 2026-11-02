@@ -47,11 +47,13 @@ export function pickMime(isSupported: (m: string) => boolean): string | null {
 const round1 = (n: number): number => Math.round(n * 10) / 10;
 const errName = (e: unknown): string => (e instanceof Error ? e.name : typeof e === 'object' && e !== null && 'name' in e ? String((e as { name: unknown }).name) : '');
 
-export function useAudioRecorder(): {
+export function useAudioRecorder(opts: { onAbandon?: (r: RecordingResult) => void } = {}): {
   state: RecorderState; elapsedSec: number; bookmarks: number[]; interrupted: boolean; error: string | null;
   start(): Promise<void>; pause(): void; resume(): void; stop(): Promise<RecordingResult | null>;
   addBookmark(): void; discard(): void;
 } {
+  const onAbandonRef = useRef(opts.onAbandon);
+  onAbandonRef.current = opts.onAbandon;
   const [state, setStateValue] = useState<RecorderState>('idle');
   const [elapsedSec, setElapsedSec] = useState(0);
   const [bookmarks, setBookmarks] = useState<number[]>([]);
@@ -291,6 +293,17 @@ export function useAudioRecorder(): {
     return () => {
       mountedRef.current = false;
       tokenRef.current++;
+      // The screen was closed while recording (the student left the note): hand over what was recorded so far
+      // instead of throwing it away. Everything up to the last second is already in `chunksRef`.
+      const st = stateRef.current;
+      if ((st === 'recording' || st === 'paused') && !finishedRef.current && onAbandonRef.current) {
+        const mime = (recorderRef.current && recorderRef.current.mimeType) || mimeRef.current;
+        const blob = new Blob(chunksRef.current, { type: mime });
+        if (blob.size > 0) {
+          const durationSec = round1(clockRef.current.elapsedMs(performance.now()) / 1000);
+          onAbandonRef.current({ blob, mime, durationSec, bookmarks: [...bookmarksRef.current] });
+        }
+      }
       const rec = recorderRef.current;
       if (rec) { detach(rec); if (rec.state !== 'inactive') { try { rec.stop(); } catch { /* ignore */ } } }
       recorderRef.current = null;

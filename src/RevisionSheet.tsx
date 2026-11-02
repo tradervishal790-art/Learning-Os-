@@ -34,7 +34,7 @@ export default function RevisionSheet({ id, onBack }: { id: string; onBack: () =
     void loadNoteContent(id).then((c) => {
       if (!alive) return;
       if (!c) return setFailed(true);
-      setItems(extractHighlights(c.pages.map((p) => ({ id: p.id, html: pageToHtml(p) }))));
+      setItems(extractHighlights(c.pages.map((p) => ({ id: p.id, html: pageToHtml(p), ink: p.ink }))));
     });
     return () => {
       alive = false;

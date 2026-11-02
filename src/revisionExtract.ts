@@ -110,7 +110,7 @@ function passagesInBlock(block: Element, doc: Document): { hex: string; text: st
   return out.map((p) => ({ hex: p.hex, text: collapse(p.text) })).filter((p) => p.text !== '');
 }
 
-export function extractHighlights(pages: { id: string; html: string }[]): HighlightItem[] {
+export function extractHighlights(pages: { id: string; html: string; ink?: { kind: string; color: string; txt?: string }[] }[]): HighlightItem[] {
   const parser = new DOMParser();
   const byKey = new Map<string, HighlightItem & { first: number }>();
   let seq = 0;
@@ -134,6 +134,24 @@ export function extractHighlights(pages: { id: string; html: string }[]): Highli
         } else {
           byKey.set(key, { key, kind, color: p.hex, text: p.text, pages: [pageRef], count: 1, first: seq++ });
         }
+      }
+    }
+  });
+
+  // The highlighter PEN: the words under each stroke were read when it was drawn (see inkText.ts).
+  pages.forEach((page, pageIndex) => {
+    for (const st of page.ink ?? []) {
+      const text = st.kind === 'highlighter' ? collapse(st.txt ?? '') : '';
+      if (text === '') continue;
+      const kind = colorKind(st.color);
+      const key = `${kind}${kind === 'other' ? st.color : ''}|${text.toLowerCase()}`;
+      const existing = byKey.get(key);
+      const pageRef = { pageId: page.id, pageNumber: pageIndex + 1 };
+      if (existing) {
+        existing.count += 1;
+        if (!existing.pages.some((x) => x.pageId === page.id)) existing.pages.push(pageRef);
+      } else {
+        byKey.set(key, { key, kind, color: st.color, text, pages: [pageRef], count: 1, first: seq++ });
       }
     }
   });
