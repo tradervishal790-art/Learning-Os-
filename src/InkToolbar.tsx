@@ -252,11 +252,11 @@ export default function InkToolbar({
                     key={c}
                     color={resolveColor(c, darkTheme)}
                     label={c}
-                    selected={prefs.color === c}
-                    onClick={() => setPrefs({ color: c })}
+                    selected={prefs.laserInkColor === c}
+                    onClick={() => setPrefs({ laserInkColor: c })}
                   />
                 ))}
-                <TaperStrip label={t.thickness} min={1} max={8} step={0.5} value={prefs.width} onChange={(v) => setPrefs({ width: v })} />
+                <TaperStrip label={t.thickness} min={1} max={8} step={0.5} value={Math.min(8, prefs.laserInkWidth)} onChange={(v) => setPrefs({ laserInkWidth: v })} />
               </>
             )}
           </>

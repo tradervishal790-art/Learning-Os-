@@ -9,6 +9,7 @@ import { ImageError, compressImage, cropRotateFlip, scanFilter } from './imageTo
 import AudioRecorder from './AudioRecorder';
 import AudioPlayer from './AudioPlayer';
 import { askConfirm } from './dialogApi';
+import { rescueRecording } from './recordingGuard';
 
 // ============================================================
 // PageAttachments.tsx — photos + voice recordings under a page's text.
@@ -49,12 +50,14 @@ function placeNew(root: HTMLElement | null, list: PageAttachment[], ar: number) 
 export const isFloating = (a: PageAttachment) => a.kind === 'image' && a.w !== undefined && a.x !== undefined && a.y !== undefined;
 
 export default function PageAttachments({
+  noteId,
   pageId,
   attachments,
   onChange,
   labels,
   layoutScale = 1,
 }: {
+  noteId: string;
   pageId: string;
   attachments: PageAttachment[];
   onChange: (next: PageAttachment[]) => void;
@@ -162,7 +165,7 @@ export default function PageAttachments({
     // deleting it here would silently break that other attachment. Orphan cleanup can be done safely by a ref-counted sweep.
   };
 
-  const saveRecording = async (r: { blob: Blob; mime: string; durationSec: number; bookmarks: number[]; limited?: boolean }) => {
+  const saveRecording = async (r: { blob: Blob; mime: string; durationSec: number; bookmarks: number[]; limited?: boolean }): Promise<boolean> => {
     setError('');
     setInfo('');
     try {
@@ -171,8 +174,10 @@ export default function PageAttachments({
       push({ id, kind: 'audio', name: t('audioName') });
       setRecording(false);
       if (r.limited) setInfo(t('recTooLong'));
+      return true;
     } catch {
       setError(t('errStorage'));
+      return false;
     }
   };
 
@@ -196,7 +201,12 @@ export default function PageAttachments({
       )}
       {recording && (
         <div className="mb-2">
-          <AudioRecorder onDone={(r) => void saveRecording(r)} onCancel={() => setRecording(false)} labels={labels} />
+          <AudioRecorder
+            onDone={(r) => saveRecording(r)}
+            onCancel={() => setRecording(false)}
+            onOrphan={(r) => void rescueRecording(noteId, pageId, r, t('audioName'))}
+            labels={labels}
+          />
         </div>
       )}
       {(busy || error || info) && (

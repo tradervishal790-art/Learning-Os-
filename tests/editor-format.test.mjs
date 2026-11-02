@@ -10,7 +10,15 @@ test('size round trip: stored form <-> number, old px form still readable', () =
   assert.equal(ext.cssToSize('20px'), 20);
   assert.equal(ext.cssToSize(''), null);
   assert.equal(ext.cssToSize(undefined), null);
-  assert.equal(ext.cssToSize('2em'), null);
+  // sizes that come from Word / web pages are understood too (they used to show as 16 in the toolbar)
+  assert.equal(ext.cssToSize('12pt'), 16);
+  assert.equal(ext.cssToSize('10.5pt'), 14);
+  assert.equal(ext.cssToSize('2em'), 32);
+  assert.equal(ext.cssToSize('1.5rem'), 24);
+  assert.equal(ext.cssToSize('150%'), 24);
+  assert.equal(ext.cssToSize('x-large'), 24);
+  assert.equal(ext.cssToSize('inherit'), null);
+  assert.equal(ext.cssToSize('0pt'), null);
 });
 
 test('size is zoom-proof: calc with a 1px fallback outside the editor', () => {
@@ -51,4 +59,13 @@ test('text line pitch: lined / grid pages use the SAME number as their backgroun
     assert.ok(tpl.textLineUnits(id) > 0, id);
   }
   for (const id of ['blank', 'isometric', 'music']) assert.equal(tpl.textLineUnits(id), 0, id);
+});
+
+test('pasted sizes are stored in the editor form so they zoom with the page', () => {
+  assert.equal(ext.normalizePastedSize('12pt'), 'calc(16 * var(--note-px, 1px))');
+  assert.equal(ext.normalizePastedSize('20px'), 'calc(20 * var(--note-px, 1px))');
+  assert.equal(ext.normalizePastedSize('calc(24 * var(--note-px, 1px))'), 'calc(24 * var(--note-px, 1px))');
+  assert.equal(ext.normalizePastedSize('9999pt'), 'calc(400 * var(--note-px, 1px))');
+  assert.equal(ext.normalizePastedSize(''), null);
+  assert.equal(ext.normalizePastedSize('var(--x)'), null);
 });

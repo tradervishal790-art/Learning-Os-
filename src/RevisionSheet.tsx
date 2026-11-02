@@ -5,6 +5,7 @@ import { format } from './i18n/format';
 import { getIndex, loadNoteContent, pageToHtml } from './notebookStore';
 import { addMistake, getMistakes, removeMistake, type Mistake } from './mistakeStore';
 import { extractHighlights, itemsToText, type HighlightItem, type HighlightKind } from './revisionExtract';
+import { extractPenHighlights, type PenHighlight } from './penHighlights';
 import { askConfirm } from './dialogApi';
 
 // ============================================================
@@ -18,6 +19,7 @@ const KINDS: HighlightKind[] = ['important', 'doubt', 'example', 'understood', '
 export default function RevisionSheet({ id, onBack }: { id: string; onBack: () => void }) {
   const t = useTranslation().notebook.rsheet;
   const [items, setItems] = useState<HighlightItem[] | null>(null);
+  const [penItems, setPenItems] = useState<PenHighlight[]>([]);
   const [failed, setFailed] = useState(false);
   const [filter, setFilter] = useState<'all' | HighlightKind>('all');
   const [copied, setCopied] = useState(false);
@@ -35,6 +37,7 @@ export default function RevisionSheet({ id, onBack }: { id: string; onBack: () =
       if (!alive) return;
       if (!c) return setFailed(true);
       setItems(extractHighlights(c.pages.map((p) => ({ id: p.id, html: pageToHtml(p) }))));
+      setPenItems(extractPenHighlights(c.pages)); // highlighter-pen marks (strokes), shown as pictures of the marked spot
     });
     return () => {
       alive = false;
@@ -48,9 +51,12 @@ export default function RevisionSheet({ id, onBack }: { id: string; onBack: () =
   const counts = useMemo(() => {
     const c: Record<string, number> = {};
     (items ?? []).forEach((i) => (c[i.kind] = (c[i.kind] ?? 0) + 1));
+    penItems.forEach((i) => (c[i.kind] = (c[i.kind] ?? 0) + 1));
     return c;
-  }, [items]);
+  }, [items, penItems]);
   const shown = (items ?? []).filter((i) => filter === 'all' || i.kind === filter);
+  const penShown = penItems.filter((i) => filter === 'all' || i.kind === filter);
+  const totalCount = (items?.length ?? 0) + penItems.length;
 
   const copyAll = async () => {
     try {
@@ -81,7 +87,7 @@ export default function RevisionSheet({ id, onBack }: { id: string; onBack: () =
         <button onClick={onBack} className="flex items-center gap-1.5 text-sm text-gray-600 dark:text-white/70 hover:text-black dark:hover:text-white">
           <ArrowLeft size={16} /> {t.back}
         </button>
-        {shown.length > 0 && (
+        {(shown.length > 0 || penShown.length > 0) && (
           <button
             onClick={() => {
               setRecall((r) => !r);
@@ -102,7 +108,7 @@ export default function RevisionSheet({ id, onBack }: { id: string; onBack: () =
       <h2 className="text-xl font-bold">{t.title}</h2>
       <p className="text-sm text-gray-500 dark:text-white/60 mb-3">
         {meta?.title ? `${meta.title} · ` : ''}
-        {format(t.summary, items?.length ?? 0)}
+        {format(t.summary, totalCount)}
       </p>
 
       <div className="flex gap-2 mb-4">
@@ -112,18 +118,18 @@ export default function RevisionSheet({ id, onBack }: { id: string; onBack: () =
 
       {tab === 'mistakes' && <MistakeList noteId={id} mistakes={mistakes} onChange={refreshMistakes} labels={t} />}
 
-      {tab === 'highlights' && items && items.length === 0 && (
+      {tab === 'highlights' && items && totalCount === 0 && (
         <div className="py-12 text-center">
           <p className="font-medium">{t.empty}</p>
           <p className="text-sm text-gray-500 dark:text-white/60 mt-1">{t.emptyHint}</p>
         </div>
       )}
 
-      {tab === 'highlights' && items && items.length > 0 && (
+      {tab === 'highlights' && items && totalCount > 0 && (
         <>
           <div className="flex flex-wrap gap-2 mb-4">
             <button className={chip(filter === 'all')} onClick={() => setFilter('all')}>
-              {t.all} ({items.length})
+              {t.all} ({totalCount})
             </button>
             {KINDS.filter((k) => counts[k]).map((k) => (
               <button key={k} className={chip(filter === k)} onClick={() => setFilter(k)}>
@@ -160,6 +166,37 @@ export default function RevisionSheet({ id, onBack }: { id: string; onBack: () =
               </li>
             ))}
           </ul>
+          {penShown.length > 0 && (
+            <section className="mt-6" aria-label={t.penHighlights}>
+              <h3 className="text-sm font-semibold">{t.penHighlights}</h3>
+              <p className="mb-2 text-xs text-gray-500 dark:text-white/60">{t.penHint}</p>
+              <ul className="space-y-2">
+                {penShown.map((i) => {
+                  const hidden = recall && !shownKeys.has(i.key);
+                  return (
+                    <li
+                      key={i.key}
+                      onClick={() => recall && setShownKeys((cur) => { const n = new Set(cur); if (n.has(i.key)) n.delete(i.key); else n.add(i.key); return n; })}
+                      className={`rounded-xl border border-gray-200 dark:border-white/10 p-3 flex gap-3 ${recall ? 'cursor-pointer' : ''}`}
+                    >
+                      <span className="w-1.5 shrink-0 rounded-full" style={{ background: i.color }} aria-hidden />
+                      <div className="min-w-0 flex-1">
+                        {/* our own SVG (drawn from stroke data, no user markup) on a paper-coloured card so ink stays readable in dark mode */}
+                        <div
+                          className={`rounded-lg bg-white p-1 ${hidden ? 'opacity-0 select-none' : ''}`}
+                          style={{ maxHeight: 220, overflow: 'hidden' }}
+                          dangerouslySetInnerHTML={{ __html: i.svg }}
+                        />
+                        <p className="mt-1 text-xs text-gray-400 dark:text-white/40">
+                          {kindLabel[i.kind]} · {t.page} {i.pageNumber} · {t.penTag}
+                        </p>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          )}
         </>
       )}
     </div>

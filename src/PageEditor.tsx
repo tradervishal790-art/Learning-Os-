@@ -35,6 +35,7 @@ function overlaps(el: Element, b: ClientBox): boolean {
 }
 
 export default function PageEditor({
+  noteId,
   page,
   strokes,
   placeholder,
@@ -55,6 +56,7 @@ export default function PageEditor({
   onCircle,
   recall = false,
 }: {
+  noteId: string;
   page: NotePage;
   strokes: InkStroke[];
   placeholder: string;
@@ -182,7 +184,7 @@ export default function PageEditor({
       <div className="relative z-10">
         <EditorContent editor={editor} />
       </div>
-      <PageAttachments pageId={page.id} attachments={page.attachments ?? []} onChange={(next) => onAttachments(page.id, next)} labels={attachLabels} layoutScale={size.w > 0 ? size.w / TEXT_REF_WIDTH : 1} />
+      <PageAttachments noteId={noteId} pageId={page.id} attachments={page.attachments ?? []} onChange={(next) => onAttachments(page.id, next)} labels={attachLabels} layoutScale={size.w > 0 ? size.w / TEXT_REF_WIDTH : 1} />
       {size.w > 0 && (
         <PageImages attachments={page.attachments ?? []} width={size.w} onChange={(next) => onAttachments(page.id, next)} labels={attachLabels} />
       )}

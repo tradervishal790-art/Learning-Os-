@@ -31,6 +31,9 @@ import PageEditor, { type CircleCapture } from './PageEditor';
 import EditorToolbar from './EditorToolbar';
 import PhoneRibbon from './PhoneRibbon';
 import { requestAttach, type AttachAction } from './PageAttachments';
+import { inkSignature, needsScan, pageAiText, pendingReads, type PageExtra } from './aiExtraText';
+import { loadNotePdf } from './PdfPageSheet';
+import { discardBusyRecordings, isRecordingBusy, saveBusyRecordings, trackNoteWrite } from './recordingGuard';
 import type { NoteTabId } from './noteTabs';
 import { Btn } from './toolbarParts';
 import NoteAiPanel from './NoteAiPanel';
@@ -118,6 +121,9 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: (untouc
   const [unsaved, setUnsaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [leaveAsk, setLeaveAsk] = useState(false);
+  // A voice recording is running / not yet stored: Back must ask first, or the audio is lost.
+  const [recAsk, setRecAsk] = useState(false);
+  const [recBusy, setRecBusy] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -164,7 +170,7 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: (untouc
     if (!dirty.current) return;
     dirty.current = false;
     // Autosave keeps a draft on THIS device (nothing is lost if the tab dies); Save sends it to the account.
-    void saveNoteContent(id, latest.current.title, latest.current.pages, latest.current.video, { cloud: false });
+    trackNoteWrite(id, saveNoteContent(id, latest.current.title, latest.current.pages, latest.current.video, { cloud: false }));
     // Version history: at most one automatic snapshot every 10 minutes (and never when nothing changed).
     if (Date.now() - lastAutoVersion.current > 10 * 60_000) {
       lastAutoVersion.current = Date.now();
@@ -245,14 +251,38 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: (untouc
   };
 
   const requestBack = () => {
-    if (unsavedRef.current) setLeaveAsk(true);
+    if (isRecordingBusy()) setRecAsk(true);
+    else if (unsavedRef.current) setLeaveAsk(true);
     else onBack(isUntouched());
+  };
+
+  /** Back pressed while recording: store the clip in the note (then leave), or throw it away on purpose. */
+  const leaveWithRecording = async (keep: boolean) => {
+    if (!keep) {
+      discardBusyRecordings();
+      setRecAsk(false);
+      requestBack();
+      return;
+    }
+    setRecBusy(true);
+    const stored = await saveBusyRecordings();
+    if (!stored) {
+      setRecBusy(false);
+      setRecAsk(false);
+      flash(t.polish.recSaveFailed);
+      return;
+    }
+    // the clip is now a page attachment (latest.current already has it): write the note, then go
+    const ok = await save();
+    setRecBusy(false);
+    setRecAsk(false);
+    if (ok) onBack(false);
   };
 
   // Closing the tab / refreshing with unsaved changes: the browser asks first (it does not allow custom wording).
   useEffect(() => {
     const warn = (e: BeforeUnloadEvent) => {
-      if (!unsavedRef.current) return;
+      if (!unsavedRef.current && !isRecordingBusy()) return;
       e.preventDefault();
       e.returnValue = '';
     };
@@ -595,7 +625,11 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: (untouc
     const onKey = (e: KeyboardEvent) => {
       const el = e.target as HTMLElement | null;
       if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable)) return;
-      if (dialog) return;
+      if (dialog || e.isComposing) return;
+      // A box is open (save / delete / record / read-handwriting questions) or focus is inside the AI panel or a dialog:
+      // letters there are for that box, never a tool change.
+      if (leaveAsk || recAsk || confirmDeleteId || addAfter || ocr) return;
+      if (el?.closest?.('[data-no-shortcuts],[role="dialog"],[role="alertdialog"]')) return;
       const k = e.key.toLowerCase();
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       if (e.key === '?') {
@@ -885,10 +919,75 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: (untouc
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [aiOpen, id]);
 
+  // Handwriting and scanned PDF pages, read to text on request (the typed text of a page is already in page.text).
+  const extras = useRef<Record<string, PageExtra>>({});
+  const [readBusy, setReadBusy] = useState(false);
+  const [readTick, setReadTick] = useState(0); // re-render after a read finished
+  const MAX_READ_PER_RUN = 12; // each page is one AI call: keep a single press bounded
+  const pendingCount = useMemo(
+    () => pendingReads(pages, ink, extras.current).length,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [pages, ink, readTick]
+  );
+
+  const readMore = async (): Promise<void> => {
+    if (readBusy) return;
+    if (localStorage.getItem(OCR_OK_KEY) !== '1') {
+      if (!(await askConfirm(t.ai.readMoreConsent))) return;
+      try {
+        localStorage.setItem(OCR_OK_KEY, '1');
+      } catch {
+        // ask again next time
+      }
+    }
+    setReadBusy(true);
+    let failed = 0;
+    let calls = 0;
+    try {
+      for (const todo of pendingReads(latest.current.pages, inkRef.current, extras.current)) {
+        if (calls >= MAX_READ_PER_RUN) break;
+        const page = latest.current.pages.find((p) => p.id === todo.pageId);
+        if (!page) continue;
+        if (todo.hw) {
+          calls++;
+          const strokes = inkRef.current[page.id] ?? page.ink ?? [];
+          const sig = inkSignature(strokes);
+          try {
+            const png = renderStrokesPng(strokes);
+            const text = png ? (await recognizeHandwriting(png.data)).text.trim() : ''; // highlights only = nothing to read
+            extras.current[page.id] = { ...extras.current[page.id], hw: { sig, text } };
+          } catch {
+            failed++;
+          }
+        }
+        if (todo.scan && page.pdf && needsScan(page)) {
+          calls++;
+          try {
+            const doc = await loadNotePdf(page.pdf.fileId);
+            if (!doc) throw new Error('pdf file is not on this device');
+            const canvas = document.createElement('canvas');
+            await doc.renderPage(page.pdf.pageNumber, canvas, 1100);
+            const jpeg = canvas.toDataURL('image/jpeg', 0.8).split(',')[1] ?? '';
+            const text = jpeg ? (await describePicture(jpeg)).text.trim() : '';
+            extras.current[page.id] = { ...extras.current[page.id], scan: text };
+          } catch {
+            failed++;
+          }
+        }
+      }
+    } finally {
+      setReadBusy(false);
+      setReadTick((n) => n + 1);
+    }
+    flash(failed > 0 ? t.ai.readMoreFailed : t.ai.readMoreDone);
+  };
+
   const getAiSource = () => {
     const sel = active ? active.state.doc.textBetween(active.state.selection.from, active.state.selection.to, '\n') : '';
-    const pageText = latest.current.pages.find((p) => p.id === activePage)?.text ?? '';
-    const noteText = latest.current.pages.map((p) => p.text).join('\n');
+    const aiTextOf = (p: NotePage) => pageAiText(p, inkRef.current[p.id] ?? p.ink, extras.current[p.id]);
+    const cur = latest.current.pages.find((p) => p.id === activePage);
+    const pageText = cur ? aiTextOf(cur) : '';
+    const noteText = latest.current.pages.map(aiTextOf).join('\n');
     return { selectedText: sel, pageText, noteText, areaText: circleArea };
   };
 
@@ -1259,6 +1358,7 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: (untouc
                     />
                   ) : (
                   <PageEditor
+                    noteId={id}
                     page={p}
                     strokes={ink[p.id] ?? NO_STROKES}
                     placeholder={i === 0 ? t.editor.bodyPlaceholder : ''}
@@ -1567,6 +1667,18 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: (untouc
           </button>
         </div>
       )}
+      {recAsk && (
+        <UnsavedDialog
+          message={t.polish.recLeaveMsg}
+          saveLabel={t.polish.recSaveLeave}
+          discardLabel={t.polish.recDiscardLeave}
+          keepLabel={t.polish.recKeep}
+          busy={recBusy}
+          onSave={() => void leaveWithRecording(true)}
+          onDiscard={() => void leaveWithRecording(false)}
+          onKeep={() => setRecAsk(false)}
+        />
+      )}
       {leaveAsk && (
         <UnsavedDialog
           message={t.polish.unsavedMsg}
@@ -1672,6 +1784,7 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: (untouc
                 <X size={18} />
               </button>
             </div>
+            <div data-no-shortcuts className="contents">
             <NoteAiPanel
               getSource={getAiSource}
               getOtherNotes={() => otherNotes.current}
@@ -1680,8 +1793,10 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: (untouc
               onStartCircle={startCircle}
               initialOp={aiStart?.op}
               preferArea={aiStart?.area}
+              more={pendingCount > 0 || readBusy ? { count: pendingCount, busy: readBusy, onRead: readMore } : undefined}
               labels={t.ai}
             />
+            </div>
           </div>
         </div>
       )}

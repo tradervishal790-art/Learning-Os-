@@ -1,6 +1,7 @@
 import { auth, db } from './firebase';
 import { doc, getDoc, setDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
 import { serverIso } from './serverClock';
+import { dropOtherAccounts, failedPushes, failedSyncCount, maxFailedTries, recordFailure, recordSuccess } from './syncStatus';
 
 // ============================================================
 // cloudSync.ts
@@ -33,18 +34,63 @@ function currentUid(): string | null {
   return auth.currentUser?.uid ?? null;
 }
 
-/** Best-effort cloud write. Never throws — caller's localStorage write already succeeded. */
+// Test seam: lets unit tests replace the Firestore write and the signed-in user.
+let writeDoc: (uid: string, key: string, data: unknown) => Promise<void> = (uid, key, data) =>
+  setDoc(doc(db, 'users', uid, 'data', key), { value: data, updatedAt: serverIso() });
+let uidOf: () => string | null = currentUid;
+export function __setCloudSyncTestHooks(h: { write?: typeof writeDoc; uid?: () => string | null }): void {
+  if (h.write) writeDoc = h.write;
+  if (h.uid) uidOf = h.uid;
+}
+
+// Newest write per key: an older, slower write must never mark a newer one as done (or as failed).
+const pushSeq = new Map<string, number>();
+let retryTimer: ReturnType<typeof setTimeout> | undefined;
+
+/** Cloud write that never throws (the caller's local write already succeeded) — but a failure is NOT silent:
+ *  it is remembered (syncStatus.ts), shown to the student, and retried when the network is back. */
 export async function pushToCloud<T>(key: string, data: T): Promise<void> {
-  const uid = currentUid();
+  const uid = uidOf();
   if (!uid) return; // not signed in — local-only for now, nothing to sync
+  const seq = (pushSeq.get(key) ?? 0) + 1;
+  pushSeq.set(key, seq);
   try {
-    await setDoc(doc(db, 'users', uid, 'data', key), {
-      value: data,
-      updatedAt: serverIso(),
-    });
+    await writeDoc(uid, key, data);
+    if (pushSeq.get(key) === seq) recordSuccess(key);
   } catch {
-    // Network/permission issue — localStorage still has the data, don't block the UI.
+    // Network/permission issue — localStorage still has the data, so the UI never blocks; but remember it for a retry.
+    if (pushSeq.get(key) === seq) {
+      recordFailure(uid, key, data);
+      scheduleRetry();
+    }
   }
+}
+
+/** Send every change that has not reached the cloud yet. Resolves true when nothing is left to sync. */
+export async function retryFailedSyncs(): Promise<boolean> {
+  dropOtherAccounts(uidOf());
+  await Promise.all(failedPushes().map((f) => pushToCloud(f.key, f.data)));
+  return failedSyncCount() === 0;
+}
+
+function scheduleRetry(): void {
+  if (typeof window === 'undefined' || retryTimer !== undefined) return;
+  // 15 s, 30 s, 60 s … capped at 5 min, so a rejected write (permissions) does not hammer the server.
+  const wait = Math.min(300_000, 15_000 * 2 ** Math.max(0, maxFailedTries() - 1));
+  retryTimer = setTimeout(() => {
+    retryTimer = undefined;
+    void retryFailedSyncs().then((done) => {
+      if (!done) scheduleRetry();
+    });
+  }, wait);
+  (retryTimer as unknown as { unref?: () => void }).unref?.(); // never keeps a test / server process alive
+}
+
+if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+  // The network came back: try right away instead of waiting for the timer.
+  window.addEventListener('online', () => {
+    if (failedSyncCount() > 0) void retryFailedSyncs();
+  });
 }
 
 /** Like pushToCloud, but tells the caller whether the write really landed

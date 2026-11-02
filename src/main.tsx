@@ -9,6 +9,7 @@ import { LanguageProvider } from './i18n/LanguageContext.tsx'
 import { AuthPromptProvider } from './AuthPrompt.tsx'
 import CacheWarmup from './cacheWarmup.tsx'
 import { AppDialogHost } from './appDialogs.tsx'
+import SyncIssueChip from './SyncIssueChip'
 import { syncServerClock } from './serverClock.ts'
 
 // Live Test join page is public (participants have no account) — it must
@@ -72,6 +73,8 @@ createRoot(document.getElementById('root')!).render(
             <Root />
             {/* In-app confirm / prompt boxes (replace the browser's native ones). */}
             <AppDialogHost />
+            {/* Honest notice when a cloud write failed (data is safe on this device, not on the account yet). */}
+            <SyncIssueChip />
           </AuthPromptProvider>
         </LanguageProvider>
       </BrowserRouter>

@@ -3,11 +3,15 @@
 //   denied, unsupported, interrupted, error, saveInterrupted, bookmarksCount
 import { AlertTriangle, Bookmark, Mic, Pause, Play, Square, Trash2, X } from 'lucide-react';
 import { useEffect, useRef } from 'react';
-import { MAX_RECORDING_SEC, useAudioRecorder } from './useAudioRecorder';
+import { MAX_RECORDING_SEC, useAudioRecorder, type RecordingResult } from './useAudioRecorder';
+import { registerRecorder } from './recordingGuard';
 
 interface Props {
-  onDone(result: { blob: Blob; mime: string; durationSec: number; bookmarks: number[]; limited?: boolean }): void;
+  /** Return false when the clip could not be stored, so it is kept for another try. */
+  onDone(result: { blob: Blob; mime: string; durationSec: number; bookmarks: number[]; limited?: boolean }): void | boolean | Promise<void | boolean>;
   onCancel?(): void;
+  /** The recorder was torn down (leaving the note, another tab…) while it still held an unsaved clip. */
+  onOrphan?(result: RecordingResult): void;
   labels: Record<string, string>;
 }
 
@@ -19,17 +23,38 @@ const formatTime = (sec: number): string => {
 const base = 'inline-flex min-h-[56px] min-w-[56px] items-center justify-center gap-2 rounded-full px-6 text-base font-medium transition active:scale-95 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-500 dark:focus-visible:ring-offset-slate-900';
 const small = 'inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full px-4 text-sm font-medium transition active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500';
 
-export default function AudioRecorder({ onDone, onCancel, labels }: Props) {
-  const rec = useAudioRecorder();
+export default function AudioRecorder({ onDone, onCancel, onOrphan, labels }: Props) {
+  const saved = useRef(false);
+  const rec = useAudioRecorder({ onOrphan: (r) => { if (!saved.current) onOrphan?.(r); } });
   const t = (key: string, fallback: string): string => labels[key] ?? fallback;
   const { state } = rec;
   const live = state === 'recording' || state === 'paused';
 
   const limited = useRef(false);
-  const finishNow = async (): Promise<void> => {
+  /** Stops and stores the clip. Resolves true when it is safely stored (or there was nothing to store). */
+  const finishNow = async (): Promise<boolean> => {
     const result = await rec.stop();
-    if (result) onDone(limited.current ? { ...result, limited: true } : result);
+    if (!result) return true;
+    const ok = (await onDone(limited.current ? { ...result, limited: true } : result)) !== false;
+    saved.current = ok;
+    return ok;
   };
+
+  // Let the note editor ask "is a recording running?" before Back / closing the tab.
+  const live0 = useRef({ state, finishNow, discard: rec.discard });
+  live0.current = { state, finishNow, discard: rec.discard };
+  useEffect(
+    () =>
+      registerRecorder({
+        busy: () => {
+          const st = live0.current.state;
+          return st === 'recording' || st === 'paused' || (st === 'stopped' && !saved.current);
+        },
+        saveAndStop: () => live0.current.finishNow(),
+        discard: () => live0.current.discard(),
+      }),
+    []
+  );
   // A very long recording is stopped and saved by itself instead of filling the device's memory.
   useEffect(() => {
     if (live && rec.elapsedSec >= MAX_RECORDING_SEC && !limited.current) {

@@ -27,7 +27,7 @@ import type { LucideIcon } from 'lucide-react';
 import {
   AlertTriangle, ArrowLeftRight, BookOpen, Check, ClipboardCheck, Copy, Eye, EyeOff, FileText,
   Languages, Layers, Lightbulb, List, ListChecks, Loader2, MessageCircleQuestion, MessageSquareText,
-  Network, Pencil, PenTool, Plus, RefreshCw, Search, ShieldCheck, Sparkles, SpellCheck, Undo2, X, Minus,
+  Network, Pencil, PenTool, Plus, RefreshCw, ScanText, Search, ShieldCheck, Sparkles, SpellCheck, Undo2, X, Minus,
 } from 'lucide-react';
 import { NoteAiError, runNoteAi } from './noteAiClient';
 import type {
@@ -57,6 +57,8 @@ interface Props {
   /** Reopen with this tool selected / the circled area as the scope (after circling). */
   initialOp?: NoteAiOp;
   preferArea?: boolean;
+  /** Handwriting / scanned PDF pages the AI has not read yet. Pressing the button reads them (after consent), then the sources refresh. */
+  more?: { count: number; busy: boolean; onRead(): Promise<void> };
   labels: Record<string, string>;
 }
 
@@ -999,6 +1001,19 @@ export default function NoteAiPanel(props: Props) {
         <button type="button" onClick={() => onStartCircle(op)} className={`${BTN_GHOST} -mt-2 w-full`}>
           <PenTool className="h-4 w-4" aria-hidden />
           {t('circleStart')}
+        </button>
+      )}
+
+      {/* Handwriting and scanned PDF pages are only text for the AI after they are read */}
+      {props.more && (
+        <button
+          type="button"
+          disabled={props.more.busy}
+          onClick={() => void props.more?.onRead().then(refresh)}
+          className={`${BTN_GHOST} -mt-2 w-full disabled:opacity-60`}
+        >
+          {props.more.busy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <ScanText className="h-4 w-4" aria-hidden />}
+          {props.more.busy ? t('readMoreBusy') : t('readMore').replace('{0}', String(props.more.count))}
         </button>
       )}
 

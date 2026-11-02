@@ -2,7 +2,8 @@
 // noteExportWord.ts — "Word (.docx)" export (Part 10). Loaded only when the student picks Word,
 // so the docx library never weighs on the notes screen.
 // Headings, bold / italic / underline / strike, lists, tasks, tables, links, highlights, text colour.
-// Handwriting is added as one picture per page, below that page's text.
+// Handwriting and photos sit ON the page where they were put in the editor: each note page is its own Word page
+// and the pictures are anchored to the page (not to the text), so they keep their place whatever the text does.
 // Photos are embedded when available locally. PDF pages and audio recordings remain labelled references.
 // ============================================================
 import {
@@ -12,22 +13,25 @@ import {
   ExternalHyperlink,
   HeadingLevel,
   ImageRun,
+  HorizontalPositionRelativeFrom,
   LevelFormat,
+  LineRuleType,
   Packer,
-  PageBreak,
   Paragraph,
   ShadingType,
   Table,
   TableCell,
   TableRow,
   TextRun,
+  TextWrappingType,
+  VerticalPositionRelativeFrom,
   WidthType,
   type IParagraphOptions,
   type ParagraphChild,
 } from 'docx';
 import { renderInk } from './inkSvg';
 import { getImage } from './attachStore';
-import { pageToHtml, type InkStroke, type NotePage } from './notebookStore';
+import { pageToHtml, type InkStroke, type NotePage, type PageAttachment } from './notebookStore';
 
 const HEX6 = /^#[0-9a-fA-F]{6}$/;
 /* =========================================================================
@@ -425,8 +429,54 @@ async function canvasToPng(w: number, h: number, draw: (ctx: Ctx2D) => void): Pr
   return new Uint8Array(await blob.arrayBuffer());
 }
 
-async function inkPng(strokes: InkStroke[]): Promise<{ data: Uint8Array; width: number; height: number } | null> {
-  const r = renderInk(strokes, false, 'both');
+/* =========================================================================
+ * Page geometry. The editor sheet is 1000 "page units" wide = one A4 width (210 mm).
+ * ========================================================================= */
+
+const UNIT_EMU = 7560; // 1 page unit = 0.21 mm = 7560 EMU
+const UNIT_PX = 0.7937; // … at 96 dpi (docx image sizes are in pixels)
+const UNIT_TWIPS = 11.906; // … in twips
+const A4_WIDTH_TWIPS = 11906;
+const MAX_PAGE_TWIPS = 31680; // Word's largest page height (22 in)
+const PAGE_MARGIN_TWIPS = 340; // ≈ 6 mm, close to where the editor starts the text (≈ 4 mm)
+
+export interface WordPageLayout {
+  /** Page height in page units (A4 = 1414, taller when handwriting / a photo goes lower). */
+  heightUnits: number;
+  heightTwips: number;
+  /** < 1 only when the content is taller than Word's biggest page: everything is scaled down together. */
+  scale: number;
+}
+
+/** Word page size for a note page whose lowest content reaches `extentUnits`. */
+export function wordPageLayout(extentUnits: number): WordPageLayout {
+  const wanted = Math.max(1414, Math.ceil(Number.isFinite(extentUnits) ? extentUnits : 0));
+  const maxUnits = Math.floor(MAX_PAGE_TWIPS / UNIT_TWIPS);
+  const scale = wanted > maxUnits ? maxUnits / wanted : 1;
+  const heightUnits = Math.round(wanted * scale);
+  return { heightUnits, heightTwips: Math.round(heightUnits * UNIT_TWIPS), scale };
+}
+
+/** A picture anchored to the PAGE at editor coordinates (page units). */
+export function pageAnchor(x: number, y: number, w: number, h: number, scale = 1): {
+  offsetX: number; offsetY: number; widthPx: number; heightPx: number;
+} {
+  return {
+    offsetX: Math.max(0, Math.round(x * scale * UNIT_EMU)),
+    offsetY: Math.max(0, Math.round(y * scale * UNIT_EMU)),
+    widthPx: Math.max(1, Math.round(w * scale * UNIT_PX)),
+    heightPx: Math.max(1, Math.round(h * scale * UNIT_PX)),
+  };
+}
+
+/** Same test as the editor: a photo with a place and size lives ON the page. */
+const isFloatingPhoto = (a: PageAttachment): boolean => a.kind === 'image' && a.w !== undefined && a.x !== undefined && a.y !== undefined && (a.w ?? 0) > 0;
+
+type InkLayerName = 'hl' | 'ink';
+
+/** One layer of the page's handwriting as a PNG covering the whole sheet width (1000 units) and `heightUnits` tall. */
+async function inkLayerPng(strokes: InkStroke[], layer: InkLayerName): Promise<{ data: Uint8Array; heightUnits: number } | null> {
+  const r = renderInk(strokes, false, layer);
   if (r.shapes.length === 0) return null;
   const scale = Math.min(1.2, 8000 / r.height);
   const w = Math.max(1, Math.round(1000 * scale));
@@ -451,13 +501,7 @@ async function inkPng(strokes: InkStroke[]): Promise<{ data: Uint8Array; width: 
     }
     ctx.globalAlpha = 1;
   });
-  let dispW = 600; // px at 96 dpi, fits A4 with 1" margins
-  let dispH = (dispW * r.height) / 1000;
-  if (dispH > 900) {
-    dispH = 900;
-    dispW = (900 * 1000) / r.height;
-  }
-  return { data, width: Math.round(dispW), height: Math.round(dispH) };
+  return { data, heightUnits: r.height };
 }
 
 export interface DocxLabels {
@@ -472,6 +516,56 @@ function fill(template: string, ...args: (string | number)[]): string {
   return args.reduce<string>((acc, a, i) => acc.split(`{${i}}`).join(String(a)), template);
 }
 
+/** A near-zero-height paragraph that carries page-anchored pictures (an anchor must live inside a paragraph). */
+function anchorParagraph(children: ImageRun[]): Paragraph {
+  return new Paragraph({ spacing: { before: 0, after: 0, line: 20, lineRule: LineRuleType.EXACT }, children });
+}
+
+function pageImage(
+  data: Uint8Array,
+  box: { x: number; y: number; w: number; h: number },
+  scale: number,
+  z: { behind: boolean; index: number },
+  name: string
+): ImageRun {
+  const a = pageAnchor(box.x, box.y, box.w, box.h, scale);
+  return new ImageRun({
+    type: 'png',
+    data,
+    transformation: { width: a.widthPx, height: a.heightPx },
+    altText: { name, description: name, title: name },
+    floating: {
+      horizontalPosition: { relative: HorizontalPositionRelativeFrom.PAGE, offset: a.offsetX },
+      verticalPosition: { relative: VerticalPositionRelativeFrom.PAGE, offset: a.offsetY },
+      behindDocument: z.behind,
+      allowOverlap: true,
+      lockAnchor: true,
+      zIndex: z.index,
+      wrap: { type: TextWrappingType.NONE },
+    },
+  });
+}
+
+/** Embed a stored photo as PNG (readers handle PNG/JPEG reliably; GIF/BMP/original MIME can fail). Null when the file is not on this device. */
+async function photoPng(id: string, maxSide: number): Promise<{ data: Uint8Array; width: number; height: number } | null> {
+  try {
+    const blob = await getImage(id);
+    if (!blob || typeof createImageBitmap !== 'function') return null;
+    const bitmap = await createImageBitmap(blob);
+    try {
+      const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
+      const width = Math.max(1, Math.round(bitmap.width * scale));
+      const height = Math.max(1, Math.round(bitmap.height * scale));
+      const data = await canvasToPng(width, height, (ctx) => ctx.drawImage(bitmap, 0, 0, width, height));
+      return { data, width, height };
+    } finally {
+      bitmap.close();
+    }
+  } catch {
+    return null;
+  }
+}
+
 /** Word export (needs docx >= 9). 'auto' ink is black on the white Word page. */
 export async function exportDocx(
   title: string,
@@ -480,62 +574,84 @@ export async function exportDocx(
 ): Promise<Blob> {
   const L = { pdfPage: 'PDF page {0} ({1})', photo: 'Photo: {0}', recording: 'Recording: {0}', untitled: 'Untitled', ...(o.labels ?? {}) };
   const state: DocxState = { olInstance: 0 };
-  const children: DocxBlock[] = [new Paragraph({ heading: HeadingLevel.TITLE, children: [new TextRun(title.trim() || L.untitled)] })];
+  const titlePara = new Paragraph({ heading: HeadingLevel.TITLE, children: [new TextRun(title.trim() || L.untitled)] });
   const note = (text: string): Paragraph =>
     new Paragraph({ spacing: { after: 100 }, children: [new TextRun({ text, italics: true, color: '6B7280' })] });
 
+  const sections: { properties?: { page: { size: { width: number; height: number }; margin: { top: number; right: number; bottom: number; left: number; header: number; footer: number } } }; children: DocxBlock[] }[] = [];
+
   for (let i = 0; i < pages.length; i++) {
     const page = pages[i];
-    if (i > 0) children.push(new Paragraph({ children: [new PageBreak()] }));
+    const children: DocxBlock[] = [];
+    const anchored: ImageRun[] = [];
+    let extent = 0;
+
+    // ---- pictures that live ON the page: floating photos and handwriting, at their editor position ----
+    const floating = (page.attachments ?? []).filter(isFloatingPhoto);
+    const placed: { a: PageAttachment; png: { data: Uint8Array; width: number; height: number }; h: number }[] = [];
+    const missing: PageAttachment[] = [];
+    for (const a of floating) {
+      const png = await photoPng(a.id, 1400);
+      if (!png) { missing.push(a); continue; }
+      const h = (a.w ?? 0) * (a.ar ?? png.height / png.width);
+      placed.push({ a, png, h });
+      extent = Math.max(extent, (a.y ?? 0) + h);
+    }
+    const inkOn = o.includeInk && !!page.ink && page.ink.length > 0;
+    const hl = inkOn ? await inkLayerPng(page.ink as InkStroke[], 'hl') : null;
+    const pen = inkOn ? await inkLayerPng(page.ink as InkStroke[], 'ink') : null;
+    if (hl) extent = Math.max(extent, hl.heightUnits);
+    if (pen) extent = Math.max(extent, pen.heightUnits);
+    const layout = placed.length > 0 || hl || pen ? wordPageLayout(extent) : null;
+    if (layout) {
+      // order = stacking: photos at the back, highlighter over them (still behind the text), pen in front of the text
+      placed.forEach(({ a, png, h }, n) =>
+        anchored.push(pageImage(png.data, { x: a.x ?? 0, y: a.y ?? 0, w: a.w ?? 0, h }, layout.scale, { behind: true, index: 1 + n }, a.name || a.id)));
+      if (hl) anchored.push(pageImage(hl.data, { x: 0, y: 0, w: 1000, h: hl.heightUnits }, layout.scale, { behind: true, index: 100 }, 'Highlighter'));
+      if (pen) anchored.push(pageImage(pen.data, { x: 0, y: 0, w: 1000, h: pen.heightUnits }, layout.scale, { behind: false, index: 200 }, 'Handwriting'));
+      children.push(anchorParagraph(anchored));
+    }
+
+    if (i === 0) children.push(titlePara);
     if (page.pdf) children.push(note(fill(L.pdfPage, page.pdf.pageNumber, page.pdf.name)));
     blocksFrom(parseHtml(pageToHtml(page)).body.childNodes, { quote: false }, state, children);
+
+    // photos that could not be embedded still get an explicit label, so nothing vanishes silently
+    for (const a of missing) children.push(note(fill(L.photo, a.name || a.id)));
+    // older photos (no place on the page) and recordings stay in the text flow
     for (const a of page.attachments ?? []) {
+      if (isFloatingPhoto(a)) continue;
       const label = a.name || a.id;
       if (a.kind === 'image') {
-        // The attachment blob is local, while its small reference is in the note.
-        // Embed it in the Word export when available; never silently omit a missing file.
-        let embedded = false;
-        try {
-          const blob = await getImage(a.id);
-          if (blob && typeof createImageBitmap === 'function') {
-            // Normalize supported browser image formats to PNG: DOCX readers reliably support
-            // PNG/JPEG, while GIF/BMP and the original MIME type can fail typechecking or export.
-            const bitmap = await createImageBitmap(blob);
-            try {
-              const scale = Math.min(1, 600 / Math.max(bitmap.width, bitmap.height));
-              const width = Math.max(1, Math.round(bitmap.width * scale));
-              const height = Math.max(1, Math.round(bitmap.height * scale));
-              const data = await canvasToPng(width, height, (ctx) => ctx.drawImage(bitmap, 0, 0, width, height));
-              children.push(new Paragraph({
-                alignment: AlignmentType.CENTER,
-                children: [new ImageRun({ type: 'png', data, transformation: { width, height } })],
-              }));
-              embedded = true;
-            } finally {
-              bitmap.close();
-            }
-          }
-        } catch {
-          // Fall through to an explicit label so the user knows the image wasn't embedded.
-        }
-        if (!embedded) children.push(note(fill(L.photo, label)));
+        const png = await photoPng(a.id, 600);
+        if (png) {
+          children.push(new Paragraph({
+            alignment: AlignmentType.CENTER,
+            children: [new ImageRun({ type: 'png', data: png.data, transformation: { width: png.width, height: png.height } })],
+          }));
+        } else children.push(note(fill(L.photo, label)));
       } else {
         // DOCX cannot preserve a browser-local audio recording as a playable note attachment.
         children.push(note(fill(L.recording, label)));
       }
     }
-    if (o.includeInk && page.ink && page.ink.length > 0) {
-      const img = await inkPng(page.ink);
-      if (img) {
-        children.push(
-          new Paragraph({
-            alignment: AlignmentType.CENTER,
-            children: [new ImageRun({ type: 'png', data: img.data, transformation: { width: img.width, height: img.height } })],
-          })
-        );
-      }
-    }
+
+    sections.push({
+      ...(layout
+        ? {
+            properties: {
+              page: {
+                size: { width: A4_WIDTH_TWIPS, height: layout.heightTwips },
+                margin: { top: PAGE_MARGIN_TWIPS, right: PAGE_MARGIN_TWIPS, bottom: PAGE_MARGIN_TWIPS, left: PAGE_MARGIN_TWIPS, header: 0, footer: 0 },
+              },
+            },
+          }
+        : {}),
+      children,
+    });
   }
+  if (sections.length === 0) sections.push({ children: [titlePara] });
+
   const doc = new DocxDocument({
     creator: 'Learning OS',
     title: title.trim() || L.untitled,
@@ -553,7 +669,7 @@ export async function exportDocx(
         },
       ],
     },
-    sections: [{ children }],
+    sections,
   });
   return Packer.toBlob(doc);
 }

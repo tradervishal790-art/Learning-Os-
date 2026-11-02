@@ -47,7 +47,7 @@ export function pickMime(isSupported: (m: string) => boolean): string | null {
 const round1 = (n: number): number => Math.round(n * 10) / 10;
 const errName = (e: unknown): string => (e instanceof Error ? e.name : typeof e === 'object' && e !== null && 'name' in e ? String((e as { name: unknown }).name) : '');
 
-export function useAudioRecorder(): {
+export function useAudioRecorder(opts: { onOrphan?: (r: RecordingResult) => void } = {}): {
   state: RecorderState; elapsedSec: number; bookmarks: number[]; interrupted: boolean; error: string | null;
   start(): Promise<void>; pause(): void; resume(): void; stop(): Promise<RecordingResult | null>;
   addBookmark(): void; discard(): void;
@@ -73,6 +73,9 @@ export function useAudioRecorder(): {
   const waitersRef = useRef<Array<(r: RecordingResult | null) => void>>([]);
   const tokenRef = useRef(0);
   const mountedRef = useRef(true);
+  // Called when the recorder is torn down while it still holds audio nobody has saved (see recordingGuard.ts).
+  const orphanRef = useRef(opts.onOrphan);
+  orphanRef.current = opts.onOrphan;
 
   const setState = useCallback((s: RecorderState) => {
     stateRef.current = s;
@@ -292,13 +295,29 @@ export function useAudioRecorder(): {
       mountedRef.current = false;
       tokenRef.current++;
       const rec = recorderRef.current;
+      const orphan = orphanRef.current;
+      // Still recording when torn down: do NOT throw the audio away. Let the recorder deliver its last chunk, then hand the clip over.
+      if (rec && orphan && !finishedRef.current && rec.state !== 'inactive') {
+        rec.onerror = null;
+        rec.onstop = () => {
+          finish(true);
+          const r = resultRef.current;
+          if (r) orphan(r);
+        };
+        try { rec.stop(); } catch { finish(true); const r = resultRef.current; if (r) orphan(r); }
+        clearTimer();
+        resolveWaiters(null);
+        return;
+      }
+      // Already stopped (e.g. interrupted) but never saved.
+      if (orphan && finishedRef.current && resultRef.current) orphan(resultRef.current);
       if (rec) { detach(rec); if (rec.state !== 'inactive') { try { rec.stop(); } catch { /* ignore */ } } }
       recorderRef.current = null;
       releaseStream();
       clearTimer();
       resolveWaiters(null);
     };
-  }, [clearTimer, releaseStream]);
+  }, [clearTimer, finish, releaseStream]);
 
   return { state, elapsedSec, bookmarks, interrupted, error, start, pause, resume, stop, addBookmark, discard };
 }

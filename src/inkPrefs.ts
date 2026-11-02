@@ -35,8 +35,11 @@ export interface InkPrefs {
   shapeSnap: boolean;
   /** Laser pointer dot / trail colour. */
   laserColor: string;
-  /** 'dot' = glowing pointer; 'ink' = your pen colour, vanishes after laserDelay seconds. */
+  /** 'dot' = glowing pointer; 'ink' = fading handwriting, vanishes after laserDelay seconds. */
   laserStyle: 'dot' | 'ink';
+  /** Colour and thickness of the fading ink. Their own settings: choosing them never changes the pen. */
+  laserInkColor: string;
+  laserInkWidth: number;
   laserDelay: number;
   favorites: PenFavorite[];
   recentColors: string[];
@@ -58,6 +61,8 @@ export const DEFAULT_PREFS: InkPrefs = {
   shapeSnap: false,
   laserColor: '#ef4444',
   laserStyle: 'dot',
+  laserInkColor: 'auto',
+  laserInkWidth: 2,
   laserDelay: 3,
   favorites: [],
   recentColors: [],
@@ -115,6 +120,9 @@ export function normalizeInkPrefs(value: unknown): InkPrefs {
     shapeSnap: typeof raw.shapeSnap === 'boolean' ? raw.shapeSnap : DEFAULT_PREFS.shapeSnap,
     laserColor: typeof raw.laserColor === 'string' ? raw.laserColor : DEFAULT_PREFS.laserColor,
     laserStyle: raw.laserStyle === 'ink' ? 'ink' : 'dot',
+    // saved before these existed: start from the pen the student was already using (the old behaviour), then they are independent
+    laserInkColor: typeof raw.laserInkColor === 'string' ? raw.laserInkColor : typeof raw.color === 'string' ? raw.color : DEFAULT_PREFS.laserInkColor,
+    laserInkWidth: bounded(raw.laserInkWidth ?? raw.width, DEFAULT_PREFS.laserInkWidth, 0.5, 20),
     laserDelay: bounded(raw.laserDelay, DEFAULT_PREFS.laserDelay, 1, 10),
     favorites,
     recentColors,

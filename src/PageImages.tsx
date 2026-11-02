@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { RotateCw, Trash2 } from 'lucide-react';
+import { Layers, RotateCw, Trash2 } from 'lucide-react';
 import type { PageAttachment } from './notebookStore';
 import { PAGE_UNITS } from './inkEngine';
 import { deleteImage, getImage, putImage } from './attachStore';
@@ -126,6 +126,15 @@ export default function PageImages({
             }}
             onPointerMove={onMove}
             onPointerUp={onUp}
+            onLayer={() =>
+              onChange(
+                latest.current.map((x) => {
+                  if (x.id !== a.id) return x;
+                  const { back: _back, ...rest } = x; // eslint-disable-line @typescript-eslint/no-unused-vars
+                  return x.back ? rest : { ...rest, back: true };
+                })
+              )
+            }
             onRatio={(ar) => {
               // A rotated photo has a new height÷width: remember it so the page grows to fit.
               if (a.ar === undefined || Math.abs(a.ar - ar) > 0.01) patch(a.id, { ar: Math.round(ar * 1000) / 1000 });
@@ -151,6 +160,7 @@ function FloatingImage({
   onStartSize,
   onPointerMove,
   onPointerUp,
+  onLayer,
   onRatio,
   onRemove,
 }: {
@@ -166,6 +176,8 @@ function FloatingImage({
   onStartSize: (e: React.PointerEvent<HTMLDivElement>) => void;
   onPointerMove: (e: React.PointerEvent) => void;
   onPointerUp: () => void;
+  /** Flip between "in front of the text" and "behind the text". */
+  onLayer: () => void;
   onRatio: (ar: number) => void;
   onRemove: () => void;
 }) {
@@ -214,7 +226,26 @@ function FloatingImage({
     }
   };
 
+  const back = !!a.back;
+  const boxH = w * scale * (a.ar ?? 0.75);
+  const onImgLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const im = e.currentTarget;
+    if (im.naturalWidth > 0) onRatio(im.naturalHeight / im.naturalWidth);
+  };
   return (
+    <>
+    {/* Behind the text: the picture sits UNDER the typed text and cannot be hit; the figure on top only carries the grab badge and the handles. */}
+    {back && url && !missing && (
+      <img
+        src={url}
+        alt=""
+        aria-hidden
+        draggable={false}
+        onLoad={onImgLoad}
+        className="pointer-events-none absolute z-[5] m-0 block h-auto select-none rounded-sm bg-white shadow-sm"
+        style={{ left: x * scale, top: y * scale, width: w * scale }}
+      />
+    )}
     <figure
       data-attach-id={a.id}
       onPointerDown={(e) => {
@@ -233,26 +264,37 @@ function FloatingImage({
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
-      className="absolute z-[15] m-0"
+      className={`absolute z-[15] m-0 ${back ? 'pointer-events-none' : ''}`}
       style={{
         left: x * scale,
         top: y * scale,
         width: w * scale,
+        ...(back ? { height: boxH } : {}),
         touchAction: selected ? 'none' : 'auto',
         cursor: selected ? 'move' : 'pointer',
       }}
     >
       {missing ? (
         <p className="rounded-lg border border-dashed border-gray-300 dark:border-white/20 bg-white/80 dark:bg-black/40 p-3 text-center text-xs text-gray-500 dark:text-white/50">{t('notHere')}</p>
+      ) : back ? (
+        // the picture itself is the sibling above; this badge is the only part you can tap to select a photo that sits behind the text
+        <>
+          <button
+            type="button"
+            aria-label={t('behindBadge')}
+            title={t('behindBadge')}
+            className="pointer-events-auto absolute left-1 top-1 flex h-6 w-6 items-center justify-center rounded-full border border-blue-400 bg-white/90 text-blue-600 shadow"
+          >
+            <Layers size={13} />
+          </button>
+          {selected && <div className="pointer-events-none absolute inset-0 rounded-sm border-2 border-dashed border-blue-500" />}
+        </>
       ) : url ? (
         <img
           src={url}
           alt={t('imageAlt')}
           draggable={false}
-          onLoad={(e) => {
-            const im = e.currentTarget;
-            if (im.naturalWidth > 0) onRatio(im.naturalHeight / im.naturalWidth);
-          }}
+          onLoad={onImgLoad}
           className="block h-auto w-full select-none rounded-sm bg-white shadow-sm"
         />
       ) : (
@@ -267,10 +309,20 @@ function FloatingImage({
             onPointerMove={onPointerMove}
             onPointerUp={onPointerUp}
             onPointerCancel={onPointerUp}
-            className="absolute -bottom-2.5 -right-2.5 h-5 w-5 cursor-nwse-resize rounded-full border-2 border-blue-500 bg-white"
+            className="pointer-events-auto absolute -bottom-2.5 -right-2.5 h-5 w-5 cursor-nwse-resize rounded-full border-2 border-blue-500 bg-white"
             style={{ touchAction: 'none' }}
           />
-          {tools && <div data-img-ui className="absolute left-0 top-full z-10 mt-2 flex w-max max-w-[90vw] flex-wrap items-center gap-1.5 rounded-xl bg-white/95 dark:bg-gray-900/95 p-1.5 shadow-lg" style={{ fontSize: 12 }}>
+          <button
+            type="button"
+            data-img-ui
+            onClick={onLayer}
+            aria-label={back ? t('bringFront') : t('sendBehind')}
+            title={back ? t('bringFront') : t('sendBehind')}
+            className="pointer-events-auto absolute -right-2.5 -top-2.5 flex h-5 w-5 items-center justify-center rounded-full border-2 border-blue-500 bg-white text-blue-600"
+          >
+            <Layers size={11} />
+          </button>
+          {tools && <div data-img-ui className="pointer-events-auto absolute left-0 top-full z-10 mt-2 flex w-max max-w-[90vw] flex-wrap items-center gap-1.5 rounded-xl bg-white/95 dark:bg-gray-900/95 p-1.5 shadow-lg" style={{ fontSize: 12 }}>
             {!missing && (
               <>
                 <button type="button" className={BTN} disabled={working} onClick={() => void edit((b) => cropRotateFlip(b, { rotate: 90 }))}>
@@ -299,5 +351,6 @@ function FloatingImage({
         </>
       )}
     </figure>
+    </>
   );
 }

@@ -157,6 +157,7 @@ function parseAttachments(raw: unknown, where: string, w: Warnings): PageAttachm
       item.y = Math.min(1414, Math.max(0, py));
       item.w = Math.min(1000, Math.max(1, pw));
       if (par !== undefined && par > 0) item.ar = Math.min(10, Math.max(0.05, par));
+      if (a.back === true) item.back = true;
     }
     out.push(item);
   }

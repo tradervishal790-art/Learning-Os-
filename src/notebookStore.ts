@@ -119,6 +119,8 @@ export interface PageAttachment {
   y?: number;
   w?: number;
   ar?: number;
+  /** The photo sits BEHIND the typed text (so it never covers it). Missing = in front, as photos always were. */
+  back?: boolean;
 }
 
 /** Notes made before the rich editor only have `text` — show it as paragraphs. */

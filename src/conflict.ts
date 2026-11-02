@@ -49,7 +49,7 @@ function signature(p: NotePage): string {
     p.paper ?? '',
     p.bookmarked === true,
     (p.ink ?? []).map(strokeFingerprint),
-    (p.attachments ?? []).map((a) => [a.id, a.kind, a.x ?? null, a.y ?? null, a.w ?? null, a.ar ?? null]),
+    (p.attachments ?? []).map((a) => [a.id, a.kind, a.x ?? null, a.y ?? null, a.w ?? null, a.ar ?? null, a.back === true]),
     p.pdf ? [p.pdf.fileId, p.pdf.pageNumber] : null,
   ]);
 }

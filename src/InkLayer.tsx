@@ -238,7 +238,7 @@ export default function InkLayer({
     if (!c) return;
     const ink = prefs.laserStyle === 'ink';
     const hold = Math.max(0.5, prefs.laserDelay) * 1000; // how long a finished mark stays before it fades
-    const col = ink ? resolveColor(prefs.color, dark) : prefs.laserColor;
+    const col = ink ? resolveColor(prefs.laserInkColor, dark) : prefs.laserColor;
     const now = performance.now();
     g.strokes = g.strokes.filter((st) => st.end === null || now - st.end < hold + LASER_FADE_MS);
     const ctx = c.getContext('2d')!;
@@ -271,7 +271,7 @@ export default function InkLayer({
         ctx.globalAlpha = alpha;
         ctx.strokeStyle = col;
         ctx.shadowBlur = 0;
-        ctx.lineWidth = Math.max(1, prefs.width * 1.2);
+        ctx.lineWidth = Math.max(1, prefs.laserInkWidth * 1.2);
         path();
         ctx.stroke();
       } else {
