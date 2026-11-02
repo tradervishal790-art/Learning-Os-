@@ -21,7 +21,9 @@ async function precacheAll() {
     await Promise.all(
       files.map(async (f) => {
         try {
-          if (await cache.match(f)) return;
+          const cached = await cache.match(f);
+          if (cached && isValidAssetResponse(cached)) return;
+          if (cached) await cache.delete(f);
           const r = await fetch(f);
           if (isValidAssetResponse(r)) await cache.put(f, r);
         } catch (e) {}
