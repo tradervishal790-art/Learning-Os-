@@ -16,6 +16,11 @@ export interface PaperPrint {
   overlay: string;
   /** Paper is dark → text and automatic ink must be light. */
   dark: boolean;
+  /** The paper colour (CSS), or '' for the default white. */
+  fill: string;
+  /** The raw SVG parts (patterns / lines), for building a standalone picture of the paper at any height (Word export). */
+  defs: string;
+  body: string;
 }
 
 const SW = 1.5; // line thickness, page units (a touch above the on-screen hairline so thin lines survive printing)
@@ -97,5 +102,13 @@ export function paperPrint(template: PageTemplateId, paper: string | undefined):
   const overlay = body
     ? `<svg class="paper-extra" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 ${r(1000 * PAGE_RATIO)}" preserveAspectRatio="xMinYMin meet" aria-hidden="true"><defs>${defs}</defs>${body}</svg>`
     : '';
-  return { style: fill ? `background-color:${fill}` : '', overlay, dark };
+  return { style: fill ? `background-color:${fill}` : '', overlay, dark, fill: fill ?? '', defs, body };
+}
+
+/** The paper as a standalone SVG, 1000 units wide and `heightUnits` tall (patterns run the full height). */
+export function paperSvg(p: PaperPrint, heightUnits: number, o: { background?: boolean } = {}): string {
+  const h = Math.max(1, Math.round(heightUnits));
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 ${h}" width="1000" height="${h}">`
+    + (o.background !== false && p.fill ? `<rect width="1000" height="${h}" fill="${p.fill}"/>` : '')
+    + `<defs>${p.defs}</defs>${p.body}</svg>`;
 }

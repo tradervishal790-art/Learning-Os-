@@ -18,6 +18,12 @@ export interface PenHighlight {
   pageId: string;
   pageNumber: number;
   box: Box;
+  /** The highlighter strokes of this mark (to find the words under them). */
+  strokes: InkStroke[];
+  /** Typed words under the mark, once measured (RevisionSheet fills it in); undefined = none found / not measured. */
+  text?: string;
+  /** How many pen strokes (handwriting) lie under the mark. */
+  under: number;
   /** SVG picture of the marked spot (the mark + handwriting under it), on a transparent background. */
   svg: string;
 }
@@ -67,7 +73,7 @@ export function extractPenHighlights(pages: readonly { id: string; ink?: InkStro
         const under = pens.filter((s) => touches(box, boundsOf([s]) as Box));
         const all = boundsOf([...group, ...under]) as Box;
         const crop = grow({ x0: Math.min(box.x0, all.x0), y0: Math.min(box.y0, all.y0), x1: Math.max(box.x1, all.x1), y1: Math.max(box.y1, all.y1) }, 0);
-        pageCards.push({ key: '', kind, color: group[0].color, pageId: page.id, pageNumber: pi + 1, box: crop, svg: pictureOf(crop, group, under) });
+        pageCards.push({ key: '', kind, color: group[0].color, pageId: page.id, pageNumber: pi + 1, box: crop, strokes: group, under: under.length, svg: pictureOf(crop, group, under) });
       }
     }
     pageCards.sort((a, b) => a.box.y0 - b.box.y0 || a.box.x0 - b.box.x0);

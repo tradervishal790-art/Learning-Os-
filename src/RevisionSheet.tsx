@@ -6,6 +6,7 @@ import { getIndex, loadNoteContent, pageToHtml } from './notebookStore';
 import { addMistake, getMistakes, removeMistake, type Mistake } from './mistakeStore';
 import { extractHighlights, itemsToText, type HighlightItem, type HighlightKind } from './revisionExtract';
 import { extractPenHighlights, type PenHighlight } from './penHighlights';
+import { coveredText, measureWords } from './penHighlightText';
 import { askConfirm } from './dialogApi';
 
 // ============================================================
@@ -37,7 +38,18 @@ export default function RevisionSheet({ id, onBack }: { id: string; onBack: () =
       if (!alive) return;
       if (!c) return setFailed(true);
       setItems(extractHighlights(c.pages.map((p) => ({ id: p.id, html: pageToHtml(p) }))));
-      setPenItems(extractPenHighlights(c.pages)); // highlighter-pen marks (strokes), shown as pictures of the marked spot
+      const pen = extractPenHighlights(c.pages); // highlighter-pen marks (strokes), shown as pictures of the marked spot
+      setPenItems(pen);
+      // …and the typed words under each mark: lay each page out like the editor and see which words the strokes cover
+      void (async () => {
+        const words = new Map<string, Awaited<ReturnType<typeof measureWords>>>();
+        for (const pg of c.pages) {
+          if (!pen.some((m) => m.pageId === pg.id) || pg.pdf) continue; // PDF text has no layout here: the picture stays
+          try { words.set(pg.id, await measureWords(pageToHtml(pg), pg.template)); } catch { /* picture only */ }
+        }
+        if (!alive) return;
+        setPenItems(pen.map((m) => ({ ...m, text: coveredText(words.get(m.pageId) ?? [], m.strokes) || undefined })));
+      })();
     });
     return () => {
       alive = false;
@@ -60,7 +72,9 @@ export default function RevisionSheet({ id, onBack }: { id: string; onBack: () =
 
   const copyAll = async () => {
     try {
-      await navigator.clipboard.writeText(itemsToText(shown, { kinds: kindLabel, page: t.page }));
+      const typed = itemsToText(shown, { kinds: kindLabel, page: t.page });
+      const pen = penShown.filter((i) => i.text).map((i) => `- ${i.text?.replace(/\n/g, ' ')} (${kindLabel[i.kind]}, ${t.page} ${i.pageNumber}, ${t.penTag})`);
+      await navigator.clipboard.writeText([typed, ...(pen.length > 0 ? ['', t.penHighlights, ...pen] : [])].join('\n').trim());
       setCopied(true);
       setTimeout(() => setCopied(false), 1800);
     } catch {
@@ -99,7 +113,7 @@ export default function RevisionSheet({ id, onBack }: { id: string; onBack: () =
             {recall ? <EyeOff size={14} /> : <Eye size={14} />} {t.recall}
           </button>
         )}
-        {shown.length > 0 && (
+        {(shown.length > 0 || penShown.some((i) => i.text)) && (
           <button onClick={() => void copyAll()} className="h-9 px-3 rounded-lg border border-gray-200 dark:border-white/10 text-xs flex items-center gap-1.5">
             <Copy size={14} /> {copied ? t.copied : t.copyAll}
           </button>
@@ -182,11 +196,17 @@ export default function RevisionSheet({ id, onBack }: { id: string; onBack: () =
                       <span className="w-1.5 shrink-0 rounded-full" style={{ background: i.color }} aria-hidden />
                       <div className="min-w-0 flex-1">
                         {/* our own SVG (drawn from stroke data, no user markup) on a paper-coloured card so ink stays readable in dark mode */}
-                        <div
-                          className={`rounded-lg bg-white p-1 ${hidden ? 'opacity-0 select-none' : ''}`}
-                          style={{ maxHeight: 220, overflow: 'hidden' }}
-                          dangerouslySetInnerHTML={{ __html: i.svg }}
-                        />
+                        {i.text && (
+                          <p className={`mb-1 text-sm whitespace-pre-wrap break-words ${hidden ? 'text-transparent select-none rounded bg-gray-200 dark:bg-white/20' : ''}`}>{i.text}</p>
+                        )}
+                        {/* the picture only when it adds something: no typed words found, or handwriting under the mark */}
+                        {(!i.text || i.under > 0) && (
+                          <div
+                            className={`rounded-lg bg-white p-1 ${hidden ? 'opacity-0 select-none' : ''}`}
+                            style={{ maxHeight: 220, overflow: 'hidden' }}
+                            dangerouslySetInnerHTML={{ __html: i.svg }}
+                          />
+                        )}
                         <p className="mt-1 text-xs text-gray-400 dark:text-white/40">
                           {kindLabel[i.kind]} · {t.page} {i.pageNumber} · {t.penTag}
                         </p>

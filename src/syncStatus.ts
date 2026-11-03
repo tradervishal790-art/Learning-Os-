@@ -10,6 +10,8 @@ import { useSyncExternalStore } from 'react';
 export interface FailedPush {
   uid: string;
   key: string;
+  /** 'write' = save `data` to the cloud; 'delete' = remove the cloud copy (a failed delete would bring the item back on the next sync). */
+  op: 'write' | 'delete';
   data: unknown;
   /** failed attempts so far (drives the retry back-off) */
   tries: number;
@@ -25,9 +27,9 @@ function emit(): void {
 }
 
 /** The newest write for `key` did not reach the cloud. Keeps the latest data so a retry sends the newest version. */
-export function recordFailure(uid: string, key: string, data: unknown): void {
+export function recordFailure(uid: string, key: string, data: unknown, op: 'write' | 'delete' = 'write'): void {
   const prev = failed.get(key);
-  failed.set(key, { uid, key, data, tries: (prev?.uid === uid ? prev.tries : 0) + 1 });
+  failed.set(key, { uid, key, op, data, tries: (prev?.uid === uid ? prev.tries : 0) + 1 });
   emit();
 }
 

@@ -61,3 +61,32 @@ test('changes of another account are dropped, never pushed into the wrong accoun
   assert.equal(await m.retryFailedSyncs(), true);
   assert.deepEqual(sent, []);
 });
+
+test('a failed cloud DELETE is remembered and retried too (otherwise the deleted item returns from the cloud)', async () => {
+  const m = await setup();
+  const removed = [];
+  let online = false;
+  m.__setCloudSyncTestHooks({
+    uid: () => 'u1',
+    write: async () => {},
+    remove: async (uid, key) => { if (!online) throw new Error('offline'); removed.push([uid, key]); },
+  });
+  await m.deleteFromCloud('note_1');
+  assert.equal(m.failedSyncCount(), 1);
+  assert.equal(m.failedPushes()[0].op, 'delete');
+  online = true;
+  assert.equal(await m.retryFailedSyncs(), true);
+  assert.deepEqual(removed, [['u1', 'note_1']]);
+  assert.equal(m.failedSyncCount(), 0);
+});
+
+test('delete then re-save the same key: the newest action wins (no stale delete is retried)', async () => {
+  const m = await setup();
+  const written = [];
+  m.__setCloudSyncTestHooks({ uid: () => 'u1', remove: async () => { throw new Error('offline'); }, write: async (_u, k) => { written.push(k); } });
+  await m.deleteFromCloud('k'); // fails -> remembered
+  assert.equal(m.failedSyncCount(), 1);
+  await m.pushToCloud('k', { back: true }); // the item was re-created and saved: this lands
+  assert.equal(m.failedSyncCount(), 0);
+  assert.deepEqual(written, ['k']);
+});

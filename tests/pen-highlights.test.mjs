@@ -29,6 +29,7 @@ test('marks of one colour close together are one card; far apart or another colo
   const yellowTop = r[1].svg;
   assert.equal((yellowTop.match(/<path/g) ?? []).length, 3, 'two marks + the pen stroke under them');
   assert.ok(!r[2].svg.includes('M') || (r[2].svg.match(/<path/g) ?? []).length === 1);
+  assert.equal(r[1].under, 1);
   assert.match(yellowTop, /^<svg [^>]*viewBox="\d+ \d+ \d+ \d+"/);
 });
 
@@ -43,4 +44,30 @@ test('no highlighter strokes -> nothing; non-official colours are "other"; bad s
 test('a page full of marks is capped so the sheet stays light', () => {
   const ink = Array.from({ length: 200 }, (_, i) => line('h' + i, 'highlighter', '#86efac', 20 + i * 200));
   assert.equal(extractPenHighlights([{ id: 'x', ink }]).length, 80);
+});
+
+// ---- the words under a mark ----
+const { coveredText } = await loadTs('src/penHighlightText.ts');
+const word = (text, x0, y0, block = 0, w = 60, h = 20) => ({ text, x0, y0, x1: x0 + w, y1: y0 + h, block });
+
+test('words under a mark are found (most of the word covered), others are not; blocks stay separate', () => {
+  const words = [
+    word('Typed', 10, 20), word('line', 80, 20), word('one', 150, 20), word('important', 220, 20, 0, 90),
+    word('Second', 10, 80, 1), word('line', 80, 80, 1),
+  ];
+  // a yellow mark along the first line from x=70 to x=330 (thickness 3*6 = 18 around y=30)
+  const mark = { id: 'm', kind: 'highlighter', color: '#fde047', width: 3, pts: [70, 30, 0.5, 200, 30, 0.5, 330, 30, 0.5] };
+  assert.equal(coveredText(words, [mark]), 'line one important');
+  // two marks over two paragraphs -> two lines
+  const mark2 = { id: 'm2', kind: 'highlighter', color: '#fde047', width: 3, pts: [5, 90, 0.5, 150, 90, 0.5] };
+  assert.equal(coveredText(words, [mark, mark2]), 'line one important\nSecond line');
+  // a mark between the lines covers nothing
+  const miss = { id: 'x', kind: 'highlighter', color: '#fde047', width: 1, pts: [0, 55, 0.5, 400, 55, 0.5] };
+  assert.equal(coveredText(words, [miss]), '');
+});
+
+test('a mark that only grazes a word does not take it', () => {
+  const words = [word('edge', 100, 20, 0, 60, 20)];
+  const graze = { id: 'g', kind: 'highlighter', color: '#fde047', width: 1, pts: [90, 36, 0.5, 170, 36, 0.5] }; // 6 thick, only the bottom ~15% of the word
+  assert.equal(coveredText(words, [graze]), '');
 });

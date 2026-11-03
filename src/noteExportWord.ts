@@ -31,6 +31,8 @@ import {
 } from 'docx';
 import { renderInk } from './inkSvg';
 import { getImage } from './attachStore';
+import { isTemplateId, paperIsDark, textLineUnits } from './pageTemplates';
+import { paperPrint, paperSvg } from './pagePaperPrint';
 import { pageToHtml, type InkStroke, type NotePage, type PageAttachment } from './notebookStore';
 
 const HEX6 = /^#[0-9a-fA-F]{6}$/;
@@ -109,6 +111,8 @@ interface ParaLead {
 }
 interface BlockCtx {
   quote: boolean;
+  /** Lined paper: every text line is exactly this tall (twips), so text sits on the printed rules like in the editor. */
+  lineTwips?: number;
   base?: RunStyle;
   lead?: ParaLead;
   cont?: IParagraphOptions;
@@ -259,6 +263,7 @@ function makeParagraph(children: ParagraphChild[], ctx: BlockCtx, extra: IParagr
     border: ctx.quote ? { left: { style: BorderStyle.SINGLE, size: 12, color: '9CA3AF', space: 8 } } : undefined,
     ...opts,
     ...extra,
+    ...(ctx.lineTwips ? { spacing: { before: 0, after: 0, line: ctx.lineTwips, lineRule: LineRuleType.EXACT } } : {}),
   });
 }
 
@@ -294,6 +299,7 @@ function docxList(list: Element, level: number, ctx: BlockCtx, state: DocxState,
     const checked = li.getAttribute('data-checked') === 'true';
     const itemCtx: BlockCtx = {
       quote: ctx.quote,
+      lineTwips: ctx.lineTwips,
       base: ctx.base,
       cont: { indent: { left: 360 * (lvl + 2) } },
       lead: isTask
@@ -566,6 +572,27 @@ async function photoPng(id: string, maxSide: number): Promise<{ data: Uint8Array
   }
 }
 
+/** The paper (lines / grid / dots / colour) as a picture, `heightUnits` tall. Null when the browser cannot draw it (the page simply stays white). */
+async function paperPng(svg: string, heightUnits: number): Promise<Uint8Array | null> {
+  try {
+    if (typeof Image === 'undefined') return null;
+    const scale = Math.min(1.2, 8000 / heightUnits);
+    const w = Math.max(1, Math.round(1000 * scale));
+    const h = Math.max(1, Math.round(heightUnits * scale));
+    const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
+    try {
+      const img = new Image();
+      img.src = url;
+      await img.decode();
+      return await canvasToPng(w, h, (ctx) => ctx.drawImage(img, 0, 0, w, h));
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  } catch {
+    return null;
+  }
+}
+
 /** Word export (needs docx >= 9). 'auto' ink is black on the white Word page. */
 export async function exportDocx(
   title: string,
@@ -574,7 +601,13 @@ export async function exportDocx(
 ): Promise<Blob> {
   const L = { pdfPage: 'PDF page {0} ({1})', photo: 'Photo: {0}', recording: 'Recording: {0}', untitled: 'Untitled', ...(o.labels ?? {}) };
   const state: DocxState = { olInstance: 0 };
-  const titlePara = new Paragraph({ heading: HeadingLevel.TITLE, children: [new TextRun(title.trim() || L.untitled)] });
+  // On lined paper the title takes exactly two ruled rows, so the text below it still sits on the rules.
+  const makeTitle = (rowTwips?: number): Paragraph =>
+    new Paragraph({
+      heading: HeadingLevel.TITLE,
+      ...(rowTwips ? { spacing: { before: 0, after: 0, line: rowTwips * 2, lineRule: LineRuleType.EXACT } } : {}),
+      children: [new TextRun(title.trim() || L.untitled)],
+    });
   const note = (text: string): Paragraph =>
     new Paragraph({ spacing: { after: 100 }, children: [new TextRun({ text, italics: true, color: '6B7280' })] });
 
@@ -598,12 +631,22 @@ export async function exportDocx(
       extent = Math.max(extent, (a.y ?? 0) + h);
     }
     const inkOn = o.includeInk && !!page.ink && page.ink.length > 0;
+    // Paper: ruled / grid / dotted lines and the paper colour, as a picture behind everything. A dark paper stays white here
+    // (a Word page has one colour, and black text would vanish on it) but keeps its lines, drawn light.
+    const template = isTemplateId(page.template) ? page.template : 'blank';
+    const paper = paperPrint(template, paperIsDark(page.paper, false) ? undefined : page.paper);
+    const hasPaper = paper.body !== '' || paper.fill !== '';
+    const lineUnits = textLineUnits(template);
     const hl = inkOn ? await inkLayerPng(page.ink as InkStroke[], 'hl') : null;
     const pen = inkOn ? await inkLayerPng(page.ink as InkStroke[], 'ink') : null;
     if (hl) extent = Math.max(extent, hl.heightUnits);
     if (pen) extent = Math.max(extent, pen.heightUnits);
-    const layout = placed.length > 0 || hl || pen ? wordPageLayout(extent) : null;
+    const layout = placed.length > 0 || hl || pen || hasPaper ? wordPageLayout(extent) : null;
     if (layout) {
+      if (hasPaper) {
+        const bg = await paperPng(paperSvg(paper, layout.heightUnits), layout.heightUnits);
+        if (bg) anchored.push(pageImage(bg, { x: 0, y: 0, w: 1000, h: layout.heightUnits }, 1, { behind: true, index: 0 }, 'Paper'));
+      }
       // order = stacking: photos at the back, highlighter over them (still behind the text), pen in front of the text
       placed.forEach(({ a, png, h }, n) =>
         anchored.push(pageImage(png.data, { x: a.x ?? 0, y: a.y ?? 0, w: a.w ?? 0, h }, layout.scale, { behind: true, index: 1 + n }, a.name || a.id)));
@@ -612,9 +655,10 @@ export async function exportDocx(
       children.push(anchorParagraph(anchored));
     }
 
-    if (i === 0) children.push(titlePara);
+    const rowTwips = layout && lineUnits > 0 ? Math.round(lineUnits * UNIT_TWIPS * layout.scale) : undefined;
+    if (i === 0) children.push(makeTitle(rowTwips));
     if (page.pdf) children.push(note(fill(L.pdfPage, page.pdf.pageNumber, page.pdf.name)));
-    blocksFrom(parseHtml(pageToHtml(page)).body.childNodes, { quote: false }, state, children);
+    blocksFrom(parseHtml(pageToHtml(page)).body.childNodes, { quote: false, lineTwips: rowTwips }, state, children);
 
     // photos that could not be embedded still get an explicit label, so nothing vanishes silently
     for (const a of missing) children.push(note(fill(L.photo, a.name || a.id)));
@@ -642,7 +686,8 @@ export async function exportDocx(
             properties: {
               page: {
                 size: { width: A4_WIDTH_TWIPS, height: layout.heightTwips },
-                margin: { top: PAGE_MARGIN_TWIPS, right: PAGE_MARGIN_TWIPS, bottom: PAGE_MARGIN_TWIPS, left: PAGE_MARGIN_TWIPS, header: 0, footer: 0 },
+                // lined paper: the first text line is the first ruled row (minus the 1 pt anchor paragraph), so text sits on the rules
+                margin: { top: lineUnits > 0 ? Math.max(PAGE_MARGIN_TWIPS, Math.round(lineUnits * UNIT_TWIPS * layout.scale) - 20) : PAGE_MARGIN_TWIPS, right: PAGE_MARGIN_TWIPS, bottom: PAGE_MARGIN_TWIPS, left: PAGE_MARGIN_TWIPS, header: 0, footer: 0 },
               },
             },
           }
@@ -650,7 +695,7 @@ export async function exportDocx(
       children,
     });
   }
-  if (sections.length === 0) sections.push({ children: [titlePara] });
+  if (sections.length === 0) sections.push({ children: [makeTitle()] });
 
   const doc = new DocxDocument({
     creator: 'Learning OS',

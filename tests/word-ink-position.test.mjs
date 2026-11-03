@@ -12,6 +12,7 @@ globalThis.OffscreenCanvas = class {
   getContext() { return new Proxy({}, { get: () => () => {}, set: () => true }); }
   async convertToBlob() { return new Blob([PNG], { type: 'image/png' }); }
 };
+globalThis.Image = class { set src(_v) {} async decode() {} };
 globalThis.createImageBitmap = async () => ({ width: 400, height: 300, close() {} });
 
 const { exportDocx, wordPageLayout, pageAnchor, putImage } = await loadTs('tests/wordEntry.ts');
@@ -77,4 +78,31 @@ test('a floating photo is anchored at its x / y / width behind the text; a photo
 test('a photo whose file is not on this device is still named, never dropped silently', async () => {
   const xml = await docXml(await exportDocx('Gone', [page('a', { attachments: [{ id: 'nofile', kind: 'image', name: 'lost.png', x: 10, y: 10, w: 100 }] })], { includeInk: false }));
   assert.ok(xml.includes('lost.png'));
+});
+
+test('lined paper: the rules are a picture behind the page and the text lines are exactly one ruled row tall', async () => {
+  const xml = await docXml(await exportDocx('Lined', [page('a', { template: 'ruled' })], { includeInk: false }));
+  assert.equal((xml.match(/<wp:anchor /g) ?? []).length, 1, 'the paper picture');
+  assert.match(xml, /behindDoc="1"/);
+  // ruled = 40 page units = 476 twips; every text line is exactly that tall, so text sits on the rules
+  assert.match(xml, /w:line="476" w:lineRule="exact"/);
+  // the first text line is the first ruled row: top margin = one row (minus the 1 pt anchor line)
+  assert.match(xml, /w:top="456"/);
+  // the document title (first page) takes exactly two rows, so the text under it still sits on the rules
+  assert.match(xml, /w:line="952" w:lineRule="exact"/);
+});
+
+test('plain white page without handwriting or photos is still a normal Word page (no picture, default spacing)', async () => {
+  const xml = await docXml(await exportDocx('Blank', [page('a', { template: 'blank' })], { includeInk: false }));
+  assert.ok(!xml.includes('<wp:anchor'));
+  assert.ok(!/w:lineRule="exact"/.test(xml));
+});
+
+test('a coloured paper page gets a paper picture; a dark paper does not turn the Word page dark (text would vanish)', async () => {
+  const cream = await docXml(await exportDocx('C', [page('a', { template: 'blank', paper: 'cream' })], { includeInk: false }));
+  assert.equal((cream.match(/<wp:anchor /g) ?? []).length, 1);
+  const dark = await docXml(await exportDocx('D', [page('a', { template: 'blank', paper: 'charcoal' })], { includeInk: false }));
+  assert.ok(!dark.includes('<wp:anchor'), 'charcoal blank paper has nothing light to draw');
+  const darkRuled = await docXml(await exportDocx('DR', [page('a', { template: 'ruled', paper: 'charcoal' })], { includeInk: false }));
+  assert.equal((darkRuled.match(/<wp:anchor /g) ?? []).length, 1, 'its rules are still drawn');
 });

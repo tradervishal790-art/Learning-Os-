@@ -38,8 +38,10 @@ function currentUid(): string | null {
 let writeDoc: (uid: string, key: string, data: unknown) => Promise<void> = (uid, key, data) =>
   setDoc(doc(db, 'users', uid, 'data', key), { value: data, updatedAt: serverIso() });
 let uidOf: () => string | null = currentUid;
-export function __setCloudSyncTestHooks(h: { write?: typeof writeDoc; uid?: () => string | null }): void {
+let removeDoc: (uid: string, key: string) => Promise<void> = (uid, key) => deleteDoc(doc(db, 'users', uid, 'data', key));
+export function __setCloudSyncTestHooks(h: { write?: typeof writeDoc; remove?: typeof removeDoc; uid?: () => string | null }): void {
   if (h.write) writeDoc = h.write;
+  if (h.remove) removeDoc = h.remove;
   if (h.uid) uidOf = h.uid;
 }
 
@@ -69,7 +71,7 @@ export async function pushToCloud<T>(key: string, data: T): Promise<void> {
 /** Send every change that has not reached the cloud yet. Resolves true when nothing is left to sync. */
 export async function retryFailedSyncs(): Promise<boolean> {
   dropOtherAccounts(uidOf());
-  await Promise.all(failedPushes().map((f) => pushToCloud(f.key, f.data)));
+  await Promise.all(failedPushes().map((f) => (f.op === 'delete' ? deleteFromCloud(f.key) : pushToCloud(f.key, f.data))));
   return failedSyncCount() === 0;
 }
 
@@ -123,14 +125,21 @@ export async function pullFromCloud<T>(key: string): Promise<T | null> {
   }
 }
 
-/** Deletes the cloud copy for this key — call alongside a store's local "clear" action. */
+/** Deletes the cloud copy for this key — call alongside a store's local "clear" action.
+ *  A failed delete is remembered and retried like a failed write (otherwise the deleted item comes back from the cloud). */
 export async function deleteFromCloud(key: string): Promise<void> {
-  const uid = currentUid();
+  const uid = uidOf();
   if (!uid) return;
+  const seq = (pushSeq.get(key) ?? 0) + 1;
+  pushSeq.set(key, seq);
   try {
-    await deleteDoc(doc(db, 'users', uid, 'data', key));
+    await removeDoc(uid, key);
+    if (pushSeq.get(key) === seq) recordSuccess(key);
   } catch {
-    // Best-effort.
+    if (pushSeq.get(key) === seq) {
+      recordFailure(uid, key, null, 'delete');
+      scheduleRetry();
+    }
   }
 }
 
