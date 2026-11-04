@@ -564,9 +564,14 @@ function DashboardInner({ dashboardContextVersion, userData, onUpdateUserData, o
     ? activeGoalsForIntelligence.filter((goal) => goal.id === activeGoalId)
     : activeGoalsForIntelligence.slice(0, 1);
   const masteryHeatmap = getMasteryHeatmap(intelligenceGoals, engagementSessions);
-  const hasNegativeEngagement = (topicId: string) => engagementSessions.some(
-    (session) => session.conceptId === topicId && (session.signal === 'dislike' || session.signal === 'strong_dislike'),
-  );
+  const hasNegativeEngagement = (topicId: string) => {
+    const latestSession = engagementSessions
+      .filter((session) => session.conceptId === topicId && Number.isFinite(Date.parse(session.sessionTimestamp)))
+      .sort((a, b) => Date.parse(b.sessionTimestamp) - Date.parse(a.sessionTimestamp))[0];
+    // Old negative feedback should not keep a learner stuck in a help loop
+    // after newer sessions show that the experience has improved.
+    return latestSession?.signal === 'dislike' || latestSession?.signal === 'strong_dislike';
+  };
   // A new 'learning' topic starts with a 40-point roadmap baseline. That is
   // not evidence of weakness. Only explicit low recall/test results or
   // negative feedback can trigger a Mentor recommendation.
