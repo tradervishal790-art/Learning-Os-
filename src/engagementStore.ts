@@ -46,6 +46,7 @@ export function upsertEngagementSession(session: EngagementSession): void {
     }
     const trimmed = existing.slice(-MAX_STORED_SESSIONS);
     localStorage.setItem(ENGAGEMENT_STORAGE_KEY, JSON.stringify(trimmed));
+    notifyProgressDataChanged();
   } catch {
     // Storage full or unavailable — fail silently, tracking is best-effort.
   }
