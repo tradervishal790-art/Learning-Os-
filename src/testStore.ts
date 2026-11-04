@@ -1,5 +1,6 @@
 import { pushToCloud, pullFromCloud } from './cloudSync';
 import type { TestAttempt } from './types';
+import { notifyProgressDataChanged } from './progressEvents';
 
 // ============================================================
 // testStore.ts
@@ -28,6 +29,7 @@ function loadAttempts(): TestAttempt[] {
 function saveAttempts(attempts: TestAttempt[]): void {
   try {
     localStorage.setItem(TEST_ATTEMPTS_STORAGE_KEY, JSON.stringify(attempts));
+    notifyProgressDataChanged();
   } catch {
     // Storage full/unavailable — non-critical, history just won't persist.
   }
