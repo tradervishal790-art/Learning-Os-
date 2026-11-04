@@ -1,5 +1,6 @@
 import type { Topic } from './types';
 import { pushToCloud, pullFromCloud } from './cloudSync';
+import { notifyProgressDataChanged } from './progressEvents';
 
 // Re-export Topic so existing `import { roadmapData, type Topic } from './roadmapData'`
 // statements elsewhere in the app keep working without changes.
@@ -64,6 +65,7 @@ export function getRoadmapData(goalId?: string | null): Topic {
 export function saveRoadmapData(goalId: string | undefined, roadmap: Topic): void {
   try {
     localStorage.setItem(storageKeyFor(goalId), JSON.stringify(roadmap));
+    notifyProgressDataChanged();
   } catch {
     // Storage full/unavailable — non-critical, just won't persist.
   }
@@ -88,6 +90,7 @@ export async function hydrateRoadmapDataFromCloud(goalId?: string): Promise<void
   if (cloud && cloud.id && Array.isArray(cloud.children)) {
     try {
       localStorage.setItem(storageKeyFor(goalId), JSON.stringify(cloud));
+      notifyProgressDataChanged();
     } catch {
       // Best-effort.
     }
