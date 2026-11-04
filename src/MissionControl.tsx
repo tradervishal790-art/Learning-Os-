@@ -15,6 +15,7 @@ interface MissionControlProps {
   streak: number;
   activeGoals: number;
   currentTopicMastery?: number | null;
+  currentTopicHasMeasuredWeakness?: boolean;
   currentTopicSessions?: number;
   weakTopic?: string | null;
   weakTopicMastery?: number | null;
@@ -80,7 +81,7 @@ const defaultNodeIds = ['know', 'plan', 'learn', 'retain', 'prove'];
 
 export default function MissionControl({
   name, goalTitle, nextTopic, nextTopicDetail, hasLearningProfile,
-  revisionDue, revisionOverdue, streak, activeGoals, currentTopicMastery, currentTopicSessions,
+  revisionDue, revisionOverdue, streak, activeGoals, currentTopicMastery, currentTopicHasMeasuredWeakness, currentTopicSessions,
   weakTopic, weakTopicMastery, testAttempts, roadmapTopicCount, completedTopicCount,
   learningContextReady, onNavigate, onOpenProfile, onContinueLearning,
 }: MissionControlProps) {
@@ -126,6 +127,7 @@ export default function MissionControl({
     revisionOverdue,
     currentTopic: nextTopic,
     currentTopicMastery,
+    currentTopicHasMeasuredWeakness,
     currentTopicSessions,
     weakTopic,
     weakTopicMastery,
