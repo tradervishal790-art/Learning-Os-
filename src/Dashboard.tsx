@@ -1117,14 +1117,14 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
         )}
       </AnimatePresence>
 
-      {!isMissionControl && <BottomNav
+      <BottomNav
         items={sidebarItems.map((i) => ({ id: i.id, label: i.label, locked: navState(i.id).isLocked }))}
         activeId={activePage}
         onSelect={(id) => {
           const item = sidebarItems.find((i) => i.id === id);
           if (item) selectNav(item.id, item.label);
         }}
-      />}
+      />
     </div>
   );
 }
