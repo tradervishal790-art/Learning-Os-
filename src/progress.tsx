@@ -38,10 +38,26 @@ export default function Progress({ goals = [] }: ProgressProps) {
   const [, setDataVersion] = useState(0);
   useEffect(() => {
     let active = true;
+    const refresh = () => setDataVersion((version) => version + 1);
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === null || [
+        'video_engagement_sessions',
+        'learning_os_revision_reviews',
+        'learning_os_revision_review_dates',
+        'learning_os_revision_recall',
+        'learning_os_test_attempts',
+      ].includes(event.key)) refresh();
+    };
+    window.addEventListener(PROGRESS_DATA_CHANGED, refresh);
+    window.addEventListener('storage', onStorage);
     void hydrateTestAttemptsFromCloud()
-      .then(() => { if (active) setAttemptHydrationVersion((version) => version + 1); })
+      .then(() => { if (active) refresh(); })
       .catch(() => { /* Local test history remains available when cloud sync is offline. */ });
-    return () => { active = false; };
+    return () => {
+      active = false;
+      window.removeEventListener(PROGRESS_DATA_CHANGED, refresh);
+      window.removeEventListener('storage', onStorage);
+    };
   }, []);
   const streak = getStreakStats();
   const completion = getCompletionStats(goals);
