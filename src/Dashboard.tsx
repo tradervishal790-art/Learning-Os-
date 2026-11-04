@@ -294,12 +294,22 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
     const roadmapHydrations = activeGoalIds.length > 0
       ? activeGoalIds.map((goalId) => hydrateRoadmapDataFromCloud(goalId))
       : [hydrateRoadmapDataFromCloud()];
+    // Do not leave the primary action in a loading state forever on a
+    // slow/offline connection. Local data is usable immediately; after this
+    // short grace period we show a conservative local-first recommendation
+    // while any remaining cloud reads continue in the background.
+    const fallbackTimer = window.setTimeout(() => {
+      if (missionContextHydrationKeyRef.current === hydrationKey) {
+        setLearningContextReady(true);
+      }
+    }, 3000);
     void Promise.allSettled([
       ...roadmapHydrations,
       hydrateRevisionFromCloud(),
       hydrateRecallScoresFromCloud(),
       hydrateTestAttemptsFromCloud(),
     ]).then(() => {
+      window.clearTimeout(fallbackTimer);
       // A goal switch during hydration invalidates the older result. Its
       // network work is harmless, but it must not mark the new goal ready.
       if (missionContextHydrationKeyRef.current === hydrationKey) {
