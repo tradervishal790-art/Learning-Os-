@@ -1,4 +1,5 @@
 import type { EngagementSession } from './types';
+import { notifyProgressDataChanged } from './progressEvents';
 
 // Single choke-point for engagement persistence. Right now it writes to
 // localStorage (matches the pattern used elsewhere in this app — onboarding
@@ -22,6 +23,7 @@ export function saveEngagementSession(session: EngagementSession): void {
     existing.push(session);
     const trimmed = existing.slice(-MAX_STORED_SESSIONS);
     localStorage.setItem(ENGAGEMENT_STORAGE_KEY, JSON.stringify(trimmed));
+    notifyProgressDataChanged();
   } catch {
     // Storage full or unavailable — fail silently, tracking is best-effort.
   }
