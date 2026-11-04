@@ -109,6 +109,8 @@ export default function MissionControl({
   const visibleRows = useMemo(() => allFunctionNodes.filter((node) => defaultNodeIds.includes(node.id) || visibleNodeIds.includes(node.id)), [visibleNodeIds]);
   const mapHeight = Math.max(660, visibleRows.length <= 1 ? 660 : 132 + (visibleRows.length - 1) * 132);
   const rowY = visibleRows.map((_, index) => visibleRows.length === 1 ? mapHeight / 2 : 66 + index * ((mapHeight - 132) / (visibleRows.length - 1)));
+  const nextBestStepAction = getNextBestStepAction({ hasLearningProfile, revisionDue, revisionOverdue });
+  const nextStepStageId = nextBestStepAction === 'profile' ? 'know' : nextBestStepAction === 'revision' ? 'retain' : 'plan';
   const open = (action: 'profile' | DashboardPageId) => action === 'profile' ? onOpenProfile() : onNavigate(action);
   const moreItems = functionNodes.map((node) => ({ ...node.children[0], label: node.title, detail: node.subtitle }));
   const filteredMoreItems = moreItems.filter((item) => item.label.toLowerCase().includes(functionSearch.toLowerCase()));
@@ -155,7 +157,7 @@ export default function MissionControl({
             <button type="button" onClick={() => onNavigate('mentor')} className="flex min-h-[104px] flex-col items-start justify-between rounded-2xl border border-white/[0.08] bg-white/[0.035] p-3 text-left transition-[transform,border-color,background-color] duration-200 hover:-translate-y-0.5 hover:border-cyan-300/30 hover:bg-cyan-300/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"><MessageCircle className="h-4 w-4 text-cyan-200" /><span><span className="block text-xs font-semibold text-white">AI Mentor</span><span className="mt-1 block text-[10px] text-slate-500">Ask</span></span></button>
           </div>
         </div>
-        <button type="button" onClick={() => { const action = getNextBestStepAction({ hasLearningProfile, revisionDue, revisionOverdue }); if (action === 'profile') onOpenProfile(); else open(action); }} className="mb-3 flex shrink-0 items-center justify-between gap-3 rounded-xl border border-cyan-300/12 bg-cyan-300/[0.035] px-3 py-2.5 text-left transition hover:border-cyan-300/25 hover:bg-cyan-300/[0.07] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"><span className="min-w-0"><span className="block text-[9px] uppercase tracking-[0.16em] text-cyan-200/65">Suggested next step</span><span className="block truncate text-xs font-medium text-slate-100">{!hasLearningProfile ? 'Set up your learning profile' : activeGoals === 0 ? 'Choose a learning goal' : revisionOverdue > 0 ? revisionOverdue + ' overdue topics to revise' : revisionDue > 0 ? revisionDue + ' topics ready for revision' : nextTopic || 'Open your learning roadmap'}</span></span><ArrowUpRight className="h-4 w-4 shrink-0 text-cyan-200/80" /></button>
+        <button type="button" onClick={() => { if (nextBestStepAction === 'profile') onOpenProfile(); else open(nextBestStepAction); }} className="mb-3 flex shrink-0 items-center justify-between gap-3 rounded-xl border border-cyan-300/12 bg-cyan-300/[0.035] px-3 py-2.5 text-left transition hover:border-cyan-300/25 hover:bg-cyan-300/[0.07] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"><span className="min-w-0"><span className="block text-[9px] uppercase tracking-[0.16em] text-cyan-200/65">Suggested next step</span><span className="block truncate text-xs font-medium text-slate-100">{!hasLearningProfile ? 'Set up your learning profile' : activeGoals === 0 ? 'Choose a learning goal' : revisionOverdue > 0 ? revisionOverdue + ' overdue topics to revise' : revisionDue > 0 ? revisionDue + ' topics ready for revision' : nextTopic || 'Open your learning roadmap'}</span></span><ArrowUpRight className="h-4 w-4 shrink-0 text-cyan-200/80" /></button>
         <div className="mb-2 flex shrink-0 items-center justify-between px-1 md:px-3">
           <div className="min-w-0">
             <span className="block text-[9px] uppercase tracking-[0.2em] text-slate-600">Your learning space</span>
@@ -213,13 +215,15 @@ export default function MissionControl({
                   type="button"
                   onClick={() => setSelectedEngine((current) => current === row.id ? null : row.id)}
                   aria-expanded={selectedEngine === row.id}
-                  className={`group absolute left-[35%] z-10 flex h-[76px] w-[22%] -translate-y-1/2 items-center gap-3 rounded-2xl border bg-[#111d31]/95 px-4 text-left shadow-[0_10px_35px_rgba(0,0,0,.25)] transition-[transform,background-color,box-shadow,border-color] duration-300 ease-out hover:scale-[1.015] hover:bg-[#17263d] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 ${selectedEngine === row.id ? 'ring-1 ring-white/30 bg-[#1a2940]' : ''}`}
+                  aria-current={nextStepStageId === row.id ? 'step' : undefined}
+                  className={`group absolute left-[35%] z-10 flex h-[76px] w-[22%] -translate-y-1/2 items-center gap-3 rounded-2xl border bg-[#111d31]/95 px-4 text-left shadow-[0_10px_35px_rgba(0,0,0,.25)] transition-[transform,background-color,box-shadow,border-color] duration-300 ease-out hover:scale-[1.015] hover:bg-[#17263d] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 ${selectedEngine === row.id ? 'ring-1 ring-white/30 bg-[#1a2940]' : ''} ${nextStepStageId === row.id ? 'ring-2 ring-cyan-300/45' : ''}`}
                   style={{ top, transform: selectedEngine === row.id ? 'translateY(calc(-50% - 4px)) scale(1.015)' : undefined, borderColor: `${row.color}55`, boxShadow: selectedEngine === row.id ? `0 9px 32px ${row.color}24` : `0 0 22px ${row.color}12` }}
                 >
                   <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl" style={{ backgroundColor: `${row.color}20`, color: row.color }}><Icon className="h-5 w-5" /></span>
                   <span className="min-w-0 flex-1">
                     <span className="block text-[9px] font-semibold tracking-[0.18em]" style={{ color: row.color }}>{row.number}</span>
                     <span className="mt-0.5 block text-sm font-semibold text-white">{row.title}</span>
+                    {nextStepStageId === row.id && <span className="mt-0.5 inline-flex rounded-full bg-cyan-300/10 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wider text-cyan-200">Next step</span>}
                     <span className="mt-0.5 block truncate text-[10px] text-slate-500">{row.subtitle}</span>
                   </span>
                   <ArrowUpRight className="h-4 w-4 shrink-0 text-slate-600 transition group-hover:text-white" />
@@ -269,9 +273,9 @@ export default function MissionControl({
               const Icon = row.icon;
               return (
                 <div key={row.id} className="relative ml-5 rounded-xl border bg-[#111d31] p-3" style={{ borderColor: `${row.color}50` }}>
-                  <button type="button" onClick={() => setSelectedEngine((current) => current === row.id ? null : row.id)} aria-expanded={selectedEngine === row.id} className="flex w-full items-center gap-3 text-left">
+                  <button type="button" onClick={() => setSelectedEngine((current) => current === row.id ? null : row.id)} aria-expanded={selectedEngine === row.id} aria-current={nextStepStageId === row.id ? 'step' : undefined} className={`flex w-full items-center gap-3 rounded-lg text-left ${nextStepStageId === row.id ? 'ring-1 ring-cyan-300/40' : ''}`}>
                     <Icon className="h-5 w-5" style={{ color: row.color }} />
-                    <span className="flex-1"><span className="block text-xs font-semibold text-white">{row.number} · {row.title}</span><span className="block text-[10px] text-slate-500">{row.subtitle}</span></span>
+                    <span className="flex-1"><span className="block text-xs font-semibold text-white">{row.number} · {row.title}</span><span className="block text-[10px] text-slate-500">{row.subtitle}</span>{nextStepStageId === row.id && <span className="mt-1 inline-flex rounded-full bg-cyan-300/10 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wider text-cyan-200">Your next step</span>}</span>
                     <ArrowUpRight className="h-4 w-4 text-slate-500" />
                   </button>
                   {selectedEngine === row.id && <div className="ml-8 mt-2 flex flex-wrap gap-1.5">
