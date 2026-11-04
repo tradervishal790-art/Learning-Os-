@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, lazy, Suspense } from 'react';
+import { useCallback, useEffect, useRef, useState, lazy, Suspense } from 'react';
 import type { ComponentType } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
@@ -8,8 +8,13 @@ import MissionControl from './MissionControl';
 import { getContinueLearningTarget } from './missionControlLogic';
 import BottomNav from './BottomNav';
 import { useImmersive, useNoteOpen } from './immersive';
-import { getRoadmapData, getCurrentTopic } from './roadmapData';
+import { getRoadmapData, getCurrentTopic, hydrateRoadmapDataFromCloud } from './roadmapData';
 import { getRevisionStats, getRevisionDataForGoals } from './revisionData';
+import { hydrateRevisionFromCloud } from './revisionstore';
+import { hydrateRecallScoresFromCloud } from './revisionRecallStore';
+import { hydrateTestAttemptsFromCloud } from './testStore';
+import { getMasteryHeatmap, getWeakAreas } from './progressData';
+import { getEngagementSessions } from './engagementStore';
 import { getPersonalityProfile, savePersonalityProfile, clearPersonalityProfile } from './personalityProfileStore';
 import type { PersonalityProfile } from './personalityScoring';
 import GrowthEdgesCard from './GrowthEdgesCard';
@@ -222,6 +227,8 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   );
 
   const [streak, setStreak] = useState(0);
+  const [learningContextReady, setLearningContextReady] = useState(false);
+  const missionContextHydrationKeyRef = useRef<string | null>(null);
   const noteOpen = useNoteOpen();
   const immersive = useImmersive(); // true while a full-attention flow (e.g. a timed test) hides the bottom bar
   const [showLearningQuiz, setShowLearningQuiz] = useState(false);
@@ -266,6 +273,41 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   useEffect(() => {
     setStreak(trackAndComputeStreak());
   }, []);
+
+  // Mission Control needs a small, reliable read-model of the SAME existing
+  // learner stores used by Roadmap, Revision, Tests and Progress. Hydrate only
+  // active goal roadmaps plus the shared revision/recall/test evidence; do not
+  // create another database or fetch every historical goal.
+  const activeGoalIdsKey = goals.filter((goal) => goal.status === 'active').map((goal) => goal.id).sort().join('|');
+  useEffect(() => {
+    if (activePage !== 'dashboard') return;
+    const hasLegacyGoal = Boolean(userData?.goal?.trim());
+    if (!activeGoalIdsKey && !hasLegacyGoal) {
+      setLearningContextReady(true);
+      return;
+    }
+    const hydrationKey = activeGoalIdsKey || 'primary';
+    if (missionContextHydrationKeyRef.current === hydrationKey) return;
+    missionContextHydrationKeyRef.current = hydrationKey;
+    setLearningContextReady(false);
+
+    const activeGoalIds = activeGoalIdsKey ? activeGoalIdsKey.split('|') : [];
+    const roadmapHydrations = activeGoalIds.length > 0
+      ? activeGoalIds.map((goalId) => hydrateRoadmapDataFromCloud(goalId))
+      : [hydrateRoadmapDataFromCloud()];
+    void Promise.allSettled([
+      ...roadmapHydrations,
+      hydrateRevisionFromCloud(),
+      hydrateRecallScoresFromCloud(),
+      hydrateTestAttemptsFromCloud(),
+    ]).then(() => {
+      // A goal switch during hydration invalidates the older result. Its
+      // network work is harmless, but it must not mark the new goal ready.
+      if (missionContextHydrationKeyRef.current === hydrationKey) {
+        setLearningContextReady(true);
+      }
+    });
+  }, [activePage, activeGoalIdsKey, userData?.goal]);
 
   useEffect(() => {
     setSettingsName(userData?.name ?? '');
@@ -494,6 +536,25 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   const displayName = userData?.name?.trim() || t.dashboard.home.learnerFallback;
   const currentTopic = getCurrentTopic(getRoadmapData(activeGoalId));
   const revisionStats = getRevisionStats(getRevisionDataForGoals(t.revisionTasks, goals));
+  const activeGoalsForIntelligence = goals.filter((goal) => goal.status === 'active');
+  const engagementSessions = getEngagementSessions();
+  const masteryHeatmap = getMasteryHeatmap(goals, engagementSessions);
+  const weakestTopic = getWeakAreas(masteryHeatmap, 1)[0];
+  const currentTopicMastery = currentTopic
+    ? masteryHeatmap.find((topic) => topic.topicId === currentTopic.id) ?? null
+    : null;
+  const currentTopicSessions = currentTopic
+    ? engagementSessions.filter((session) => session.conceptId === currentTopic.id).length
+    : 0;
+  const activeRoadmaps = activeGoalsForIntelligence.length > 0
+    ? activeGoalsForIntelligence.map((goal) => getRoadmapData(goal.id))
+    : userData?.goal ? [getRoadmapData()] : [];
+  const roadmapTopicCount = activeRoadmaps.reduce((total, roadmap) => total + (roadmap.children?.length ?? 0), 0);
+  const completedTopicCount = activeRoadmaps.reduce(
+    (total, roadmap) => total + (roadmap.children ?? []).filter((topic) => topic.status === 'completed' || topic.status === 'mastered').length,
+    0,
+  );
+  const testAttemptCount = getTestAttempts().length;
 
   const config = pageConfigs[activePage];
   const isMissionControl = activePage === 'dashboard';
@@ -634,7 +695,15 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
             revisionDue={revisionStats.dueToday}
             revisionOverdue={revisionStats.overdue}
             streak={streak}
-            activeGoals={goals.filter((goal) => goal.status === 'active').length}
+            activeGoals={activeGoalsForIntelligence.length}
+            currentTopicMastery={currentTopicMastery?.masteryScore ?? null}
+            currentTopicSessions={currentTopicSessions}
+            weakTopic={weakestTopic?.title ?? null}
+            weakTopicMastery={weakestTopic?.masteryScore ?? null}
+            testAttempts={testAttemptCount}
+            roadmapTopicCount={roadmapTopicCount}
+            completedTopicCount={completedTopicCount}
+            learningContextReady={learningContextReady}
             onNavigate={setActivePage}
             onOpenProfile={handleOpenLearningProfile}
             onContinueLearning={() => {
