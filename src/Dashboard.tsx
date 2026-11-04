@@ -12,7 +12,7 @@ import { getRoadmapData, getCurrentTopic, hydrateRoadmapDataFromCloud } from './
 import { getRevisionStats, getRevisionDataForGoals } from './revisionData';
 import { hydrateRevisionFromCloud } from './revisionstore';
 import { hydrateRecallScoresFromCloud } from './revisionRecallStore';
-import { hydrateTestAttemptsFromCloud } from './testStore';
+import { getTestAttempts, hydrateTestAttemptsFromCloud } from './testStore';
 import { getMasteryHeatmap, getWeakAreas } from './progressData';
 import { getEngagementSessions } from './engagementStore';
 import { getPersonalityProfile, savePersonalityProfile, clearPersonalityProfile } from './personalityProfileStore';
@@ -22,7 +22,6 @@ import PersonalityReportCard from './PersonalityReportCard';
 import { computeGrowthEdges } from './growthEdges';
 import { getBehaviourStats } from './behaviourStats';
 import { analyzeAttempt, analyzeHistory } from './testAnalytics';
-import { getTestAttempts } from './testStore';
 import { getLearningProfile, saveLearningProfile } from './learningProfileStore';
 import { pushToCloud, pullFromCloud } from './cloudSync';
 import { buildCandidatePoolForConcept } from './conceptVideoPool';
