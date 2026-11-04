@@ -1023,9 +1023,9 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                     />
                   )}
 
-                  <div className="card rounded-xl p-6">
+                  <div className="card rounded-xl p-4 sm:p-6">
                     <div className="mb-4">
-                      <h2 className="text-2xl font-bold mb-1">{selectedVideo.title}</h2>
+                      <h2 className="text-xl sm:text-2xl font-bold mb-1 leading-snug">{selectedVideo.title}</h2>
                       <p className="text-gray-500 dark:text-white/60">{selectedVideo.channel}</p>
                     </div>
 
@@ -1061,7 +1061,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                       </button>
                       <button
                         onClick={() => handleFeedback('dislike')}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition border ${
+                        className={`inline-flex min-h-11 items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition border ${
                           feedbackGiven === 'dislike'
                             ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white border-transparent'
                             : 'border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10'
