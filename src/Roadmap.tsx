@@ -52,6 +52,8 @@ interface RoadmapProps {
   /** Opens the Videos page showing whatever was last searched/watched for
    *  THIS SPECIFIC topic, with no new search — the "Saved video" button. */
   onOpenSavedVideo: (topicId: string) => void;
+  /** Opens the existing topic-keyed Deep Notes experience for this exact roadmap topic. */
+  onOpenTopicNotes: (topic: Topic) => void;
   /** Updates userData.goal/hours/deadline to the typed subject + slider
    *  values and generates a roadmap for it directly from this page — powers
    *  the empty-state "type a subject, set your time, and go" form (no
@@ -82,6 +84,7 @@ export default function Roadmap({
   userData,
   onLaunchPlaylist,
   onOpenSavedVideo,
+  onOpenTopicNotes,
   onGenerateForSubject,
   lastRoadmapError,
   goals,
@@ -920,6 +923,13 @@ export default function Roadmap({
                         {t.roadmap.topicModal.deepDiveCta}
                       </button>
 
+                      <button
+                        type="button"
+                        onClick={() => onOpenTopicNotes(selectedTopic)}
+                        className="w-full mb-2 px-4 py-3 md:py-2.5 rounded-lg border border-gray-300 dark:border-white/20 text-sm font-medium hover:bg-gray-50 dark:hover:bg-white/5 active:scale-[0.98] transition"
+                      >
+                        Open topic notes
+                      </button>
                       <button
                         onClick={handleWatchVideos}
                         disabled={playlistLoading}
