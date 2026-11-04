@@ -57,6 +57,7 @@ function App() {
   };
   const [userData, setUserData] = useState<UserOnboardingData | null>(loadSavedOnboardingData);
   const [showDemo, setShowDemo] = useState(false);
+  const [dashboardContextVersion, setDashboardContextVersion] = useState(0);
 
   // SYNC FIX: setLanguage() was previously only called at the moment
   // onboarding completes or Settings is saved — an EXISTING user who
@@ -83,39 +84,31 @@ function App() {
     () => getActiveGoals(getGoals(loadSavedOnboardingData()))[0]?.id ?? null
   );
 
-  // ON-DEMAND CLOUD HYDRATION, dashboard-wide pieces only: pulls the
-  // learning profile, goal list, and streak/active-days down from
-  // Firestore for a device that doesn't have them yet (new device / new
-  // browser). This only runs once, the first time the user actually
-  // reaches the dashboard — not on landing, and not repeated on every
-  // page/tab switch inside the dashboard. Goal/roadmap-specific data,
-  // revision data, and test data are each hydrated by their OWN page
-  // (Roadmap.tsx, Revision.tsx, Test.tsx) only when that page opens, so a
-  // visit to the dashboard never fetches more than what's about to be shown.
-  const hydratedDashboardRef = useRef(false);
+  // Dashboard entry hydrates the shared learner profile, goals and streak.
+  // The context version notifies Dashboard after these existing stores have
+  // been refreshed, so Mission Control never mistakes a cloud-only profile
+  // for a missing profile on a new device.
+  const hydratedDashboardRef = useRef<string | null>(null);
   useEffect(() => {
-    if (page !== 'dashboard' || hydratedDashboardRef.current) return;
-    hydratedDashboardRef.current = true;
+    if (page !== 'dashboard') return;
+    const authStateKey = isGuest ? 'guest' : 'signed-in';
+    if (hydratedDashboardRef.current === authStateKey) return;
+    hydratedDashboardRef.current = authStateKey;
     void (async () => {
-      // Independent of each other — run together instead of one after
-      // another so this finishes as fast as the slowest single fetch.
       await Promise.all([
         hydrateLearningProfileFromCloud(),
         hydratePersonalityProfileFromCloud(),
         hydrateGoalsFromCloud(),
         hydrateActiveDaysFromCloud(),
       ]);
-      // Re-sync state that was read from localStorage before hydration
-      // resolved, so a new device picks up the cloud data without needing
-      // a manual refresh. No-op (same values) for a device that already
-      // had everything locally.
       const freshUserData = loadSavedOnboardingData();
       setUserData(freshUserData);
       const freshGoals = getGoals(freshUserData);
       setGoals(freshGoals);
       setActiveGoalId((current) => current ?? getActiveGoals(freshGoals)[0]?.id ?? null);
+      setDashboardContextVersion((version) => version + 1);
     })();
-  }, [page]);
+  }, [page, isGuest]);
 
   // Actual server/network error from the last generate-roadmap attempt —
   // shown in Roadmap.tsx's failure banner so a failure is debuggable
@@ -358,6 +351,7 @@ function App() {
   } else if (page === 'dashboard') {
     content = (
       <Dashboard
+        dashboardContextVersion={dashboardContextVersion}
         userData={userData}
         onUpdateUserData={handleUpdateUserData}
         onRegenerateRoadmap={handleRegenerateRoadmap}
