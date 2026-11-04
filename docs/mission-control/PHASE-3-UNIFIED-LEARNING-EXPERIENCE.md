@@ -12,10 +12,10 @@ The goal is a continuous learning journey, not a set of disconnected pages.
 | Connection | Required continuity | Audit status |
 |---|---|---|
 | Roadmap → Videos | Keep exact goal/topic ID, playlist and bridge | Existing hand-off already carries topic ID, bridge and goal context |
-| Videos → Mentor | Carry the selected roadmap topic and difficulty, not just the last watched title | Implemented in this phase; tests added |
-| Mentor → learner history | Keep the explicit topic context separate from saved chat history; consume navigation context once | Implemented in this phase |
+| Videos → Mentor | Carry the selected roadmap topic and difficulty, not just the last watched title | Implemented; tests added |
+| Mentor → learner history | Keep the explicit topic context separate from saved chat history; consume navigation context once | Implemented |
 | Notes ↔ lessons | Connect notes to the relevant lesson/topic without changing the notebook database or editor engine | Pending implementation/audit |
-| Revision ↔ learned topics | Preserve topic ID and goal attribution when reviewing; offer a useful return path to learning/help | Pending implementation/audit |
+| Revision ↔ learned topics | Preserve topic ID and goal attribution when reviewing; offer a useful return path to learning/help | Contextual Ask Mentor action implemented; return-to-topic audit pending |
 | Tests ↔ weak topics | Reuse scored attempt evidence and exact topic matching; never infer a topic from an unrelated test title | Pending implementation/audit |
 | Progress ↔ outcomes | Display actual shared engine outcomes, distinguish measured values from estimates | Existing aggregation found; cross-screen refresh and empty/loading states still to verify |
 | Navigation/loading/empty states | Consistent return path, no blank transitions, preserve in-progress work | Pending end-to-end verification |
@@ -53,17 +53,25 @@ Updated `src/Mentor.tsx`:
 - topic, difficulty and source are included in the context sent with the next Mentor request;
 - chat persistence and existing Mentor learner-context builder are unchanged.
 
+### Revision → Mentor hand-off
+
+Updated `src/Revision.tsx`:
+
+- each active revision card now offers a compact Ask Mentor action;
+- the action carries the exact revision topic, goal title when available, difficulty and revision source;
+- the prompt includes the checkpoint day so Mentor can explain the concept in the context of the current recall task;
+- it uses the same one-time session hand-off and does not alter revision scheduling or recall scoring.
+
 Added `tests/mentor-learning-context.test.mjs` for one-time consumption, malformed data, length bounds and source validation.
 
 ## Remaining work before Phase 3 can be called complete
 
 1. Finish Notes-to-lesson continuity using existing notebook metadata/index APIs; do not invent a second notes database.
-2. Add Revision return/help actions that retain the selected revision item's topic and goal identity.
-3. Connect Test results to a topic only when the attempt already has reliable topic identity; preserve unlinked/general tests as general tests.
-4. Verify Progress refresh after writes from Videos, Revision and Tests, and ensure the UI labels estimated vs measured signals honestly.
-5. Audit every connected page for blank loading states, stale selected topic, wrong active goal, empty states, and back/return behavior.
-6. Add focused tests for each changed hand-off and run the repository's full test/build/lint pipeline.
-7. Inspect the preview and fix regressions before declaring completion.
+2. Add a safe Test-results-to-topic/help path only when the attempt already has reliable topic identity; preserve unlinked/general tests as general tests.
+3. Verify Progress refresh after writes from Videos, Revision and Tests, and ensure the UI labels estimated vs measured signals honestly.
+4. Audit every connected page for blank loading states, stale selected topic, wrong active goal, empty states, and back/return behavior.
+5. Add focused tests for each changed hand-off and run the repository's full test/build/lint pipeline.
+6. Inspect the preview and fix regressions before declaring completion.
 
 ## Verification policy
 
