@@ -188,7 +188,7 @@ export default function Revision({ goals = [] }: RevisionProps) {
               <button
                 type="button"
                 onClick={handleStartDailyReview}
-                className="inline-flex min-h-10 flex-shrink-0 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-500 active:scale-[0.98] dark:bg-indigo-500 dark:hover:bg-indigo-400"
+                className="inline-flex min-h-11 w-full flex-shrink-0 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-medium text-white transition hover:bg-indigo-500 active:scale-[0.98] dark:bg-indigo-500 dark:hover:bg-indigo-400 sm:w-auto sm:py-2.5"
               >
                 <Play className="h-4 w-4" />
                 {t.revision.card.reviewNowCta}
@@ -205,14 +205,14 @@ export default function Revision({ goals = [] }: RevisionProps) {
         <>
       <NotesToRevise />
       {/* Top stats — one surface, icon-first on phones */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.5 }} className="rounded-2xl card overflow-hidden grid grid-cols-4 divide-x divide-gray-200 dark:divide-white/10 mb-5 md:mb-8">
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.5 }} className="rounded-2xl card overflow-hidden grid grid-cols-2 sm:grid-cols-4 divide-x divide-y sm:divide-y-0 divide-gray-200 dark:divide-white/10 mb-5 md:mb-8">
         {[
           { label: t.revision.stats.dueToday, value: String(stats.dueToday), Icon: Flame },
           { label: t.revision.stats.overdue, value: String(stats.overdue), Icon: TriangleAlert },
           { label: t.revision.stats.mastered, value: String(stats.mastered), Icon: Star },
           { label: t.revision.recall.accuracy, value: recallAccuracy === null ? '—' : `${recallAccuracy}%`, Icon: Gauge },
         ].map(({ label, value, Icon }) => (
-          <div key={label} title={label} aria-label={`${label}: ${value}`} className="px-2 md:px-4 py-3 md:py-4 text-center md:text-left min-w-0">
+          <div key={label} title={label} aria-label={`${label}: ${value}`} className="min-w-0 px-2 py-3 text-center sm:px-4 sm:py-4 sm:text-left">
             <Icon className="md:hidden w-5 h-5 mx-auto mb-1 text-gray-500 dark:text-white/50" strokeWidth={1.75} />
             <div className="hidden md:block text-xs text-gray-400 dark:text-white/40 uppercase tracking-wider mb-1">{label}</div>
             <div className="text-xl md:text-3xl font-bold tabular-nums">{value}</div>
