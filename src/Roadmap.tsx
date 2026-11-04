@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CircleX, Star, Check, Flame, Lock, Route, Target, Gauge, CircleCheck, Clock, X as CloseIcon, ChartNoAxesColumn, Link2, CircleHelp, Globe, TriangleAlert } from 'lucide-react';
+import { CircleX, Star, Check, Flame, Lock, Route, Target, CircleCheck, Clock, X as CloseIcon, ChartNoAxesColumn, Link2, CircleHelp, Globe, TriangleAlert } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { getRoadmapData, getRoadmapProgress, markTopicFinished, hydrateRoadmapDataFromCloud } from './roadmapData';
 import { hasSavedVideoForTopic, getSavedVideoIdForTopic } from './VideoIntel';
@@ -15,6 +15,7 @@ import HintBubble from './HintBubble';
 import { useTranslation } from './i18n/LanguageContext';
 import { format } from './i18n/format';
 import { getSharedVideoLearningSummaries } from './sharedLearningIntelligence';
+import { GlassButton, GlassPanel, ProgressRing } from './ui/kit';
 
 const statusIcons: Record<Topic['status'], ReactNode> = {
   mastered: <Star className="w-4 h-4 md:w-5 md:h-5" strokeWidth={2} fill="currentColor" />,
@@ -99,7 +100,7 @@ export default function Roadmap({
   };
   const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null);
   const [completionFeedback, setCompletionFeedback] = useState<{ completed: string; next: string | null } | null>(null);
-  const [showFullJourney, setShowFullJourney] = useState(false);
+  const [showFullJourney, setShowFullJourney] = useState(true);
   // Which teaching process is currently active for the launched playlist —
   // only set on the 'personality_v1' path, used to decide the push-trigger
   // behavior in handleMarkComplete/handleWatchVideos below. Control-group
@@ -398,15 +399,27 @@ export default function Roadmap({
     }
   };
 
+  const topicTone = (status: Topic['status']) => status === 'learning'
+    ? { accent: '#a78bfa', text: 'text-violet-300' }
+    : status === 'locked'
+    ? { accent: '#64748b', text: 'text-slate-500' }
+    : { accent: '#6ee7b7', text: 'text-emerald-300' };
+
   return (
-    <div className="p-4 md:p-8 max-w-6xl mx-auto text-black dark:text-white">
+    <div className="dark">
+    <div className="relative mx-auto max-w-6xl overflow-hidden rounded-none bg-[#080d19] p-4 text-slate-100 md:m-4 md:rounded-3xl md:p-8">
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -left-32 -top-40 h-[420px] w-[420px] rounded-full bg-violet-600/[0.12] blur-[120px]" />
+        <div className="absolute -right-24 top-1/3 h-[380px] w-[380px] rounded-full bg-cyan-500/[0.08] blur-[120px]" />
+      </div>
+      <div className="relative">
       {/* Header */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="mb-4">
-        <div className="flex items-center gap-3 mb-2">
-          <Route className="w-6 h-6 md:w-8 md:h-8" strokeWidth={1.75} />
-          <h1 className="text-2xl md:text-4xl font-bold">{t.roadmap.header.title}</h1>
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="mb-5 flex items-center gap-3">
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-400/15 text-violet-200"><Route className="h-5 w-5" strokeWidth={1.75} /></span>
+        <div className="min-w-0">
+          <h1 className="text-xl font-semibold tracking-tight md:text-3xl">{t.roadmap.header.title}</h1>
+          <p className="text-xs text-slate-400 md:text-sm">{t.roadmap.header.subtitle}</p>
         </div>
-        <p className="text-sm text-gray-500 dark:text-white/60">{t.roadmap.header.subtitle}</p>
       </motion.div>
 
       {/* Goal tabs — up to MAX_ACTIVE_GOALS active goals at once */}
@@ -414,32 +427,33 @@ export default function Roadmap({
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.05, duration: 0.4 }}
-        className="flex items-center gap-2 mb-4 md:mb-6 overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0 md:flex-wrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="-mx-4 mb-4 flex items-center gap-2 overflow-x-auto px-4 md:mx-0 md:mb-6 md:flex-wrap md:px-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {activeGoals.map((g) => (
           <button
             key={g.id}
             onClick={() => onSwitchGoal(g.id)}
-            className={`flex-shrink-0 h-10 px-4 rounded-full text-sm font-medium transition truncate max-w-[220px] ${
+            aria-pressed={g.id === activeGoalId}
+            className={`h-10 max-w-[220px] flex-shrink-0 truncate rounded-full px-4 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300 ${
               g.id === activeGoalId
-                ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white'
-                : 'card text-gray-500 dark:text-white/50 hover:bg-gray-50 dark:hover:bg-white/10'
+                ? 'bg-violet-500 text-white shadow-[0_0_18px_rgba(139,92,246,.45)]'
+                : 'border border-white/10 bg-white/[0.04] text-slate-300 hover:bg-white/[0.09]'
             }`}
             title={g.title || t.roadmap.goalTabs.newGoal}
           >
-            <Target className="w-4 h-4 inline -mt-0.5 mr-1.5" strokeWidth={1.75} />{g.title || t.roadmap.goalTabs.newGoal}
+            <Target className="-mt-0.5 mr-1.5 inline h-4 w-4" strokeWidth={1.75} />{g.title || t.roadmap.goalTabs.newGoal}
           </button>
         ))}
 
         {canAddGoal ? (
           <button
             onClick={onAddGoal}
-            className="flex-shrink-0 px-4 py-2 rounded-xl text-sm font-medium border border-dashed border-gray-300 dark:border-white/20 text-gray-500 dark:text-white/50 hover:bg-gray-100 dark:hover:bg-white/10 transition"
+            className="flex-shrink-0 rounded-xl border border-dashed border-white/20 px-4 py-2 text-sm font-medium text-slate-400 transition hover:bg-white/[0.08] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300"
           >
             {t.roadmap.goalTabs.addGoal}
           </button>
         ) : (
-          <span className="hidden md:inline text-[11px] text-gray-400 dark:text-white/40 px-1">
+          <span className="hidden px-1 text-[11px] text-slate-500 md:inline">
             {format(t.roadmap.goalTabs.maxGoalsNote, MAX_ACTIVE_GOALS)}
           </span>
         )}
@@ -449,9 +463,9 @@ export default function Roadmap({
             onClick={() => setConfirmEndGoal(true)}
             aria-label={t.roadmap.goalTabs.endGoal}
             title={t.roadmap.goalTabs.endGoal}
-            className="flex-shrink-0 ml-auto h-10 min-w-10 inline-flex items-center justify-center gap-1.5 px-3 rounded-full text-xs font-medium border border-red-200 dark:border-red-500/20 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition"
+            className="ml-auto inline-flex h-10 min-w-10 flex-shrink-0 items-center justify-center gap-1.5 rounded-full border border-red-500/25 px-3 text-xs font-medium text-red-300 transition hover:bg-red-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300"
           >
-            <CircleX className="w-4 h-4 md:hidden" strokeWidth={1.75} />
+            <CircleX className="h-4 w-4 md:hidden" strokeWidth={1.75} />
             <span className="hidden md:inline">{t.roadmap.goalTabs.endGoal}</span>
           </button>
         )}
@@ -500,46 +514,49 @@ export default function Roadmap({
         )}
       </AnimatePresence>
 
-      {/* Top stats — one surface, icon-first on phones */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.5 }} className="rounded-2xl card overflow-hidden grid grid-cols-4 divide-x divide-gray-100 dark:divide-white/10 mb-4 md:mb-8">
-        {[
-          { label: t.roadmap.stats.progress, value: `${progressPercent}%`, Icon: Gauge },
-          { label: t.roadmap.stats.done, value: `${completedTopics}/${totalTopics}`, Icon: CircleCheck },
-          { label: t.roadmap.stats.inProgress, value: String(learningTopics), Icon: Flame },
-          { label: t.roadmap.stats.estTime, value: String(roadmap.estimatedTime), Icon: Clock },
-        ].map(({ label, value, Icon }) => (
-          <div key={label} title={label} aria-label={`${label}: ${value}`} className="px-2 md:px-4 py-3 md:py-4 text-center md:text-left min-w-0">
-            <Icon className="md:hidden w-5 h-5 mx-auto mb-1 text-gray-500 dark:text-white/50" strokeWidth={1.75} />
-            <div className="hidden md:block text-xs text-gray-400 dark:text-white/40 uppercase tracking-wider mb-1">{label}</div>
-            <div className="text-sm md:text-2xl font-bold truncate">{value}</div>
-          </div>
-        ))}
-      </motion.div>
-
-      {/* Progress bar */}
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2, duration: 0.5 }} className="mb-4 md:mb-10">
-        <div className="h-2 bg-indigo-100 dark:bg-white/5 rounded-full overflow-hidden">
-          <motion.div
-            initial={{ width: 0 }}
-            animate={{ width: `${progressPercent}%` }}
-            transition={{ delay: 0.3, duration: 1, ease: 'easeOut' }}
-            className="h-full bg-gradient-to-r from-indigo-500 to-violet-500 rounded-full"
-          />
-        </div>
-      </motion.div>
+      {/* Hero: progress ring + the goal's own title/description + three stats */}
+      {!hasNoRoadmap && (
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.5 }} className="mb-4">
+          <GlassPanel accent="#a78bfa" className="border-violet-300/20 bg-gradient-to-br from-violet-500/[0.10] to-transparent">
+            <div className="flex flex-col gap-5 p-4 sm:flex-row sm:items-center md:p-6">
+              <ProgressRing value={progressPercent} size={124} stroke={10} color="#a78bfa">
+                <span className="text-3xl font-semibold tabular-nums text-white">{progressPercent}%</span>
+                <span className="mt-0.5 text-[9px] uppercase tracking-[0.16em] text-slate-500">{t.roadmap.stats.progress}</span>
+              </ProgressRing>
+              <div className="min-w-0 flex-1">
+                <h2 className="text-lg font-semibold leading-snug text-white md:text-2xl">{roadmap.title}</h2>
+                <p className="mt-1 line-clamp-3 text-sm text-slate-400">{roadmap.description}</p>
+                <span className="mt-3 inline-block rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs text-slate-300">{roadmap.difficulty}</span>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 divide-x divide-white/[0.07] border-t border-white/[0.07]">
+              {[
+                { label: t.roadmap.stats.done, value: `${completedTopics}/${totalTopics}`, Icon: CircleCheck, tone: 'text-emerald-300' },
+                { label: t.roadmap.stats.inProgress, value: String(learningTopics), Icon: Flame, tone: 'text-amber-300' },
+                { label: t.roadmap.stats.estTime, value: String(roadmap.estimatedTime), Icon: Clock, tone: 'text-cyan-300' },
+              ].map(({ label, value, Icon, tone }) => (
+                <div key={label} aria-label={`${label}: ${value}`} className="min-w-0 px-3 py-3 md:px-5 md:py-4">
+                  <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-slate-500"><Icon className={`h-3.5 w-3.5 shrink-0 ${tone}`} strokeWidth={1.75} /><span className="truncate">{label}</span></div>
+                  <div className="mt-1 truncate text-base font-semibold tabular-nums text-white md:text-xl">{value}</div>
+                </div>
+              ))}
+            </div>
+          </GlassPanel>
+        </motion.div>
+      )}
 
       {completionFeedback && (
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-4 flex items-start gap-3 rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-3"
+          className="mb-4 flex items-start gap-3 rounded-xl border border-emerald-400/25 bg-emerald-400/[0.07] px-4 py-3"
           role="status"
           aria-live="polite"
         >
-          <CircleCheck className="mt-0.5 h-5 w-5 flex-shrink-0 text-emerald-500" />
+          <CircleCheck className="mt-0.5 h-5 w-5 flex-shrink-0 text-emerald-300" />
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">{t.roadmap.journey.completedTitle}: {completionFeedback.completed}</p>
-            <p className="mt-0.5 text-xs text-gray-600 dark:text-white/60">
+            <p className="text-sm font-semibold text-emerald-200">{t.roadmap.journey.completedTitle}: {completionFeedback.completed}</p>
+            <p className="mt-0.5 text-xs text-slate-300">
               {completionFeedback.next
                 ? format(t.roadmap.journey.nextUnlocked, completionFeedback.next)
                 : t.roadmap.journey.allComplete}
@@ -548,8 +565,8 @@ export default function Roadmap({
           <button
             type="button"
             onClick={() => setCompletionFeedback(null)}
-            aria-label="Dismiss completion message"
-            className="rounded-lg p-1 text-gray-400 transition hover:bg-black/5 hover:text-gray-700 dark:hover:bg-white/10 dark:hover:text-white"
+            aria-label={t.roadmap.dismissLabel}
+            className="rounded-lg p-1 text-slate-400 transition hover:bg-white/10 hover:text-white"
           >
             <CloseIcon className="h-4 w-4" />
           </button>
@@ -562,47 +579,44 @@ export default function Roadmap({
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.12, duration: 0.35 }}
           aria-labelledby="roadmap-next-step-title"
-          className="mb-5 rounded-2xl border border-indigo-500/25 bg-indigo-500/[0.045] p-4 md:p-5"
+          className="mb-6"
         >
-          <div className="mb-3 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-indigo-600 dark:text-indigo-300">
-            <Target className="h-4 w-4" strokeWidth={1.8} />
-            {t.roadmap.journey.nextUp}
-          </div>
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="min-w-0">
-              <p className="mb-1 text-[10px] text-gray-400 dark:text-white/40">
-                {format(t.roadmap.step, currentTopicIndex + 1)} · {currentTopic.estimatedTime}
-              </p>
-              <h2 id="roadmap-next-step-title" className="text-base font-semibold leading-snug md:text-lg">{currentTopic.title}</h2>
-              <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-gray-500 dark:text-white/55">{currentTopic.description}</p>
+          <GlassPanel accent="#a78bfa" className="border-violet-300/30 bg-violet-500/[0.08]">
+            <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between md:p-5">
+              <div className="min-w-0">
+                <div className="mb-2 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-violet-200">
+                  <span className="relative flex h-2 w-2"><span className="absolute inline-flex h-full w-full rounded-full bg-violet-300/70 animate-ping motion-reduce:hidden" /><span className="relative inline-flex h-2 w-2 rounded-full bg-violet-300" /></span>
+                  {t.roadmap.journey.nextUp}
+                </div>
+                <p className="mb-1 text-[10px] text-slate-500">{format(t.roadmap.step, currentTopicIndex + 1)} · {currentTopic.estimatedTime}</p>
+                <h2 id="roadmap-next-step-title" className="text-base font-semibold leading-snug text-white md:text-lg">{currentTopic.title}</h2>
+                <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-slate-400">{currentTopic.description}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => openTopic(currentTopic)}
+                className="inline-flex min-h-10 flex-shrink-0 items-center justify-center gap-2 rounded-xl bg-violet-500 px-4 py-2.5 text-sm font-semibold text-white shadow-[0_0_20px_rgba(139,92,246,.4)] transition hover:bg-violet-400 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200"
+              >
+                {t.roadmap.journey.openStep}
+                <Target className="h-4 w-4" />
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={() => openTopic(currentTopic)}
-              className="inline-flex min-h-10 flex-shrink-0 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-500 active:scale-[0.98] dark:bg-indigo-500 dark:hover:bg-indigo-400"
-            >
-              {t.roadmap.journey.openStep}
-              <Target className="h-4 w-4" />
-            </button>
-          </div>
+          </GlassPanel>
         </motion.section>
       )}
 
-      {/* Main path card */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.5 }} className="p-4 md:p-6 rounded-2xl card mb-4 md:mb-6">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex items-start gap-3 md:gap-4">
-            <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white flex items-center justify-center flex-shrink-0"><Target className="w-6 h-6" strokeWidth={1.75} /></div>
-            <div className="min-w-0">
-              <h2 className="text-base md:text-xl font-bold leading-snug">{roadmap.title}</h2>
-              <p className="text-sm text-gray-500 dark:text-white/50 line-clamp-3 md:line-clamp-none mt-1">{roadmap.description}</p>
-              <span className="inline-block mt-2 text-xs px-3 py-1 rounded-full bg-indigo-50 text-indigo-600 dark:bg-white/10 dark:text-white/70">
-                {roadmap.difficulty}
-              </span>
-            </div>
-          </div>
-        </div>
-
+      {/* No roadmap yet: the goal's placeholder title + the generate form */}
+      {hasNoRoadmap && (
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.5 }} className="mb-6">
+          <GlassPanel accent="#67e8f9">
+            <div className="p-4 md:p-6">
+              <div className="flex items-start gap-3 md:gap-4">
+                <span className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-violet-500 text-white shadow-[0_0_20px_rgba(139,92,246,.4)]"><Target className="h-6 w-6" strokeWidth={1.75} /></span>
+                <div className="min-w-0">
+                  <h2 className="text-base font-semibold leading-snug text-white md:text-xl">{roadmap.title}</h2>
+                  <p className="mt-1 text-sm text-slate-400">{roadmap.description}</p>
+                </div>
+              </div>
         {hasNoRoadmap && !activeGoalId && (
           <div className="mt-5 p-5 rounded-xl border border-dashed border-gray-300 dark:border-white/20 text-center text-sm text-gray-500 dark:text-white/50">
             {t.roadmap.noActiveGoal}
@@ -632,7 +646,7 @@ export default function Roadmap({
             </div>
 
             <details className="mt-4 rounded-xl border border-gray-200 dark:border-white/10 px-3 py-2.5">
-              <summary className="cursor-pointer list-none text-sm font-medium text-gray-600 dark:text-white/70">Customize time and exam <span className="text-xs font-normal text-gray-400">(optional)</span></summary>
+              <summary className="cursor-pointer list-none text-sm font-medium text-gray-600 dark:text-white/70">{t.roadmap.generateForm.customizeSummary} <span className="text-xs font-normal text-gray-400">{t.roadmap.generateForm.customizeOptional}</span></summary>
               <div className="mt-4">
               <label className="block text-sm font-semibold mb-2">
                 {t.roadmap.generateForm.examLabel} <span className="font-normal text-gray-400 dark:text-white/40">{t.roadmap.generateForm.examOptional}</span>
@@ -653,7 +667,7 @@ export default function Roadmap({
               <div className="flex items-center justify-between mb-2">
                 <label className="text-sm font-semibold">{t.roadmap.generateForm.weeklyTimeLabel}</label>
                 <span className="text-sm font-mono px-2 py-0.5 rounded-md bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white">
-                  {hoursInput} hrs/week
+                  {format(t.roadmap.generateForm.hoursPerWeek, hoursInput)}
                 </span>
               </div>
               <input
@@ -666,8 +680,8 @@ export default function Roadmap({
                 className="w-full h-2 rounded-full appearance-none cursor-pointer bg-gray-200 dark:bg-white/10 accent-black dark:accent-white"
               />
               <div className="flex justify-between text-[11px] text-gray-400 dark:text-white/40 mt-1">
-                <span>1 hr</span>
-                <span>40 hrs</span>
+                <span>{format(t.roadmap.generateForm.hoursMin, 1)}</span>
+                <span>{format(t.roadmap.generateForm.hoursMax, 40)}</span>
               </div>
               <p className="text-[11px] text-gray-400 dark:text-white/40 mt-1.5">
                 {t.roadmap.generateForm.weeklyTimeHint}
@@ -687,7 +701,7 @@ export default function Roadmap({
                         : 'border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10'
                     }`}
                   >
-                    {unit}
+                    {unit === 'day' ? t.roadmap.generateForm.unitDay : unit === 'week' ? t.roadmap.generateForm.unitWeek : t.roadmap.generateForm.unitMonth}
                   </button>
                 ))}
               </div>
@@ -707,8 +721,8 @@ export default function Roadmap({
                 className="w-full h-2 rounded-full appearance-none cursor-pointer bg-gray-200 dark:bg-white/10 accent-black dark:accent-white"
               />
               <div className="flex justify-between text-[11px] text-gray-400 dark:text-white/40 mt-1">
-                <span>{DEADLINE_UNIT_CONFIG[deadlineUnit].min} {deadlineUnit}</span>
-                <span>{DEADLINE_UNIT_CONFIG[deadlineUnit].max} {deadlineUnit}{DEADLINE_UNIT_CONFIG[deadlineUnit].max > 1 ? 's' : ''}</span>
+                <span>{DEADLINE_UNIT_CONFIG[deadlineUnit].label(DEADLINE_UNIT_CONFIG[deadlineUnit].min)}</span>
+                <span>{DEADLINE_UNIT_CONFIG[deadlineUnit].label(DEADLINE_UNIT_CONFIG[deadlineUnit].max)}</span>
               </div>
               </div>
             </details>
@@ -725,98 +739,96 @@ export default function Roadmap({
             )}
           </div>
         )}
-      </motion.div>
+            </div>
+          </GlassPanel>
+        </motion.div>
+      )}
 
       {totalTopics > 0 && (
         <>
-          {/* Keep attention on the active step; the full sequence remains one tap away. */}
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-white/75">{t.roadmap.journey.journeyTitle}</h2>
-        {currentTopic && (
-            <button
-              type="button"
-              onClick={() => setShowFullJourney((visible) => !visible)}
-              aria-expanded={isJourneyExpanded}
-              className="rounded-lg px-3 py-2 text-xs font-medium text-indigo-600 transition hover:bg-indigo-500/10 dark:text-indigo-300"
-            >
-              {isJourneyExpanded ? t.roadmap.journey.showLess : format(t.roadmap.journey.showAll, totalTopics)}
-            </button>
-          )}
+          {/* The learning path: nodes alternate along a central spine on wide screens, stack on phones. */}
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-sm font-semibold text-slate-200">{t.roadmap.journey.journeyTitle}</h2>
+            {currentTopic && (
+              <button
+                type="button"
+                onClick={() => setShowFullJourney((visible) => !visible)}
+                aria-expanded={isJourneyExpanded}
+                className="rounded-lg px-3 py-2 text-xs font-medium text-violet-300 transition hover:bg-violet-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300"
+              >
+                {isJourneyExpanded ? t.roadmap.journey.showLess : format(t.roadmap.journey.showAll, totalTopics)}
+              </button>
+            )}
           </div>
-          <div>
+          <ol className="relative">
             {roadmap.children?.map((topic, i) => {
               if (!isJourneyExpanded && topic.status !== 'learning') return null;
-          const status = { ...statusStyles[topic.status], icon: statusIcons[topic.status], label: statusLabels[topic.status] };
-          const isLast = i === (roadmap.children?.length ?? 0) - 1;
-          const isLocked = topic.status === 'locked';
-          const isDone = topic.status === 'completed' || topic.status === 'mastered';
-          const isActive = topic.status === 'learning';
-          return (
-            <div key={topic.id} className="flex gap-3 md:gap-4">
-              <div className="flex flex-col items-center flex-shrink-0">
-                <div
-                  title={status.label}
-                  aria-label={status.label}
-                  className={`w-9 h-9 md:w-11 md:h-11 rounded-full flex items-center justify-center flex-shrink-0 ${
-                    isDone
-                      ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white'
-                      : isActive
-                      ? 'border-2 border-indigo-500 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400 bg-white dark:bg-black'
-                      : 'border border-gray-200 dark:border-white/15 text-gray-300 dark:text-white/30'
-                  }`}
-                >
-                  {status.icon}
-                </div>
-                {!isLast && <div className={`flex-1 w-0.5 my-1 rounded-full ${isDone ? 'bg-indigo-500 dark:bg-indigo-400' : 'bg-indigo-100 dark:bg-white/10'}`} />}
-              </div>
-
-              <button
-                onClick={() => openTopic(topic)}
-                disabled={isLocked}
-                className={`flex-1 min-w-0 mb-3 p-4 md:p-5 rounded-2xl border ${status.border} ${status.bg} text-left transition-all ${
-                  isLocked ? 'opacity-50 cursor-not-allowed' : 'hover:scale-[1.01] active:scale-[0.99] cursor-pointer'
-                }`}
-              >
-                <div className="flex items-center gap-3 md:gap-4">
-                  <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-[10px] text-gray-400 dark:text-white/30">{format(t.roadmap.step, i + 1)}</span>
-                    <span className={`text-[10px] uppercase tracking-wider ${difficultyConfig[topic.difficulty]}`}>
-                      • {topic.difficulty}
+              const count = roadmap.children?.length ?? 0;
+              const isFirst = i === 0;
+              const isLast = i === count - 1;
+              const isLocked = topic.status === 'locked';
+              const isDone = topic.status === 'completed' || topic.status === 'mastered';
+              const isActive = topic.status === 'learning';
+              const prev = i > 0 ? roadmap.children?.[i - 1] : undefined;
+              const prevDone = prev ? prev.status === 'completed' || prev.status === 'mastered' : false;
+              const tone = topicTone(topic.status);
+              const onLeft = i % 2 === 0;
+              const lineDone = 'w-0.5 bg-emerald-400/80 shadow-[0_0_8px_rgba(52,211,153,.6)]';
+              const lineOpen = 'w-0 border-l-2 border-dashed border-white/15';
+              return (
+                <li key={topic.id} id={isActive ? 'roadmap-current' : undefined} className="grid grid-cols-[auto_1fr] gap-x-3 md:grid-cols-[1fr_auto_1fr] md:gap-x-6">
+                  <div className="relative col-start-1 row-start-1 w-9 md:col-start-2">
+                    {!isFirst && <span aria-hidden="true" className={`absolute left-1/2 top-0 h-[1.125rem] -translate-x-1/2 ${prevDone ? lineDone : lineOpen}`} />}
+                    {!isLast && <span aria-hidden="true" className={`absolute bottom-0 left-1/2 top-[1.125rem] -translate-x-1/2 ${isDone ? lineDone : isActive ? 'w-0 border-l-2 border-dashed border-violet-300/50' : lineOpen}`} />}
+                    <span
+                      title={statusLabels[topic.status]}
+                      aria-label={statusLabels[topic.status]}
+                      className={`absolute left-1/2 top-0 z-10 flex h-9 w-9 -translate-x-1/2 items-center justify-center rounded-full ${
+                        isDone
+                          ? 'border border-emerald-300/50 bg-emerald-400/15 text-emerald-300 shadow-[0_0_16px_rgba(52,211,153,.35)]'
+                          : isActive
+                          ? 'bg-violet-500 text-white shadow-[0_0_22px_rgba(139,92,246,.7)]'
+                          : 'border border-white/15 bg-[#0b1221] text-slate-500'
+                      }`}
+                    >
+                      {isActive && <span aria-hidden="true" className="absolute inset-0 rounded-full bg-violet-400/40 animate-ping motion-reduce:hidden" />}
+                      <span className="relative">{statusIcons[topic.status]}</span>
                     </span>
-                    {topic.examWeightage && (
-                      <span
-                        className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded ${
-                          topic.examWeightage === 'high'
-                            ? 'bg-red-500/10 text-red-500'
-                            : topic.examWeightage === 'medium'
-                            ? 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400'
-                            : 'bg-gray-500/10 text-gray-400'
-                        }`}
-                        title="Exam weightage"
-                      >
-                        {topic.examWeightage === 'high' ? t.roadmap.examWeightage.high : topic.examWeightage === 'medium' ? t.roadmap.examWeightage.medium : t.roadmap.examWeightage.low}
-                      </span>
-                    )}
-                  </div>
-                    <h3 className="font-semibold mb-1 text-sm md:text-base">{topic.title}</h3>
-                    <p className="text-xs md:text-sm text-gray-500 dark:text-white/50 line-clamp-2 md:line-clamp-1">{topic.description}</p>
-                    <div className="sm:hidden flex items-center gap-1 mt-2 text-xs text-gray-400 dark:text-white/40">
-                      <Clock className="w-3.5 h-3.5" strokeWidth={1.75} />
-                      {topic.estimatedTime}
-                    </div>
                   </div>
 
-                  <div className="hidden sm:block text-right flex-shrink-0">
-                    <div className={`text-[10px] uppercase tracking-wider ${status.text} mb-1`}>{status.label}</div>
-                    <div className="text-xs text-gray-400 dark:text-white/40">{topic.estimatedTime}</div>
+                  <div className={`col-start-2 row-start-1 pb-4 md:pb-6 ${onLeft ? 'md:col-start-1' : 'md:col-start-3'}`}>
+                    <GlassButton
+                      onClick={() => openTopic(topic)}
+                      disabled={isLocked}
+                      accent={tone.accent}
+                      className={`w-full ${isActive ? 'border-violet-300/40 bg-violet-500/[0.07] shadow-[0_0_28px_rgba(139,92,246,.18)]' : ''} ${isLocked ? 'opacity-55' : ''}`}
+                    >
+                      <span className="block p-4 md:p-5">
+                        <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] uppercase tracking-wider">
+                          <span className="text-slate-500">{format(t.roadmap.step, i + 1)}</span>
+                          <span className="text-slate-400">• {topic.difficulty}</span>
+                          {topic.examWeightage && (
+                            <span
+                              title={t.roadmap.examWeightageTitle}
+                              className={`rounded px-1.5 py-0.5 ${
+                                topic.examWeightage === 'high' ? 'bg-red-500/15 text-red-300' : topic.examWeightage === 'medium' ? 'bg-amber-400/15 text-amber-300' : 'bg-white/10 text-slate-400'
+                              }`}
+                            >
+                              {topic.examWeightage === 'high' ? t.roadmap.examWeightage.high : topic.examWeightage === 'medium' ? t.roadmap.examWeightage.medium : t.roadmap.examWeightage.low}
+                            </span>
+                          )}
+                          <span className={`ml-auto ${tone.text}`}>{statusLabels[topic.status]}</span>
+                        </span>
+                        <span className="mt-1.5 block text-sm font-semibold leading-snug text-white md:text-base">{topic.title}</span>
+                        <span className="mt-1 line-clamp-2 block text-xs leading-relaxed text-slate-400">{topic.description}</span>
+                        <span className="mt-3 inline-flex items-center gap-1 text-xs text-slate-500"><Clock className="h-3.5 w-3.5" strokeWidth={1.75} />{topic.estimatedTime}</span>
+                      </span>
+                    </GlassButton>
                   </div>
-                </div>
-              </button>
-            </div>
-          );
+                </li>
+              );
             })}
-          </div>
+          </ol>
         </>
       )}
 
@@ -1006,6 +1018,8 @@ export default function Roadmap({
           />
         )}
       </AnimatePresence>
+      </div>
+    </div>
     </div>
   );
 }

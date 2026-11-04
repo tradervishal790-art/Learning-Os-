@@ -84,6 +84,23 @@ export interface TranslationShape {
       ];
     };
     home: {
+      /** Home screen ("learning map") copy. Placeholders: {0}, {1}. */
+      hub: {
+        eyebrow: string; mapTitle: string; noGoal: string; streakChip: string;
+        continueEyebrow: string; continueTitle: string; continueWithGoal: string; continueEmpty: string;
+        progressLabel: string; topicsProgress: string;
+        consistencyTitle: string; consistencyRange: string; dayStreakLabel: string; less: string; more: string;
+        actions: { revision: string; tests: string; mentor: string; review: string; practice: string; ask: string; dueCount: string };
+        nextStep: { label: string; setupProfile: string; chooseGoal: string; overdue: string; due: string; openRoadmap: string };
+        space: { eyebrow: string; hint: string; show: string; hide: string; emptyTitle: string; emptyBody: string; restore: string };
+        student: string; youAreHere: string; learningGoal: string; startsWithCuriosity: string;
+        legend: { student: string; engines: string; actions: string };
+        moreMenu: { button: string; searchPlaceholder: string; noMatch: string };
+        customize: { button: string; title: string; body: string; close: string; onMap: string; add: string; reset: string; done: string };
+        footer: { goalOne: string; goalMany: string; profileReady: string; profileMissing: string };
+        engines: Record<'know' | 'plan' | 'learn' | 'retain' | 'prove' | 'research' | 'dictionary' | 'currentAffairs', { title: string; subtitle: string }>;
+        tools: Record<'profile' | 'roadmap' | 'videos' | 'notes' | 'mentor' | 'revision' | 'test' | 'progress' | 'research' | 'dictionary' | 'currentAffairs', { label: string; detail: string }>;
+      };
       revisionBanner: { overdueTitle: string; dueTitle: string; subtitle: string }; // overdueTitle: "{0} ... {1}", dueTitle: "{0}"
       learnerFallback: string;
       statsCards: {
@@ -289,6 +306,99 @@ export interface TranslationShape {
     errors: { noneAnalyzed: string };
   };
   revisionTasks: { day1: string; day3: string; day7: string; day15: string; day30: string; day60: string; fallback: string };
+  testScreen: {
+    title: string;
+    subtitle: string;
+    list: {
+      dailyTitle: string;
+      dailyEmpty: string;
+      dailyPending: string;
+      dailyReady: string;
+      dailyDone: string;
+      open: string;
+      officialTests: string;
+      myTests: string;
+      createNew: string;
+      noTestsYet: string;
+      questionsOne: string;
+      questionsMany: string;
+      minutes: string;
+      noTimer: string;
+      live: string;
+      runLive: string;
+      takeTest: string;
+      editTest: string;
+      deleteTest: string;
+      pastAttempts: string;
+    };
+    instructions: {
+      duration: string;
+      noLimit: string;
+      totalMarks: string;
+      mcq: string;
+      subjective: string;
+      legendTitle: string;
+      notVisited: string;
+      notAnswered: string;
+      answered: string;
+      marked: string;
+      answeredMarked: string;
+      start: string;
+      back: string;
+    };
+    taking: {
+      questionOf: string;
+      submit: string;
+      multipleChoice: string;
+      shortAnswer: string;
+      marksPlain: string;
+      marksNegative: string;
+      answerPlaceholder: string;
+      clear: string;
+      markNext: string;
+      saveNext: string;
+      previous: string;
+      palette: string;
+      answeredCount: string;
+      statQuestions: string;
+      statAnswered: string;
+      statMarked: string;
+      statSkipped: string;
+      paletteAria: string;
+      statusAria: {
+        notVisited: string;
+        notAnswered: string;
+        answered: string;
+        marked: string;
+        answeredMarked: string;
+      };
+    };
+    results: {
+      summary: string;
+      pendingOne: string;
+      pendingMany: string;
+      downloadPdf: string;
+      backToTests: string;
+      questionPrefix: string;
+      correctTag: string;
+      yourAnswerTag: string;
+      yourAnswer: string;
+      leftBlank: string;
+      modelAnswer: string;
+      gotRight: string;
+      gotWrong: string;
+      why: string;
+    };
+    confirm: {
+      unanswered: string;
+      submitNow: string;
+      submit: string;
+      keepWorking: string;
+      deleteMessage: string;
+      delete: string;
+      cancel: string;
+    };
+  };
   roadmap: {
     header: { title: string; subtitle: string };
     goalTabs: {
@@ -319,7 +429,17 @@ export interface TranslationShape {
       timeLimitLabel: string;
       deadlineLabel: string;
       generateFailed: string;
+      customizeSummary: string;
+      customizeOptional: string;
+      hoursPerWeek: string; // "{0}" = hours
+      hoursMin: string; // "{0}" = hours
+      hoursMax: string; // "{0}" = hours
+      unitDay: string;
+      unitWeek: string;
+      unitMonth: string;
     };
+    dismissLabel: string;
+    examWeightageTitle: string;
     statusLabels: { mastered: string; completed: string; learning: string; locked: string };
     examWeightage: Record<'high' | 'medium' | 'low', string>;
     step: string; // "{0}" = step number
@@ -371,6 +491,7 @@ export interface TranslationShape {
     };
   };
   notebook: {
+    loading: string;
     tabNotebook: string;
     tabAi: string;
     ai: Record<string, string>;
@@ -770,10 +891,10 @@ export interface TranslationShape {
     stats: { completion: string; streak: string; totalWatchTime: string; retention: string };
     completionBar: { topicsDone: string; inProgress: string }; // "{0}/{1}" and "{0}"
     emptyState: { title: string; body: string };
-    timeTracking: { title: string; last7Days: string }; // "{0}" = minutes
-    masteryHeatmap: { title: string; legendWeak: string; legendOk: string; legendStrong: string };
+    timeTracking: { title: string; last7Days: string; minutesTitle: string }; // "{0}" = minutes
+    masteryHeatmap: { title: string; legendWeak: string; legendOk: string; legendStrong: string; aria: string; estimated: string; observed: string; testAcc: string }; // aria "{0}: {1}%"; observed "{0}" ratings; testAcc "{0}%", "{1}" tests
     retentionDetail: { title: string; dueToday: string; overdue: string; mastered: string };
-    weakAreas: { title: string; noneFound: string };
+    weakAreas: { title: string; noneFound: string; progressEstimate: string; recallCount: string }; // recallCount "{0}"
   };
   dictionary: {
     subtitle: string;
@@ -800,6 +921,8 @@ export interface TranslationShape {
     searchCta: string;
     notGroundedNote: string;
     genericError: string;
+    noResults: string;
+    mapAria: string;
     embedded: { title: string; hint: string };
     closeAria: string;
     emptyState: { title: string; subtitle: string };
@@ -814,8 +937,15 @@ export interface TranslationShape {
     tabs: { all: string; national: string; international: string; economy: string; sports: string; scitech: string };
     sourceLabel: string;
     aiNote: string;
-    reader: { articleView: string; fallback: string; openOriginal: string; unavailable: string };
-
+    reader: { articleView: string; fallback: string; openOriginal: string; unavailable: string; kicker: string; close: string };
+    savedLabel: string;
+    noSaved: string;
+    genericError: string;
+    openingDigest: string;
+    read: string;
+    readInApp: string;
+    save: string;
+    removeSaved: string;
   };
   channelDigest: {
     switchNews: string;
@@ -1033,6 +1163,57 @@ export const translations: Record<Locale, TranslationShape> = {
           overdueTitle: '{0} topics need revision — {1} overdue!',
           dueTitle: '{0} topics to revise today',
           subtitle: "Don't forget — do it now",
+        },
+        hub: {
+          eyebrow: 'Personal learning network',
+          mapTitle: 'Your learning map',
+          noGoal: 'Choose a learning goal',
+          streakChip: '{0} day streak',
+          continueEyebrow: 'Pick up where you left off',
+          continueTitle: 'Continue learning',
+          continueWithGoal: 'Continue with {0}',
+          continueEmpty: 'Choose a goal and build your first learning path',
+          progressLabel: 'Roadmap progress',
+          topicsProgress: '{0} of {1} topics',
+          consistencyTitle: 'Consistency',
+          consistencyRange: 'Last {0} weeks',
+          dayStreakLabel: 'day streak',
+          less: 'Less',
+          more: 'More',
+          actions: { revision: 'Revision', tests: 'Tests', mentor: 'AI Mentor', review: 'Review', practice: 'Practice', ask: 'Ask', dueCount: '{0} due' },
+          nextStep: { label: 'Suggested next step', setupProfile: 'Set up your learning profile', chooseGoal: 'Choose a learning goal', overdue: '{0} overdue topics to revise', due: '{0} topics ready for revision', openRoadmap: 'Open your learning roadmap' },
+          space: { eyebrow: 'Your learning space', hint: 'Your tools, in one place', show: 'Explore learning map', hide: 'Hide learning map', emptyTitle: 'Your map is empty', emptyBody: 'Restore the learning engines to continue.', restore: 'Restore learning engines' },
+          student: 'Student',
+          youAreHere: 'You are here',
+          learningGoal: 'Learning {0}',
+          startsWithCuriosity: 'Starts with curiosity',
+          legend: { student: 'Student', engines: 'Learning engines', actions: 'Actions' },
+          moreMenu: { button: 'More', searchPlaceholder: 'Search personal tools...', noMatch: 'No matching personal tools found.' },
+          customize: { button: 'Customize map', title: 'Customize your learning map', body: 'Keep the engines you use most. Your map saves locally and syncs when available.', close: 'Close', onMap: 'On map', add: 'Add', reset: 'Reset default', done: 'Done' },
+          footer: { goalOne: '{0} active goal', goalMany: '{0} active goals', profileReady: 'Profile ready', profileMissing: 'Profile not set up' },
+          engines: {
+            know: { title: 'Know Me', subtitle: 'Understand how you learn' },
+            plan: { title: 'Plan', subtitle: 'Build a clear direction' },
+            learn: { title: 'Learn', subtitle: 'Turn plans into progress' },
+            retain: { title: 'Retain', subtitle: 'Make learning last' },
+            prove: { title: 'Prove', subtitle: 'See what you can do' },
+            research: { title: 'Research', subtitle: 'Explore new ideas' },
+            dictionary: { title: 'Dictionary', subtitle: 'Look up concepts' },
+            currentAffairs: { title: 'Current Affairs', subtitle: 'Stay informed' },
+          },
+          tools: {
+            profile: { label: 'Mind blueprint', detail: 'Learning profile' },
+            roadmap: { label: 'Learning roadmap', detail: 'Your next topics' },
+            videos: { label: 'Video intelligence', detail: 'Learn with focus' },
+            notes: { label: 'Notes workspace', detail: 'Capture your thinking' },
+            mentor: { label: 'AI Mentor', detail: 'Ask and explore' },
+            revision: { label: 'Revision room', detail: 'Recall and review' },
+            test: { label: 'Tests and practice', detail: 'Check understanding' },
+            progress: { label: 'Growth and progress', detail: 'See your progress' },
+            research: { label: 'Research workspace', detail: 'Explore ideas and sources' },
+            dictionary: { label: 'Open dictionary', detail: 'Find meanings and concepts' },
+            currentAffairs: { label: 'Current affairs', detail: 'Read latest updates' },
+          },
         },
         learnerFallback: 'Learner',
         statsCards: {
@@ -1534,6 +1715,99 @@ export const translations: Record<Locale, TranslationShape> = {
       day60: 'Final recall check — explain it fully without looking',
       fallback: 'Revise this topic',
     },
+    testScreen: {
+      title: 'Tests',
+      subtitle: 'Take official tests, or build your own for practice.',
+      list: {
+        dailyTitle: 'Daily Test',
+        dailyEmpty: 'Set up once — a new test every day',
+        dailyPending: 'Today\'s test is waiting',
+        dailyReady: 'Today\'s test is ready',
+        dailyDone: 'Done for today',
+        open: 'Open',
+        officialTests: 'Official tests',
+        myTests: 'My tests',
+        createNew: 'Create New Test',
+        noTestsYet: 'You haven\'t created any tests yet — add your own questions above.',
+        questionsOne: '{0} question',
+        questionsMany: '{0} questions',
+        minutes: '{0} min',
+        noTimer: 'no timer',
+        live: 'Live',
+        runLive: 'Run live',
+        takeTest: 'Take Test',
+        editTest: 'Edit test',
+        deleteTest: 'Delete test',
+        pastAttempts: 'Past attempts',
+      },
+      instructions: {
+        duration: 'Duration',
+        noLimit: 'No limit',
+        totalMarks: 'Total marks',
+        mcq: 'MCQ questions',
+        subjective: 'Subjective questions',
+        legendTitle: 'Question palette legend',
+        notVisited: 'Not visited yet',
+        notAnswered: 'Visited, not answered',
+        answered: 'Answered',
+        marked: 'Marked for review (not scored)',
+        answeredMarked: 'Answered & marked for review (scored)',
+        start: 'Start Test',
+        back: 'Back',
+      },
+      taking: {
+        questionOf: 'Question {0} of {1}',
+        submit: 'Submit Test',
+        multipleChoice: 'Multiple Choice',
+        shortAnswer: 'Short Answer',
+        marksPlain: '+{0} marks',
+        marksNegative: '+{0} / -{1} marks',
+        answerPlaceholder: 'Type your answer here...',
+        clear: 'Clear Response',
+        markNext: 'Mark for Review & Next',
+        saveNext: 'Save & Next',
+        previous: 'Previous',
+        palette: 'Question Palette',
+        answeredCount: '{0}/{1} answered',
+        statQuestions: 'Questions',
+        statAnswered: 'Answered',
+        statMarked: 'Marked',
+        statSkipped: 'Skipped',
+        paletteAria: 'Question {0}: {1}',
+        statusAria: {
+          notVisited: 'Not visited',
+          notAnswered: 'Visited, not answered',
+          answered: 'Answered',
+          marked: 'Marked for review, not answered',
+          answeredMarked: 'Answered and marked for review',
+        },
+      },
+      results: {
+        summary: '{0}% · {1} correct',
+        pendingOne: '{0} subjective answer awaiting grading',
+        pendingMany: '{0} subjective answers awaiting grading',
+        downloadPdf: 'Download PDF',
+        backToTests: 'Back to Tests',
+        questionPrefix: 'Q{0}.',
+        correctTag: '(correct)',
+        yourAnswerTag: '(your answer)',
+        yourAnswer: 'Your answer: ',
+        leftBlank: 'left blank',
+        modelAnswer: 'Model answer: ',
+        gotRight: 'I got this right',
+        gotWrong: 'I got this wrong',
+        why: 'Why: ',
+      },
+      confirm: {
+        unanswered: '{0} question(s) unanswered. Submit anyway?',
+        submitNow: 'Submit the test now?',
+        submit: 'Submit',
+        keepWorking: 'Keep working',
+        deleteMessage: 'Delete this test? This cannot be undone.',
+        delete: 'Delete',
+        cancel: 'Cancel',
+      },
+    },
     roadmap: {
       header: { title: 'Your Roadmap', subtitle: 'Foundation-first order — follow it for best results' },
       goalTabs: {
@@ -1564,7 +1838,17 @@ export const translations: Record<Locale, TranslationShape> = {
         timeLimitLabel: 'Time limit',
         deadlineLabel: 'Deadline',
         generateFailed: "Couldn't generate the roadmap — try again.",
+        customizeSummary: 'Customize time and exam',
+        customizeOptional: '(optional)',
+        hoursPerWeek: '{0} hrs/week',
+        hoursMin: '{0} hr',
+        hoursMax: '{0} hrs',
+        unitDay: 'Day',
+        unitWeek: 'Week',
+        unitMonth: 'Month',
       },
+      dismissLabel: 'Dismiss completion message',
+      examWeightageTitle: 'Exam weightage',
       statusLabels: { mastered: 'Mastered', completed: 'Done', learning: 'In Progress', locked: 'Locked' },
       examWeightage: { high: 'High weightage', medium: 'Medium weightage', low: 'Low weightage' },
       step: 'STEP {0}',
@@ -1621,6 +1905,7 @@ export const translations: Record<Locale, TranslationShape> = {
       },
     },
     notebook: {
+      loading: "Opening your learning workspace…",
       tabNotebook: "My notebook",
       tabAi: "AI notes",
       ai: {
@@ -2414,10 +2699,10 @@ export const translations: Record<Locale, TranslationShape> = {
         title: 'Nothing to track yet',
         body: 'Start a topic from your roadmap — progress will start showing up here automatically.',
       },
-      timeTracking: { title: 'Time Tracking', last7Days: 'Last 7 days: {0} min' },
-      masteryHeatmap: { title: 'Mastery Heatmap', legendWeak: 'Weak', legendOk: 'OK', legendStrong: 'Strong' },
+      timeTracking: { title: 'Time Tracking', last7Days: 'Last 7 days: {0} min', minutesTitle: '{0} min' },
+      masteryHeatmap: { title: 'Mastery Heatmap', legendWeak: 'Weak', legendOk: 'OK', legendStrong: 'Strong', aria: '{0}: {1}% mastery', estimated: 'estimated from progress', observed: 'observed recall from {0} rating(s)', testAcc: 'test accuracy {0}% from {1} recent test(s)' },
       retentionDetail: { title: 'Retention', dueToday: 'Due Today', overdue: 'Overdue', mastered: 'Mastered' },
-      weakAreas: { title: 'Weak Areas', noneFound: 'No weak topics found — everything is going well.' },
+      weakAreas: { title: 'Weak Areas', noneFound: 'No weak topics found — everything is going well.', progressEstimate: 'Progress estimate', recallCount: 'Recall · {0}' },
     },
     dictionary: {
       subtitle: 'Find meanings, pronunciation and related language roots.',
@@ -2445,6 +2730,8 @@ export const translations: Record<Locale, TranslationShape> = {
       notGroundedNote:
         "Couldn't find a live search source this time — the answer below is from general knowledge, double-check it for anything current",
       genericError: 'Research failed',
+      noResults: "No results found. Try a different search phrase.",
+      mapAria: "Map of the sources for this search",
       embedded: { title: 'Research (alongside the video)', hint: 'Search for anything — the video keeps playing.' },
       closeAria: 'Close research panel',
       emptyState: { title: 'Search any topic', subtitle: 'You can also open this alongside a video — from the Videos page' },
@@ -2459,7 +2746,15 @@ export const translations: Record<Locale, TranslationShape> = {
       tabs: { all: 'All', national: 'National', international: 'International', economy: 'Economy', sports: 'Sports', scitech: 'Sci & Tech' },
       sourceLabel: 'Source',
       aiNote: 'Summarised from public news by AI. For anything important, check the original source.',
-      reader: { articleView: 'Article view', fallback: 'Some publishers block in-app viewing. If the article does not appear, open the original page.', openOriginal: 'Open original article', unavailable: 'Original article link is unavailable.' },
+      reader: { articleView: 'Article view', fallback: 'Some publishers block in-app viewing. If the article does not appear, open the original page.', openOriginal: 'Open original article', unavailable: 'Original article link is unavailable.', kicker: 'Learning OS · News reader', close: 'Close reader' },
+      savedLabel: 'Saved',
+      noSaved: 'No saved points yet',
+      genericError: 'Something went wrong',
+      openingDigest: 'Opening your channel digest…',
+      read: 'Read',
+      readInApp: 'Read in Learning OS',
+      save: 'Save',
+      removeSaved: 'Remove from saved',
     },
     channelDigest: {
       switchNews: 'Newspapers',
@@ -2676,6 +2971,57 @@ export const translations: Record<Locale, TranslationShape> = {
           overdueTitle: '{0} टॉपिक का रिवीजन बाकी है — {1} ओवरड्यू!',
           dueTitle: 'आज {0} टॉपिक रिवाइज करने हैं',
           subtitle: 'भूलिए मत — अभी कर लीजिए',
+        },
+        hub: {
+          eyebrow: 'आपका सीखने का नेटवर्क',
+          mapTitle: 'आपका लर्निंग मैप',
+          noGoal: 'सीखने का लक्ष्य चुनें',
+          streakChip: '{0} दिन की स्ट्रीक',
+          continueEyebrow: 'जहाँ छोड़ा था वहीं से शुरू करें',
+          continueTitle: 'सीखना जारी रखें',
+          continueWithGoal: '{0} के साथ आगे बढ़ें',
+          continueEmpty: 'एक लक्ष्य चुनें और अपना पहला लर्निंग पाथ बनाएँ',
+          progressLabel: 'रोडमैप प्रगति',
+          topicsProgress: '{1} में से {0} टॉपिक',
+          consistencyTitle: 'निरंतरता',
+          consistencyRange: 'पिछले {0} सप्ताह',
+          dayStreakLabel: 'दिन की स्ट्रीक',
+          less: 'कम',
+          more: 'ज़्यादा',
+          actions: { revision: 'रिवीज़न', tests: 'टेस्ट', mentor: 'AI मेंटर', review: 'दोहराएँ', practice: 'अभ्यास', ask: 'पूछें', dueCount: '{0} बाकी' },
+          nextStep: { label: 'सुझाया गया अगला कदम', setupProfile: 'अपनी लर्निंग प्रोफ़ाइल बनाएँ', chooseGoal: 'सीखने का लक्ष्य चुनें', overdue: '{0} टॉपिक की रिवीज़न बाकी है', due: '{0} टॉपिक रिवीज़न के लिए तैयार हैं', openRoadmap: 'अपना लर्निंग रोडमैप खोलें' },
+          space: { eyebrow: 'आपकी सीखने की जगह', hint: 'आपके सभी टूल एक जगह', show: 'लर्निंग मैप देखें', hide: 'लर्निंग मैप छिपाएँ', emptyTitle: 'आपका मैप खाली है', emptyBody: 'आगे बढ़ने के लिए लर्निंग इंजन वापस लाएँ।', restore: 'लर्निंग इंजन वापस लाएँ' },
+          student: 'विद्यार्थी',
+          youAreHere: 'आप यहाँ हैं',
+          learningGoal: '{0} सीख रहे हैं',
+          startsWithCuriosity: 'जिज्ञासा से शुरुआत',
+          legend: { student: 'विद्यार्थी', engines: 'लर्निंग इंजन', actions: 'क्रियाएँ' },
+          moreMenu: { button: 'और', searchPlaceholder: 'अपने टूल खोजें...', noMatch: 'कोई मिलता-जुलता टूल नहीं मिला।' },
+          customize: { button: 'मैप बदलें', title: 'अपना लर्निंग मैप बदलें', body: 'वही इंजन रखें जो आप सबसे ज़्यादा इस्तेमाल करते हैं। मैप आपके डिवाइस पर सेव होता है और उपलब्ध होने पर सिंक होता है।', close: 'बंद करें', onMap: 'मैप पर', add: 'जोड़ें', reset: 'डिफ़ॉल्ट पर लौटें', done: 'हो गया' },
+          footer: { goalOne: '{0} सक्रिय लक्ष्य', goalMany: '{0} सक्रिय लक्ष्य', profileReady: 'प्रोफ़ाइल तैयार', profileMissing: 'प्रोफ़ाइल नहीं बनी' },
+          engines: {
+            know: { title: 'मुझे जानें', subtitle: 'समझें कि आप कैसे सीखते हैं' },
+            plan: { title: 'योजना', subtitle: 'साफ़ दिशा बनाएँ' },
+            learn: { title: 'सीखें', subtitle: 'योजना को प्रगति में बदलें' },
+            retain: { title: 'याद रखें', subtitle: 'सीखा हुआ टिकाएँ' },
+            prove: { title: 'परखें', subtitle: 'देखें आप क्या कर सकते हैं' },
+            research: { title: 'रिसर्च', subtitle: 'नए विचार खोजें' },
+            dictionary: { title: 'शब्दकोश', subtitle: 'अवधारणाएँ खोजें' },
+            currentAffairs: { title: 'करंट अफेयर्स', subtitle: 'जानकारी में रहें' },
+          },
+          tools: {
+            profile: { label: 'माइंड ब्लूप्रिंट', detail: 'लर्निंग प्रोफ़ाइल' },
+            roadmap: { label: 'लर्निंग रोडमैप', detail: 'आपके अगले टॉपिक' },
+            videos: { label: 'वीडियो इंटेलिजेंस', detail: 'फ़ोकस के साथ सीखें' },
+            notes: { label: 'नोट्स वर्कस्पेस', detail: 'अपनी सोच दर्ज करें' },
+            mentor: { label: 'AI मेंटर', detail: 'पूछें और खोजें' },
+            revision: { label: 'रिवीज़न रूम', detail: 'याद करें और दोहराएँ' },
+            test: { label: 'टेस्ट और अभ्यास', detail: 'समझ जाँचें' },
+            progress: { label: 'ग्रोथ और प्रगति', detail: 'अपनी प्रगति देखें' },
+            research: { label: 'रिसर्च वर्कस्पेस', detail: 'विचार और स्रोत खोजें' },
+            dictionary: { label: 'शब्दकोश खोलें', detail: 'अर्थ और अवधारणाएँ खोजें' },
+            currentAffairs: { label: 'करंट अफेयर्स', detail: 'ताज़ा अपडेट पढ़ें' },
+          },
         },
         learnerFallback: 'लर्नर',
         statsCards: {
@@ -3173,6 +3519,99 @@ export const translations: Record<Locale, TranslationShape> = {
       day60: 'फाइनल रिकॉल चेक — बिना देखे पूरा एक्सप्लेन करो',
       fallback: 'इस टॉपिक को रिवाइज़ करो',
     },
+    testScreen: {
+      title: 'टेस्ट',
+      subtitle: 'आधिकारिक टेस्ट दें, या अभ्यास के लिए अपना खुद का बनाएँ।',
+      list: {
+        dailyTitle: 'डेली टेस्ट',
+        dailyEmpty: 'एक बार सेट करें — हर दिन नया टेस्ट',
+        dailyPending: 'आज का टेस्ट इंतज़ार कर रहा है',
+        dailyReady: 'आज का टेस्ट तैयार है',
+        dailyDone: 'आज के लिए पूरा',
+        open: 'खोलें',
+        officialTests: 'आधिकारिक टेस्ट',
+        myTests: 'मेरे टेस्ट',
+        createNew: 'नया टेस्ट बनाएँ',
+        noTestsYet: 'आपने अभी कोई टेस्ट नहीं बनाया — ऊपर अपने सवाल जोड़ें।',
+        questionsOne: '{0} सवाल',
+        questionsMany: '{0} सवाल',
+        minutes: '{0} मिनट',
+        noTimer: 'कोई टाइमर नहीं',
+        live: 'लाइव',
+        runLive: 'लाइव चलाएँ',
+        takeTest: 'टेस्ट दें',
+        editTest: 'टेस्ट संपादित करें',
+        deleteTest: 'टेस्ट हटाएँ',
+        pastAttempts: 'पिछले प्रयास',
+      },
+      instructions: {
+        duration: 'अवधि',
+        noLimit: 'कोई सीमा नहीं',
+        totalMarks: 'कुल अंक',
+        mcq: 'बहुविकल्पीय सवाल',
+        subjective: 'विषयपरक सवाल',
+        legendTitle: 'प्रश्न पैलेट संकेत',
+        notVisited: 'अभी देखा नहीं',
+        notAnswered: 'देखा, उत्तर नहीं दिया',
+        answered: 'उत्तर दिया',
+        marked: 'समीक्षा के लिए चिह्नित (अंक नहीं गिने जाएँगे)',
+        answeredMarked: 'उत्तर दिया और समीक्षा के लिए चिह्नित (अंक गिने जाएँगे)',
+        start: 'टेस्ट शुरू करें',
+        back: 'वापस',
+      },
+      taking: {
+        questionOf: 'सवाल {0} / {1}',
+        submit: 'टेस्ट जमा करें',
+        multipleChoice: 'बहुविकल्पीय',
+        shortAnswer: 'संक्षिप्त उत्तर',
+        marksPlain: '+{0} अंक',
+        marksNegative: '+{0} / -{1} अंक',
+        answerPlaceholder: 'अपना उत्तर यहाँ लिखें...',
+        clear: 'उत्तर हटाएँ',
+        markNext: 'समीक्षा के लिए चिह्नित करें और आगे',
+        saveNext: 'सेव करें और आगे',
+        previous: 'पिछला',
+        palette: 'प्रश्न पैलेट',
+        answeredCount: '{0}/{1} के उत्तर दिए',
+        statQuestions: 'सवाल',
+        statAnswered: 'उत्तर दिए',
+        statMarked: 'चिह्नित',
+        statSkipped: 'छोड़े',
+        paletteAria: 'सवाल {0}: {1}',
+        statusAria: {
+          notVisited: 'अभी देखा नहीं',
+          notAnswered: 'देखा, उत्तर नहीं दिया',
+          answered: 'उत्तर दिया',
+          marked: 'समीक्षा के लिए चिह्नित, उत्तर नहीं दिया',
+          answeredMarked: 'उत्तर दिया और समीक्षा के लिए चिह्नित',
+        },
+      },
+      results: {
+        summary: '{0}% · {1} सही',
+        pendingOne: '{0} विषयपरक उत्तर जाँच के इंतज़ार में',
+        pendingMany: '{0} विषयपरक उत्तर जाँच के इंतज़ार में',
+        downloadPdf: 'PDF डाउनलोड करें',
+        backToTests: 'टेस्ट पर वापस',
+        questionPrefix: 'प्र{0}.',
+        correctTag: '(सही)',
+        yourAnswerTag: '(आपका उत्तर)',
+        yourAnswer: 'आपका उत्तर: ',
+        leftBlank: 'खाली छोड़ा',
+        modelAnswer: 'आदर्श उत्तर: ',
+        gotRight: 'मेरा उत्तर सही था',
+        gotWrong: 'मेरा उत्तर गलत था',
+        why: 'क्यों: ',
+      },
+      confirm: {
+        unanswered: '{0} सवाल बिना उत्तर के हैं। फिर भी जमा करें?',
+        submitNow: 'क्या अभी टेस्ट जमा करें?',
+        submit: 'जमा करें',
+        keepWorking: 'जारी रखें',
+        deleteMessage: 'यह टेस्ट हटाएँ? इसे वापस नहीं लाया जा सकेगा।',
+        delete: 'हटाएँ',
+        cancel: 'रद्द करें',
+      },
+    },
     roadmap: {
       header: { title: 'आपका रोडमैप', subtitle: 'पहले बुनियाद — सबसे अच्छे नतीजे के लिए इसी क्रम में चलें' },
       goalTabs: {
@@ -3203,7 +3642,17 @@ export const translations: Record<Locale, TranslationShape> = {
         timeLimitLabel: 'समय सीमा',
         deadlineLabel: 'डेडलाइन',
         generateFailed: 'रोडमैप नहीं बन पाया — दोबारा कोशिश करें।',
+        customizeSummary: 'समय और परीक्षा बदलें',
+        customizeOptional: '(वैकल्पिक)',
+        hoursPerWeek: '{0} घंटे/सप्ताह',
+        hoursMin: '{0} घंटा',
+        hoursMax: '{0} घंटे',
+        unitDay: 'दिन',
+        unitWeek: 'सप्ताह',
+        unitMonth: 'महीना',
       },
+      dismissLabel: 'संदेश बंद करें',
+      examWeightageTitle: 'परीक्षा में महत्व',
       statusLabels: { mastered: 'महारत', completed: 'पूरा', learning: 'जारी है', locked: 'लॉक्ड' },
       examWeightage: { high: 'ज़्यादा वेटेज', medium: 'मध्यम वेटेज', low: 'कम वेटेज' },
       step: 'चरण {0}',
@@ -3260,6 +3709,7 @@ export const translations: Record<Locale, TranslationShape> = {
       },
     },
     notebook: {
+      loading: "आपका लर्निंग वर्कस्पेस खुल रहा है…",
       tabNotebook: "My notebook",
       tabAi: "AI notes",
       ai: {
@@ -4052,10 +4502,10 @@ export const translations: Record<Locale, TranslationShape> = {
         title: 'अभी ट्रैक करने को कुछ नहीं है',
         body: 'रोडमैप से कोई टॉपिक शुरू करें — प्रगति अपने आप यहां दिखनी शुरू हो जाएगी।',
       },
-      timeTracking: { title: 'टाइम ट्रैकिंग', last7Days: 'पिछले 7 दिन: {0} मिनट' },
-      masteryHeatmap: { title: 'महारत हीटमैप', legendWeak: 'कमजोर', legendOk: 'ठीक', legendStrong: 'मजबूत' },
+      timeTracking: { title: 'टाइम ट्रैकिंग', last7Days: 'पिछले 7 दिन: {0} मिनट', minutesTitle: '{0} मिनट' },
+      masteryHeatmap: { title: 'महारत हीटमैप', legendWeak: 'कमजोर', legendOk: 'ठीक', legendStrong: 'मजबूत', aria: '{0}: {1}% महारत', estimated: 'प्रगति से अनुमानित', observed: '{0} रेटिंग से देखा गया याद-स्तर', testAcc: '{1} हालिया टेस्ट में टेस्ट सटीकता {0}%' },
       retentionDetail: { title: 'रिटेंशन', dueToday: 'आज देय', overdue: 'बकाया', mastered: 'महारत' },
-      weakAreas: { title: 'कमजोर टॉपिक', noneFound: 'कोई कमजोर टॉपिक नहीं मिला — सब कुछ ठीक चल रहा है।' },
+      weakAreas: { title: 'कमजोर टॉपिक', noneFound: 'कोई कमजोर टॉपिक नहीं मिला — सब कुछ ठीक चल रहा है।', progressEstimate: 'प्रगति का अनुमान', recallCount: 'याद · {0}' },
     },
     dictionary: {
       subtitle: 'शब्दों के अर्थ, उच्चारण और भाषा से जुड़े रूप जानें।',
@@ -4082,6 +4532,8 @@ export const translations: Record<Locale, TranslationShape> = {
       searchCta: 'खोजें',
       notGroundedNote: 'इस बार लाइव सर्च सोर्स नहीं मिला — नीचे दिया जवाब सामान्य जानकारी से है, हाल की किसी बात के लिए दोबारा जांच लें',
       genericError: 'रिसर्च नहीं हो पाई',
+      noResults: "कोई नतीजा नहीं मिला। कोई दूसरा शब्द आज़माएँ।",
+      mapAria: "इस खोज के स्रोतों का नक्शा",
       embedded: { title: 'रिसर्च (वीडियो के साथ-साथ)', hint: 'कुछ भी खोजें — वीडियो चलती रहेगी।' },
       closeAria: 'रिसर्च पैनल बंद करें',
       emptyState: { title: 'कोई भी टॉपिक खोजें', subtitle: 'वीडियो देखते हुए भी इसे साथ में खोल सकते हैं — Videos पेज से' },
@@ -4096,7 +4548,15 @@ export const translations: Record<Locale, TranslationShape> = {
       tabs: { all: 'सभी', national: 'राष्ट्रीय', international: 'अंतरराष्ट्रीय', economy: 'अर्थव्यवस्था', sports: 'खेल', scitech: 'विज्ञान और तकनीक' },
       sourceLabel: 'स्रोत',
       aiNote: 'यह सार्वजनिक खबरों से AI द्वारा संक्षेप में तैयार किया गया है। ज़रूरी बात के लिए मूल स्रोत ज़रूर देखें।',
-      reader: { articleView: 'लेख पढ़ें', fallback: 'कुछ समाचार वेबसाइटें ऐप के अंदर खुलने से रोकती हैं। लेख न दिखे तो मूल पेज खोलें।', openOriginal: 'मूल लेख खोलें', unavailable: 'मूल लेख का लिंक उपलब्ध नहीं है।' },
+      reader: { articleView: 'लेख पढ़ें', fallback: 'कुछ समाचार वेबसाइटें ऐप के अंदर खुलने से रोकती हैं। लेख न दिखे तो मूल पेज खोलें।', openOriginal: 'मूल लेख खोलें', unavailable: 'मूल लेख का लिंक उपलब्ध नहीं है।', kicker: 'Learning OS · न्यूज़ रीडर', close: 'रीडर बंद करें' },
+      savedLabel: 'सेव किए गए',
+      noSaved: 'अभी कोई सेव किया हुआ पॉइंट नहीं है',
+      genericError: 'कुछ गड़बड़ हो गई',
+      openingDigest: 'आपका चैनल डाइजेस्ट खुल रहा है…',
+      read: 'पढ़ें',
+      readInApp: 'Learning OS में पढ़ें',
+      save: 'सेव करें',
+      removeSaved: 'सेव से हटाएँ',
     },
     channelDigest: {
       switchNews: 'अखबार',
@@ -4313,6 +4773,57 @@ export const translations: Record<Locale, TranslationShape> = {
           overdueTitle: '{0} topics ka revision baaki hai — {1} overdue!',
           dueTitle: 'Aaj {0} topics revise karne hain',
           subtitle: 'Bhooliye mat — abhi kar lijiye',
+        },
+        hub: {
+          eyebrow: 'Aapka personal learning network',
+          mapTitle: 'Aapka learning map',
+          noGoal: 'Ek learning goal chuno',
+          streakChip: '{0} din ki streak',
+          continueEyebrow: 'Jahan chhoda tha wahin se shuru karo',
+          continueTitle: 'Learning jaari rakho',
+          continueWithGoal: '{0} ke saath aage badho',
+          continueEmpty: 'Ek goal chuno aur apna pehla learning path banao',
+          progressLabel: 'Roadmap progress',
+          topicsProgress: '{1} mein se {0} topics',
+          consistencyTitle: 'Consistency',
+          consistencyRange: 'Pichhle {0} hafte',
+          dayStreakLabel: 'din ki streak',
+          less: 'Kam',
+          more: 'Zyada',
+          actions: { revision: 'Revision', tests: 'Tests', mentor: 'AI Mentor', review: 'Review', practice: 'Practice', ask: 'Pucho', dueCount: '{0} baaki' },
+          nextStep: { label: 'Suggested next step', setupProfile: 'Apna learning profile set up karo', chooseGoal: 'Ek learning goal chuno', overdue: '{0} topics ka revision baaki hai', due: '{0} topics revision ke liye ready hain', openRoadmap: 'Apna learning roadmap kholo' },
+          space: { eyebrow: 'Aapka learning space', hint: 'Aapke saare tools ek jagah', show: 'Learning map dekho', hide: 'Learning map chhupao', emptyTitle: 'Aapka map khaali hai', emptyBody: 'Aage badhne ke liye learning engines wapas lao.', restore: 'Learning engines wapas lao' },
+          student: 'Student',
+          youAreHere: 'Aap yahan ho',
+          learningGoal: '{0} seekh rahe ho',
+          startsWithCuriosity: 'Curiosity se shuruaat',
+          legend: { student: 'Student', engines: 'Learning engines', actions: 'Actions' },
+          moreMenu: { button: 'More', searchPlaceholder: 'Apne tools dhundo...', noMatch: 'Koi matching tool nahi mila.' },
+          customize: { button: 'Map customize karo', title: 'Apna learning map customize karo', body: 'Wahi engines rakho jo aap sabse zyada use karte ho. Map aapke device par save hota hai aur available hone par sync hota hai.', close: 'Band karo', onMap: 'Map par', add: 'Add karo', reset: 'Default par wapas', done: 'Ho gaya' },
+          footer: { goalOne: '{0} active goal', goalMany: '{0} active goals', profileReady: 'Profile ready', profileMissing: 'Profile set up nahi hai' },
+          engines: {
+            know: { title: 'Know Me', subtitle: 'Samjho aap kaise seekhte ho' },
+            plan: { title: 'Plan', subtitle: 'Clear direction banao' },
+            learn: { title: 'Learn', subtitle: 'Plan ko progress mein badlo' },
+            retain: { title: 'Retain', subtitle: 'Seekha hua yaad rakho' },
+            prove: { title: 'Prove', subtitle: 'Dekho aap kya kar sakte ho' },
+            research: { title: 'Research', subtitle: 'Naye ideas explore karo' },
+            dictionary: { title: 'Dictionary', subtitle: 'Concepts dhundo' },
+            currentAffairs: { title: 'Current Affairs', subtitle: 'Updated raho' },
+          },
+          tools: {
+            profile: { label: 'Mind blueprint', detail: 'Learning profile' },
+            roadmap: { label: 'Learning roadmap', detail: 'Aapke agle topics' },
+            videos: { label: 'Video intelligence', detail: 'Focus ke saath seekho' },
+            notes: { label: 'Notes workspace', detail: 'Apni soch likho' },
+            mentor: { label: 'AI Mentor', detail: 'Pucho aur explore karo' },
+            revision: { label: 'Revision room', detail: 'Yaad karo aur review karo' },
+            test: { label: 'Tests and practice', detail: 'Samajh check karo' },
+            progress: { label: 'Growth and progress', detail: 'Apni progress dekho' },
+            research: { label: 'Research workspace', detail: 'Ideas aur sources explore karo' },
+            dictionary: { label: 'Dictionary kholo', detail: 'Meanings aur concepts dhundo' },
+            currentAffairs: { label: 'Current affairs', detail: 'Latest updates padho' },
+          },
         },
         learnerFallback: 'Learner',
         statsCards: {
@@ -4811,6 +5322,99 @@ export const translations: Record<Locale, TranslationShape> = {
       day60: 'Final recall check — bina dekhe pura explain karo',
       fallback: 'Is topic ko revise karo',
     },
+    testScreen: {
+      title: 'Tests',
+      subtitle: 'Official tests do, ya practice ke liye apna khud ka banao.',
+      list: {
+        dailyTitle: 'Daily Test',
+        dailyEmpty: 'Ek baar set up karo — har din naya test',
+        dailyPending: 'Aaj ka test intezaar kar raha hai',
+        dailyReady: 'Aaj ka test ready hai',
+        dailyDone: 'Aaj ke liye ho gaya',
+        open: 'Kholo',
+        officialTests: 'Official tests',
+        myTests: 'Mere tests',
+        createNew: 'Naya Test Banao',
+        noTestsYet: 'Aapne abhi koi test nahi banaya — upar apne questions add karo.',
+        questionsOne: '{0} question',
+        questionsMany: '{0} questions',
+        minutes: '{0} min',
+        noTimer: 'timer nahi',
+        live: 'Live',
+        runLive: 'Live chalao',
+        takeTest: 'Test Do',
+        editTest: 'Test edit karo',
+        deleteTest: 'Test delete karo',
+        pastAttempts: 'Pichhle attempts',
+      },
+      instructions: {
+        duration: 'Duration',
+        noLimit: 'Koi limit nahi',
+        totalMarks: 'Total marks',
+        mcq: 'MCQ questions',
+        subjective: 'Subjective questions',
+        legendTitle: 'Question palette ke rang',
+        notVisited: 'Abhi dekha nahi',
+        notAnswered: 'Dekha, answer nahi diya',
+        answered: 'Answer diya',
+        marked: 'Review ke liye mark kiya (score nahi hoga)',
+        answeredMarked: 'Answer diya aur review ke liye mark kiya (score hoga)',
+        start: 'Test Shuru Karo',
+        back: 'Wapas',
+      },
+      taking: {
+        questionOf: 'Question {0} / {1}',
+        submit: 'Test Submit Karo',
+        multipleChoice: 'Multiple Choice',
+        shortAnswer: 'Short Answer',
+        marksPlain: '+{0} marks',
+        marksNegative: '+{0} / -{1} marks',
+        answerPlaceholder: 'Apna answer yahan likho...',
+        clear: 'Response Hatao',
+        markNext: 'Review ke liye Mark Karo & Next',
+        saveNext: 'Save & Next',
+        previous: 'Pichhla',
+        palette: 'Question Palette',
+        answeredCount: '{0}/{1} answer diye',
+        statQuestions: 'Questions',
+        statAnswered: 'Answered',
+        statMarked: 'Marked',
+        statSkipped: 'Skipped',
+        paletteAria: 'Question {0}: {1}',
+        statusAria: {
+          notVisited: 'Abhi dekha nahi',
+          notAnswered: 'Dekha, answer nahi diya',
+          answered: 'Answer diya',
+          marked: 'Review ke liye mark kiya, answer nahi diya',
+          answeredMarked: 'Answer diya aur review ke liye mark kiya',
+        },
+      },
+      results: {
+        summary: '{0}% · {1} sahi',
+        pendingOne: '{0} subjective answer grading ka intezaar kar raha hai',
+        pendingMany: '{0} subjective answers grading ka intezaar kar rahe hain',
+        downloadPdf: 'PDF Download Karo',
+        backToTests: 'Tests par Wapas',
+        questionPrefix: 'Q{0}.',
+        correctTag: '(sahi)',
+        yourAnswerTag: '(aapka answer)',
+        yourAnswer: 'Aapka answer: ',
+        leftBlank: 'khaali chhoda',
+        modelAnswer: 'Model answer: ',
+        gotRight: 'Mera answer sahi tha',
+        gotWrong: 'Mera answer galat tha',
+        why: 'Kyun: ',
+      },
+      confirm: {
+        unanswered: '{0} question(s) bina answer ke hain. Phir bhi submit karo?',
+        submitNow: 'Abhi test submit karo?',
+        submit: 'Submit',
+        keepWorking: 'Jaari rakho',
+        deleteMessage: 'Yeh test delete karo? Ise wapas nahi laya ja sakta.',
+        delete: 'Delete',
+        cancel: 'Cancel',
+      },
+    },
     roadmap: {
       header: { title: 'Your Roadmap', subtitle: 'Foundation-first order — follow it for best results' },
       goalTabs: {
@@ -4841,7 +5445,17 @@ export const translations: Record<Locale, TranslationShape> = {
         timeLimitLabel: 'Time limit',
         deadlineLabel: 'Deadline',
         generateFailed: 'Roadmap generate nahi ho paaya — dobara try karo.',
+        customizeSummary: 'Time aur exam customize karo',
+        customizeOptional: '(optional)',
+        hoursPerWeek: '{0} hrs/week',
+        hoursMin: '{0} hr',
+        hoursMax: '{0} hrs',
+        unitDay: 'Din',
+        unitWeek: 'Hafta',
+        unitMonth: 'Mahina',
       },
+      dismissLabel: 'Message band karo',
+      examWeightageTitle: 'Exam mein weightage',
       statusLabels: { mastered: 'Mastered', completed: 'Done', learning: 'In Progress', locked: 'Locked' },
       examWeightage: { high: 'High weightage', medium: 'Medium weightage', low: 'Low weightage' },
       step: 'STEP {0}',
@@ -4898,6 +5512,7 @@ export const translations: Record<Locale, TranslationShape> = {
       },
     },
     notebook: {
+      loading: "Opening your learning workspace…",
       tabNotebook: "My notebook",
       tabAi: "AI notes",
       ai: {
@@ -5691,10 +6306,10 @@ export const translations: Record<Locale, TranslationShape> = {
         title: 'Abhi kuch track karne ko nahi hai',
         body: 'Roadmap se koi topic start karo — progress yahin apne aap dikhna shuru ho jayega.',
       },
-      timeTracking: { title: 'Time Tracking', last7Days: 'Last 7 days: {0} min' },
-      masteryHeatmap: { title: 'Mastery Heatmap', legendWeak: 'Weak', legendOk: 'OK', legendStrong: 'Strong' },
+      timeTracking: { title: 'Time Tracking', last7Days: 'Last 7 days: {0} min', minutesTitle: '{0} min' },
+      masteryHeatmap: { title: 'Mastery Heatmap', legendWeak: 'Weak', legendOk: 'OK', legendStrong: 'Strong', aria: '{0}: {1}% mastery', estimated: 'progress se estimated', observed: '{0} rating(s) se observed recall', testAcc: '{1} recent test(s) mein test accuracy {0}%' },
       retentionDetail: { title: 'Retention', dueToday: 'Due Today', overdue: 'Overdue', mastered: 'Mastered' },
-      weakAreas: { title: 'Weak Areas', noneFound: 'Koi weak topic nahi mila — sab theek chal raha hai.' },
+      weakAreas: { title: 'Weak Areas', noneFound: 'Koi weak topic nahi mila — sab theek chal raha hai.', progressEstimate: 'Progress estimate', recallCount: 'Recall · {0}' },
     },
     dictionary: {
       subtitle: 'Meaning, pronunciation aur word roots dekho.',
@@ -5722,6 +6337,8 @@ export const translations: Record<Locale, TranslationShape> = {
       notGroundedNote:
         'Live search source nahi mila is baar — neeche wala jawab general knowledge se hai, current cheezon ke liye double-check kar lena',
       genericError: 'Research failed',
+      noResults: "Koi result nahi mila. Koi doosra search phrase try karo.",
+      mapAria: "Is search ke sources ka map",
       embedded: { title: 'Research (video ke saath saath)', hint: 'Kuch bhi search karo — video chalti rahegi.' },
       closeAria: 'Close research panel',
       emptyState: { title: 'Koi bhi topic search karo', subtitle: 'Video dekhte hue side mein bhi khol sakte ho — Videos page se' },
@@ -5736,7 +6353,15 @@ export const translations: Record<Locale, TranslationShape> = {
       tabs: { all: 'Sab', national: 'National', international: 'International', economy: 'Economy', sports: 'Sports', scitech: 'Sci & Tech' },
       sourceLabel: 'Source',
       aiNote: 'Ye public news se AI ne short mein banaya hai. Zaroori baat ke liye original source zaroor check karo.',
-      reader: { articleView: 'Article padho', fallback: 'Kuch news websites app ke andar khulne se rok deti hain. Article na dikhe to original page kholo.', openOriginal: 'Original article kholo', unavailable: 'Original article ka link available nahi hai.' },
+      reader: { articleView: 'Article padho', fallback: 'Kuch news websites app ke andar khulne se rok deti hain. Article na dikhe to original page kholo.', openOriginal: 'Original article kholo', unavailable: 'Original article ka link available nahi hai.', kicker: 'Learning OS · News reader', close: 'Reader band karo' },
+      savedLabel: 'Saved',
+      noSaved: 'Abhi koi saved point nahi hai',
+      genericError: 'Kuch gadbad ho gayi',
+      openingDigest: 'Aapka channel digest khul raha hai…',
+      read: 'Padho',
+      readInApp: 'Learning OS mein padho',
+      save: 'Save karo',
+      removeSaved: 'Saved se hatao',
     },
     channelDigest: {
       switchNews: 'Newspapers',

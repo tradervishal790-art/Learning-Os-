@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import type { ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Download, RotateCcw, CheckCircle2, XCircle, HelpCircle, History, Plus, Pencil, Trash2, Clock, Flag, Users, CalendarCheck, ChevronRight, Play } from 'lucide-react';
+import { Download, RotateCcw, CheckCircle2, XCircle, HelpCircle, History, Plus, Pencil, Trash2, Clock, Flag, Users, CalendarCheck, ChevronRight, Play, ChevronLeft } from 'lucide-react';
 import type { TestPaper, TestQuestion, TestUserAnswer, TestAttempt, MCQQuestion, SubjectiveQuestion } from './types';
 import { getTestPapers, saveTestPaper, deleteTestPaper, hydrateTestBankFromCloud } from './testBankStore';
 import { OFFICIAL_TESTS } from './officialTests';
@@ -17,6 +18,9 @@ import { setImmersive } from './immersive';
 import { completeDailyTest, isDailyPaper, getDailyStatus } from './dailyTestStore';
 import { contributeQuestionPatterns } from './sharedLearningPatterns';
 import SharedLearningInsights from './SharedLearningInsights';
+import { useTranslation } from './i18n/LanguageContext';
+import { format } from './i18n/format';
+import { GlassButton, GlassPanel, ProgressRing } from './ui/kit';
 
 // ============================================================
 // Test.tsx — "Test" tab (Dashboard renders <Test /> with no props).
@@ -42,6 +46,7 @@ function formatClock(totalSeconds: number): string {
 }
 
 export default function Test() {
+  const tt = useTranslation().testScreen;
   // Resume an unfinished test after refresh / tab close (see testDraft.ts).
   const [draft] = useState(() => loadDraft());
   const [stage, setStage] = useState<Stage>(draft ? 'taking' : 'list');
@@ -254,7 +259,7 @@ export default function Test() {
 
   const confirmSubmit = () => {
     const unanswered = activePaper ? activePaper.questions.length - answers.filter((a) => isAnswered(a)).length : 0;
-    const msg = unanswered > 0 ? `${unanswered} question(s) unanswered. Submit anyway?` : 'Submit the test now?';
+    const msg = unanswered > 0 ? format(tt.confirm.unanswered, unanswered) : tt.confirm.submitNow;
     setSubmitPrompt(msg);
   };
 
@@ -286,41 +291,41 @@ export default function Test() {
     setAttempt(updated);
   };
 
-  return (
-    <div className="min-h-dvh text-black dark:text-white p-4 md:p-8">
-      {stage !== 'taking' && (
-        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-5 md:mb-8">
-          <h1 className="text-2xl md:text-4xl font-bold mb-1 md:mb-2">Tests</h1>
-          <p className="text-gray-500 dark:text-white/60">Take official tests, or build your own for practice.</p>
-        </motion.div>
+  const stageBlobs = (
+    <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+      <div className="absolute -left-32 -top-40 h-[420px] w-[420px] rounded-full bg-cyan-500/[0.09] blur-[120px]" />
+      <div className="absolute -right-24 top-1/3 h-[380px] w-[380px] rounded-full bg-violet-600/[0.10] blur-[120px]" />
+    </div>
+  );
+
+  const confirmDialogs = (
+    <>
+      {submitPrompt && (
+        <ConfirmDialog
+          message={submitPrompt}
+          confirmLabel={tt.confirm.submit}
+          cancelLabel={tt.confirm.keepWorking}
+          onConfirm={() => { setSubmitPrompt(null); submitTest(); }}
+          onCancel={() => setSubmitPrompt(null)}
+        />
       )}
-
-      {stage === 'list' && (
-        <>
-          <SharedLearningInsights kind="questions" />
-          <TestList
-          papers={papers}
-          history={history}
-          onCreate={openCreate}
-          onEdit={openEdit}
-          onDelete={handleDeletePaper}
-          onTake={startInstructions}
-          onLive={startLive}
-          onDaily={() => setStage('daily')}
-          onOpenAttempt={openPastAttempt}
-          />
-        </>
+      {deletePrompt && (
+        <ConfirmDialog
+          message={tt.confirm.deleteMessage}
+          confirmLabel={tt.confirm.delete}
+          cancelLabel={tt.confirm.cancel}
+          danger
+          onConfirm={() => { deleteTestPaper(deletePrompt); setDeletePrompt(null); refresh(); }}
+          onCancel={() => setDeletePrompt(null)}
+        />
       )}
+    </>
+  );
 
-      {stage === 'daily' && <DailyTest onStart={startInstructions} onExit={() => setStage('list')} />}
-
-      {stage === 'live' && livePaper && <LiveHost paper={livePaper} onExit={() => setStage('list')} />}
-
-      {stage === 'builder' && <TestBuilder initialPaper={editingPaper} onSave={handleSavePaper} onCancel={() => setStage('list')} />}
-
-      {stage === 'instructions' && activePaper && <Instructions paper={activePaper} onStart={beginTest} onBack={() => setStage(isDailyPaper(activePaper.id) ? 'daily' : 'list')} />}
-
-      {stage === 'taking' && activePaper && currentQuestion && (
+  // The exam view is its own full dark stage; every other stage shares one dark stage with the page heading.
+  if (stage === 'taking' && activePaper && currentQuestion) {
+    return (
+      <div className="dark p-2 md:p-4">
         <TakingScreen
           paper={activePaper}
           step={step}
@@ -338,31 +343,52 @@ export default function Test() {
           onClearResponse={clearResponse}
           onSubmit={confirmSubmit}
         />
-      )}
+        {confirmDialogs}
+      </div>
+    );
+  }
 
-      {stage === 'results' && attempt && (
-        <ResultsDashboard attempt={attempt} allAttempts={history} onSaveInsight={handleSaveInsight} onSelfGrade={handleSelfGrade} onRetake={startOver} />
-      )}
+  return (
+    <div className="dark">
+      <div className="relative mx-auto max-w-6xl overflow-hidden rounded-none bg-[#080d19] p-4 text-slate-100 md:m-4 md:rounded-3xl md:p-8">
+        {stageBlobs}
+        <div className="relative">
+          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-5 md:mb-8">
+            <h1 className="mb-1 text-2xl font-semibold tracking-tight md:text-4xl">{tt.title}</h1>
+            <p className="text-sm text-slate-400">{tt.subtitle}</p>
+          </motion.div>
 
-      {submitPrompt && (
-        <ConfirmDialog
-          message={submitPrompt}
-          confirmLabel="Submit"
-          cancelLabel="Keep working"
-          onConfirm={() => { setSubmitPrompt(null); submitTest(); }}
-          onCancel={() => setSubmitPrompt(null)}
-        />
-      )}
-      {deletePrompt && (
-        <ConfirmDialog
-          message="Delete this test? This cannot be undone."
-          confirmLabel="Delete"
-          cancelLabel="Cancel"
-          danger
-          onConfirm={() => { deleteTestPaper(deletePrompt); setDeletePrompt(null); refresh(); }}
-          onCancel={() => setDeletePrompt(null)}
-        />
-      )}
+          {stage === 'list' && (
+            <>
+              <SharedLearningInsights kind="questions" />
+              <TestList
+                papers={papers}
+                history={history}
+                onCreate={openCreate}
+                onEdit={openEdit}
+                onDelete={handleDeletePaper}
+                onTake={startInstructions}
+                onLive={startLive}
+                onDaily={() => setStage('daily')}
+                onOpenAttempt={openPastAttempt}
+              />
+            </>
+          )}
+
+          {stage === 'daily' && <DailyTest onStart={startInstructions} onExit={() => setStage('list')} />}
+
+          {stage === 'live' && livePaper && <LiveHost paper={livePaper} onExit={() => setStage('list')} />}
+
+          {stage === 'builder' && <TestBuilder initialPaper={editingPaper} onSave={handleSavePaper} onCancel={() => setStage('list')} />}
+
+          {stage === 'instructions' && activePaper && <Instructions paper={activePaper} onStart={beginTest} onBack={() => setStage(isDailyPaper(activePaper.id) ? 'daily' : 'list')} />}
+
+          {stage === 'results' && attempt && (
+            <ResultsDashboard attempt={attempt} allAttempts={history} onSaveInsight={handleSaveInsight} onSelfGrade={handleSelfGrade} onRetake={startOver} />
+          )}
+        </div>
+      </div>
+      {confirmDialogs}
     </div>
   );
 }
@@ -370,6 +396,24 @@ export default function Test() {
 // ============================================================
 // List screen: saved test papers + past attempt history
 // ============================================================
+function PaperRow({ p, children }: { p: TestPaper; children: ReactNode }) {
+  const tt = useTranslation().testScreen;
+  const count = p.questions.length;
+  return (
+    <GlassPanel accent="#67e8f9">
+      <div className="flex flex-col gap-3 px-4 py-4 md:flex-row md:items-center md:justify-between md:px-5">
+        <div className="min-w-0">
+          <p className="truncate font-semibold text-white">{p.title}</p>
+          <p className="text-xs text-slate-500">
+            {p.topic} · {format(count === 1 ? tt.list.questionsOne : tt.list.questionsMany, count)} · {p.durationMinutes > 0 ? format(tt.list.minutes, p.durationMinutes) : tt.list.noTimer}
+          </p>
+        </div>
+        <div className="flex flex-shrink-0 items-center justify-end gap-1.5 md:gap-2">{children}</div>
+      </div>
+    </GlassPanel>
+  );
+}
+
 function TestList({
   papers,
   history,
@@ -391,114 +435,89 @@ function TestList({
   onDaily: () => void;
   onOpenAttempt: (a: TestAttempt) => void;
 }) {
+  const tt = useTranslation().testScreen;
   const dailyStatus = getDailyStatus();
-  const dailyLabel = { empty: 'Set up once — a new test every day', pending: "Today's test is waiting", ready: "Today's test is ready", done: "Done for today" }[dailyStatus];
+  const dailyLabel = { empty: tt.list.dailyEmpty, pending: tt.list.dailyPending, ready: tt.list.dailyReady, done: tt.list.dailyDone }[dailyStatus];
+  const liveButton = (p: TestPaper) => (
+    <button onClick={() => onLive(p)} className="flex h-11 min-w-11 items-center justify-center gap-1.5 rounded-full border border-white/15 text-sm font-semibold text-slate-200 transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 md:h-auto md:rounded-lg md:px-3 md:py-2" title={tt.list.runLive} aria-label={tt.list.runLive}>
+      <Users className="h-4 w-4" /><span className="hidden md:inline">{tt.list.live}</span>
+    </button>
+  );
+  const takeButton = (p: TestPaper) => (
+    <button onClick={() => onTake(p)} className="flex h-11 min-w-11 items-center justify-center gap-1.5 rounded-full bg-cyan-300 text-sm font-semibold text-slate-900 shadow-[0_0_18px_rgba(103,232,249,.35)] transition hover:bg-cyan-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white md:h-auto md:rounded-lg md:px-4 md:py-2" title={tt.list.takeTest} aria-label={tt.list.takeTest}>
+      <Play className="h-4 w-4" fill="currentColor" /><span className="hidden md:inline">{tt.list.takeTest}</span>
+    </button>
+  );
   return (
-    <div className="max-w-3xl mx-auto">
-      <button
-        onClick={onDaily}
-        className="w-full text-left flex items-center justify-between gap-3 px-4 py-3.5 mb-6 md:mb-8 rounded-2xl bg-gradient-to-r from-indigo-50 to-violet-50 dark:from-white/5 dark:to-white/5 ring-1 ring-indigo-100 dark:ring-white/10 active:scale-[0.99] transition"
-      >
-        <div className="flex items-center gap-3 min-w-0">
-          <span className="w-11 h-11 rounded-xl bg-white dark:bg-white/10 text-indigo-600 dark:text-indigo-300 shadow-card flex items-center justify-center flex-shrink-0"><CalendarCheck className="w-6 h-6" strokeWidth={1.75} /></span>
-          <div className="min-w-0">
-            <p className="font-semibold">Daily Test</p>
-            <p className="text-xs text-gray-500 dark:text-white/50">{dailyLabel}</p>
-          </div>
-        </div>
-        <ChevronRight className="w-5 h-5 flex-shrink-0 text-indigo-500" aria-label="Open" />
-      </button>
+    <div className="mx-auto max-w-3xl">
+      <GlassButton onClick={onDaily} accent="#a78bfa" className="mb-6 w-full border-violet-300/25 bg-gradient-to-r from-violet-500/[0.14] to-transparent md:mb-8">
+        <span className="flex items-center justify-between gap-3 px-4 py-3.5">
+          <span className="flex min-w-0 items-center gap-3">
+            <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-violet-400/15 text-violet-200"><CalendarCheck className="h-6 w-6" strokeWidth={1.75} /></span>
+            <span className="min-w-0">
+              <span className="block font-semibold text-white">{tt.list.dailyTitle}</span>
+              <span className="block text-xs text-slate-400">{dailyLabel}</span>
+            </span>
+          </span>
+          <ChevronRight className="h-5 w-5 flex-shrink-0 text-violet-300" aria-label={tt.list.open} />
+        </span>
+      </GlassButton>
 
       {OFFICIAL_TESTS.length > 0 && (
         <div className="mb-10">
-          <h2 className="text-sm font-semibold text-gray-500 dark:text-white/50 mb-3">Official tests</h2>
+          <h2 className="mb-3 text-sm font-semibold text-slate-400">{tt.list.officialTests}</h2>
           <div className="space-y-3">
             {OFFICIAL_TESTS.map((p) => (
-              <div
-                key={p.id}
-                className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 px-4 md:px-5 py-4 rounded-2xl card"
-              >
-                <div className="min-w-0">
-                  <p className="font-semibold truncate">{p.title}</p>
-                  <p className="text-xs text-gray-400 dark:text-white/40">
-                    {p.topic} · {p.questions.length} questions
-                    {p.durationMinutes > 0 ? ` · ${p.durationMinutes} min` : ' · no timer'}
-                  </p>
-                </div>
-                <div className="flex items-center justify-end gap-2 flex-shrink-0">
-                  <button onClick={() => onLive(p)} className="h-11 md:h-auto min-w-11 flex items-center justify-center gap-1.5 md:px-3 md:py-2 rounded-full md:rounded-lg border border-gray-300 dark:border-white/20 text-sm font-semibold transition" title="Run live" aria-label="Run live">
-                    <Users className="w-4 h-4" /><span className="hidden md:inline">Live</span>
-                  </button>
-                  <button onClick={() => onTake(p)} className="h-11 md:h-auto min-w-11 flex items-center justify-center gap-1.5 md:px-4 md:py-2 rounded-full md:rounded-lg bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white text-sm font-semibold transition" title="Take test" aria-label="Take test">
-                    <Play className="w-4 h-4" fill="currentColor" /><span className="hidden md:inline">Take Test</span>
-                  </button>
-                </div>
-              </div>
+              <PaperRow key={p.id} p={p}>{liveButton(p)}{takeButton(p)}</PaperRow>
             ))}
           </div>
         </div>
       )}
 
-      <h2 className="text-sm font-semibold text-gray-500 dark:text-white/50 mb-3">My tests</h2>
+      <h2 className="mb-3 text-sm font-semibold text-slate-400">{tt.list.myTests}</h2>
       <button
         onClick={onCreate}
-        className="w-full flex items-center justify-center gap-2 py-3.5 mb-6 md:mb-8 rounded-xl bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white font-semibold transition"
+        className="mb-6 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-cyan-300/40 bg-cyan-300/[0.06] py-3.5 font-semibold text-cyan-100 transition hover:border-cyan-300/70 hover:bg-cyan-300/[0.12] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 md:mb-8"
       >
-        <Plus className="w-4 h-4" /> Create New Test
+        <Plus className="h-4 w-4" /> {tt.list.createNew}
       </button>
 
       {papers.length === 0 ? (
-        <p className="text-center text-gray-400 dark:text-white/40 mb-10">You haven't created any tests yet — add your own questions above.</p>
+        <p className="mb-10 text-center text-slate-500">{tt.list.noTestsYet}</p>
       ) : (
-        <div className="space-y-3 mb-10">
+        <div className="mb-10 space-y-3">
           {papers.map((p) => (
-            <div
-              key={p.id}
-              className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 px-4 md:px-5 py-4 rounded-2xl card"
-            >
-              <div className="min-w-0">
-                <p className="font-semibold truncate">{p.title}</p>
-                <p className="text-xs text-gray-400 dark:text-white/40">
-                  {p.topic} · {p.questions.length} question{p.questions.length !== 1 ? 's' : ''}
-                  {p.durationMinutes > 0 ? ` · ${p.durationMinutes} min` : ' · no timer'}
-                </p>
-              </div>
-              <div className="flex items-center justify-end gap-1.5 md:gap-2 flex-shrink-0">
-                <button onClick={() => onEdit(p)} className="w-11 h-11 md:w-auto md:h-auto md:p-2 flex items-center justify-center rounded-full md:rounded-lg hover:bg-gray-100 dark:hover:bg-white/10" aria-label="Edit test" title="Edit test">
-                  <Pencil className="w-4 h-4" />
-                </button>
-                <button onClick={() => onDelete(p.id)} className="w-11 h-11 md:w-auto md:h-auto md:p-2 flex items-center justify-center rounded-full md:rounded-lg hover:bg-red-100 dark:hover:bg-red-500/10 text-red-500" aria-label="Delete test" title="Delete test">
-                  <Trash2 className="w-4 h-4" />
-                </button>
-                <button onClick={() => onLive(p)} className="h-11 md:h-auto min-w-11 flex items-center justify-center gap-1.5 md:px-3 md:py-2 rounded-full md:rounded-lg border border-gray-300 dark:border-white/20 text-sm font-semibold transition" title="Run live" aria-label="Run live">
-                  <Users className="w-4 h-4" /><span className="hidden md:inline">Live</span>
-                </button>
-                <button onClick={() => onTake(p)} className="h-11 md:h-auto min-w-11 flex items-center justify-center gap-1.5 md:px-4 md:py-2 rounded-full md:rounded-lg bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white text-sm font-semibold transition" title="Take test" aria-label="Take test">
-                  <Play className="w-4 h-4" fill="currentColor" /><span className="hidden md:inline">Take Test</span>
-                </button>
-              </div>
-            </div>
+            <PaperRow key={p.id} p={p}>
+              <button onClick={() => onEdit(p)} className="flex h-11 w-11 items-center justify-center rounded-full text-slate-300 hover:bg-white/10 md:h-auto md:w-auto md:rounded-lg md:p-2" aria-label={tt.list.editTest} title={tt.list.editTest}>
+                <Pencil className="h-4 w-4" />
+              </button>
+              <button onClick={() => onDelete(p.id)} className="flex h-11 w-11 items-center justify-center rounded-full text-red-400 hover:bg-red-500/10 md:h-auto md:w-auto md:rounded-lg md:p-2" aria-label={tt.list.deleteTest} title={tt.list.deleteTest}>
+                <Trash2 className="h-4 w-4" />
+              </button>
+              {liveButton(p)}
+              {takeButton(p)}
+            </PaperRow>
           ))}
         </div>
       )}
 
       {history.length > 0 && (
         <div>
-          <h2 className="flex items-center gap-2 text-sm font-semibold text-gray-500 dark:text-white/50 mb-3">
-            <History className="w-4 h-4" /> Past attempts
+          <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-400">
+            <History className="h-4 w-4" /> {tt.list.pastAttempts}
           </h2>
           <div className="space-y-2">
             {history.slice(0, 8).map((a) => (
               <button
                 key={a.id}
                 onClick={() => onOpenAttempt(a)}
-                className="w-full flex items-center justify-between text-left px-4 py-3 rounded-xl card hover:bg-gray-100 dark:hover:bg-white/10 transition"
+                className="flex w-full items-center justify-between rounded-xl border border-white/[0.08] bg-white/[0.035] px-4 py-3 text-left transition hover:bg-white/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"
               >
-                <div>
-                  <p className="font-medium">{a.testTitle}</p>
-                  <p className="text-xs text-gray-400 dark:text-white/40">{new Date(a.completedAt).toLocaleString()}</p>
-                </div>
-                <span className={`text-sm font-bold ${a.scorePercent >= 60 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'}`}>
+                <span>
+                  <span className="block font-medium text-white">{a.testTitle}</span>
+                  <span className="block text-xs text-slate-500">{new Date(a.completedAt).toLocaleString()}</span>
+                </span>
+                <span className={`text-sm font-bold tabular-nums ${a.scorePercent >= 60 ? 'text-emerald-300' : 'text-red-300'}`}>
                   {a.obtainedMarks}/{a.totalMarks}
                 </span>
               </button>
@@ -514,53 +533,52 @@ function TestList({
 // Instructions screen — shown once, before the timer starts
 // ============================================================
 function Instructions({ paper, onStart, onBack }: { paper: TestPaper; onStart: () => void; onBack: () => void }) {
+  const tt = useTranslation().testScreen;
   const totalMarks = computeTotalMarks(paper.questions);
   const mcqCount = paper.questions.filter((q) => q.type === 'mcq').length;
   const subjCount = paper.questions.length - mcqCount;
+  const tiles = [
+    { label: tt.instructions.duration, value: paper.durationMinutes > 0 ? format(tt.list.minutes, paper.durationMinutes) : tt.instructions.noLimit },
+    { label: tt.instructions.totalMarks, value: String(totalMarks) },
+    { label: tt.instructions.mcq, value: String(mcqCount) },
+    { label: tt.instructions.subjective, value: String(subjCount) },
+  ];
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <div className="card rounded-2xl p-6 md:p-8">
-        <h2 className="text-2xl font-bold mb-1">{paper.title}</h2>
-        <p className="text-gray-500 dark:text-white/60 mb-6">{paper.topic}</p>
+    <div className="mx-auto max-w-2xl">
+      <GlassPanel accent="#67e8f9">
+        <div className="p-5 md:p-8">
+          <h2 className="mb-1 text-2xl font-semibold text-white">{paper.title}</h2>
+          <p className="mb-6 text-slate-400">{paper.topic}</p>
 
-        <div className="grid grid-cols-2 gap-4 mb-6 text-sm">
-          <div className="bg-white dark:bg-white/5 rounded-xl p-4 border border-gray-200 dark:border-white/10">
-            <p className="text-gray-400 dark:text-white/40">Duration</p>
-            <p className="font-semibold text-lg">{paper.durationMinutes > 0 ? `${paper.durationMinutes} min` : 'No limit'}</p>
+          <div className="mb-6 grid grid-cols-2 gap-3 text-sm">
+            {tiles.map((tile) => (
+              <div key={tile.label} className="rounded-xl border border-white/10 bg-white/[0.04] p-4">
+                <p className="text-slate-500">{tile.label}</p>
+                <p className="text-lg font-semibold tabular-nums text-white">{tile.value}</p>
+              </div>
+            ))}
           </div>
-          <div className="bg-white dark:bg-white/5 rounded-xl p-4 border border-gray-200 dark:border-white/10">
-            <p className="text-gray-400 dark:text-white/40">Total marks</p>
-            <p className="font-semibold text-lg">{totalMarks}</p>
+
+          <h3 className="mb-3 text-sm font-semibold text-slate-300">{tt.instructions.legendTitle}</h3>
+          <div className="mb-8 space-y-2 text-sm">
+            <LegendRow color="border-white/15 bg-white/[0.03]" label={tt.instructions.notVisited} />
+            <LegendRow color="border-orange-400 bg-orange-400/10" label={tt.instructions.notAnswered} />
+            <LegendRow color="border-emerald-400 bg-emerald-400/10" label={tt.instructions.answered} />
+            <LegendRow color="border-violet-400 bg-violet-400/10" label={tt.instructions.marked} />
+            <LegendRow color="border-violet-400 bg-violet-400/10" label={tt.instructions.answeredMarked} dot />
           </div>
-          <div className="bg-white dark:bg-white/5 rounded-xl p-4 border border-gray-200 dark:border-white/10">
-            <p className="text-gray-400 dark:text-white/40">MCQ questions</p>
-            <p className="font-semibold text-lg">{mcqCount}</p>
-          </div>
-          <div className="bg-white dark:bg-white/5 rounded-xl p-4 border border-gray-200 dark:border-white/10">
-            <p className="text-gray-400 dark:text-white/40">Subjective questions</p>
-            <p className="font-semibold text-lg">{subjCount}</p>
+
+          <div className="flex gap-3">
+            <button onClick={onStart} className="flex-1 rounded-xl bg-cyan-300 py-3 font-semibold text-slate-900 shadow-[0_0_22px_rgba(103,232,249,.35)] transition hover:bg-cyan-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">
+              {tt.instructions.start}
+            </button>
+            <button onClick={onBack} className="rounded-xl border border-white/15 px-6 py-3 font-medium text-slate-200 transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300">
+              {tt.instructions.back}
+            </button>
           </div>
         </div>
-
-        <h3 className="font-semibold mb-3 text-sm text-gray-600 dark:text-white/70">Question palette legend</h3>
-        <div className="space-y-2 mb-8 text-sm">
-          <LegendRow color="bg-gray-300 dark:bg-white/20" label="Not visited yet" />
-          <LegendRow color="bg-orange-400" label="Visited, not answered" />
-          <LegendRow color="bg-emerald-500" label="Answered" />
-          <LegendRow color="bg-purple-500" label="Marked for review (not scored)" />
-          <LegendRow color="bg-purple-500" label="Answered & marked for review (scored)" dot />
-        </div>
-
-        <div className="flex gap-3">
-          <button onClick={onStart} className="flex-1 py-3 rounded-xl bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white font-semibold transition">
-            Start Test
-          </button>
-          <button onClick={onBack} className="px-6 py-3 rounded-xl border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10 font-medium transition">
-            Back
-          </button>
-        </div>
-      </div>
+      </GlassPanel>
     </div>
   );
 }
@@ -568,16 +586,17 @@ function Instructions({ paper, onStart, onBack }: { paper: TestPaper; onStart: (
 function LegendRow({ color, label, dot }: { color: string; label: string; dot?: boolean }) {
   return (
     <div className="flex items-center gap-3">
-      <span className={`relative w-5 h-5 rounded ${color} flex-shrink-0`}>
-        {dot && <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-400 border border-white dark:border-black" />}
+      <span className={`relative h-5 w-5 flex-shrink-0 rounded-full border-2 ${color}`}>
+        {dot && <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full border border-[#080d19] bg-emerald-400" />}
       </span>
-      <span className="text-gray-600 dark:text-white/70">{label}</span>
+      <span className="text-slate-300">{label}</span>
     </div>
   );
 }
 
 // ============================================================
-// Taking screen — timer, single question, palette, nav buttons
+// Taking screen — timer, stats strip, question palette, question, nav buttons
+// (also used by LiveJoin, so it carries its own dark stage)
 // ============================================================
 export function TakingScreen({
   paper,
@@ -612,127 +631,174 @@ export function TakingScreen({
   onClearResponse: () => void;
   onSubmit: () => void;
 }) {
-  const statusColor: Record<QuestionStatus, string> = {
-    'not-visited': 'bg-gray-200 dark:bg-white/10 text-gray-500 dark:text-white/50',
-    'not-answered': 'bg-orange-400 text-white',
-    answered: 'bg-emerald-500 text-white',
-    marked: 'bg-purple-500 text-white',
-    'answered-marked': 'bg-purple-500 text-white',
+  const tt = useTranslation().testScreen;
+  const statusTone: Record<QuestionStatus, string> = {
+    'not-visited': 'border-white/15 bg-white/[0.03] text-slate-400',
+    'not-answered': 'border-orange-400 bg-orange-400/10 text-orange-300',
+    answered: 'border-emerald-400 bg-emerald-400/10 text-emerald-300',
+    marked: 'border-violet-400 bg-violet-400/10 text-violet-200',
+    'answered-marked': 'border-violet-400 bg-violet-400/10 text-violet-200',
   };
   const statusLabel: Record<QuestionStatus, string> = {
-    'not-visited': 'Not visited',
-    'not-answered': 'Visited, not answered',
-    answered: 'Answered',
-    marked: 'Marked for review, not answered',
-    'answered-marked': 'Answered and marked for review',
+    'not-visited': tt.taking.statusAria.notVisited,
+    'not-answered': tt.taking.statusAria.notAnswered,
+    answered: tt.taking.statusAria.answered,
+    marked: tt.taking.statusAria.marked,
+    'answered-marked': tt.taking.statusAria.answeredMarked,
   };
 
-  const isLast = step === paper.questions.length - 1;
+  const total = paper.questions.length;
+  const isLast = step === total - 1;
   const lowTime = timeLeft !== null && timeLeft <= 60;
+  const answeredCount = answers.filter((a) => isAnswered(a)).length;
+  const statuses = paper.questions.map((q) => statusMap[q.id] ?? 'not-visited');
+  const markedCount = statuses.filter((s) => s === 'marked' || s === 'answered-marked').length;
+  const skippedCount = statuses.filter((s) => s === 'not-answered').length;
+  const totalSeconds = paper.durationMinutes * 60;
+  const timeFraction = timeLeft !== null && totalSeconds > 0 ? Math.max(0, Math.min(1, timeLeft / totalSeconds)) : null;
+  const stats = [
+    { label: tt.taking.statQuestions, value: total, tone: 'text-white' },
+    { label: tt.taking.statAnswered, value: answeredCount, tone: 'text-emerald-300' },
+    { label: tt.taking.statMarked, value: markedCount, tone: 'text-violet-300' },
+    { label: tt.taking.statSkipped, value: skippedCount, tone: 'text-orange-300' },
+  ];
 
   return (
-    <div className="max-w-6xl mx-auto">
-      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-        <div>
-          <p className="font-semibold">{paper.title}</p>
-          <p className="text-xs text-gray-400 dark:text-white/40">Question {step + 1} of {paper.questions.length}</p>
+    <div className="dark">
+      <div className="relative mx-auto max-w-6xl overflow-hidden rounded-3xl bg-[#080d19] p-3 text-slate-100 md:p-5">
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute -left-32 -top-40 h-[420px] w-[420px] rounded-full bg-cyan-500/[0.09] blur-[120px]" />
+          <div className="absolute -right-24 top-1/3 h-[380px] w-[380px] rounded-full bg-violet-600/[0.10] blur-[120px]" />
         </div>
-        <div className="flex items-center gap-3">
-          <span className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-mono font-semibold ${lowTime ? 'bg-red-100 dark:bg-red-500/10 text-red-600 dark:text-red-400' : 'bg-gray-100 dark:bg-white/10'}`}>
-            <Clock className="w-4 h-4" /> {timeLeft !== null ? formatClock(timeLeft) : formatClock(secondsElapsed)}
-          </span>
-          <button onClick={onSubmit} className="px-4 py-2 rounded-xl bg-red-500 text-white text-sm font-semibold transition">
-            Submit Test
-          </button>
-        </div>
-      </div>
-
-      <div className="grid lg:grid-cols-[1fr_260px] gap-6">
-        <div>
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={currentQuestion.id}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.2 }}
-              className="card rounded-2xl p-6 md:p-8"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-medium tracking-wide uppercase text-purple-500 dark:text-purple-300/70 bg-purple-100 dark:bg-purple-500/10 border border-purple-300/40 dark:border-purple-500/20 rounded-full px-3 py-1">
-                  {currentQuestion.type === 'mcq' ? 'Multiple Choice' : 'Short Answer'}
-                </span>
-                <span className="text-xs text-gray-400 dark:text-white/40">
-                  +{currentQuestion.marks}{currentQuestion.type === 'mcq' ? ` / -${(currentQuestion as MCQQuestion).negativeMarks}` : ''} marks
-                </span>
+        <div className="relative">
+          <div className="mb-3 overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.035]">
+            <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+              <div className="min-w-0">
+                <p className="truncate font-semibold text-white">{paper.title}</p>
+                <p className="text-xs text-slate-500">{format(tt.taking.questionOf, step + 1, total)}</p>
               </div>
-              <h2 className="text-xl font-semibold mb-6 leading-snug">{currentQuestion.question}</h2>
-
-              {currentQuestion.type === 'mcq' ? (
-                <div className="space-y-3">
-                  {(currentQuestion as MCQQuestion).options.map((opt, i) => {
-                    const selected = currentAnswer && currentAnswer.type === 'mcq' && currentAnswer.selectedIndex === i;
-                    return (
-                      <button
-                        key={i}
-                        onClick={() => onSelectMCQ(i)}
-                        type="button"
-                        aria-pressed={!!selected}
-                        className={`w-full text-left p-4 rounded-xl border transition ${
-                          selected
-                            ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white border-black dark:border-white'
-                            : 'bg-white dark:bg-white/5 border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10'
-                        }`}
-                      >
-                        <span className="text-sm">{String.fromCharCode(65 + i)}. {opt}</span>
-                      </button>
-                    );
-                  })}
+              <div className="flex items-center gap-3">
+                <span className={`inline-flex items-center gap-2 rounded-xl px-3 py-1.5 font-mono text-lg font-semibold tabular-nums ${lowTime ? 'animate-pulse bg-red-500/15 text-red-300 motion-reduce:animate-none' : 'bg-cyan-300/10 text-cyan-200'}`}>
+                  <Clock className="h-4 w-4" /> {timeLeft !== null ? formatClock(timeLeft) : formatClock(secondsElapsed)}
+                </span>
+                <button onClick={onSubmit} className="rounded-xl bg-rose-500 px-4 py-2 text-sm font-semibold text-white shadow-[0_0_18px_rgba(244,63,94,.35)] transition hover:bg-rose-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-200">
+                  {tt.taking.submit}
+                </button>
+              </div>
+            </div>
+            {timeFraction !== null && (
+              <div className="h-0.5 bg-white/[0.06]">
+                <div className={`h-full transition-[width] duration-1000 ease-linear motion-reduce:transition-none ${lowTime ? 'bg-red-400' : 'bg-cyan-300'}`} style={{ width: `${timeFraction * 100}%` }} />
+              </div>
+            )}
+            <div className="grid grid-cols-4 divide-x divide-white/[0.07] border-t border-white/[0.07] text-center">
+              {stats.map((stat) => (
+                <div key={stat.label} className="min-w-0 px-2 py-2">
+                  <p className="truncate text-[10px] uppercase tracking-wider text-slate-500">{stat.label}</p>
+                  <p className={`text-base font-semibold tabular-nums ${stat.tone}`}>{stat.value}</p>
                 </div>
-              ) : (
-                <textarea
-                  value={currentAnswer && currentAnswer.type === 'subjective' ? currentAnswer.text : ''}
-                  onChange={(e) => onSubjectiveText(e.target.value)}
-                  placeholder="Type your answer here..."
-                  rows={6}
-                  className="w-full bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-black dark:focus:border-white resize-none"
-                />
-              )}
-            </motion.div>
-          </AnimatePresence>
-
-          <div className="flex items-center flex-wrap gap-3 mt-6">
-            <button onClick={onClearResponse} className="px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10 text-sm font-medium transition">
-              Clear Response
-            </button>
-            <button onClick={onMarkForReview} className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-purple-300 dark:border-purple-500/30 text-purple-600 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-500/10 text-sm font-medium transition">
-              <Flag className="w-4 h-4" /> Mark for Review & Next
-            </button>
-            <button onClick={onSaveAndNext} disabled={isLast} className="ml-auto px-5 py-2.5 rounded-xl bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white disabled:opacity-30 text-sm font-semibold transition">
-              Save & Next
-            </button>
+              ))}
+            </div>
           </div>
-        </div>
 
-        <div className="card rounded-2xl p-4 h-fit">
-          <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-white/40 mb-3">Question Palette</p>
-          <div className="grid grid-cols-5 gap-2">
-            {paper.questions.map((q, i) => (
-              <button
-                key={q.id}
-                onClick={() => onGoToStep(i)}
-                type="button"
-                aria-label={`Question ${i + 1}: ${statusLabel[statusMap[q.id] ?? 'not-visited']}`}
-                aria-current={i === step ? 'step' : undefined}
-                className={`w-9 h-9 rounded-lg text-sm font-semibold transition ${statusColor[statusMap[q.id] ?? 'not-visited']} ${i === step ? 'ring-2 ring-offset-2 ring-black dark:ring-white dark:ring-offset-black' : ''}`}
-              >
-                {i + 1}
-              </button>
-            ))}
+          <div className="grid gap-3 lg:grid-cols-[250px_1fr]">
+            <div className="order-2 h-fit rounded-2xl border border-white/[0.08] bg-white/[0.035] p-4 lg:order-1">
+              <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">{tt.taking.palette}</p>
+              <div className="grid grid-cols-5 gap-2">
+                {paper.questions.map((q, i) => {
+                  const status = statuses[i];
+                  return (
+                    <button
+                      key={q.id}
+                      onClick={() => onGoToStep(i)}
+                      type="button"
+                      aria-label={format(tt.taking.paletteAria, i + 1, statusLabel[status])}
+                      aria-current={i === step ? 'step' : undefined}
+                      className={`relative flex h-9 w-9 items-center justify-center rounded-full border-2 text-sm font-semibold transition hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 motion-reduce:transition-none motion-reduce:hover:scale-100 ${
+                        i === step ? 'border-white bg-white text-slate-900 shadow-[0_0_14px_rgba(255,255,255,.5)]' : statusTone[status]
+                      }`}
+                    >
+                      {i + 1}
+                      {status === 'answered-marked' && <span aria-hidden="true" className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full border border-[#080d19] bg-emerald-400" />}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="mt-4 text-xs text-slate-500">{format(tt.taking.answeredCount, answeredCount, total)}</p>
+            </div>
+
+            <div className="order-1 lg:order-2">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={currentQuestion.id}
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.2 }}
+                  className="rounded-2xl border border-white/[0.08] bg-white/[0.035] p-5 md:p-7"
+                >
+                  <div className="mb-4 flex items-center justify-between gap-3">
+                    <span className="rounded-full border border-violet-300/30 bg-violet-400/10 px-3 py-1 text-xs font-medium uppercase tracking-wide text-violet-200">
+                      {currentQuestion.type === 'mcq' ? tt.taking.multipleChoice : tt.taking.shortAnswer}
+                    </span>
+                    <span className="text-xs text-slate-500">
+                      {currentQuestion.type === 'mcq'
+                        ? format(tt.taking.marksNegative, currentQuestion.marks, (currentQuestion as MCQQuestion).negativeMarks)
+                        : format(tt.taking.marksPlain, currentQuestion.marks)}
+                    </span>
+                  </div>
+                  <h2 className="mb-6 text-lg font-semibold leading-snug text-white md:text-xl">{currentQuestion.question}</h2>
+
+                  {currentQuestion.type === 'mcq' ? (
+                    <div className="grid gap-3 md:grid-cols-2">
+                      {(currentQuestion as MCQQuestion).options.map((opt, i) => {
+                        const selected = currentAnswer && currentAnswer.type === 'mcq' && currentAnswer.selectedIndex === i;
+                        return (
+                          <button
+                            key={i}
+                            onClick={() => onSelectMCQ(i)}
+                            type="button"
+                            aria-pressed={!!selected}
+                            className={`flex items-start gap-3 rounded-xl border p-3.5 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 ${
+                              selected
+                                ? 'border-cyan-300/70 bg-cyan-300/[0.12] shadow-[0_0_22px_rgba(103,232,249,.2)]'
+                                : 'border-white/10 bg-white/[0.03] hover:border-white/25 hover:bg-white/[0.07]'
+                            }`}
+                          >
+                            <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold ${selected ? 'bg-cyan-300 text-slate-900' : 'bg-white/10 text-slate-300'}`}>{String.fromCharCode(65 + i)}</span>
+                            <span className="pt-0.5 text-sm text-slate-100">{opt}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <textarea
+                      value={currentAnswer && currentAnswer.type === 'subjective' ? currentAnswer.text : ''}
+                      onChange={(e) => onSubjectiveText(e.target.value)}
+                      placeholder={tt.taking.answerPlaceholder}
+                      rows={6}
+                      className="w-full resize-none rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-slate-100 placeholder:text-slate-500 focus:border-cyan-300/60 focus:outline-none"
+                    />
+                  )}
+                </motion.div>
+              </AnimatePresence>
+
+              <div className="mt-4 flex flex-wrap items-center gap-3">
+                <button onClick={() => onGoToStep(step - 1)} disabled={step === 0} className="inline-flex items-center gap-1 rounded-xl border border-white/15 px-4 py-2.5 text-sm font-medium text-slate-200 transition hover:bg-white/10 disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300">
+                  <ChevronLeft className="h-4 w-4" /> {tt.taking.previous}
+                </button>
+                <button onClick={onClearResponse} className="rounded-xl border border-white/15 px-4 py-2.5 text-sm font-medium text-slate-200 transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300">
+                  {tt.taking.clear}
+                </button>
+                <button onClick={onMarkForReview} className="flex items-center gap-1.5 rounded-xl border border-violet-400/40 px-4 py-2.5 text-sm font-medium text-violet-200 transition hover:bg-violet-400/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300">
+                  <Flag className="h-4 w-4" /> {tt.taking.markNext}
+                </button>
+                <button onClick={onSaveAndNext} disabled={isLast} className="ml-auto rounded-xl bg-cyan-300 px-5 py-2.5 text-sm font-semibold text-slate-900 shadow-[0_0_18px_rgba(103,232,249,.3)] transition hover:bg-cyan-200 disabled:opacity-30 disabled:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">
+                  {tt.taking.saveNext}
+                </button>
+              </div>
+            </div>
           </div>
-          <p className="text-xs text-gray-400 dark:text-white/40 mt-4">
-            {answers.filter((a) => isAnswered(a)).length}/{paper.questions.length} answered
-          </p>
         </div>
       </div>
     </div>
@@ -755,35 +821,39 @@ function ResultsDashboard({
   onSelfGrade: (questionId: string, isCorrect: boolean, marks: number) => void;
   onRetake: () => void;
 }) {
+  const tt = useTranslation().testScreen;
   const resultsById = new Map(attempt.results.map((r) => [r.questionId, r]));
   const answersById = new Map(attempt.answers.map((a) => [a.questionId, a]));
   const correctCount = attempt.results.filter((r) => r.isCorrect === true).length;
   const pending = pendingSelfGradeCount(attempt.results);
-
-  const scoreColor = attempt.scorePercent >= 80 ? 'text-emerald-500' : attempt.scorePercent >= 50 ? 'text-amber-500' : 'text-red-500';
+  const ringColor = attempt.scorePercent >= 80 ? '#34d399' : attempt.scorePercent >= 50 ? '#fbbf24' : '#f87171';
 
   return (
-    <div className="max-w-3xl mx-auto">
-      <div className="card rounded-2xl p-6 md:p-8 mb-8 text-center">
-        <p className="text-sm text-gray-500 dark:text-white/50 mb-1">{attempt.testTitle}</p>
-        <p className={`text-5xl font-bold mb-2 ${scoreColor}`}>{attempt.obtainedMarks}/{attempt.totalMarks}</p>
-        <p className="text-gray-500 dark:text-white/60 mb-1">{attempt.scorePercent}% · {correctCount} correct</p>
-        {pending > 0 && (
-          <div className="mb-4">
-            <p className="flex items-center justify-center gap-1.5 text-sm text-amber-600 dark:text-amber-400 mb-2">
-              <HelpCircle className="w-4 h-4" /> {pending} subjective answer{pending !== 1 ? 's' : ''} awaiting grading
-            </p>
+    <div className="mx-auto max-w-3xl">
+      <GlassPanel accent={ringColor} className="mb-8">
+        <div className="flex flex-col items-center gap-5 p-6 text-center md:flex-row md:p-8 md:text-left">
+          <ProgressRing value={attempt.scorePercent} size={132} stroke={10} color={ringColor}>
+            <span className="text-2xl font-semibold tabular-nums text-white">{attempt.obtainedMarks}/{attempt.totalMarks}</span>
+          </ProgressRing>
+          <div className="min-w-0 flex-1">
+            <p className="mb-1 text-sm text-slate-400">{attempt.testTitle}</p>
+            <p className="text-2xl font-semibold text-white">{format(tt.results.summary, attempt.scorePercent, correctCount)}</p>
+            {pending > 0 && (
+              <p className="mt-2 flex items-center justify-center gap-1.5 text-sm text-amber-300 md:justify-start">
+                <HelpCircle className="h-4 w-4" /> {format(pending === 1 ? tt.results.pendingOne : tt.results.pendingMany, pending)}
+              </p>
+            )}
+            <div className="mt-4 flex flex-wrap justify-center gap-3 md:justify-start">
+              <button onClick={() => downloadTestResultPdf(attempt)} className="flex items-center gap-2 rounded-xl bg-cyan-300 px-5 py-2.5 text-sm font-semibold text-slate-900 shadow-[0_0_18px_rgba(103,232,249,.3)] transition hover:bg-cyan-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">
+                <Download className="h-4 w-4" /> {tt.results.downloadPdf}
+              </button>
+              <button onClick={onRetake} className="flex items-center gap-2 rounded-xl border border-white/15 px-5 py-2.5 text-sm font-semibold text-slate-200 transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300">
+                <RotateCcw className="h-4 w-4" /> {tt.results.backToTests}
+              </button>
+            </div>
           </div>
-        )}
-        <div className="flex flex-wrap justify-center gap-3 mt-4">
-          <button onClick={() => downloadTestResultPdf(attempt)} className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white text-sm font-semibold transition">
-            <Download className="w-4 h-4" /> Download PDF
-          </button>
-          <button onClick={onRetake} className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10 text-sm font-semibold transition">
-            <RotateCcw className="w-4 h-4" /> Back to Tests
-          </button>
         </div>
-      </div>
+      </GlassPanel>
 
       <TestAnalysis attempt={attempt} allAttempts={allAttempts} onSaveInsight={onSaveInsight} />
 
@@ -794,57 +864,57 @@ function ResultsDashboard({
           const isCorrect = result?.isCorrect;
           const borderClass =
             isCorrect === true
-              ? 'border-emerald-300/40 dark:border-emerald-500/20 bg-emerald-50/40 dark:bg-emerald-500/5'
+              ? 'border-emerald-400/25 bg-emerald-400/[0.05]'
               : isCorrect === false
-                ? 'border-red-300/40 dark:border-red-500/20 bg-red-50/40 dark:bg-red-500/5'
-                : 'border-amber-300/40 dark:border-amber-500/20 bg-amber-50/40 dark:bg-amber-500/5';
+                ? 'border-red-400/25 bg-red-400/[0.05]'
+                : 'border-amber-400/25 bg-amber-400/[0.05]';
 
           return (
             <div key={q.id} className={`rounded-2xl border p-5 ${borderClass}`}>
-              <div className="flex items-start gap-3 mb-3">
+              <div className="mb-3 flex items-start gap-3">
                 {isCorrect === true ? (
-                  <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
+                  <CheckCircle2 className="mt-0.5 h-5 w-5 flex-shrink-0 text-emerald-400" />
                 ) : isCorrect === false ? (
-                  <XCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                  <XCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-red-400" />
                 ) : (
-                  <HelpCircle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                  <HelpCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-400" />
                 )}
-                <p className="font-medium flex-1">Q{i + 1}. {q.question}</p>
-                <span className="text-xs text-gray-400 dark:text-white/40 flex-shrink-0">{result?.marksObtained ?? 0}/{q.marks}</span>
+                <p className="flex-1 font-medium text-white">{format(tt.results.questionPrefix, i + 1)} {q.question}</p>
+                <span className="flex-shrink-0 text-xs tabular-nums text-slate-500">{result?.marksObtained ?? 0}/{q.marks}</span>
               </div>
 
               {q.type === 'mcq' ? (
-                <div className="ml-8 space-y-1.5 mb-3">
+                <div className="mb-3 ml-8 space-y-1.5">
                   {(q as MCQQuestion).options.map((opt, oi) => {
                     const selected = answer && answer.type === 'mcq' && answer.selectedIndex === oi;
                     const correct = oi === (q as MCQQuestion).correctIndex;
                     return (
-                      <p key={oi} className={`text-sm ${correct ? 'text-emerald-600 dark:text-emerald-400 font-medium' : selected ? 'text-red-600 dark:text-red-400 font-medium' : 'text-gray-500 dark:text-white/50'}`}>
+                      <p key={oi} className={`text-sm ${correct ? 'font-medium text-emerald-300' : selected ? 'font-medium text-red-300' : 'text-slate-400'}`}>
                         {String.fromCharCode(65 + oi)}. {opt}
-                        {correct ? ' (correct)' : selected ? ' (your answer)' : ''}
+                        {correct ? ` ${tt.results.correctTag}` : selected ? ` ${tt.results.yourAnswerTag}` : ''}
                       </p>
                     );
                   })}
                 </div>
               ) : (
-                <div className="ml-8 mb-3 space-y-2 text-sm">
-                  <p className="text-gray-600 dark:text-white/70">
-                    <span className="font-medium">Your answer: </span>
-                    {answer && answer.type === 'subjective' && answer.text.trim() ? answer.text.trim() : <em>left blank</em>}
+                <div className="mb-3 ml-8 space-y-2 text-sm">
+                  <p className="text-slate-300">
+                    <span className="font-medium">{tt.results.yourAnswer}</span>
+                    {answer && answer.type === 'subjective' && answer.text.trim() ? answer.text.trim() : <em>{tt.results.leftBlank}</em>}
                   </p>
                   {(q as SubjectiveQuestion).modelAnswer && (
-                    <p className="text-emerald-600 dark:text-emerald-400">
-                      <span className="font-medium">Model answer: </span>
+                    <p className="text-emerald-300">
+                      <span className="font-medium">{tt.results.modelAnswer}</span>
                       {(q as SubjectiveQuestion).modelAnswer}
                     </p>
                   )}
                   {isCorrect === null && (
                     <div className="flex gap-2 pt-1">
-                      <button onClick={() => onSelfGrade(q.id, true, q.marks)} className="px-3 py-1.5 rounded-lg bg-emerald-500 text-white text-xs font-semibold transition">
-                        I got this right
+                      <button onClick={() => onSelfGrade(q.id, true, q.marks)} className="rounded-lg bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200">
+                        {tt.results.gotRight}
                       </button>
-                      <button onClick={() => onSelfGrade(q.id, false, q.marks)} className="px-3 py-1.5 rounded-lg bg-red-500 text-white text-xs font-semibold transition">
-                        I got this wrong
+                      <button onClick={() => onSelfGrade(q.id, false, q.marks)} className="rounded-lg bg-red-500 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-red-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-200">
+                        {tt.results.gotWrong}
                       </button>
                     </div>
                   )}
@@ -852,8 +922,8 @@ function ResultsDashboard({
               )}
 
               {q.explanation && (
-                <p className="ml-8 text-sm text-gray-500 dark:text-white/60">
-                  <span className="font-medium text-gray-700 dark:text-white/80">Why: </span>
+                <p className="ml-8 text-sm text-slate-400">
+                  <span className="font-medium text-slate-200">{tt.results.why}</span>
                   {q.explanation}
                 </p>
               )}

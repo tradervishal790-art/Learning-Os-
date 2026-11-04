@@ -260,9 +260,22 @@ export default function Mentor() {
   };
 
   return (
-    <div className="min-h-dvh md:min-h-0 md:h-[calc(100dvh-5rem)] text-black dark:text-white flex flex-col px-4 pt-2 md:px-8 md:pt-3 md:pb-3">
-      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-2 w-full flex justify-end">
-        <h1 className="sr-only">{t.mentor.header.title}</h1>
+    <div className="dark">
+    <div className="relative isolate flex min-h-dvh flex-col bg-[#080d19] px-4 pt-2 text-slate-100 md:h-[calc(100dvh-5rem)] md:min-h-0 md:px-8 md:pb-3 md:pt-3">
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+        <div className="absolute -left-32 -top-40 h-[420px] w-[420px] rounded-full bg-violet-600/[0.14] blur-[120px]" />
+        <div className="absolute -right-24 top-1/3 h-[380px] w-[380px] rounded-full bg-cyan-500/[0.09] blur-[120px]" />
+      </div>
+      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-2 flex w-full items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <span aria-hidden="true" className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-400 via-fuchsia-400 to-cyan-300 shadow-[0_0_22px_rgba(139,92,246,.6)]">
+            <span className="h-4 w-4 rounded-full bg-white/70 blur-[3px]" />
+          </span>
+          <div className="min-w-0">
+            <h1 className="truncate text-base font-semibold leading-tight md:text-lg">{t.mentor.header.title}</h1>
+            <p className="hidden truncate text-xs text-slate-400 md:block">{t.mentor.header.subtitle}</p>
+          </div>
+        </div>
         <div className="flex gap-2">
           <button
             onClick={openHistory}
@@ -277,7 +290,7 @@ export default function Mentor() {
             disabled={isFresh}
             aria-label={t.mentor.newChat}
             title={t.mentor.newChat}
-            className="w-10 h-10 flex items-center justify-center bg-indigo-600 text-white dark:bg-indigo-500 rounded-full disabled:opacity-40 transition"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-violet-500 text-white shadow-[0_0_16px_rgba(139,92,246,.45)] transition hover:bg-violet-400 disabled:opacity-40 disabled:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200"
           >
             <SquarePen className="w-5 h-5" strokeWidth={1.75} />
           </button>
@@ -301,7 +314,7 @@ export default function Mentor() {
               role="dialog"
               aria-label={t.mentor.history}
               onClick={(e) => e.stopPropagation()}
-              className="w-full md:w-96 max-h-[80dvh] md:max-h-none rounded-t-2xl md:rounded-none bg-white dark:bg-neutral-900 border-t md:border-t-0 md:border-l border-gray-200 dark:border-white/10 flex flex-col"
+              className="w-full md:w-96 max-h-[80dvh] md:max-h-none rounded-t-2xl md:rounded-none bg-white dark:bg-[#0b1221] border-t md:border-t-0 md:border-l border-gray-200 dark:border-white/10 flex flex-col"
             >
               <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-white/10">
                 <h2 className="font-semibold">{t.mentor.history}</h2>
@@ -322,7 +335,7 @@ export default function Mentor() {
                     <div
                       key={c.id}
                       className={`flex items-center gap-1 rounded-xl ${
-                        c.id === chatId ? 'bg-indigo-50 dark:bg-white/10' : 'hover:bg-gray-100 dark:hover:bg-white/5'
+                        c.id === chatId ? 'bg-violet-50 dark:bg-violet-500/15' : 'hover:bg-gray-100 dark:hover:bg-white/5'
                       }`}
                     >
                       <button
@@ -374,8 +387,8 @@ export default function Mentor() {
                 <div
                   className={`max-w-[85%] md:max-w-[70%] px-4 py-3 md:p-4 rounded-2xl ${
                     msg.role === 'user'
-                      ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white'
-                      : 'card text-black dark:text-white'
+                      ? 'bg-gradient-to-br from-violet-500 to-indigo-500 text-white shadow-[0_0_22px_rgba(139,92,246,.3)]'
+                      : 'border border-white/10 bg-white/[0.05] text-slate-100'
                   }`}
                 >
                   <div className="hidden md:block text-xs opacity-60 mb-1">
@@ -393,11 +406,11 @@ export default function Mentor() {
             ))}
             {loading && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-start">
-                <div className="bg-gray-100 dark:bg-white/10 border border-gray-200 dark:border-white/10 p-4 rounded-2xl">
+                <div className="rounded-2xl border border-white/10 bg-white/[0.05] p-4">
                   <div className="flex gap-1">
-                    <span className="w-2 h-2 bg-gray-400 dark:bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                    <span className="w-2 h-2 bg-gray-400 dark:bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                    <span className="w-2 h-2 bg-gray-400 dark:bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                    <span className="h-2 w-2 animate-bounce rounded-full bg-violet-300/80 motion-reduce:animate-none" style={{ animationDelay: '0ms' }} />
+                    <span className="h-2 w-2 animate-bounce rounded-full bg-violet-300/80 motion-reduce:animate-none" style={{ animationDelay: '150ms' }} />
+                    <span className="h-2 w-2 animate-bounce rounded-full bg-violet-300/80 motion-reduce:animate-none" style={{ animationDelay: '300ms' }} />
                   </div>
                 </div>
               </motion.div>
@@ -409,7 +422,7 @@ export default function Mentor() {
 
         {/* Prompts + input — pinned above the bottom bar on phones (Instagram DM style) */}
         <div
-          className={`fixed inset-x-0 z-30 md:static bg-white/95 dark:bg-black/95 backdrop-blur md:backdrop-blur-none md:bg-transparent border-t border-gray-200 dark:border-white/10 md:border-white/5 ${
+          className={`fixed inset-x-0 z-30 md:static bg-white/95 dark:bg-[#080d19]/95 backdrop-blur md:backdrop-blur-none md:bg-transparent border-t border-gray-200 dark:border-white/10 md:border-white/5 ${
             typing ? 'bottom-[env(safe-area-inset-bottom)]' : 'bottom-[calc(3.5rem+env(safe-area-inset-bottom))]'
           } md:bottom-auto`}
         >
@@ -422,9 +435,9 @@ export default function Mentor() {
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => sendMessage(input.trim() ? `${input.trim()}\n\n${p.prompt}` : p.prompt, PROMPT_UI[i] === true)}
                   disabled={loading}
-                  className="flex-shrink-0 h-9 px-3 inline-flex items-center gap-1.5 card rounded-full text-xs hover:bg-gray-100 dark:hover:bg-white/10 transition disabled:opacity-40"
+                  className="inline-flex h-9 flex-shrink-0 items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.05] px-3 text-xs text-slate-200 transition hover:border-violet-300/50 hover:bg-violet-400/10 hover:shadow-[0_0_14px_rgba(139,92,246,.25)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300 disabled:opacity-40"
                 >
-                  <PromptIcon className="w-3.5 h-3.5" strokeWidth={1.75} />
+                  <PromptIcon className="h-3.5 w-3.5 text-violet-300" strokeWidth={1.75} />
                   {p.label}
                 </button>
               );
@@ -442,7 +455,7 @@ export default function Mentor() {
               onBlur={() => setImmersive(false)}
               placeholder={t.mentor.inputPlaceholder}
               disabled={loading}
-              className="flex-1 min-w-0 h-11 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-full md:rounded-xl px-4 placeholder-gray-400 dark:placeholder-white/40 focus:outline-none focus:border-black dark:focus:border-white"
+              className="flex-1 min-w-0 h-11 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-full md:rounded-xl px-4 placeholder-gray-400 dark:placeholder-white/40 focus:outline-none focus:border-violet-400 focus:shadow-[0_0_16px_rgba(139,92,246,.25)]"
             />
             <button
               onMouseDown={(e) => e.preventDefault()}
@@ -450,7 +463,7 @@ export default function Mentor() {
               disabled={loading || !input.trim()}
               aria-label={t.mentor.sendCta}
               title={t.mentor.sendCta}
-              className="flex-shrink-0 w-11 h-11 md:w-auto md:px-5 flex items-center justify-center bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white disabled:opacity-40 rounded-full md:rounded-xl font-semibold transition"
+              className="flex-shrink-0 w-11 h-11 md:w-auto md:px-5 flex items-center justify-center bg-violet-500 text-white shadow-[0_0_16px_rgba(139,92,246,.4)] hover:bg-violet-400 disabled:opacity-40 disabled:shadow-none rounded-full md:rounded-xl font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200"
             >
               <SendHorizontal className="w-5 h-5 md:hidden" strokeWidth={1.75} />
               <span className="hidden md:inline">{t.mentor.sendCta}</span>
@@ -458,6 +471,7 @@ export default function Mentor() {
           </div>
         </div>
       </div>
+    </div>
     </div>
   );
 }

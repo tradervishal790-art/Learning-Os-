@@ -369,14 +369,14 @@ export default function Notes({ videoTitle, videoDescription, videoId }: { video
             onChange={(e) => setTopic(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleGenerate()}
             placeholder={t.notes.topicPlaceholder}
-            className="flex-1 min-w-0 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 placeholder-gray-400 dark:placeholder-white/40 focus:outline-none focus:border-black dark:focus:border-white"
+            className="flex-1 min-w-0 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 placeholder-gray-400 dark:placeholder-white/40 focus:outline-none focus:border-violet-400"
           />
           <button
             onClick={handleGenerate}
             disabled={loading || !topic.trim()}
             aria-label={t.notes.deepDiveCta}
             title={t.notes.deepDiveCta}
-            className="flex-shrink-0 w-12 md:w-auto h-12 md:h-auto md:px-6 md:py-3 flex items-center justify-center gap-2 bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white disabled:opacity-40 rounded-xl font-semibold transition"
+            className="flex-shrink-0 w-12 md:w-auto h-12 md:h-auto md:px-6 md:py-3 flex items-center justify-center gap-2 bg-violet-500 text-white shadow-[0_0_18px_rgba(139,92,246,.35)] hover:bg-violet-400 disabled:opacity-40 disabled:shadow-none rounded-xl font-semibold transition"
           >
             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5 md:hidden" strokeWidth={1.75} />}
             <span className="hidden md:inline">{loading ? '...' : t.notes.deepDiveCta}</span>
@@ -390,7 +390,7 @@ export default function Notes({ videoTitle, videoDescription, videoId }: { video
             onChange={(e) => setYoutubeUrl(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleGenerateFromVideo()}
             placeholder={t.notes.linkPlaceholder}
-            className="flex-1 min-w-0 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 placeholder-gray-400 dark:placeholder-white/40 focus:outline-none focus:border-black dark:focus:border-white"
+            className="flex-1 min-w-0 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 placeholder-gray-400 dark:placeholder-white/40 focus:outline-none focus:border-violet-400"
           />
           <button
             onClick={handleGenerateFromVideo}
@@ -421,7 +421,7 @@ export default function Notes({ videoTitle, videoDescription, videoId }: { video
                   aria-pressed={activeSection === s.id}
                   className={`flex-shrink-0 h-11 min-w-11 px-3 md:px-4 inline-flex items-center justify-center gap-2 rounded-full text-sm font-medium transition ${
                     activeSection === s.id
-                      ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white'
+                      ? 'bg-violet-500 text-white shadow-[0_0_16px_rgba(139,92,246,.45)]'
                       : 'card text-gray-500 dark:text-white/60 hover:bg-gray-100 dark:hover:bg-white/10'
                   }`}
                 >

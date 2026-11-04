@@ -24,14 +24,16 @@ import {
   type ExpiredBox,
   type StudyPlanState,
   type StudyTopic,
+  CHECKPOINTS,
 } from './studyPlanStore';
 import { deleteStudyFile, getStudyFile } from './studyFiles';
 import { splitPdfBlob, storeFiles } from './studyPlanFiles';
 import { askConfirm } from './dialogApi';
+import { GlassPanel, ProgressRing } from './ui/kit';
 
 const card = 'p-4 rounded-2xl card';
 const btn = 'px-3 py-1.5 rounded-lg text-xs font-medium transition-all border';
-const btnPrimary = `${btn} bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white border-transparent hover:opacity-80`;
+const btnPrimary = `${btn} bg-violet-500 text-white border-transparent shadow-[0_0_14px_rgba(139,92,246,.35)] hover:bg-violet-400`;
 const btnGhost = `${btn} border-gray-200 dark:border-white/10 text-gray-600 dark:text-white/70 hover:bg-gray-100 dark:hover:bg-white/10`;
 const inputCls =
   'px-3 py-2 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-black text-sm text-black dark:text-white';
@@ -81,6 +83,10 @@ export default function StudyPlan() {
   const tip = useMemo(() => buildPlanTip(getPersonalityProfile()), []);
   const boxes = plan.topics.filter((t) => t.subject === activeSubject).sort((a, b) => a.number - b.number);
   const multi = plan.subjects.length > 1;
+  const learnedBoxes = plan.topics.filter((b) => b.learnedOn);
+  const cycleTotal = learnedBoxes.length * CHECKPOINTS.length;
+  const cyclePct = cycleTotal > 0 ? Math.round((learnedBoxes.reduce((n, b) => n + b.reviewed.length, 0) / cycleTotal) * 100) : 0;
+  const overdueCount = today.revisions.filter((r) => r.state === 'overdue').length;
 
   const commit = (next: StudyPlanState): boolean => {
     const ok = savePlan(next);
@@ -176,22 +182,46 @@ export default function StudyPlan() {
 
       {/* Today */}
       <section>
-        <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-          <h2 className="text-xl font-bold">{s.todayTitle}</h2>
-          {plan.completed > 0 && <span className="text-xs text-gray-500 dark:text-white/60">{format(s.finished, plan.completed)}</span>}
-        </div>
-        {tip && (
-          <p className="text-xs text-gray-500 dark:text-white/60 mb-3">
-            {{ small: s.tipSmall, calm: s.tipCalm, talk: s.tipTalk, checklist: s.tipChecklist }[tip]}
-          </p>
-        )}
-        <div className="space-y-4">
+        <GlassPanel accent="#a78bfa" className="mb-4 border-violet-300/20 bg-gradient-to-br from-violet-500/[0.10] to-transparent">
+          <div className="flex flex-col gap-5 p-4 sm:flex-row sm:items-center md:p-6">
+            <ProgressRing value={cyclePct} size={112} stroke={9} color="#a78bfa">
+              <span className="text-2xl font-semibold tabular-nums text-white">{cyclePct}%</span>
+              <span className="mt-0.5 px-3 text-center text-[9px] uppercase leading-tight tracking-[0.12em] text-slate-500">{s.cycleLabel}</span>
+            </ProgressRing>
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h2 className="text-xl font-semibold tracking-tight text-white">{s.todayTitle}</h2>
+                {plan.completed > 0 && <span className="text-xs text-slate-400">{format(s.finished, plan.completed)}</span>}
+              </div>
+              {tip && (
+                <p className="mt-1 text-xs text-slate-400">
+                  {{ small: s.tipSmall, calm: s.tipCalm, talk: s.tipTalk, checklist: s.tipChecklist }[tip]}
+                </p>
+              )}
+              <div className="mt-4 grid grid-cols-3 divide-x divide-white/[0.07] rounded-xl border border-white/[0.07] bg-white/[0.03]">
+                {[
+                  { label: s.newTopic, value: today.newTopics.length, tone: 'text-violet-300' },
+                  { label: s.revisions, value: today.revisions.length, tone: overdueCount > 0 ? 'text-red-300' : 'text-amber-300' },
+                  { label: s.doneToday, value: today.doneToday.length, tone: 'text-emerald-300' },
+                ].map((tile) => (
+                  <div key={tile.label} className="min-w-0 px-3 py-2.5">
+                    <div className="truncate text-[10px] uppercase tracking-wider text-slate-500">{tile.label}</div>
+                    <div className={`text-xl font-semibold tabular-nums ${tile.tone}`}>{tile.value}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </GlassPanel>
+
+        <div className={`grid gap-5 ${today.upcoming.length > 0 ? 'lg:grid-cols-3' : 'lg:grid-cols-2'}`}>
           <div>
-            <div className="text-[11px] uppercase tracking-wider text-gray-400 dark:text-white/40 mb-2">{s.newTopic}</div>
+            <div className="mb-2 text-[11px] uppercase tracking-wider text-slate-500">{s.newTopic}</div>
             <div className="space-y-2">
               {today.newTopics.map((t) => (
                 <div key={t.id} className={`${card} flex items-center gap-3`}>
-                  <div className="flex-1 min-w-0 font-semibold truncate">{label(t)}</div>
+                  <span aria-hidden="true" className="h-8 w-1 shrink-0 rounded-full bg-violet-400 shadow-[0_0_10px_rgba(167,139,250,.7)]" />
+                  <div className="min-w-0 flex-1 truncate font-semibold">{label(t)}</div>
                   <button className={btnPrimary} onClick={() => setViewing({ topic: t, action: { type: 'learn' } })}>
                     {s.open}
                   </button>
@@ -199,7 +229,8 @@ export default function StudyPlan() {
               ))}
               {today.doneToday.map((t) => (
                 <div key={t.id} className={`${card} flex items-center gap-3 opacity-60`}>
-                  <div className="flex-1 min-w-0 truncate">{label(t)}</div>
+                  <span aria-hidden="true" className="h-8 w-1 shrink-0 rounded-full bg-emerald-400" />
+                  <div className="min-w-0 flex-1 truncate">{label(t)}</div>
                   <span className="text-xs">{s.doneToday}</span>
                 </div>
               ))}
@@ -210,13 +241,14 @@ export default function StudyPlan() {
           </div>
 
           <div>
-            <div className="text-[11px] uppercase tracking-wider text-gray-400 dark:text-white/40 mb-2">{s.revisions}</div>
+            <div className="mb-2 text-[11px] uppercase tracking-wider text-slate-500">{s.revisions}</div>
             <div className="space-y-2">
               {today.revisions.map((r) => (
                 <div key={`${r.topic.id}-${r.day}`} className={`${card} flex items-center gap-3`}>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-semibold truncate">{label(r.topic)}</div>
-                    <div className="text-xs text-gray-500 dark:text-white/60 flex gap-2 flex-wrap mt-0.5">
+                  <span aria-hidden="true" className={`h-8 w-1 shrink-0 rounded-full ${r.state === 'overdue' ? 'bg-red-400 shadow-[0_0_10px_rgba(248,113,113,.7)]' : 'bg-amber-300 shadow-[0_0_10px_rgba(252,211,77,.6)]'}`} />
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate font-semibold">{label(r.topic)}</div>
+                    <div className="mt-0.5 flex flex-wrap gap-2 text-xs text-gray-500 dark:text-white/60">
                       <span className="uppercase tracking-wider">{r.state === 'overdue' ? s.overdue : s.dueToday}</span>
                       <span>{format(s.revisionDay, r.day)}</span>
                       {r.state === 'overdue' && <span>{format(s.daysLate, r.daysLate)}</span>}
@@ -233,16 +265,16 @@ export default function StudyPlan() {
 
           {today.upcoming.length > 0 && (
             <div>
-              <div className="text-[11px] uppercase tracking-wider text-gray-400 dark:text-white/40 mb-2">{s.upcoming}</div>
-              <div className="space-y-1">
+              <div className="mb-2 text-[11px] uppercase tracking-wider text-slate-500">{s.upcoming}</div>
+              <ol className="relative ml-1.5 space-y-3 border-l border-dashed border-white/15 pl-5">
                 {today.upcoming.slice(0, 4).map((u) => (
-                  <div key={`${u.topic.id}-${u.day}`} className="text-xs text-gray-500 dark:text-white/60 flex gap-2">
-                    <span>{u.dueDate}</span>
-                    <span>{label(u.topic)}</span>
-                    <span>{format(s.revisionDay, u.day)}</span>
-                  </div>
+                  <li key={`${u.topic.id}-${u.day}`} className="relative text-xs text-slate-400">
+                    <span aria-hidden="true" className="absolute -left-[1.625rem] top-1 h-2 w-2 rounded-full bg-cyan-300 shadow-[0_0_8px_rgba(103,232,249,.7)]" />
+                    <span className="block font-medium text-slate-200">{label(u.topic)} · {format(s.revisionDay, u.day)}</span>
+                    <span className="block tabular-nums">{u.dueDate}</span>
+                  </li>
                 ))}
-              </div>
+              </ol>
             </div>
           )}
         </div>
@@ -251,7 +283,7 @@ export default function StudyPlan() {
       {/* Boxes */}
       <section>
         <div className="flex items-center gap-2 mb-3 flex-wrap">
-          <h2 className="text-xl font-bold mr-2">{s.boxesTitle}</h2>
+          <h2 className="mr-2 text-xl font-semibold tracking-tight text-white">{s.boxesTitle}</h2>
           {multi &&
             plan.subjects.map((sub) => (
               <button
@@ -259,8 +291,8 @@ export default function StudyPlan() {
                 onClick={() => setActiveSubject(sub)}
                 className={`px-3 py-1 rounded-full text-xs font-medium border ${
                   sub === activeSubject
-                    ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white border-transparent'
-                    : 'border-gray-200 dark:border-white/10 text-gray-500 dark:text-white/60'
+                    ? 'bg-violet-500 text-white border-transparent shadow-[0_0_14px_rgba(139,92,246,.4)]'
+                    : 'border-gray-200 dark:border-white/10 text-gray-500 dark:text-white/60 hover:bg-white/10'
                 }`}
               >
                 {sub}
@@ -306,7 +338,7 @@ export default function StudyPlan() {
 
           <button
             onClick={handleAddBox}
-            className="p-4 rounded-2xl border border-dashed border-gray-300 dark:border-white/20 text-sm font-medium text-gray-600 dark:text-white/70 hover:bg-gray-100 dark:hover:bg-white/10 min-h-[8rem]"
+            className="min-h-[8rem] rounded-2xl border border-dashed border-violet-300/30 p-4 text-sm font-medium text-gray-600 transition hover:border-violet-300/60 hover:bg-violet-400/[0.07] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300 dark:text-white/70"
           >
             + {format(s.addBox, nextFreeNumber(plan, activeSubject))}
           </button>
@@ -349,79 +381,90 @@ function BoxCard({
   const canSplit = !learned && box.files.length === 1 && box.files[0].kind === 'pdf';
 
   return (
-    <div className={`${card} flex flex-col gap-3`}>
-      <div className="flex items-center gap-2">
-        <div className="text-2xl font-bold">T{box.number}</div>
-        <div className="flex-1 text-xs text-gray-500 dark:text-white/60">{status}</div>
+    <GlassPanel accent={learned ? '#6ee7b7' : '#a78bfa'}>
+      <div className="flex h-full flex-col gap-3 p-4">
+        <div className="flex items-center gap-3">
+          <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-lg font-semibold ${learned ? 'bg-emerald-400/15 text-emerald-300' : 'bg-violet-400/15 text-violet-200'}`}>T{box.number}</div>
+          <div className="min-w-0 flex-1">
+            <div className="text-xs text-gray-500 dark:text-white/60">{status}</div>
+            {learned && (
+              <div className="mt-1.5 flex items-center gap-1.5" aria-hidden="true">
+                {CHECKPOINTS.map((d) => (
+                  <span key={d} className={`h-2 w-2 rounded-full ${box.reviewed.includes(d) ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,.8)]' : 'bg-white/15'}`} />
+                ))}
+              </div>
+            )}
+          </div>
+          {!learned && (
+            <button className="text-xs text-gray-400 hover:text-black dark:hover:text-white" onClick={onRemoveBox}>
+              {s.removeBox}
+            </button>
+          )}
+        </div>
+
+        {box.files.length > 0 && (
+          <ul className="space-y-1">
+            {box.files.map((f) => (
+              <li key={f.key} className="flex items-center gap-2 text-xs">
+                <span className="min-w-0 flex-1 truncate">{f.name}</span>
+                {!learned && (
+                  <button className="text-gray-400 hover:text-black dark:hover:text-white" onClick={() => onRemoveFile(f.key)}>
+                    {s.removeFile}
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+
         {!learned && (
-          <button className="text-xs text-gray-400 hover:text-black dark:hover:text-white" onClick={onRemoveBox}>
-            {s.removeBox}
+          <>
+            <input
+              ref={inputRef}
+              type="file"
+              multiple
+              accept="image/*,application/pdf,.pdf"
+              className="hidden"
+              onChange={(e) => {
+                onUpload(e.target.files);
+                e.target.value = '';
+              }}
+            />
+            <button
+              className={`rounded-xl border border-dashed border-violet-300/30 py-4 text-xs text-gray-500 transition hover:border-violet-300/60 hover:bg-violet-400/[0.07] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300 dark:text-white/60 ${
+                box.files.length === 0 ? 'min-h-[5rem]' : ''
+              }`}
+              onClick={() => inputRef.current?.click()}
+              disabled={busy}
+            >
+              {busy ? '…' : box.files.length === 0 ? s.uploadHere : s.addFiles}
+            </button>
+          </>
+        )}
+
+        {canSplit && (
+          <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500 dark:text-white/60">
+            <span>{s.splitLabel}</span>
+            <select className={`${inputCls} py-1 text-xs`} value={parts} onChange={(e) => setParts(Number(e.target.value))} disabled={busy}>
+              {[2, 3, 4, 5].map((n) => (
+                <option key={n} value={n}>
+                  {format(s.parts, n)}
+                </option>
+              ))}
+            </select>
+            <button className={btnGhost} onClick={() => onSplit(parts)} disabled={busy}>
+              {s.splitBtn}
+            </button>
+          </div>
+        )}
+
+        {box.files.length > 0 && (
+          <button className={btnGhost} onClick={onOpen}>
+            {s.open}
           </button>
         )}
       </div>
-
-      {box.files.length > 0 && (
-        <ul className="space-y-1">
-          {box.files.map((f) => (
-            <li key={f.key} className="flex items-center gap-2 text-xs">
-              <span className="flex-1 min-w-0 truncate">{f.name}</span>
-              {!learned && (
-                <button className="text-gray-400 hover:text-black dark:hover:text-white" onClick={() => onRemoveFile(f.key)}>
-                  {s.removeFile}
-                </button>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {!learned && (
-        <>
-          <input
-            ref={inputRef}
-            type="file"
-            multiple
-            accept="image/*,application/pdf,.pdf"
-            className="hidden"
-            onChange={(e) => {
-              onUpload(e.target.files);
-              e.target.value = '';
-            }}
-          />
-          <button
-            className={`rounded-xl border border-dashed border-gray-300 dark:border-white/20 py-4 text-xs text-gray-500 dark:text-white/60 hover:bg-gray-100 dark:hover:bg-white/10 ${
-              box.files.length === 0 ? 'min-h-[5rem]' : ''
-            }`}
-            onClick={() => inputRef.current?.click()}
-            disabled={busy}
-          >
-            {busy ? '…' : box.files.length === 0 ? s.uploadHere : s.addFiles}
-          </button>
-        </>
-      )}
-
-      {canSplit && (
-        <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-white/60 flex-wrap">
-          <span>{s.splitLabel}</span>
-          <select className={`${inputCls} py-1 text-xs`} value={parts} onChange={(e) => setParts(Number(e.target.value))} disabled={busy}>
-            {[2, 3, 4, 5].map((n) => (
-              <option key={n} value={n}>
-                {format(s.parts, n)}
-              </option>
-            ))}
-          </select>
-          <button className={btnGhost} onClick={() => onSplit(parts)} disabled={busy}>
-            {s.splitBtn}
-          </button>
-        </div>
-      )}
-
-      {box.files.length > 0 && (
-        <button className={btnGhost} onClick={onOpen}>
-          {s.open}
-        </button>
-      )}
-    </div>
+    </GlassPanel>
   );
 }
 

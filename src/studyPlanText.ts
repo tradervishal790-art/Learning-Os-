@@ -23,6 +23,7 @@ export interface StudyPlanText {
   allClear: string;
   upcoming: string;
   finished: string; // {0}
+  cycleLabel: string;
   boxesTitle: string;
   boxEmpty: string;
   boxReady: string;
@@ -76,6 +77,7 @@ export const studyPlanText: Record<Locale, StudyPlanText> = {
     allClear: 'Nothing to revise today.',
     upcoming: 'Coming up',
     finished: '{0} boxes ended',
+    cycleLabel: 'Revision progress',
     boxesTitle: 'Your boxes',
     boxEmpty: 'Empty',
     boxReady: 'Ready to learn',
@@ -127,6 +129,7 @@ export const studyPlanText: Record<Locale, StudyPlanText> = {
     allClear: 'आज दोहराने के लिए कुछ नहीं।',
     upcoming: 'आगे आने वाले',
     finished: '{0} पूरे हुए',
+    cycleLabel: 'रिवीज़न प्रगति',
     boxesTitle: 'आपके बॉक्स',
     boxEmpty: 'खाली',
     boxReady: 'पढ़ने के लिए तैयार',
@@ -178,6 +181,7 @@ export const studyPlanText: Record<Locale, StudyPlanText> = {
     allClear: 'Aaj revise karne ko kuch nahi.',
     upcoming: 'Aage aane wale',
     finished: '{0} complete hue',
+    cycleLabel: 'Revision progress',
     boxesTitle: 'Tumhare boxes',
     boxEmpty: 'Khali',
     boxReady: 'Padhne ke liye ready',

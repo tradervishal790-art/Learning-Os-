@@ -24,29 +24,44 @@ export default function NotesHome() {
     }
   };
   const pill = (active: boolean) =>
-    `h-10 px-4 rounded-full text-sm font-medium transition-all ${
+    `h-9 rounded-full px-4 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300 ${
       active
-        ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white'
-        : 'card text-gray-600 dark:text-white/70 hover:bg-gray-50 dark:hover:bg-white/10'
+        ? 'bg-violet-500 text-white shadow-[0_0_18px_rgba(139,92,246,.45)]'
+        : 'text-slate-300 hover:bg-white/10 hover:text-white'
     }`;
 
+  // The library and AI notes sit on a dark glowing stage. While a note is open the stage is switched
+  // off (same elements, only the classes change), because the editor draws its own paper colour and
+  // the ink layer reads the app theme directly.
   return (
-    <div>
-      {!noteOpen && (
-      <div className="flex gap-2 mb-4 md:mb-6 px-4 pt-4 md:px-8 md:pt-8">
-        <button className={pill(tab === 'notebook')} onClick={() => choose('notebook')}>{t.tabNotebook}</button>
-        <button className={pill(tab === 'ai')} onClick={() => choose('ai')}>{t.tabAi}</button>
-      </div>
-      )}
-      <Suspense fallback={<div role="status" aria-live="polite" className="mx-4 rounded-xl border border-gray-200 px-4 py-5 text-sm text-gray-500 dark:border-white/10 dark:text-white/50 md:mx-8">Opening your learning workspace…</div>}>
-        {tab === 'notebook' ? (
-          <div className={noteOpen ? "px-2 pb-2 md:px-8 md:pb-8" : "px-4 pb-4 md:px-8 md:pb-8"}>
-            <NoteLibrary />
+    <div className={noteOpen ? '' : 'dark'}>
+      <div className={noteOpen ? '' : 'relative min-h-[calc(100dvh-64px)] overflow-hidden bg-[#080d19] text-slate-100'}>
+        {!noteOpen && (
+          <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+            <div className="absolute -left-32 -top-40 h-[420px] w-[420px] rounded-full bg-violet-600/[0.12] blur-[120px]" />
+            <div className="absolute -right-24 top-1/3 h-[380px] w-[380px] rounded-full bg-cyan-500/[0.08] blur-[120px]" />
           </div>
-        ) : (
-          <Notes />
         )}
-      </Suspense>
+        <div className="relative">
+          {!noteOpen && (
+            <div className="mb-4 px-4 pt-4 md:mb-6 md:px-8 md:pt-8">
+              <div role="tablist" className="inline-flex gap-1 rounded-full border border-white/10 bg-white/[0.04] p-1">
+                <button role="tab" aria-selected={tab === 'notebook'} className={pill(tab === 'notebook')} onClick={() => choose('notebook')}>{t.tabNotebook}</button>
+                <button role="tab" aria-selected={tab === 'ai'} className={pill(tab === 'ai')} onClick={() => choose('ai')}>{t.tabAi}</button>
+              </div>
+            </div>
+          )}
+          <Suspense fallback={<div role="status" aria-live="polite" className="mx-4 rounded-xl border border-white/10 px-4 py-5 text-sm text-slate-400 md:mx-8">{t.loading}</div>}>
+            {tab === 'notebook' ? (
+              <div className={noteOpen ? 'px-2 pb-2 md:px-8 md:pb-8' : 'px-4 pb-4 md:px-8 md:pb-8'}>
+                <NoteLibrary />
+              </div>
+            ) : (
+              <Notes />
+            )}
+          </Suspense>
+        </div>
+      </div>
     </div>
   );
 }

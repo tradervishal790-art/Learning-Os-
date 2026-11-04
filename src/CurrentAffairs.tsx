@@ -7,6 +7,7 @@ import {
   loadCurrentAffairsDay,
 } from './currentAffairsStore';
 import type { CACategory, CADay, CAPoint } from './currentAffairsStore';
+import { GlassPanel } from './ui/kit';
 import { loadSaved, toggleSaved, savedKey } from './caSavedStore';
 import { safeArticleUrl } from './newsReader';
 import type { SavedPoint } from './caSavedStore';
@@ -43,10 +44,17 @@ export default function CurrentAffairs() {
   const t = useTranslation();
   const [view, setView] = useState<'news' | 'channels'>('news');
   const c = t.channelDigest;
+  const c2 = t.currentAffairs;
 
   return (
-    <div className="ca-theme max-w-3xl mx-auto px-4 py-5 md:px-8 md:py-8">
-      <div className="flex border-b border-gray-200 dark:border-white/10">
+    <div className="dark">
+    <div className="ca-theme relative mx-auto max-w-3xl overflow-hidden px-4 py-5 md:px-8 md:py-8">
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -left-32 -top-40 h-[380px] w-[380px] rounded-full bg-violet-600/[0.13] blur-[120px]" />
+        <div className="absolute -right-24 top-1/2 h-[340px] w-[340px] rounded-full bg-cyan-500/[0.08] blur-[120px]" />
+      </div>
+      <div className="relative">
+      <div className="flex gap-1 rounded-full border border-white/10 bg-white/[0.04] p-1">
         {([['news', Newspaper, c.switchNews], ['channels', CirclePlay, c.switchChannels]] as const).map(([v, Icon, label]) => (
           <button
             key={v}
@@ -54,13 +62,13 @@ export default function CurrentAffairs() {
             aria-label={label}
             title={label}
             aria-pressed={view === v}
-            className={`flex-1 h-12 flex items-center justify-center border-b-2 transition ${
+            className={`flex h-10 flex-1 items-center justify-center rounded-full transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300 ${
               view === v
-                ? 'border-indigo-600 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400'
-                : 'border-transparent text-gray-400 dark:text-white/40 hover:text-black dark:hover:text-white'
+                ? 'bg-violet-500 text-white shadow-[0_0_18px_rgba(139,92,246,.45)]'
+                : 'text-slate-300 hover:bg-white/10 hover:text-white'
             }`}
           >
-            <Icon className="w-6 h-6" strokeWidth={view === v ? 2.2 : 1.75} />
+            <Icon className="h-5 w-5" strokeWidth={view === v ? 2.2 : 1.75} />
           </button>
         ))}
       </div>
@@ -68,10 +76,12 @@ export default function CurrentAffairs() {
       {view === 'news' ? (
         <NewspaperCurrentAffairs />
       ) : (
-        <Suspense fallback={<p role="status" className="mt-6 text-sm text-gray-500 dark:text-white/50">Opening your channel digest…</p>}>
+        <Suspense fallback={<p role="status" className="mt-6 text-sm text-gray-500 dark:text-white/50">{c2.openingDigest}</p>}>
           <ChannelDigest />
         </Suspense>
       )}
+      </div>
+    </div>
     </div>
   );
 }
@@ -105,11 +115,11 @@ function NewspaperCurrentAffairs() {
       if (!result) setError(c.dayNotAvailable);
       setDay(result);
     } catch (err) {
-      if (requestId === loadIdRef.current) setError(err instanceof Error ? err.message : 'Something went wrong');
+      if (requestId === loadIdRef.current) setError(err instanceof Error ? err.message : c.genericError);
     } finally {
       if (requestId === loadIdRef.current) setLoading(false);
     }
-  }, [date, locale, today, c.dayNotAvailable]);
+  }, [date, locale, today, c.dayNotAvailable, c.genericError]);
 
   useEffect(() => {
     setTab('all');
@@ -127,23 +137,24 @@ function NewspaperCurrentAffairs() {
     <div className="mt-6">
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="text-xl md:text-2xl font-semibold flex items-center gap-2">
-            <Newspaper className="hidden md:block w-6 h-6" />
+          <h1 className="flex items-center gap-3 text-xl font-semibold tracking-tight md:text-2xl">
+            <span className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-400/15 text-violet-200 md:flex"><Newspaper className="h-5 w-5" /></span>
             {c.title}
           </h1>
-          <p className="hidden md:block text-sm text-gray-500 dark:text-white/50 mt-1">{c.subtitle}</p>
+          <p className="mt-1 hidden text-sm text-slate-400 md:block">{c.subtitle}</p>
         </div>
         <div className="flex items-center gap-2 text-sm flex-shrink-0">
           <button
             onClick={() => setShowSaved((v) => !v)}
-            aria-label="Saved"
-            title="Saved"
+            aria-label={c.savedLabel}
+            title={c.savedLabel}
             aria-pressed={showSaved}
             className={`relative w-10 h-10 rounded-full flex items-center justify-center transition ${
-              showSaved ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white' : 'card hover:bg-gray-50 dark:hover:bg-white/10'
+              showSaved ? 'bg-violet-500 text-white shadow-[0_0_16px_rgba(139,92,246,.45)]' : 'card hover:bg-white/10'
             }`}
           >
             <Bookmark className="w-5 h-5" strokeWidth={1.75} fill={showSaved || saved.length > 0 ? 'currentColor' : 'none'} />
+            {saved.length > 0 && <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-300 px-1 text-[10px] font-semibold tabular-nums text-slate-900">{saved.length}</span>}
           </button>
         </div>
       </div>
@@ -157,8 +168,8 @@ function NewspaperCurrentAffairs() {
             onClick={() => setDate(d)}
             className={`flex-shrink-0 h-10 px-4 text-sm rounded-full border transition ${
               d === date
-                ? 'bg-indigo-600 text-white border-indigo-600 dark:bg-indigo-500 dark:text-white dark:border-indigo-500'
-                : 'card border-transparent hover:bg-gray-50 dark:hover:bg-white/10'
+                ? 'border-transparent bg-violet-500 text-white shadow-[0_0_16px_rgba(139,92,246,.45)]'
+                : 'card border-transparent hover:bg-white/10'
             }`}
           >
             {d === today ? c.today : formatDateLabel(d, locale)}
@@ -167,7 +178,12 @@ function NewspaperCurrentAffairs() {
       </div>
       )}
 
-      {!showSaved && loading && <p className="mt-8 text-gray-500 dark:text-white/50 animate-pulse">{c.loading}</p>}
+      {!showSaved && loading && (
+        <div role="status" aria-live="polite" className="mt-8 space-y-3">
+          <p className="animate-pulse text-sm text-slate-400 motion-reduce:animate-none">{c.loading}</p>
+          {[0, 1, 2].map((n) => <div key={n} aria-hidden="true" className="h-24 animate-pulse rounded-2xl border border-white/[0.06] bg-white/[0.04] motion-reduce:animate-none" style={{ animationDelay: `${n * 120}ms` }} />)}
+        </div>
+      )}
 
       {!showSaved && !loading && error && (
         <div className="mt-8">
@@ -185,15 +201,15 @@ function NewspaperCurrentAffairs() {
       )}
 
       {showSaved && (
-        <div className="mt-6 rounded-2xl bg-white/80 p-3 md:p-4">
+        <div className="mt-6 rounded-2xl border border-white/[0.08] bg-white/[0.03] p-3 md:p-4">
           {saved.length === 0 ? (
-            <div className="py-16 flex justify-center text-gray-300 dark:text-white/20" aria-label="No saved points yet">
+            <div className="py-16 flex justify-center text-gray-300 dark:text-white/20" aria-label={c.noSaved}>
               <Bookmark className="w-12 h-12" strokeWidth={1.25} />
             </div>
           ) : (
             <ul className="space-y-3">
               {saved.map((p) => (
-                <PointCard key={savedKey(p.date, p)} point={p} saved onToggleSave={() => setSaved(toggleSaved(p.date, p))} onRead={setSelectedArticle} sourceLabel={c.sourceLabel} />
+                <PointCard key={savedKey(p.date, p)} point={p} saved onToggleSave={() => setSaved(toggleSaved(p.date, p))} onRead={setSelectedArticle} sourceLabel={c.sourceLabel} labels={{ read: c.read, readInApp: c.readInApp, save: c.save, saved: c.savedLabel, removeSaved: c.removeSaved, category: c.tabs[p.category] }} />
               ))}
             </ul>
           )}
@@ -213,7 +229,7 @@ function NewspaperCurrentAffairs() {
                   title={c.tabs[x]}
                   aria-pressed={tab === x}
                   className={`flex-shrink-0 h-10 min-w-10 px-3 inline-flex items-center justify-center gap-1.5 text-xs rounded-full transition ${
-                    tab === x ? 'bg-indigo-600 text-white dark:bg-indigo-500' : 'card text-gray-600 dark:text-white/60'
+                    tab === x ? 'bg-violet-500 text-white shadow-[0_0_16px_rgba(139,92,246,.45)]' : 'card text-slate-300 hover:bg-white/10'
                   }`}
                 >
                   <TabIcon className="w-4 h-4" strokeWidth={1.75} />
@@ -232,6 +248,7 @@ function NewspaperCurrentAffairs() {
                 onToggleSave={() => setSaved(toggleSaved(date, p))}
                 onRead={setSelectedArticle}
                 sourceLabel={c.sourceLabel}
+                labels={{ read: c.read, readInApp: c.readInApp, save: c.save, saved: c.savedLabel, removeSaved: c.removeSaved, category: c.tabs[p.category] }}
               />
             ))}
           </ul>
@@ -246,10 +263,10 @@ function NewspaperCurrentAffairs() {
           <section className="ca-reader-panel" role="dialog" aria-modal="true" aria-labelledby="ca-reader-title">
             <header className="ca-reader-header">
               <div className="min-w-0">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-700">Learning OS · News reader</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-700">{c.reader.kicker}</p>
                 <h2 id="ca-reader-title" className="mt-1 text-lg font-bold leading-snug">{selectedArticle.source}</h2>
               </div>
-              <button type="button" onClick={() => setSelectedArticle(null)} aria-label="Close reader" className="ca-reader-close"><X className="w-5 h-5" /></button>
+              <button type="button" onClick={() => setSelectedArticle(null)} aria-label={c.reader.close} className="ca-reader-close"><X className="w-5 h-5" /></button>
             </header>
             {articleUrl ? (
               <div className="ca-reader-frame-wrap">
@@ -283,6 +300,7 @@ function NewspaperCurrentAffairs() {
 }
 
 const CATEGORY_ICON = TAB_ICONS;
+const CATEGORY_COLOR: Record<CACategory, string> = { national: '#a78bfa', international: '#67e8f9', economy: '#6ee7b7', sports: '#fbbf24', scitech: '#e879f9' };
 
 /** One news point with compact mobile actions (in-app read and save). */
 function PointCard({
@@ -291,47 +309,57 @@ function PointCard({
   onToggleSave,
   onRead,
   sourceLabel,
+  labels,
 }: {
   point: CAPoint;
   saved: boolean;
   onToggleSave: () => void;
   onRead: (point: CAPoint) => void;
   sourceLabel: string;
+  labels: { read: string; readInApp: string; save: string; saved: string; removeSaved: string; category: string };
 }) {
   const Icon = CATEGORY_ICON[point.category];
+  const color = CATEGORY_COLOR[point.category];
   const hasLink = !!point.link && /^https?:\/\//i.test(point.link);
-  const action = 'min-h-9 px-2.5 gap-1.5 rounded-full inline-flex items-center justify-center text-xs font-medium text-slate-600 hover:bg-sky-50 active:bg-sky-100 transition-colors';
+  const action = 'min-h-9 px-2.5 gap-1.5 rounded-full inline-flex items-center justify-center text-xs font-medium text-slate-300 hover:bg-white/10 active:bg-white/15 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300';
   return (
-    <li className="card rounded-2xl p-4">
-      <div className="flex gap-3">
-        <span className="w-9 h-9 rounded-full bg-gray-100 dark:bg-white/10 flex items-center justify-center flex-shrink-0" aria-hidden="true">
-          <Icon className="w-[18px] h-[18px]" strokeWidth={1.75} />
-        </span>
-        <p className="text-[15px] md:text-base leading-relaxed min-w-0">{point.text}</p>
-      </div>
-      <div className="mt-2 flex items-center justify-between gap-2">
-        <p className="text-xs text-gray-500 dark:text-white/50 truncate min-w-0" title={`${sourceLabel}: ${point.source}`}>
-          {point.source}
-        </p>
-        <div className="flex items-center flex-shrink-0 -mr-2">
-          {hasLink && (
-            <button type="button" onClick={() => onRead(point)} aria-label="Read in Learning OS" title="Read in Learning OS" className={action}>
-              <Newspaper className="w-4 h-4" strokeWidth={1.75} />
-              <span>Read</span>
-            </button>
-          )}
-          <button
-            onClick={onToggleSave}
-            aria-label={saved ? 'Remove from saved' : 'Save'}
-            title={saved ? 'Remove from saved' : 'Save'}
-            aria-pressed={saved}
-            className={`${action} ${saved ? 'text-black dark:text-white' : ''}`}
-          >
-            <Bookmark className="w-4 h-4" strokeWidth={1.75} fill={saved ? 'currentColor' : 'none'} />
-            <span>{saved ? 'Saved' : 'Save'}</span>
-          </button>
+    <li>
+      <GlassPanel accent={color}>
+        <div className="p-4">
+          <div className="flex gap-3">
+            <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full" style={{ backgroundColor: `${color}22`, color }} aria-hidden="true">
+              <Icon className="h-[18px] w-[18px]" strokeWidth={1.75} />
+            </span>
+            <div className="min-w-0">
+              <span className="mb-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider" style={{ backgroundColor: `${color}1f`, color }}>{labels.category}</span>
+              <p className="min-w-0 text-[15px] leading-relaxed text-slate-100 md:text-base">{point.text}</p>
+            </div>
+          </div>
+          <div className="mt-2 flex items-center justify-between gap-2">
+            <p className="min-w-0 truncate text-xs text-slate-500" title={`${sourceLabel}: ${point.source}`}>
+              {point.source}
+            </p>
+            <div className="-mr-2 flex flex-shrink-0 items-center">
+              {hasLink && (
+                <button type="button" onClick={() => onRead(point)} aria-label={labels.readInApp} title={labels.readInApp} className={action}>
+                  <Newspaper className="h-4 w-4" strokeWidth={1.75} />
+                  <span>{labels.read}</span>
+                </button>
+              )}
+              <button
+                onClick={onToggleSave}
+                aria-label={saved ? labels.removeSaved : labels.save}
+                title={saved ? labels.removeSaved : labels.save}
+                aria-pressed={saved}
+                className={`${action} ${saved ? 'text-amber-300' : ''}`}
+              >
+                <Bookmark className="h-4 w-4" strokeWidth={1.75} fill={saved ? 'currentColor' : 'none'} />
+                <span>{saved ? labels.saved : labels.save}</span>
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
+      </GlassPanel>
     </li>
   );
 }

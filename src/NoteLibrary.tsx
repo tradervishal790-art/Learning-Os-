@@ -22,6 +22,7 @@ import StudyDialog from './StudyDialog';
 import { STUDY_STATUSES, examChip, examSoon, examSortKey } from './studyInfo';
 import { askConfirm, askText } from './dialogApi';
 import type { IndexUndo } from './indexUndo';
+import { GlassButton } from './ui/kit';
 // The rich-text editor (TipTap) is the heaviest part of the notebook — load it only when a note opens.
 const NoteEditor = lazy(() => import('./NoteEditor'));
 const RevisionSheet = lazy(() => import('./RevisionSheet'));
@@ -37,7 +38,7 @@ type Sort = 'recent' | 'created' | 'title' | 'exam';
 type StatusFilter = 'all' | 'exam-soon' | StudyStatus;
 
 const btn = 'px-3 py-1.5 rounded-lg text-xs font-medium transition-all border';
-const btnPrimary = `${btn} bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white border-transparent hover:opacity-80`;
+const btnPrimary = `${btn} bg-violet-500 text-white border-transparent shadow-[0_0_16px_rgba(139,92,246,.35)] hover:bg-violet-400`;
 const btnGhost = `${btn} card border-transparent text-gray-600 dark:text-white/70 hover:bg-gray-50 dark:hover:bg-white/10`;
 
 interface MenuItem {
@@ -445,7 +446,7 @@ export default function NoteLibrary() {
       }}
       className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-left ${
         view === v
-          ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white'
+          ? 'bg-violet-500/20 text-violet-100 ring-1 ring-violet-400/40 shadow-[0_0_14px_rgba(139,92,246,.25)]'
           : 'text-gray-700 dark:text-white/80 hover:bg-gray-100 dark:hover:bg-white/10'
       }`}
     >
@@ -499,6 +500,24 @@ export default function NoteLibrary() {
           </button>
         </div>
       )}
+      {/* quick counts — each one jumps to that view */}
+      <div className="mb-4 grid grid-cols-3 gap-3">
+        {([
+          { v: 'all' as View, label: t.viewAll, value: counts.all, Icon: FileText, tone: 'text-violet-300', accent: '#a78bfa' },
+          { v: 'favorites' as View, label: t.viewFavorites, value: counts.favorites, Icon: Star, tone: 'text-amber-300', accent: '#fbbf24' },
+          { v: 'archive' as View, label: t.viewArchive, value: counts.archive, Icon: Archive, tone: 'text-cyan-300', accent: '#67e8f9' },
+        ]).map(({ v, label, value, Icon, tone, accent }) => (
+          <GlassButton key={v} accent={accent} onClick={() => { setView(v); setShowFolders(false); exitSelect(); }} className={view === v ? 'border-white/25' : ''}>
+            <span className="flex items-center gap-3 px-3 py-3 md:px-4">
+              <Icon size={18} className={`shrink-0 ${tone}`} />
+              <span className="min-w-0">
+                <span className="block text-xl font-semibold tabular-nums leading-none">{value}</span>
+                <span className="mt-1 block truncate text-[11px] text-gray-500 dark:text-white/50">{label}</span>
+              </span>
+            </span>
+          </GlassButton>
+        ))}
+      </div>
       {/* top bar */}
       <div className="flex flex-wrap items-center gap-2 mb-4">
         <div className="relative flex-1 min-w-0">
@@ -507,7 +526,7 @@ export default function NoteLibrary() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={t.searchPlaceholder}
-            className="w-full pl-9 pr-8 py-2.5 rounded-xl card border-0 bg-white dark:bg-black text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            className="w-full pl-9 pr-8 py-2.5 rounded-xl card border-0 bg-white dark:bg-white/[0.04] text-sm focus:outline-none focus:ring-2 focus:ring-violet-400"
           />
           {query && (
             <button onClick={() => setQuery('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 dark:text-white/40" aria-label="Clear">
@@ -562,7 +581,7 @@ export default function NoteLibrary() {
           onClick={() => void newNote()}
           aria-label={t.newNote}
           title={t.newNote}
-          className="md:hidden fixed right-4 z-30 w-14 h-14 rounded-full bg-indigo-600 text-white shadow-lg shadow-indigo-500/30 flex items-center justify-center active:scale-95 transition-transform"
+          className="md:hidden fixed right-4 z-30 w-14 h-14 rounded-full bg-violet-500 text-white shadow-[0_0_24px_rgba(139,92,246,.55)] flex items-center justify-center active:scale-95 transition-transform"
           style={{ bottom: 'calc(4.5rem + env(safe-area-inset-bottom))' }}
         >
           <Plus size={26} />
@@ -595,7 +614,7 @@ export default function NoteLibrary() {
                         }}
                         className={`flex-1 min-w-0 flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-left ${
                           view === v
-                            ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white'
+                            ? 'bg-violet-500/20 text-violet-100 ring-1 ring-violet-400/40 shadow-[0_0_14px_rgba(139,92,246,.25)]'
                             : 'text-gray-700 dark:text-white/80 hover:bg-gray-100 dark:hover:bg-white/10'
                         }`}
                       >
@@ -648,7 +667,7 @@ export default function NoteLibrary() {
             <select
               value={sort}
               onChange={(e) => setSort(e.target.value as Sort)}
-              className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-black text-xs"
+              className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/[0.04] text-xs"
             >
               <option value="recent">{t.sortRecent}</option>
               <option value="created">{t.sortCreated}</option>
@@ -659,7 +678,7 @@ export default function NoteLibrary() {
               aria-label={t.study.statusLabel}
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-              className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-black text-xs"
+              className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/[0.04] text-xs"
             >
               <option value="all">{t.study.filterAll}</option>
               <option value="exam-soon">{t.study.filterExamSoon}</option>
@@ -671,7 +690,7 @@ export default function NoteLibrary() {
               <select
                 value={tag}
                 onChange={(e) => setTag(e.target.value)}
-                className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-black text-xs"
+                className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/[0.04] text-xs"
               >
                 <option value="">{t.allTags}</option>
                 {allTags.map((x) => (
@@ -732,16 +751,16 @@ export default function NoteLibrary() {
                     key={n.id}
                     onClick={() => (selectMode ? toggleSelected(n.id) : n.trashedAt ? undefined : setOpenId(n.id))}
                     className={`flex items-start gap-3 p-4 rounded-2xl border card ${
-                      n.trashedAt ? '' : 'cursor-pointer hover:shadow-md'
-                    } ${isSel ? 'border-indigo-500 dark:border-indigo-400' : 'border-transparent'}`}
+                      n.trashedAt ? '' : 'cursor-pointer transition hover:-translate-y-0.5 hover:border-violet-400/40 hover:shadow-[0_0_24px_rgba(139,92,246,.16)] motion-reduce:transition-none motion-reduce:hover:translate-y-0'
+                    } ${isSel ? 'border-violet-400' : 'border-transparent'}`}
                   >
                     {selectMode && (
                       <span
                         className={`mt-1 w-4 h-4 shrink-0 rounded border flex items-center justify-center ${
-                          isSel ? 'bg-black dark:bg-white border-transparent' : 'border-gray-300 dark:border-white/30'
+                          isSel ? 'bg-violet-500 border-transparent' : 'border-gray-300 dark:border-white/30'
                         }`}
                       >
-                        {isSel && <Check size={11} className="text-white dark:text-black" />}
+                        {isSel && <Check size={11} className="text-white" />}
                       </span>
                     )}
                     <div className="flex-1 min-w-0">
@@ -853,7 +872,7 @@ export default function NoteLibrary() {
 
       {/* undo toast */}
       {toast && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-4 px-4 py-2.5 rounded-xl bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white text-sm shadow-lg">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-4 px-4 py-2.5 rounded-xl bg-violet-500 text-white text-sm shadow-[0_0_24px_rgba(139,92,246,.45)]">
           <span>{toast.message}</span>
           {toast.undo && <button onClick={undo} className="font-semibold underline">{t.undo}</button>}
         </div>

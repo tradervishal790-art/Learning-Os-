@@ -1,8 +1,12 @@
-import { ArrowUpRight, BrainCircuit, CheckCircle2, Compass, GraduationCap, NotebookPen, RotateCcw, Target, Users, Video, Zap, MoreHorizontal, Search, BookOpen, Newspaper, MessageCircle, ChevronDown } from 'lucide-react';
+import { ArrowUpRight, BrainCircuit, CheckCircle2, Compass, Flame, GraduationCap, NotebookPen, RotateCcw, Target, Users, Video, Zap, MoreHorizontal, Search, BookOpen, Newspaper, MessageCircle, ChevronDown } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { DashboardPageId } from './types';
 import { pullFromCloud, pushToCloud } from './cloudSync';
 import { getNextBestStepAction } from './missionControlLogic';
+import { useTranslation } from './i18n/LanguageContext';
+import { format } from './i18n/format';
+import { GlassButton, GlassPanel, Heatmap, HeatmapLegend, ProgressRing, readActiveDays } from './ui/kit';
 
 interface MissionControlProps {
   name: string;
@@ -14,66 +18,51 @@ interface MissionControlProps {
   revisionOverdue: number;
   streak: number;
   activeGoals: number;
+  /** Roadmap completion for the active goal (0-100) and the topic counts behind it. */
+  progressPercent: number;
+  topicsDone: number;
+  topicsTotal: number;
   onNavigate: (page: DashboardPageId) => void;
   onOpenProfile: () => void;
   onContinueLearning: () => void;
 }
 
-const rows = [
-  {
-    id: 'know', number: '01', title: 'Know Me', subtitle: 'Understand how you learn',
-    color: '#a78bfa', tint: 'violet', icon: BrainCircuit,
-    children: [
-      { label: 'Mind blueprint', detail: 'Learning profile', icon: BrainCircuit, action: 'profile' as const },
-    ],
-  },
-  {
-    id: 'plan', number: '02', title: 'Plan', subtitle: 'Build a clear direction',
-    color: '#67e8f9', tint: 'cyan', icon: Compass,
-    children: [
-      { label: 'Learning roadmap', detail: 'Your next topics', icon: Compass, action: 'roadmap' as const },
-    ],
-  },
-  {
-    id: 'learn', number: '03', title: 'Learn', subtitle: 'Turn plans into progress',
-    color: '#7dd3fc', tint: 'sky', icon: GraduationCap,
-    children: [
-      { label: 'Video intelligence', detail: 'Learn with focus', icon: Video, action: 'videos' as const },
-      { label: 'Notes workspace', detail: 'Capture your thinking', icon: NotebookPen, action: 'notes' as const },
-      { label: 'AI Mentor', detail: 'Ask and explore', icon: MessageCircle, action: 'mentor' as const },
-    ],
-  },
-  {
-    id: 'retain', number: '04', title: 'Retain', subtitle: 'Make learning last',
-    color: '#6ee7b7', tint: 'emerald', icon: RotateCcw,
-    children: [
-      { label: 'Revision room', detail: 'Recall and review', icon: RotateCcw, action: 'revision' as const },
-    ],
-  },
-  {
-    id: 'prove', number: '05', title: 'Prove', subtitle: 'See what you can do',
-    color: '#e879f9', tint: 'fuchsia', icon: Target,
-    children: [
-      { label: 'Tests and practice', detail: 'Check understanding', icon: CheckCircle2, action: 'test' as const },
-      { label: 'Growth and progress', detail: 'See your progress', icon: Zap, action: 'progress' as const },
-    ],
-  },
+type EngineId = 'know' | 'plan' | 'learn' | 'retain' | 'prove' | 'research' | 'dictionary' | 'currentAffairs';
+type ToolId = 'profile' | 'roadmap' | 'videos' | 'notes' | 'mentor' | 'revision' | 'test' | 'progress' | 'research' | 'dictionary' | 'currentAffairs';
+interface ToolDef { id: ToolId; icon: LucideIcon; action: 'profile' | DashboardPageId }
+interface EngineDef { id: EngineId; number: string; color: string; icon: LucideIcon; children: ToolDef[] }
+
+// Only structure lives here (ids, colours, icons, where a tool leads). Every word shown on screen
+// comes from t.dashboard.home.hub, so the map switches language with the rest of the app.
+const rows: EngineDef[] = [
+  { id: 'know', number: '01', color: '#a78bfa', icon: BrainCircuit, children: [{ id: 'profile', icon: BrainCircuit, action: 'profile' }] },
+  { id: 'plan', number: '02', color: '#67e8f9', icon: Compass, children: [{ id: 'roadmap', icon: Compass, action: 'roadmap' }] },
+  { id: 'learn', number: '03', color: '#7dd3fc', icon: GraduationCap, children: [
+    { id: 'videos', icon: Video, action: 'videos' },
+    { id: 'notes', icon: NotebookPen, action: 'notes' },
+    { id: 'mentor', icon: MessageCircle, action: 'mentor' },
+  ] },
+  { id: 'retain', number: '04', color: '#6ee7b7', icon: RotateCcw, children: [{ id: 'revision', icon: RotateCcw, action: 'revision' }] },
+  { id: 'prove', number: '05', color: '#e879f9', icon: Target, children: [
+    { id: 'test', icon: CheckCircle2, action: 'test' },
+    { id: 'progress', icon: Zap, action: 'progress' },
+  ] },
 ];
 
-
-const functionNodes = [
-  { id: 'research', number: '06', title: 'Research', subtitle: 'Explore new ideas', color: '#67e8f9', icon: Search, children: [{ label: 'Research workspace', detail: 'Explore ideas and sources', icon: Search, action: 'research' as const }] },
-  { id: 'dictionary', number: '07', title: 'Dictionary', subtitle: 'Look up concepts', color: '#a78bfa', icon: BookOpen, children: [{ label: 'Open dictionary', detail: 'Find meanings and concepts', icon: BookOpen, action: 'dictionary' as const }] },
-  { id: 'current-affairs', number: '08', title: 'Current Affairs', subtitle: 'Stay informed', color: '#e879f9', icon: Newspaper, children: [{ label: 'Current affairs', detail: 'Read latest updates', icon: Newspaper, action: 'current-affairs' as const }] },
-]
+const functionNodes: EngineDef[] = [
+  { id: 'research', number: '06', color: '#67e8f9', icon: Search, children: [{ id: 'research', icon: Search, action: 'research' }] },
+  { id: 'dictionary', number: '07', color: '#a78bfa', icon: BookOpen, children: [{ id: 'dictionary', icon: BookOpen, action: 'dictionary' }] },
+  { id: 'currentAffairs', number: '08', color: '#e879f9', icon: Newspaper, children: [{ id: 'currentAffairs', icon: Newspaper, action: 'current-affairs' }] },
+];
 const allFunctionNodes = [...rows, ...functionNodes];
 const MAP_NODES_STORAGE_KEY = 'learning_os_mission_map_nodes';
-const defaultNodeIds = ['know', 'plan', 'learn', 'retain', 'prove'];
+const defaultNodeIds: string[] = ['know', 'plan', 'learn', 'retain', 'prove'];
 
 export default function MissionControl({
   name, goalTitle, nextTopic, nextTopicDetail, hasLearningProfile,
-  revisionDue, revisionOverdue, streak, activeGoals, onNavigate, onOpenProfile, onContinueLearning,
+  revisionDue, revisionOverdue, streak, activeGoals, progressPercent, topicsDone, topicsTotal, onNavigate, onOpenProfile, onContinueLearning,
 }: MissionControlProps) {
+  const hub = useTranslation().dashboard.home.hub;
   const [selectedEngine, setSelectedEngine] = useState<string | null>(null);
   const [mapExpanded, setMapExpanded] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
@@ -111,8 +100,15 @@ export default function MissionControl({
   const mapHeight = Math.max(660, visibleRows.length <= 1 ? 660 : 132 + (visibleRows.length - 1) * 132);
   const rowY = visibleRows.map((_, index) => visibleRows.length === 1 ? mapHeight / 2 : 66 + index * ((mapHeight - 132) / (visibleRows.length - 1)));
   const open = (action: 'profile' | DashboardPageId) => action === 'profile' ? onOpenProfile() : onNavigate(action);
-  const moreItems = functionNodes.map((node) => ({ ...node.children[0], label: node.title, detail: node.subtitle }));
+  const activeDays = useMemo(() => readActiveDays(), [streak]);
+  const revisionTotal = revisionDue + revisionOverdue;
+  const moreItems = functionNodes.map((node) => ({ id: node.id, icon: node.children[0].icon, action: node.children[0].action, label: hub.engines[node.id].title, detail: hub.engines[node.id].subtitle }));
   const filteredMoreItems = moreItems.filter((item) => item.label.toLowerCase().includes(functionSearch.toLowerCase()));
+  const nextStepText = !hasLearningProfile ? hub.nextStep.setupProfile
+    : activeGoals === 0 ? hub.nextStep.chooseGoal
+    : revisionOverdue > 0 ? format(hub.nextStep.overdue, revisionOverdue)
+    : revisionDue > 0 ? format(hub.nextStep.due, revisionDue)
+    : nextTopic || hub.nextStep.openRoadmap;
 
   return (
     <main className="mission-map relative flex h-[calc(100dvh-64px-env(safe-area-inset-bottom))] min-h-0 md:h-[calc(100dvh-64px)] w-full flex-col overflow-hidden bg-[#080d19] text-slate-100">
@@ -126,49 +122,102 @@ export default function MissionControl({
         <div className="min-w-0">
           <div className="flex items-center gap-2 text-[9px] font-semibold uppercase tracking-[0.24em] text-cyan-300/80">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,.9)]" />
-            Personal learning network
+            {hub.eyebrow}
           </div>
-          <h1 className="mt-1 text-lg font-semibold tracking-tight text-white md:text-xl">Your learning map</h1>
+          <h1 className="mt-1 text-lg font-semibold tracking-tight text-white md:text-xl">{hub.mapTitle}</h1>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2 text-[10px] sm:gap-3">
-          <span className="hidden rounded-full border border-white/[0.08] bg-white/[0.035] px-3 py-2 text-slate-400 sm:inline-flex">
-            <span className="mr-1.5 text-cyan-300">●</span> {goalTitle || 'Choose a learning goal'}
+          <span className="hidden max-w-[16rem] truncate rounded-full border border-white/[0.08] bg-white/[0.035] px-3 py-2 text-slate-400 sm:inline-flex">
+            <span className="mr-1.5 text-cyan-300">●</span> {goalTitle || hub.noGoal}
           </span>
-          <span className="rounded-full border border-white/[0.08] bg-white/[0.035] px-3 py-2 text-slate-400">
-            <span className="text-violet-300">{streak}</span> day streak
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.035] px-3 py-2 text-slate-300">
+            <Flame className={`h-3.5 w-3.5 ${streak > 0 ? 'text-amber-300' : 'text-slate-500'}`} />
+            {format(hub.streakChip, streak)}
           </span>
         </div>
       </header>
 
       <section className="relative z-10 flex min-h-0 flex-1 flex-col overflow-y-auto px-3 pb-3 pt-3 md:px-6 md:pb-5 md:pt-4">
-        <div className="mb-3 grid shrink-0 gap-2 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
-          <button type="button" onClick={onContinueLearning} className="group flex min-h-[104px] items-center justify-between gap-4 rounded-2xl border border-violet-300/25 bg-gradient-to-r from-violet-500/[0.14] to-indigo-500/[0.08] px-4 py-4 text-left transition-[transform,border-color,background-color] duration-200 hover:-translate-y-0.5 hover:border-violet-200/45 hover:bg-violet-400/[0.12] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300 md:px-5">
-            <span className="min-w-0">
-              <span className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-violet-200/80">Pick up where you left off</span>
-              <span className="mt-1 block truncate text-base font-semibold text-white md:text-lg">Continue learning</span>
-              <span className="mt-1 block truncate text-xs text-slate-400">{nextTopic ? nextTopic + ' · ' + nextTopicDetail : goalTitle ? 'Continue with ' + goalTitle : 'Choose a goal and build your first learning path'}</span>
+        <div className="mb-3 grid shrink-0 gap-3 lg:grid-cols-12">
+          <GlassButton onClick={onContinueLearning} accent="#a78bfa" className="border-violet-300/25 bg-gradient-to-br from-violet-500/[0.14] to-indigo-500/[0.05] hover:border-violet-200/45 lg:col-span-7">
+            <span className="flex items-center gap-4 p-4 md:gap-5 md:p-5">
+              <ProgressRing value={progressPercent} color="#a78bfa" size={104}>
+                <span className="text-2xl font-semibold tabular-nums text-white">{progressPercent}%</span>
+              </ProgressRing>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-violet-200/80">{hub.continueEyebrow}</span>
+                <span className="mt-1 block truncate text-lg font-semibold text-white md:text-xl">{nextTopic ?? hub.continueTitle}</span>
+                <span className="mt-1 block truncate text-xs text-slate-400">
+                  {nextTopic ? nextTopicDetail : goalTitle ? format(hub.continueWithGoal, goalTitle) : hub.continueEmpty}
+                </span>
+                {topicsTotal > 0 && (
+                  <span className="mt-3 block text-[11px] text-violet-100/70">
+                    {hub.progressLabel} · {format(hub.topicsProgress, topicsDone, topicsTotal)}
+                  </span>
+                )}
+              </span>
+              <span className="hidden shrink-0 items-center gap-2 rounded-xl bg-violet-300/15 px-3 py-2 text-xs font-semibold text-violet-100 sm:inline-flex">
+                {hub.continueTitle} <ArrowUpRight className="h-4 w-4" />
+              </span>
+              <ArrowUpRight className="h-5 w-5 shrink-0 text-violet-200 sm:hidden" />
             </span>
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-300/15 text-violet-100 transition-transform duration-200 group-hover:translate-x-0.5"><ArrowUpRight className="h-5 w-5" /></span>
-          </button>
-          <div className="grid grid-cols-3 gap-2">
-            <button type="button" onClick={() => onNavigate('revision')} className="flex min-h-[104px] flex-col items-start justify-between rounded-2xl border border-white/[0.08] bg-white/[0.035] p-3 text-left transition-[transform,border-color,background-color] duration-200 hover:-translate-y-0.5 hover:border-emerald-300/30 hover:bg-emerald-300/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300"><RotateCcw className="h-4 w-4 text-emerald-200" /><span><span className="block text-xs font-semibold text-white">Revision</span><span className="mt-1 block text-[10px] text-slate-500">{revisionDue + revisionOverdue > 0 ? revisionDue + revisionOverdue + ' due' : 'Review'}</span></span></button>
-            <button type="button" onClick={() => onNavigate('test')} className="flex min-h-[104px] flex-col items-start justify-between rounded-2xl border border-white/[0.08] bg-white/[0.035] p-3 text-left transition-[transform,border-color,background-color] duration-200 hover:-translate-y-0.5 hover:border-fuchsia-300/30 hover:bg-fuchsia-300/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-300"><CheckCircle2 className="h-4 w-4 text-fuchsia-200" /><span><span className="block text-xs font-semibold text-white">Tests</span><span className="mt-1 block text-[10px] text-slate-500">Practice</span></span></button>
-            <button type="button" onClick={() => onNavigate('mentor')} className="flex min-h-[104px] flex-col items-start justify-between rounded-2xl border border-white/[0.08] bg-white/[0.035] p-3 text-left transition-[transform,border-color,background-color] duration-200 hover:-translate-y-0.5 hover:border-cyan-300/30 hover:bg-cyan-300/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"><MessageCircle className="h-4 w-4 text-cyan-200" /><span><span className="block text-xs font-semibold text-white">AI Mentor</span><span className="mt-1 block text-[10px] text-slate-500">Ask</span></span></button>
-          </div>
+          </GlassButton>
+
+          <GlassPanel accent="#6ee7b7" className="lg:col-span-5">
+            <div className="flex h-full flex-col justify-between gap-3 p-4">
+              <div className="flex items-end justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-200/80">{hub.consistencyTitle}</div>
+                  <div className="mt-0.5 text-[11px] text-slate-500">{format(hub.consistencyRange, 12)}</div>
+                </div>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-3xl font-semibold tabular-nums text-white">{streak}</span>
+                  <span className="text-[11px] text-slate-400">{hub.dayStreakLabel}</span>
+                </div>
+              </div>
+              <Heatmap days={activeDays} weeks={12} color="#6ee7b7" />
+              <div className="flex justify-end"><HeatmapLegend less={hub.less} more={hub.more} color="#6ee7b7" /></div>
+            </div>
+          </GlassPanel>
         </div>
-        <button type="button" onClick={() => { const action = getNextBestStepAction({ hasLearningProfile, revisionDue, revisionOverdue }); if (action === 'profile') onOpenProfile(); else open(action); }} className="mb-3 flex shrink-0 items-center justify-between gap-3 rounded-xl border border-cyan-300/12 bg-cyan-300/[0.035] px-3 py-2.5 text-left transition hover:border-cyan-300/25 hover:bg-cyan-300/[0.07] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"><span className="min-w-0"><span className="block text-[9px] uppercase tracking-[0.16em] text-cyan-200/65">Suggested next step</span><span className="block truncate text-xs font-medium text-slate-100">{!hasLearningProfile ? 'Set up your learning profile' : activeGoals === 0 ? 'Choose a learning goal' : revisionOverdue > 0 ? revisionOverdue + ' overdue topics to revise' : revisionDue > 0 ? revisionDue + ' topics ready for revision' : nextTopic || 'Open your learning roadmap'}</span></span><ArrowUpRight className="h-4 w-4 shrink-0 text-cyan-200/80" /></button>
+
+        <GlassPanel accent="#67e8f9" className="mb-3 shrink-0">
+          <div className="grid grid-cols-3 divide-x divide-white/[0.07]">
+            <button type="button" onClick={() => onNavigate('revision')} className="flex min-h-[92px] flex-col items-start justify-between p-3.5 text-left transition-colors hover:bg-emerald-300/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-300">
+              <RotateCcw className="h-4 w-4 text-emerald-200" />
+              <span><span className="block text-xs font-semibold text-white">{hub.actions.revision}</span><span className={`mt-1 block text-[11px] ${revisionTotal > 0 ? 'text-emerald-200' : 'text-slate-500'}`}>{revisionTotal > 0 ? format(hub.actions.dueCount, revisionTotal) : hub.actions.review}</span></span>
+            </button>
+            <button type="button" onClick={() => onNavigate('test')} className="flex min-h-[92px] flex-col items-start justify-between p-3.5 text-left transition-colors hover:bg-fuchsia-300/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-fuchsia-300">
+              <CheckCircle2 className="h-4 w-4 text-fuchsia-200" />
+              <span><span className="block text-xs font-semibold text-white">{hub.actions.tests}</span><span className="mt-1 block text-[11px] text-slate-500">{hub.actions.practice}</span></span>
+            </button>
+            <button type="button" onClick={() => onNavigate('mentor')} className="flex min-h-[92px] flex-col items-start justify-between p-3.5 text-left transition-colors hover:bg-cyan-300/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-cyan-300">
+              <MessageCircle className="h-4 w-4 text-cyan-200" />
+              <span><span className="block text-xs font-semibold text-white">{hub.actions.mentor}</span><span className="mt-1 block text-[11px] text-slate-500">{hub.actions.ask}</span></span>
+            </button>
+          </div>
+        </GlassPanel>
+
+        <button type="button" onClick={() => { const action = getNextBestStepAction({ hasLearningProfile, revisionDue, revisionOverdue }); if (action === 'profile') onOpenProfile(); else open(action); }} className="mb-3 flex shrink-0 items-center justify-between gap-3 rounded-xl border border-cyan-300/12 bg-cyan-300/[0.035] px-3 py-2.5 text-left transition hover:border-cyan-300/25 hover:bg-cyan-300/[0.07] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300">
+          <span className="min-w-0">
+            <span className="block text-[9px] uppercase tracking-[0.16em] text-cyan-200/65">{hub.nextStep.label}</span>
+            <span className="block truncate text-xs font-medium text-slate-100">{nextStepText}</span>
+          </span>
+          <ArrowUpRight className="h-4 w-4 shrink-0 text-cyan-200/80" />
+        </button>
+
         <div className="mb-2 flex shrink-0 items-center justify-between px-1 md:px-3">
           <div className="min-w-0">
-            <span className="block text-[9px] uppercase tracking-[0.2em] text-slate-600">Your learning space</span>
-            <span className="mt-0.5 block text-xs text-slate-400">Your tools, in one place</span>
+            <span className="block text-[9px] uppercase tracking-[0.2em] text-slate-600">{hub.space.eyebrow}</span>
+            <span className="mt-0.5 block text-xs text-slate-400">{hub.space.hint}</span>
           </div>
           <button type="button" onClick={() => setMapExpanded((value) => !value)} aria-expanded={mapExpanded} className="inline-flex items-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.035] px-3 py-2 text-[11px] font-medium text-slate-300 transition hover:border-cyan-300/25 hover:bg-white/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300">
-            {mapExpanded ? 'Hide learning map' : 'Explore learning map'}
-            <ChevronDown className={mapExpanded ? "h-3.5 w-3.5 rotate-180 transition-transform duration-200" : "h-3.5 w-3.5 transition-transform duration-200"} />
+            {mapExpanded ? hub.space.hide : hub.space.show}
+            <ChevronDown className={mapExpanded ? 'h-3.5 w-3.5 rotate-180 transition-transform duration-200' : 'h-3.5 w-3.5 transition-transform duration-200'} />
           </button>
         </div>
 
-        {mapExpanded && visibleRows.length === 0 && <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-center"><p className="text-sm font-medium text-white">Your map is empty</p><p className="mt-1 text-xs text-slate-400">Restore the learning engines to continue.</p><button type="button" onClick={() => { mapPrefsEdited.current = true; setVisibleNodeIds(defaultNodeIds); }} className="mt-3 rounded-lg border border-cyan-300/30 px-3 py-2 text-xs text-cyan-100">Restore learning engines</button></div>}
+        {mapExpanded && visibleRows.length === 0 && <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-center"><p className="text-sm font-medium text-white">{hub.space.emptyTitle}</p><p className="mt-1 text-xs text-slate-400">{hub.space.emptyBody}</p><button type="button" onClick={() => { mapPrefsEdited.current = true; setVisibleNodeIds(defaultNodeIds); }} className="mt-3 rounded-lg border border-cyan-300/30 px-3 py-2 text-xs text-cyan-100">{hub.space.restore}</button></div>}
         <div className={`relative hidden flex-none overflow-visible rounded-[24px] border border-white/[0.07] bg-[#0b1221]/65 ${mapExpanded ? 'lg:block' : ''} ${visibleRows.length === 0 ? 'hidden' : ''}`} style={{ height: `${mapHeight}px` }}>
           <div className="relative min-h-[660px]" style={{ height: `${mapHeight}px` }}>
           <div className="absolute inset-0 opacity-[0.16]" style={{ backgroundImage: 'radial-gradient(#7dd3fc 0.7px, transparent 0.7px)', backgroundSize: '24px 24px' }} />
@@ -188,7 +237,7 @@ export default function MissionControl({
                   <g style={{ opacity: selectedEngine === row.id ? 1 : 0, transition: 'opacity 420ms cubic-bezier(.22,1,.36,1)' }}>
                     {row.children.map((child, childIndex) => {
                       const childOffset = (childIndex - (row.children.length - 1) / 2) * 44;
-                      return <g key={child.label}>
+                      return <g key={child.id}>
                         <path d={`M 690 ${y} C 790 ${y}, 800 ${y + childOffset}, 900 ${y + childOffset}`} stroke={row.color} strokeOpacity=".85" strokeWidth="1.9" />
                         <circle cx="900" cy={y + childOffset} r="3" fill={row.color} />
                       </g>;
@@ -202,14 +251,15 @@ export default function MissionControl({
           </svg>
 
           <div className="absolute left-[2.5%] z-10 flex h-[132px] w-[17%] flex-col justify-center rounded-2xl border border-violet-300/50 bg-gradient-to-br from-[#29214d] to-[#151a31] px-4 shadow-[0_0_38px_rgba(139,92,246,.15)]" style={{ top: '50%', transform: 'translateY(-50%)' }}>
-            <div className="flex items-center gap-2 text-[9px] font-semibold uppercase tracking-[0.2em] text-violet-200"><Users className="h-3.5 w-3.5" /> Student</div>
-            <div className="mt-2 truncate text-lg font-semibold text-white">{name || 'Learner'}</div>
-            <div className="mt-1 line-clamp-2 text-[10px] leading-relaxed text-violet-100/60">{goalTitle ? `Learning ${goalTitle}` : 'Starts with curiosity'}</div>
-            <div className="mt-3 text-[9px] text-violet-200/60">YOU ARE HERE</div>
+            <div className="flex items-center gap-2 text-[9px] font-semibold uppercase tracking-[0.2em] text-violet-200"><Users className="h-3.5 w-3.5" /> {hub.student}</div>
+            <div className="mt-2 truncate text-lg font-semibold text-white">{name}</div>
+            <div className="mt-1 line-clamp-2 text-[10px] leading-relaxed text-violet-100/60">{goalTitle ? format(hub.learningGoal, goalTitle) : hub.startsWithCuriosity}</div>
+            <div className="mt-3 text-[9px] uppercase text-violet-200/60">{hub.youAreHere}</div>
           </div>
 
           {visibleRows.map((row, i) => {
             const Icon = row.icon;
+            const copy = hub.engines[row.id];
             const top = `${(rowY[i] / mapHeight) * 100}%`;
             return (
               <div key={row.id}>
@@ -223,17 +273,18 @@ export default function MissionControl({
                   <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl" style={{ backgroundColor: `${row.color}20`, color: row.color }}><Icon className="h-5 w-5" /></span>
                   <span className="min-w-0 flex-1">
                     <span className="block text-[9px] font-semibold tracking-[0.18em]" style={{ color: row.color }}>{row.number}</span>
-                    <span className="mt-0.5 block text-sm font-semibold text-white">{row.title}</span>
-                    <span className="mt-0.5 block truncate text-[10px] text-slate-500">{row.subtitle}</span>
+                    <span className="mt-0.5 block text-sm font-semibold text-white">{copy.title}</span>
+                    <span className="mt-0.5 block truncate text-[10px] text-slate-500">{copy.subtitle}</span>
                   </span>
                   <ArrowUpRight className="h-4 w-4 shrink-0 text-slate-600 transition group-hover:text-white" />
                 </button>
                 {row.children.map((child, childIndex) => {
                   const isExpanded = selectedEngine === row.id;
                   const ChildIcon = child.icon;
+                  const tool = hub.tools[child.id];
                   return (
                     <button
-                      key={child.label}
+                      key={child.id}
                       type="button"
                       onClick={() => open(child.action)}
                       className="group absolute left-[75%] z-10 flex h-[42px] w-[22%] -translate-y-1/2 items-center gap-2.5 rounded-xl border border-white/[0.09] bg-[#101a2b]/95 px-3 text-left transition-[opacity,transform,background-color,border-color,box-shadow] duration-[420ms] ease-out hover:border-white/20 hover:bg-[#18263a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"
@@ -243,8 +294,8 @@ export default function MissionControl({
                     >
                       <ChildIcon className="h-3.5 w-3.5 shrink-0" style={{ color: row.color }} />
                       <span className="min-w-0">
-                        <span className="block truncate text-[10px] font-medium text-slate-200">{child.label}</span>
-                        <span className="block truncate text-[8px] text-slate-500">{row.id === 'retain' && childIndex === 1 ? `${revisionDue + revisionOverdue} topics due` : child.detail}</span>
+                        <span className="block truncate text-[10px] font-medium text-slate-200">{tool.label}</span>
+                        <span className="block truncate text-[8px] text-slate-500">{tool.detail}</span>
                       </span>
                       <ArrowUpRight className="ml-auto h-3 w-3 shrink-0 text-slate-600 opacity-0 transition group-hover:opacity-100" />
                     </button>
@@ -255,9 +306,9 @@ export default function MissionControl({
           })}
 
           <div className="absolute bottom-4 left-5 flex items-center gap-4 text-[9px] text-slate-600">
-            <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-violet-300" /> Student</span>
-            <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-cyan-300" /> Learning engines</span>
-            <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-emerald-300" /> Actions</span>
+            <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-violet-300" /> {hub.legend.student}</span>
+            <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-cyan-300" /> {hub.legend.engines}</span>
+            <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-emerald-300" /> {hub.legend.actions}</span>
           </div>
           </div>
         </div>
@@ -267,19 +318,20 @@ export default function MissionControl({
           <div className="relative flex flex-col gap-2.5">
             <div className="mb-1 flex items-center gap-3 rounded-xl border border-violet-300/40 bg-[#211b40] p-3">
               <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-400/15 text-violet-200"><Users className="h-4 w-4" /></span>
-              <span><span className="block text-xs font-semibold text-white">{name || 'Student'}</span><span className="block text-[10px] text-violet-200/60">{goalTitle || 'Starts with curiosity'}</span></span>
+              <span><span className="block text-xs font-semibold text-white">{name}</span><span className="block text-[10px] text-violet-200/60">{goalTitle || hub.startsWithCuriosity}</span></span>
             </div>
             {visibleRows.map((row) => {
               const Icon = row.icon;
+              const copy = hub.engines[row.id];
               return (
                 <div key={row.id} className="relative ml-5 rounded-xl border bg-[#111d31] p-3" style={{ borderColor: `${row.color}50` }}>
                   <button type="button" onClick={() => setSelectedEngine((current) => current === row.id ? null : row.id)} aria-expanded={selectedEngine === row.id} className="flex w-full items-center gap-3 text-left">
                     <Icon className="h-5 w-5" style={{ color: row.color }} />
-                    <span className="flex-1"><span className="block text-xs font-semibold text-white">{row.number} · {row.title}</span><span className="block text-[10px] text-slate-500">{row.subtitle}</span></span>
+                    <span className="flex-1"><span className="block text-xs font-semibold text-white">{row.number} · {copy.title}</span><span className="block text-[10px] text-slate-500">{copy.subtitle}</span></span>
                     <ArrowUpRight className="h-4 w-4 text-slate-500" />
                   </button>
                   {selectedEngine === row.id && <div className="ml-8 mt-2 flex flex-wrap gap-1.5">
-                    {row.children.map((child) => <button key={child.label} onClick={() => open(child.action)} className="rounded-lg border border-white/[0.08] bg-white/[0.035] px-2 py-1.5 text-[9px] text-slate-300">{child.label} ↗</button>)}
+                    {row.children.map((child) => <button key={child.id} type="button" onClick={() => open(child.action)} className="rounded-lg border border-white/[0.08] bg-white/[0.035] px-2 py-1.5 text-[9px] text-slate-300">{hub.tools[child.id].label} ↗</button>)}
                   </div>}
                 </div>
               );
@@ -290,14 +342,14 @@ export default function MissionControl({
         <div className="relative mt-2 flex shrink-0 flex-wrap items-center justify-between gap-2 px-1 text-[9px] text-slate-500 md:px-3">
           <div className="relative">
             <button type="button" onClick={() => setMoreOpen((value) => !value)} aria-expanded={moreOpen} className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-medium text-slate-200 transition hover:border-cyan-300/40 hover:bg-white/[0.07]">
-              <MoreHorizontal className="h-4 w-4 text-cyan-300" /> More <ChevronDown className={`h-3.5 w-3.5 transition-transform ${moreOpen ? 'rotate-180' : ''}`} />
+              <MoreHorizontal className="h-4 w-4 text-cyan-300" /> {hub.moreMenu.button} <ChevronDown className={`h-3.5 w-3.5 transition-transform ${moreOpen ? 'rotate-180' : ''}`} />
             </button>
             {moreOpen && <div className="absolute bottom-full left-0 z-30 mb-2 w-[min(16rem,calc(100vw-2rem))] max-h-[min(70vh,520px)] overflow-y-auto rounded-xl border border-white/10 bg-[#111d31] p-1.5 shadow-2xl">
-              <div className="sticky top-0 z-10 bg-[#111d31] p-1.5"><input value={functionSearch} onChange={(event) => setFunctionSearch(event.target.value)} placeholder="Search personal tools..." className="w-full rounded-lg border border-white/10 bg-white/[0.05] px-3 py-2 text-xs text-white outline-none placeholder:text-slate-500 focus:border-cyan-300/40" /></div>
-              {filteredMoreItems.length === 0 && <p className="px-3 py-4 text-xs text-slate-500">No matching personal tools found.</p>}
+              <div className="sticky top-0 z-10 bg-[#111d31] p-1.5"><input value={functionSearch} onChange={(event) => setFunctionSearch(event.target.value)} placeholder={hub.moreMenu.searchPlaceholder} className="w-full rounded-lg border border-white/10 bg-white/[0.05] px-3 py-2 text-xs text-white outline-none placeholder:text-slate-500 focus:border-cyan-300/40" /></div>
+              {filteredMoreItems.length === 0 && <p className="px-3 py-4 text-xs text-slate-500">{hub.moreMenu.noMatch}</p>}
               {filteredMoreItems.map((item) => {
                 const ItemIcon = item.icon;
-                return <button key={item.action} type="button" onClick={() => { setMoreOpen(false); open(item.action); }} className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition hover:bg-white/[0.07]">
+                return <button key={item.id} type="button" onClick={() => { setMoreOpen(false); open(item.action); }} className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition hover:bg-white/[0.07]">
                   <ItemIcon className="h-4 w-4 shrink-0 text-cyan-300" />
                   <span className="min-w-0"><span className="block text-xs font-medium text-white">{item.label}</span><span className="block text-[10px] text-slate-500">{item.detail}</span></span>
                   <ArrowUpRight className="ml-auto h-3.5 w-3.5 text-slate-600" />
@@ -305,30 +357,31 @@ export default function MissionControl({
               })}
             </div>}
           </div>
-          <button type="button" onClick={() => { setCustomizeOpen(true); setMoreOpen(false); }} className="inline-flex items-center gap-2 rounded-xl border border-cyan-300/20 bg-cyan-300/[0.06] px-3 py-2 text-xs font-medium text-cyan-100 transition hover:border-cyan-300/40 hover:bg-cyan-300/10">Customize map</button>
-          <span className="shrink-0">{activeGoals} active goal{activeGoals === 1 ? '' : 's'} · {hasLearningProfile ? 'Profile ready' : 'Profile not set up'}</span>
+          <button type="button" onClick={() => { setCustomizeOpen(true); setMoreOpen(false); }} className="inline-flex items-center gap-2 rounded-xl border border-cyan-300/20 bg-cyan-300/[0.06] px-3 py-2 text-xs font-medium text-cyan-100 transition hover:border-cyan-300/40 hover:bg-cyan-300/10">{hub.customize.button}</button>
+          <span className="shrink-0">{format(activeGoals === 1 ? hub.footer.goalOne : hub.footer.goalMany, activeGoals)} · {hasLearningProfile ? hub.footer.profileReady : hub.footer.profileMissing}</span>
         </div>
         {customizeOpen && <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="map-customize-title">
           <div className="w-full max-w-lg overflow-hidden rounded-2xl border border-white/10 bg-[#101a2b] shadow-2xl">
             <div className="flex items-center justify-between border-b border-white/[0.08] px-5 py-4">
-              <div><h2 id="map-customize-title" className="text-base font-semibold text-white">Customize your learning map</h2><p className="mt-1 text-xs text-slate-400">Keep the engines you use most. Your map saves locally and syncs when available.</p></div>
-              <button type="button" onClick={() => setCustomizeOpen(false)} className="rounded-lg px-2 py-1 text-slate-400 hover:bg-white/10 hover:text-white" aria-label="Close">✕</button>
+              <div><h2 id="map-customize-title" className="text-base font-semibold text-white">{hub.customize.title}</h2><p className="mt-1 text-xs text-slate-400">{hub.customize.body}</p></div>
+              <button type="button" onClick={() => setCustomizeOpen(false)} className="rounded-lg px-2 py-1 text-slate-400 hover:bg-white/10 hover:text-white" aria-label={hub.customize.close}>✕</button>
             </div>
             <div className="max-h-[55vh] overflow-y-auto p-3">
               {allFunctionNodes.map((node) => {
                 const NodeIcon = node.icon;
+                const copy = hub.engines[node.id];
                 const checked = visibleNodeIds.includes(node.id);
                 return <label key={node.id} className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-3 transition hover:bg-white/[0.05]">
                   <input type="checkbox" checked={checked} onChange={() => { mapPrefsEdited.current = true; setVisibleNodeIds((current) => checked ? current.filter((id) => id !== node.id) : [...current, node.id]); if (checked && selectedEngine === node.id) setSelectedEngine(null); }} className="h-4 w-4 accent-cyan-400" />
                   <span className="flex h-9 w-9 items-center justify-center rounded-lg" style={{ color: node.color, backgroundColor: `${node.color}20` }}><NodeIcon className="h-4 w-4" /></span>
-                  <span className="min-w-0 flex-1"><span className="block text-sm font-medium text-slate-100">{node.title}</span><span className="block text-xs text-slate-500">{node.subtitle}</span></span>
-                  <span className="text-[10px] text-slate-500">{checked ? 'On map' : 'Add'}</span>
+                  <span className="min-w-0 flex-1"><span className="block text-sm font-medium text-slate-100">{copy.title}</span><span className="block text-xs text-slate-500">{copy.subtitle}</span></span>
+                  <span className="text-[10px] text-slate-500">{checked ? hub.customize.onMap : hub.customize.add}</span>
                 </label>;
               })}
             </div>
             <div className="flex items-center justify-between border-t border-white/[0.08] px-5 py-3">
-              <button type="button" onClick={() => { mapPrefsEdited.current = true; setVisibleNodeIds(defaultNodeIds); }} className="text-xs text-slate-400 transition hover:text-white">Reset default</button>
-              <button type="button" onClick={() => setCustomizeOpen(false)} className="rounded-lg bg-cyan-300 px-4 py-2 text-xs font-semibold text-slate-950 transition hover:bg-cyan-200">Done</button>
+              <button type="button" onClick={() => { mapPrefsEdited.current = true; setVisibleNodeIds(defaultNodeIds); }} className="text-xs text-slate-400 transition hover:text-white">{hub.customize.reset}</button>
+              <button type="button" onClick={() => setCustomizeOpen(false)} className="rounded-lg bg-cyan-300 px-4 py-2 text-xs font-semibold text-slate-950 transition hover:bg-cyan-200">{hub.customize.done}</button>
             </div>
           </div>
         </div>}

@@ -8,7 +8,7 @@ import MissionControl from './MissionControl';
 import { getContinueLearningTarget } from './missionControlLogic';
 import BottomNav from './BottomNav';
 import { useImmersive, useNoteOpen } from './immersive';
-import { getRoadmapData, getCurrentTopic } from './roadmapData';
+import { getRoadmapData, getCurrentTopic, getRoadmapProgress } from './roadmapData';
 import { getRevisionStats, getRevisionDataForGoals } from './revisionData';
 import { getPersonalityProfile, savePersonalityProfile, clearPersonalityProfile } from './personalityProfileStore';
 import type { PersonalityProfile } from './personalityScoring';
@@ -493,6 +493,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
 
   const displayName = userData?.name?.trim() || t.dashboard.home.learnerFallback;
   const currentTopic = getCurrentTopic(getRoadmapData(activeGoalId));
+  const roadmapProgress = getRoadmapProgress(getRoadmapData(activeGoalId));
   const revisionStats = getRevisionStats(getRevisionDataForGoals(t.revisionTasks, goals));
 
   const config = pageConfigs[activePage];
@@ -629,12 +630,15 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
             name={displayName}
             goalTitle={goals.find((goal) => goal.id === activeGoalId)?.title ?? userData?.goal ?? ''}
             nextTopic={currentTopic?.title ?? null}
-            nextTopicDetail={currentTopic ? `${currentTopic.estimatedTime} · ${currentTopic.difficulty}` : 'Your roadmap will help turn a big goal into manageable steps.'}
+            nextTopicDetail={currentTopic ? `${currentTopic.estimatedTime} · ${currentTopic.difficulty}` : ''}
             hasLearningProfile={Boolean(learningProfile)}
             revisionDue={revisionStats.dueToday}
             revisionOverdue={revisionStats.overdue}
             streak={streak}
             activeGoals={goals.filter((goal) => goal.status === 'active').length}
+            progressPercent={roadmapProgress.percent}
+            topicsDone={roadmapProgress.completed}
+            topicsTotal={roadmapProgress.total}
             onNavigate={setActivePage}
             onOpenProfile={handleOpenLearningProfile}
             onContinueLearning={() => {

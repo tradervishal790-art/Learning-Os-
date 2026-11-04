@@ -135,18 +135,24 @@ export default function Revision({ goals = [] }: RevisionProps) {
   };
 
   return (
-    <div className="p-4 md:p-8 max-w-6xl mx-auto text-black dark:text-white">
+    <div className="dark">
+    <div className="relative mx-auto max-w-6xl overflow-hidden rounded-none bg-[#080d19] p-4 text-slate-100 md:m-4 md:rounded-3xl md:p-8">
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -left-32 -top-40 h-[420px] w-[420px] rounded-full bg-emerald-500/[0.08] blur-[120px]" />
+        <div className="absolute -right-24 top-1/3 h-[380px] w-[380px] rounded-full bg-violet-600/[0.12] blur-[120px]" />
+      </div>
+      <div className="relative">
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="mb-5 md:mb-8">
         <div className="flex items-center gap-3">
-          <RotateCcw className="w-6 h-6 md:w-8 md:h-8" strokeWidth={1.75} />
-          <h1 className="text-2xl md:text-4xl font-bold">{t.revision.header.title}</h1>
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-400/15 text-emerald-200"><RotateCcw className="h-5 w-5" strokeWidth={1.75} /></span>
+          <h1 className="text-2xl md:text-4xl font-semibold tracking-tight">{t.revision.header.title}</h1>
         </div>
         <p className="text-sm text-gray-500 dark:text-white/60 mt-1">{mode === 'files' ? sp.subtitle : t.revision.header.subtitle}</p>
       </motion.div>
 
       {/* Source switch: roadmap topics vs the learner's own files */}
-      <div className="flex border-b border-gray-200 dark:border-white/10 mb-5 md:mb-6">
+      <div className="mb-5 flex gap-1 rounded-full border border-white/10 bg-white/[0.04] p-1 md:mb-6 md:w-fit">
         {([['roadmap', sp.tabRoadmap, Route], ['files', sp.tabFiles, FileText]] as const).map(([id, text, Icon]) => (
           <button
             key={id}
@@ -154,20 +160,20 @@ export default function Revision({ goals = [] }: RevisionProps) {
             aria-label={text}
             title={text}
             aria-pressed={mode === id}
-            className={`flex-1 h-12 flex items-center justify-center gap-2 border-b-2 transition ${
+            className={`inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-full transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300 md:flex-none md:px-5 ${
               mode === id
-                ? 'border-indigo-600 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400'
-                : 'border-transparent text-gray-400 dark:text-white/40 hover:text-black dark:hover:text-white'
+                ? 'bg-violet-500 text-white shadow-[0_0_18px_rgba(139,92,246,.45)]'
+                : 'text-slate-300 hover:bg-white/10 hover:text-white'
             }`}
           >
-            <Icon className="w-6 h-6" strokeWidth={mode === id ? 2.2 : 1.75} />
+            <Icon className="h-5 w-5" strokeWidth={mode === id ? 2.2 : 1.75} />
             <span className="hidden md:inline text-sm font-medium">{text}</span>
           </button>
         ))}
       </div>
 
       {mode === 'roadmap' && (
-        <section className="mx-auto mb-5 rounded-2xl border border-indigo-500/20 bg-indigo-500/[0.045] p-4 md:p-5" aria-label="Daily revision focus">
+        <section className="mx-auto mb-5 rounded-2xl border border-violet-300/25 bg-gradient-to-br from-violet-500/[0.12] to-transparent p-4 shadow-[0_0_28px_rgba(139,92,246,.10)] md:p-5" aria-label={t.revision.filters.needsReview}>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-gray-500 dark:text-white/60">
@@ -188,7 +194,7 @@ export default function Revision({ goals = [] }: RevisionProps) {
               <button
                 type="button"
                 onClick={handleStartDailyReview}
-                className="inline-flex min-h-10 flex-shrink-0 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-500 active:scale-[0.98] dark:bg-indigo-500 dark:hover:bg-indigo-400"
+                className="inline-flex min-h-10 flex-shrink-0 items-center justify-center gap-2 rounded-xl bg-violet-500 px-4 py-2.5 text-sm font-medium text-white shadow-[0_0_18px_rgba(139,92,246,.4)] transition hover:bg-violet-400 active:scale-[0.98]"
               >
                 <Play className="h-4 w-4" />
                 {t.revision.card.reviewNowCta}
@@ -207,15 +213,15 @@ export default function Revision({ goals = [] }: RevisionProps) {
       {/* Top stats — one surface, icon-first on phones */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.5 }} className="rounded-2xl card overflow-hidden grid grid-cols-4 divide-x divide-gray-200 dark:divide-white/10 mb-5 md:mb-8">
         {[
-          { label: t.revision.stats.dueToday, value: String(stats.dueToday), Icon: Flame },
-          { label: t.revision.stats.overdue, value: String(stats.overdue), Icon: TriangleAlert },
-          { label: t.revision.stats.mastered, value: String(stats.mastered), Icon: Star },
-          { label: t.revision.recall.accuracy, value: recallAccuracy === null ? '—' : `${recallAccuracy}%`, Icon: Gauge },
-        ].map(({ label, value, Icon }) => (
+          { label: t.revision.stats.dueToday, value: String(stats.dueToday), Icon: Flame, tone: 'text-amber-300' },
+          { label: t.revision.stats.overdue, value: String(stats.overdue), Icon: TriangleAlert, tone: 'text-red-300' },
+          { label: t.revision.stats.mastered, value: String(stats.mastered), Icon: Star, tone: 'text-emerald-300' },
+          { label: t.revision.recall.accuracy, value: recallAccuracy === null ? '—' : `${recallAccuracy}%`, Icon: Gauge, tone: 'text-cyan-300' },
+        ].map(({ label, value, Icon, tone }) => (
           <div key={label} title={label} aria-label={`${label}: ${value}`} className="px-2 md:px-4 py-3 md:py-4 text-center md:text-left min-w-0">
             <Icon className="md:hidden w-5 h-5 mx-auto mb-1 text-gray-500 dark:text-white/50" strokeWidth={1.75} />
             <div className="hidden md:block text-xs text-gray-400 dark:text-white/40 uppercase tracking-wider mb-1">{label}</div>
-            <div className="text-xl md:text-3xl font-bold tabular-nums">{value}</div>
+            <div className={`text-xl md:text-3xl font-semibold tabular-nums ${tone}`}>{value}</div>
           </div>
         ))}
       </motion.div>
@@ -234,7 +240,7 @@ export default function Revision({ goals = [] }: RevisionProps) {
               <div className="h-12 flex items-end justify-center mb-1">
                 <div
                   title={point.accuracy === null ? t.revision.recall.noRatings : format(t.revision.recall.trendTooltip, point.accuracy, point.attempts)}
-                  className={`w-full max-w-8 rounded-t-md ${point.accuracy === null ? 'bg-gray-200 dark:bg-white/10' : 'bg-indigo-500 dark:bg-indigo-400'}`}
+                  className={`w-full max-w-8 rounded-t-md ${point.accuracy === null ? 'bg-gray-200 dark:bg-white/10' : 'bg-gradient-to-t from-violet-500 to-cyan-300 shadow-[0_0_10px_rgba(139,92,246,.4)]'}`}
                   style={{ height: point.accuracy === null ? '4px' : `${Math.max(6, Math.round(point.accuracy * 0.44))}px` }}
                 />
               </div>
@@ -266,7 +272,7 @@ export default function Revision({ goals = [] }: RevisionProps) {
             aria-pressed={filter === tab.id}
             className={`flex-shrink-0 h-11 px-4 inline-flex items-center gap-2 rounded-full text-sm font-medium whitespace-nowrap transition-all border ${
               filter === tab.id
-                ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white border-transparent'
+                ? 'bg-violet-500 text-white border-transparent shadow-[0_0_16px_rgba(139,92,246,.45)]'
                 : 'card border-transparent text-gray-500 dark:text-white/60 hover:bg-gray-50 dark:hover:bg-white/10'
             }`}
           >
@@ -295,7 +301,7 @@ export default function Revision({ goals = [] }: RevisionProps) {
                 exit={{ opacity: 0, x: 20 }}
                 transition={{ delay: i * 0.05, duration: 0.3 }}
                 className={`p-4 md:p-5 rounded-2xl border card transition-all ${
-                  isReviewing ? 'border-indigo-400 dark:border-indigo-400/60' : 'border-transparent'
+                  isReviewing ? 'border-violet-400/60 shadow-[0_0_28px_rgba(139,92,246,.2)]' : 'border-transparent hover:shadow-[0_0_24px_rgba(139,92,246,.14)]'
                 }`}
               >
                 <div className="flex items-center gap-3 md:gap-4">
@@ -319,7 +325,7 @@ export default function Revision({ goals = [] }: RevisionProps) {
                         • {difficultyLabels[item.difficulty]}
                       </span>
                       {isReviewing && (
-                        <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white">
+                        <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full bg-violet-500 text-white">
                           {t.revision.card.reviewingNow}
                         </span>
                       )}
@@ -336,7 +342,7 @@ export default function Revision({ goals = [] }: RevisionProps) {
                           ['partial', t.revision.recall.partial],
                           ['remembered', t.revision.recall.remembered],
                         ] as [RecallRating, string][]).map(([rating, label]) => (
-                          <button key={rating} onClick={() => handleRecallRating(item, rating)} className="rounded-full border border-gray-200 dark:border-white/15 px-3 py-1.5 text-xs font-medium hover:bg-indigo-50 dark:hover:bg-indigo-500/15 transition">
+                          <button key={rating} onClick={() => handleRecallRating(item, rating)} className="rounded-full border border-gray-200 dark:border-white/15 px-3 py-1.5 text-xs font-medium hover:bg-violet-500/15 transition">
                             {label}
                           </button>
                         ))}
@@ -353,7 +359,7 @@ export default function Revision({ goals = [] }: RevisionProps) {
                         initial={{ width: 0 }}
                         animate={{ width: `${item.retention}%` }}
                         transition={{ delay: 0.2 + i * 0.05, duration: 0.8 }}
-                        className="h-full bg-black dark:bg-white rounded-full"
+                        className="h-full rounded-full bg-gradient-to-r from-violet-400 to-cyan-300"
                       />
                     </div>
                   </div>
@@ -370,7 +376,7 @@ export default function Revision({ goals = [] }: RevisionProps) {
                           onClick={() => handleReviewNow(item.id)}
                           aria-label={isReviewing ? t.revision.card.reviewingCta : t.revision.card.reviewNowCta}
                           title={isReviewing ? t.revision.card.reviewingCta : t.revision.card.reviewNowCta}
-                          className="w-11 h-11 md:w-auto md:h-auto md:px-3 md:py-1.5 flex items-center justify-center rounded-full md:rounded-lg text-xs font-medium transition-all border bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white border-transparent hover:bg-indigo-500 dark:hover:bg-indigo-400"
+                          className="w-11 h-11 md:w-auto md:h-auto md:px-3 md:py-1.5 flex items-center justify-center rounded-full md:rounded-lg text-xs font-medium transition-all border border-transparent bg-violet-500 text-white shadow-[0_0_14px_rgba(139,92,246,.35)] hover:bg-violet-400"
                         >
                           <Play className="w-5 h-5 md:hidden" strokeWidth={1.75} fill={isReviewing ? 'currentColor' : 'none'} />
                           <span className="hidden md:inline">{isReviewing ? t.revision.card.reviewingCta : t.revision.card.reviewNowCta}</span>
@@ -410,6 +416,8 @@ export default function Revision({ goals = [] }: RevisionProps) {
       )}
         </>
       )}
+      </div>
+    </div>
     </div>
   );
 }
