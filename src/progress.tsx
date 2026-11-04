@@ -14,6 +14,7 @@ import {
 import { useTranslation } from './i18n/LanguageContext';
 import { format } from './i18n/format';
 import { hydrateTestAttemptsFromCloud } from './testStore';
+import { PROGRESS_DATA_CHANGED } from './progressEvents';
 
 interface ProgressProps {
   goals?: Goal[];
@@ -34,7 +35,7 @@ const statusIcon: Record<string, ReactNode> = {
 
 export default function Progress({ goals = [] }: ProgressProps) {
   const t = useTranslation();
-  const [, setAttemptHydrationVersion] = useState(0);
+  const [, setDataVersion] = useState(0);
   useEffect(() => {
     let active = true;
     void hydrateTestAttemptsFromCloud()
