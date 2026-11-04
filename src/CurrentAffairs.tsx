@@ -212,12 +212,12 @@ function NewspaperCurrentAffairs() {
                   aria-label={c.tabs[x]}
                   title={c.tabs[x]}
                   aria-pressed={tab === x}
-                  className={`flex-shrink-0 h-10 min-w-10 px-3 inline-flex items-center justify-center gap-1.5 text-xs rounded-full transition ${
+                  className={`flex-shrink-0 min-h-11 min-w-11 px-3 inline-flex items-center justify-center gap-1.5 text-xs rounded-full transition ${
                     tab === x ? 'bg-indigo-600 text-white dark:bg-indigo-500' : 'card text-gray-600 dark:text-white/60'
                   }`}
                 >
                   <TabIcon className="w-4 h-4" strokeWidth={1.75} />
-                  <span className="hidden md:inline">{c.tabs[x]}</span>
+                  <span className="whitespace-nowrap">{c.tabs[x]}</span>
                 </button>
               );
             })}
