@@ -14,7 +14,7 @@ The goal is a continuous learning journey, not a set of disconnected pages.
 | Roadmap → Videos | Keep exact goal/topic ID, playlist and bridge | Existing hand-off already carries topic ID, bridge and goal context |
 | Videos → Mentor | Carry the selected roadmap topic and difficulty, not just the last watched title | Implemented; tests added |
 | Mentor → learner history | Keep the explicit topic context separate from saved chat history; consume navigation context once | Implemented |
-| Notes ↔ lessons | Connect notes to the relevant lesson/topic without changing the notebook database or editor engine | Pending implementation/audit |
+| Notes ↔ lessons | Connect notes to the relevant lesson/topic without changing the notebook database or editor engine | Roadmap topic → existing topic-keyed Deep Notes hand-off implemented; Notebook library metadata linking pending |
 | Revision ↔ learned topics | Preserve topic ID and goal attribution when reviewing; offer a useful return path to learning/help | Contextual Ask Mentor action implemented; return-to-topic audit pending |
 | Tests ↔ weak topics | Reuse scored attempt evidence and exact topic matching; never infer a topic from an unrelated test title | Pending implementation/audit |
 | Progress ↔ outcomes | Display actual shared engine outcomes, distinguish measured values from estimates | Existing aggregation found; cross-screen refresh and empty/loading states still to verify |
@@ -53,6 +53,16 @@ Updated `src/Mentor.tsx`:
 - topic, difficulty and source are included in the context sent with the next Mentor request;
 - chat persistence and existing Mentor learner-context builder are unchanged.
 
+### Roadmap → Notes hand-off
+
+Updated `src/Roadmap.tsx` and `src/Dashboard.tsx`:
+
+- the selected topic modal now offers a direct “Open topic notes” action;
+- Dashboard passes that exact topic title and description to the existing Deep Notes component;
+- the existing per-topic Deep Notes cache is reused, and the standalone notes session remains the fallback when Notes is opened without a selected topic;
+- leaving Notes clears the transient topic selection so a later manual Notes visit does not silently open stale lesson context;
+- no notebook index, IndexedDB schema, cloud document or editor engine was changed.
+
 ### Revision → Mentor hand-off
 
 Updated `src/Revision.tsx`:
@@ -66,7 +76,7 @@ Added `tests/mentor-learning-context.test.mjs` for one-time consumption, malform
 
 ## Remaining work before Phase 3 can be called complete
 
-1. Finish Notes-to-lesson continuity using existing notebook metadata/index APIs; do not invent a second notes database.
+1. Finish Notebook library metadata linking using existing notebook metadata/index APIs; do not invent a second notes database.
 2. Add a safe Test-results-to-topic/help path only when the attempt already has reliable topic identity; preserve unlinked/general tests as general tests.
 3. Verify Progress refresh after writes from Videos, Revision and Tests, and ensure the UI labels estimated vs measured signals honestly.
 4. Audit every connected page for blank loading states, stale selected topic, wrong active goal, empty states, and back/return behavior.
