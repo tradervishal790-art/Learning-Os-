@@ -1,4 +1,5 @@
 import { pushToCloud, pullFromCloud } from './cloudSync';
+import { notifyProgressDataChanged } from './progressEvents';
 
 // Checkpoints stay in the legacy day map for compatibility. Actual review
 // timestamps live beside it so the next interval starts when the learner
@@ -36,6 +37,7 @@ function loadReviewDates(): ReviewDatesMap {
 function saveReviews(reviews: ReviewsMap): void {
   try {
     localStorage.setItem(REVISION_REVIEWS_STORAGE_KEY, JSON.stringify(reviews));
+    notifyProgressDataChanged();
   } catch {
     // Storage full/unavailable — non-critical, review state just won't persist.
   }
@@ -45,6 +47,7 @@ function saveReviews(reviews: ReviewsMap): void {
 function saveReviewDates(dates: ReviewDatesMap): void {
   try {
     localStorage.setItem(REVISION_DATES_STORAGE_KEY, JSON.stringify(dates));
+    notifyProgressDataChanged();
   } catch {
     // Keep the revision flow usable when browser storage is unavailable.
   }
@@ -103,6 +106,7 @@ export async function hydrateRevisionFromCloud(): Promise<void> {
     if (JSON.stringify(merged) !== JSON.stringify(latestLocal)) {
       try {
         localStorage.setItem(REVISION_REVIEWS_STORAGE_KEY, JSON.stringify(merged));
+        notifyProgressDataChanged();
       } catch {
         // Best-effort.
       }
