@@ -145,7 +145,7 @@ export default function BottomNav({ items, activeId, onSelect, darkMode = false 
                   />
                   {item.locked && <LockBadge />}
                 </span>
-                <span className="max-w-full truncate text-[9px] font-medium leading-none">{({ dashboard: 'Home', roadmap: 'Roadmap', mentor: 'Mentor', progress: 'Progress' } as Record<string, string>)[item.id] ?? item.label}</span>
+                <span className="max-w-full truncate text-[10px] font-medium leading-none">{item.id === 'dashboard' ? 'Home' : item.label}</span>
               </button>
             );
           })}
