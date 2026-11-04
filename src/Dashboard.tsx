@@ -538,11 +538,32 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   const revisionStats = getRevisionStats(getRevisionDataForGoals(t.revisionTasks, goals));
   const activeGoalsForIntelligence = goals.filter((goal) => goal.status === 'active');
   const engagementSessions = getEngagementSessions();
-  const masteryHeatmap = getMasteryHeatmap(goals, engagementSessions);
-  const weakestTopic = getWeakAreas(masteryHeatmap, 1)[0];
+  // The map's active recommendation follows the selected goal. Do not let a
+  // weak topic in the second goal redirect the learner away from this goal.
+  const intelligenceGoals = activeGoalId
+    ? activeGoalsForIntelligence.filter((goal) => goal.id === activeGoalId)
+    : activeGoalsForIntelligence.slice(0, 1);
+  const masteryHeatmap = getMasteryHeatmap(intelligenceGoals, engagementSessions);
+  const hasNegativeEngagement = (topicId: string) => engagementSessions.some(
+    (session) => session.conceptId === topicId && (session.signal === 'dislike' || session.signal === 'strong_dislike'),
+  );
+  // A new 'learning' topic starts with a 40-point roadmap baseline. That is
+  // not evidence of weakness. Only explicit low recall/test results or
+  // negative feedback can trigger a Mentor recommendation.
+  const measuredWeakTopics = getWeakAreas(masteryHeatmap, masteryHeatmap.length).filter((topic) =>
+    (topic.observedRecall !== null && topic.observedRecall < 60)
+    || (topic.testAccuracy !== null && topic.testAccuracy < 60)
+    || hasNegativeEngagement(topic.topicId),
+  );
+  const weakestTopic = measuredWeakTopics[0];
   const currentTopicMastery = currentTopic
     ? masteryHeatmap.find((topic) => topic.topicId === currentTopic.id) ?? null
     : null;
+  const currentTopicHasMeasuredWeakness = Boolean(currentTopic && currentTopicMastery && (
+    (currentTopicMastery.observedRecall !== null && currentTopicMastery.observedRecall < 60)
+    || (currentTopicMastery.testAccuracy !== null && currentTopicMastery.testAccuracy < 60)
+    || hasNegativeEngagement(currentTopic.id)
+  ));
   const currentTopicSessions = currentTopic
     ? engagementSessions.filter((session) => session.conceptId === currentTopic.id).length
     : 0;
@@ -697,6 +718,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
             streak={streak}
             activeGoals={activeGoalsForIntelligence.length}
             currentTopicMastery={currentTopicMastery?.masteryScore ?? null}
+            currentTopicHasMeasuredWeakness={currentTopicHasMeasuredWeakness}
             currentTopicSessions={currentTopicSessions}
             weakTopic={weakestTopic?.title ?? null}
             weakTopicMastery={weakestTopic?.masteryScore ?? null}
