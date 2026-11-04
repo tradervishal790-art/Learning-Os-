@@ -9,6 +9,7 @@ export interface NextBestStepInput {
   revisionOverdue: number;
   currentTopic: string | null;
   currentTopicMastery?: number | null;
+  currentTopicHasMeasuredWeakness?: boolean;
   currentTopicSessions?: number;
   weakTopic?: string | null;
   weakTopicMastery?: number | null;
@@ -76,7 +77,12 @@ export function getNextBestStepRecommendation(input: NextBestStepInput): NextBes
   }
 
   const hasMeasuredWeakness = Boolean(input.weakTopic) && weakMastery !== null && weakMastery < 60;
-  const currentTopicNeedsHelp = Boolean(input.currentTopic) && currentMastery !== null && currentMastery < 50;
+  // The roadmap's default 'learning' baseline is 40, not measured weakness.
+  // Only explicit recall/test evidence or negative learner feedback may trigger help.
+  const currentTopicNeedsHelp = Boolean(input.currentTopic)
+    && input.currentTopicHasMeasuredWeakness === true
+    && currentMastery !== null
+    && currentMastery < 60;
   if (hasMeasuredWeakness || currentTopicNeedsHelp) {
     const topic = hasMeasuredWeakness ? input.weakTopic : input.currentTopic;
     return {
