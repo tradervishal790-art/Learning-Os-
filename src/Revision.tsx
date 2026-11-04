@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { MENTOR_PREFILL_KEY, saveMentorLearningContext } from './mentorPrefill';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RotateCcw, Route, FileText, Flame, TriangleAlert, CalendarDays, Star, LayoutGrid, Target, PenLine, Check, Play, Sprout, PartyPopper, Gauge } from 'lucide-react';
 import type { ReactNode } from 'react';
@@ -49,6 +51,7 @@ interface RevisionProps {
 
 export default function Revision({ goals = [] }: RevisionProps) {
   const t = useTranslation();
+  const navigate = useNavigate();
   const { locale } = useLanguage();
   const sp = studyPlanText[locale];
   const [mode, setMode] = useState<'roadmap' | 'files'>('roadmap');
@@ -104,6 +107,21 @@ export default function Revision({ goals = [] }: RevisionProps) {
 
   const handleReviewNow = (id: string) => {
     setReviewingId(id);
+  };
+
+  const handleAskMentor = (item: RevisionItem & { goalId?: string; goalTitle?: string }) => {
+    try {
+      sessionStorage.setItem(MENTOR_PREFILL_KEY, `I'm revising "${item.topic}" (Day ${item.day}, ${item.difficulty}) and need help understanding or remembering it: `);
+    } catch {
+      // Mentor still opens; the explicit topic context is best-effort.
+    }
+    saveMentorLearningContext({
+      topicTitle: item.topic,
+      goalTitle: item.goalTitle,
+      difficulty: item.difficulty,
+      source: 'revision',
+    });
+    navigate('/dashboard/mentor');
   };
 
   const handleRecallRating = (item: RevisionItem & { goalId?: string }, rating: RecallRating) => {
@@ -383,6 +401,16 @@ export default function Revision({ goals = [] }: RevisionProps) {
                         >
                           <Check className="w-5 h-5 md:hidden" strokeWidth={2.2} />
                           <span className="hidden md:inline">{t.revision.card.doneCta}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleAskMentor(item)}
+                          aria-label={`Ask Mentor about ${item.topic}`}
+                          title={`Ask Mentor about ${item.topic}`}
+                          className="w-11 h-11 md:w-auto md:h-auto md:px-3 md:py-1.5 flex items-center justify-center rounded-full md:rounded-lg border border-gray-200 dark:border-white/10 text-gray-600 dark:text-white/70 text-xs font-medium hover:bg-gray-100 dark:hover:bg-white/10 transition"
+                        >
+                          <span className="md:hidden text-[10px] font-semibold">AI</span>
+                          <span className="hidden md:inline">Ask Mentor</span>
                         </button>
                       </>
                     )}
