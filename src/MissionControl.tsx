@@ -2,7 +2,7 @@ import { ArrowUpRight, BrainCircuit, CheckCircle2, Compass, GraduationCap, Noteb
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { DashboardPageId } from './types';
 import { pullFromCloud, pushToCloud } from './cloudSync';
-import { getNextBestStepAction } from './missionControlLogic';
+import { getNextBestStepRecommendation } from './missionControlLogic';
 
 interface MissionControlProps {
   name: string;
@@ -14,6 +14,14 @@ interface MissionControlProps {
   revisionOverdue: number;
   streak: number;
   activeGoals: number;
+  currentTopicMastery?: number | null;
+  currentTopicSessions?: number;
+  weakTopic?: string | null;
+  weakTopicMastery?: number | null;
+  testAttempts?: number;
+  roadmapTopicCount?: number;
+  completedTopicCount?: number;
+  learningContextReady: boolean;
   onNavigate: (page: DashboardPageId) => void;
   onOpenProfile: () => void;
   onContinueLearning: () => void;
@@ -72,7 +80,9 @@ const defaultNodeIds = ['know', 'plan', 'learn', 'retain', 'prove'];
 
 export default function MissionControl({
   name, goalTitle, nextTopic, nextTopicDetail, hasLearningProfile,
-  revisionDue, revisionOverdue, streak, activeGoals, onNavigate, onOpenProfile, onContinueLearning,
+  revisionDue, revisionOverdue, streak, activeGoals, currentTopicMastery, currentTopicSessions,
+  weakTopic, weakTopicMastery, testAttempts, roadmapTopicCount, completedTopicCount,
+  learningContextReady, onNavigate, onOpenProfile, onContinueLearning,
 }: MissionControlProps) {
   const [selectedEngine, setSelectedEngine] = useState<string | null>(null);
   const [moreOpen, setMoreOpen] = useState(false);
@@ -109,8 +119,45 @@ export default function MissionControl({
   const visibleRows = useMemo(() => allFunctionNodes.filter((node) => defaultNodeIds.includes(node.id) || visibleNodeIds.includes(node.id)), [visibleNodeIds]);
   const mapHeight = Math.max(660, visibleRows.length <= 1 ? 660 : 132 + (visibleRows.length - 1) * 132);
   const rowY = visibleRows.map((_, index) => visibleRows.length === 1 ? mapHeight / 2 : 66 + index * ((mapHeight - 132) / (visibleRows.length - 1)));
-  const nextBestStepAction = getNextBestStepAction({ hasLearningProfile, revisionDue, revisionOverdue });
-  const nextStepStageId = nextBestStepAction === 'profile' ? 'know' : nextBestStepAction === 'revision' ? 'retain' : 'plan';
+  const recommendation = learningContextReady ? getNextBestStepRecommendation({
+    hasLearningProfile,
+    activeGoals,
+    revisionDue,
+    revisionOverdue,
+    currentTopic: nextTopic,
+    currentTopicMastery,
+    currentTopicSessions,
+    weakTopic,
+    weakTopicMastery,
+    testAttempts,
+    roadmapTopicCount,
+    completedTopicCount,
+  }) : null;
+  const nextStepStageId = recommendation?.stageId ?? null;
+  const runRecommendedAction = () => {
+    if (!recommendation) return;
+    switch (recommendation.action) {
+      case 'profile':
+        onOpenProfile();
+        break;
+      case 'videos':
+        onContinueLearning();
+        break;
+      case 'goal':
+      case 'roadmap':
+        onNavigate('roadmap');
+        break;
+      case 'revision':
+        onNavigate('revision');
+        break;
+      case 'mentor':
+        onNavigate('mentor');
+        break;
+      case 'test':
+        onNavigate('test');
+        break;
+    }
+  };
   const open = (action: 'profile' | DashboardPageId) => action === 'profile' ? onOpenProfile() : onNavigate(action);
   const moreItems = functionNodes.map((node) => ({ ...node.children[0], label: node.title, detail: node.subtitle }));
   const filteredMoreItems = moreItems.filter((item) => item.label.toLowerCase().includes(functionSearch.toLowerCase()));
@@ -157,7 +204,7 @@ export default function MissionControl({
             <button type="button" onClick={() => onNavigate('mentor')} className="flex min-h-[104px] flex-col items-start justify-between rounded-2xl border border-white/[0.08] bg-white/[0.035] p-3 text-left transition-[transform,border-color,background-color] duration-200 hover:-translate-y-0.5 hover:border-cyan-300/30 hover:bg-cyan-300/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"><MessageCircle className="h-4 w-4 text-cyan-200" /><span><span className="block text-xs font-semibold text-white">AI Mentor</span><span className="mt-1 block text-[10px] text-slate-500">Ask</span></span></button>
           </div>
         </div>
-        <button type="button" onClick={() => { if (nextBestStepAction === 'profile') onOpenProfile(); else open(nextBestStepAction); }} className="order-3 mb-3 flex shrink-0 md:order-none items-center justify-between gap-3 rounded-xl border border-cyan-300/12 bg-cyan-300/[0.035] px-3 py-2.5 text-left transition hover:border-cyan-300/25 hover:bg-cyan-300/[0.07] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"><span className="min-w-0"><span className="block text-[9px] uppercase tracking-[0.16em] text-cyan-200/65">Suggested next step</span><span className="block truncate text-xs font-medium text-slate-100">{!hasLearningProfile ? 'Set up your learning profile' : activeGoals === 0 ? 'Choose a learning goal' : revisionOverdue > 0 ? revisionOverdue + ' overdue topics to revise' : revisionDue > 0 ? revisionDue + ' topics ready for revision' : nextTopic || 'Open your learning roadmap'}</span></span><ArrowUpRight className="h-4 w-4 shrink-0 text-cyan-200/80" /></button>
+        <button type="button" onClick={runRecommendedAction} disabled={!recommendation} aria-label={recommendation ? `Suggested next step: ${recommendation.title}. ${recommendation.reason}` : 'Checking your learning activity'} className="order-3 mb-3 flex shrink-0 items-center justify-between gap-3 rounded-xl border border-cyan-300/12 bg-cyan-300/[0.035] px-3 py-2.5 text-left transition hover:border-cyan-300/25 hover:bg-cyan-300/[0.07] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 disabled:cursor-wait disabled:opacity-70 md:order-none"><span className="min-w-0"><span className="block text-[9px] uppercase tracking-[0.16em] text-cyan-200/65">Suggested next step</span><span className="block truncate text-xs font-medium text-slate-100">{recommendation?.title ?? 'Checking your learning activity…'}</span><span className="mt-0.5 block truncate text-[10px] text-slate-400">{recommendation?.reason ?? 'Bringing your saved learning progress together.'}</span></span><ArrowUpRight className="h-4 w-4 shrink-0 text-cyan-200/80" /></button>
         <div className="order-1 mb-2 flex shrink-0 items-center justify-between px-1 md:order-none md:px-3">
           <div className="min-w-0">
             <span className="block text-[9px] uppercase tracking-[0.2em] text-slate-600">Your learning space</span>
