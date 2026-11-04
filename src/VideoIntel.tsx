@@ -862,7 +862,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* LEFT: SEARCH */}
-            <div className="lg:col-span-1">
+            <div className={`order-2 lg:order-1 lg:col-span-1 ${selectedVideo ? 'mt-4 lg:mt-0' : ''}`}>
               <div className="flex gap-2 mb-4">
                 <div className="flex-1 relative">
                   <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400 dark:text-white/40" />
@@ -967,7 +967,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
             </div>
 
             {/* RIGHT: PLAYER */}
-            <div className="lg:col-span-2">
+            <div className={`order-1 lg:order-2 lg:col-span-2 ${selectedVideo ? '' : 'hidden lg:block'}`}>
               {selectedVideo ? (
                 <motion.div key={selectedVideo.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
                   {/* verified === false means Gemini actually checked the two videos'
