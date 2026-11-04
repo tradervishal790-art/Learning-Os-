@@ -95,7 +95,7 @@ function App() {
     if (hydratedDashboardRef.current === authStateKey) return;
     hydratedDashboardRef.current = authStateKey;
     void (async () => {
-      await Promise.all([
+      await Promise.allSettled([
         hydrateLearningProfileFromCloud(),
         hydratePersonalityProfileFromCloud(),
         hydrateGoalsFromCloud(),
@@ -105,7 +105,9 @@ function App() {
       setUserData(freshUserData);
       const freshGoals = getGoals(freshUserData);
       setGoals(freshGoals);
-      setActiveGoalId((current) => current ?? getActiveGoals(freshGoals)[0]?.id ?? null);
+      setActiveGoalId((current) => current && freshGoals.some((goal) => goal.id === current && goal.status === 'active')
+        ? current
+        : getActiveGoals(freshGoals)[0]?.id ?? null);
       setDashboardContextVersion((version) => version + 1);
     })();
   }, [page, isGuest]);
