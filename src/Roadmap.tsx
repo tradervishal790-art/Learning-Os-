@@ -579,7 +579,7 @@ export default function Roadmap({
             <button
               type="button"
               onClick={() => openTopic(currentTopic)}
-              className="inline-flex min-h-10 flex-shrink-0 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-500 active:scale-[0.98] dark:bg-indigo-500 dark:hover:bg-indigo-400"
+              className="inline-flex min-h-11 w-full flex-shrink-0 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-indigo-500 active:scale-[0.98] dark:bg-indigo-500 dark:hover:bg-indigo-400 sm:w-auto sm:py-2.5"
             >
               {t.roadmap.journey.openStep}
               <Target className="h-4 w-4" />
@@ -773,7 +773,7 @@ export default function Roadmap({
               <button
                 onClick={() => openTopic(topic)}
                 disabled={isLocked}
-                className={`flex-1 min-w-0 mb-3 p-4 md:p-5 rounded-2xl border ${status.border} ${status.bg} text-left transition-all ${
+                className={`flex-1 min-w-0 mb-3 min-h-[76px] p-4 md:p-5 rounded-2xl border ${status.border} ${status.bg} text-left transition-all ${
                   isLocked ? 'opacity-50 cursor-not-allowed' : 'hover:scale-[1.01] active:scale-[0.99] cursor-pointer'
                 }`}
               >

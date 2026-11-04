@@ -410,7 +410,7 @@ export default function Mentor() {
         {/* Prompts + input — pinned above the bottom bar on phones (Instagram DM style) */}
         <div
           className={`fixed inset-x-0 z-30 md:static bg-white/95 dark:bg-black/95 backdrop-blur md:backdrop-blur-none md:bg-transparent border-t border-gray-200 dark:border-white/10 md:border-white/5 ${
-            typing ? 'bottom-[env(safe-area-inset-bottom)]' : 'bottom-[calc(3.5rem+env(safe-area-inset-bottom))]'
+            typing ? 'bottom-[env(safe-area-inset-bottom)]' : 'bottom-[calc(4rem+env(safe-area-inset-bottom))]'
           } md:bottom-auto`}
         >
           <div className="px-4 md:px-6 py-2 md:py-3 flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">

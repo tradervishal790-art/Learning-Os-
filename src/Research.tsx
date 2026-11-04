@@ -147,21 +147,21 @@ export default function Research({ embedded = false, onClose }: ResearchProps) {
           placeholder={t.research.searchPlaceholder}
           maxLength={200}
           autoFocus={embedded}
-          className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg pl-9 pr-4 py-2.5 placeholder-gray-400 dark:placeholder-white/40 focus:outline-none focus:border-black dark:focus:border-white"
+          className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg pl-9 pr-4 py-2.5 min-h-11 placeholder-gray-400 dark:placeholder-white/40 focus:outline-none focus:border-black dark:focus:border-white"
         />
       </div>
       <div className="flex gap-2 mt-2">
         <button
           onClick={() => void handleSearch()}
           disabled={loading || !query.trim()}
-          className="flex-1 px-5 py-2.5 bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white disabled:opacity-40 rounded-lg font-semibold transition"
+          className="flex-1 min-h-11 px-5 py-2.5 bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white disabled:opacity-40 rounded-lg font-semibold transition"
         >
           {loading ? '...' : t.research.searchCta}
         </button>
         {embedded && onClose && (
           <button
             onClick={onClose}
-            className="px-3 py-2.5 border border-gray-200 dark:border-white/10 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 transition"
+            className="min-h-11 min-w-11 px-3 py-2.5 border border-gray-200 dark:border-white/10 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 transition"
             aria-label={t.research.closeAria}
           >
             <X className="w-4 h-4" />

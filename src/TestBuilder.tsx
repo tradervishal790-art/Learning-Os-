@@ -115,7 +115,7 @@ export default function TestBuilder({ initialPaper, onSave, onCancel, variant }:
   return (
     <div className="max-w-3xl mx-auto">
       {!isDaily && (
-      <div className="card rounded-2xl p-6 mb-6">
+      <div className="card rounded-2xl p-4 sm:p-6 mb-6">
         <div className="grid md:grid-cols-3 gap-4 mb-1">
           <div className="md:col-span-2">
             <label className="block text-sm font-medium mb-1.5 text-gray-600 dark:text-white/70">Test title</label>
@@ -123,7 +123,7 @@ export default function TestBuilder({ initialPaper, onSave, onCancel, variant }:
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. Unit 3 Mock Test"
-              className="w-full bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-2.5 focus:outline-none focus:border-black dark:focus:border-white"
+              className="w-full bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-2.5 min-h-11 focus:outline-none focus:border-black dark:focus:border-white"
             />
           </div>
           <div>
@@ -133,7 +133,7 @@ export default function TestBuilder({ initialPaper, onSave, onCancel, variant }:
               min={0}
               value={durationMinutes}
               onChange={(e) => setDurationMinutes(Number(e.target.value) || 0)}
-              className="w-full bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-2.5 focus:outline-none focus:border-black dark:focus:border-white"
+              className="w-full bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-2.5 min-h-11 focus:outline-none focus:border-black dark:focus:border-white"
             />
           </div>
         </div>
@@ -143,7 +143,7 @@ export default function TestBuilder({ initialPaper, onSave, onCancel, variant }:
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
             placeholder="e.g. Organic Chemistry"
-            className="w-full bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-2.5 focus:outline-none focus:border-black dark:focus:border-white"
+            className="w-full bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-2.5 min-h-11 focus:outline-none focus:border-black dark:focus:border-white"
           />
         </div>
       </div>
@@ -173,19 +173,19 @@ export default function TestBuilder({ initialPaper, onSave, onCancel, variant }:
       <div className="flex flex-wrap gap-3 mb-6">
         <button
           onClick={addMCQ}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10 text-sm font-medium transition"
+          className="flex min-h-11 items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10 text-sm font-medium transition"
         >
           <ListChecks className="w-4 h-4" /> Add MCQ Question
         </button>
         <button
           onClick={addSubjective}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10 text-sm font-medium transition"
+          className="flex min-h-11 items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10 text-sm font-medium transition"
         >
           <PenLine className="w-4 h-4" /> Add Subjective Question
         </button>
         <button
           onClick={() => setShowBulkImport(true)}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10 text-sm font-medium transition"
+          className="flex min-h-11 items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10 text-sm font-medium transition"
         >
           <ClipboardPaste className="w-4 h-4" /> Bulk Import
         </button>
@@ -195,11 +195,11 @@ export default function TestBuilder({ initialPaper, onSave, onCancel, variant }:
 
       {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
 
-      <div className="flex gap-3">
-        <button onClick={handleSave} className="px-6 py-3 rounded-xl bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white font-semibold transition">
+      <div className="flex flex-col-reverse sm:flex-row gap-3">
+        <button onClick={handleSave} className="w-full sm:w-auto min-h-11 px-6 py-3 rounded-xl bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white font-semibold transition">
           {isDaily ? 'Save Question Bank' : initialPaper ? 'Save Changes' : 'Save Test'}
         </button>
-        <button onClick={onCancel} className="px-6 py-3 rounded-xl border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10 font-medium transition">
+        <button onClick={onCancel} className="w-full sm:w-auto min-h-11 px-6 py-3 rounded-xl border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10 font-medium transition">
           Cancel
         </button>
       </div>

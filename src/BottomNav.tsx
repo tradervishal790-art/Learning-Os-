@@ -5,10 +5,9 @@ import { NAV_ICONS, NAV_TONES } from './navIcons';
 import { useImmersive } from './immersive';
 
 /**
- * Mobile-only bottom navigation, Instagram-style: icons only, no visible
- * text. Labels exist as aria-label/title for screen readers + long-press.
- * Five slots: four primary pages + a "More" slot that opens a sheet with the
- * remaining pages as an icon grid. Desktop (md+) keeps the sidebar.
+ * Mobile bottom navigation: four primary destinations plus a labelled More
+ * destination. Visible labels make the app discoverable without relying on
+ * icon recognition; the desktop sidebar remains unchanged.
  */
 
 export interface NavEntry {
@@ -91,7 +90,7 @@ export default function BottomNav({ items, activeId, onSelect, darkMode = false 
               role="group"
               aria-label="More navigation"
               className={`mobile-more-menu absolute inset-x-3 rounded-3xl border p-3 grid grid-cols-4 gap-1 ${darkMode ? "bg-[#101a2b] border-white/10" : "bg-white dark:bg-neutral-900 border-gray-200 dark:border-white/10"}`}
-              style={{ bottom: 'calc(3.5rem + env(safe-area-inset-bottom) + 0.5rem)' }}
+              style={{ bottom: 'calc(4rem + env(safe-area-inset-bottom) + 0.5rem)' }}
             >
               {more.map((item) => {
                 const Icon = NAV_ICONS[item.id] ?? LayoutGrid;
@@ -124,7 +123,7 @@ export default function BottomNav({ items, activeId, onSelect, darkMode = false 
         className={`fixed bottom-0 inset-x-0 z-40 backdrop-blur border-t ${darkMode ? "bg-[#080d19]/95 border-white/10" : "bg-white/95 dark:bg-black/95 border-gray-200 dark:border-white/10"}`}
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
-        <div className="h-14 flex items-center justify-around">
+        <div className="grid min-h-16 grid-cols-5 items-stretch">
           {primary.map((item) => {
             const Icon = NAV_ICONS[item.id] ?? LayoutGrid;
             const active = item.id === activeId && !moreOpen;
@@ -136,16 +135,17 @@ export default function BottomNav({ items, activeId, onSelect, darkMode = false 
                 aria-label={item.label}
                 aria-current={active ? 'page' : undefined}
                 title={item.label}
-                className={`relative w-14 h-14 flex items-center justify-center transition-colors ${tone(active, item.locked)}`}
+                className={`relative flex min-w-0 min-h-16 flex-col items-center justify-center gap-1 px-0.5 transition-colors ${tone(active, item.locked)} ${item.locked ? 'opacity-60' : ''}`}
               >
                 <span className="relative">
                   <Icon
-                    className="w-[26px] h-[26px]"
+                    className="h-[21px] w-[21px] shrink-0"
                     strokeWidth={active ? 2.4 : 1.75}
                     fill={active && item.id === 'dashboard' ? 'currentColor' : 'none'}
                   />
                   {item.locked && <LockBadge />}
                 </span>
+                <span className="max-w-full truncate text-[10px] font-medium leading-none">{item.id === 'dashboard' ? 'Home' : item.label}</span>
               </button>
             );
           })}
@@ -156,9 +156,10 @@ export default function BottomNav({ items, activeId, onSelect, darkMode = false 
             aria-expanded={moreOpen}
             aria-controls="mobile-more-menu"
             title="More"
-            className={`relative w-14 h-14 flex items-center justify-center transition-colors ${tone(moreOpen || moreActive, false)}`}
+            className={`relative flex min-w-0 min-h-16 flex-col items-center justify-center gap-1 px-0.5 transition-colors ${tone(moreOpen || moreActive, false)}`}
           >
-            <LayoutGrid className="w-[26px] h-[26px]" strokeWidth={moreOpen || moreActive ? 2.4 : 1.75} />
+            <LayoutGrid className="h-[21px] w-[21px] shrink-0" strokeWidth={moreOpen || moreActive ? 2.4 : 1.75} />
+            <span className="text-[9px] font-medium leading-none">More</span>
           </button>
         </div>
       </nav>

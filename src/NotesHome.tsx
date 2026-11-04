@@ -24,7 +24,7 @@ export default function NotesHome() {
     }
   };
   const pill = (active: boolean) =>
-    `h-10 px-4 rounded-full text-sm font-medium transition-all ${
+    `min-h-11 px-4 rounded-full text-sm font-medium transition-all ${
       active
         ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white'
         : 'card text-gray-600 dark:text-white/70 hover:bg-gray-50 dark:hover:bg-white/10'
@@ -33,7 +33,7 @@ export default function NotesHome() {
   return (
     <div>
       {!noteOpen && (
-      <div className="flex gap-2 mb-4 md:mb-6 px-4 pt-4 md:px-8 md:pt-8">
+      <div className="flex gap-2 mb-4 md:mb-6 px-4 pt-4 md:px-8 md:pt-8" role="group" aria-label="Notes workspace">
         <button className={pill(tab === 'notebook')} onClick={() => choose('notebook')}>{t.tabNotebook}</button>
         <button className={pill(tab === 'ai')} onClick={() => choose('ai')}>{t.tabAi}</button>
       </div>

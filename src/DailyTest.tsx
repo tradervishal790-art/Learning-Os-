@@ -154,7 +154,7 @@ export default function DailyTest({ onStart, onExit }: { onStart: (paper: TestPa
 
   return (
     <div className="max-w-3xl mx-auto">
-      <button onClick={onExit} className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-white/60 mb-5 hover:underline">
+      <button onClick={onExit} className="flex min-h-11 items-center gap-1.5 text-sm text-gray-500 dark:text-white/60 mb-5 hover:underline">
         <ArrowLeft className="w-4 h-4" /> Back to tests
       </button>
       <h2 className="flex items-center gap-2 text-2xl font-bold mb-1">
@@ -168,7 +168,7 @@ export default function DailyTest({ onStart, onExit }: { onStart: (paper: TestPa
         <div className={card}>
           <p className="font-semibold mb-1">Start by adding your questions</p>
           <p className="text-sm text-gray-500 dark:text-white/60 mb-4">Add photos or PDFs of your question paper (or paste/type the questions). You do this only once.</p>
-          <button onClick={() => setEditingBank(true)} className="px-5 py-2.5 rounded-xl bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white font-semibold">
+          <button onClick={() => setEditingBank(true)} className="min-h-11 px-5 py-2.5 rounded-xl bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white font-semibold">
             Add questions
           </button>
         </div>
@@ -188,7 +188,7 @@ export default function DailyTest({ onStart, onExit }: { onStart: (paper: TestPa
                     ? `${state.pending.questions.length} questions${state.pending.durationMinutes > 0 ? ` · ${state.pending.durationMinutes} min` : ' · no timer'}${isMissed ? ' · same questions, not skipped' : ''}`
                     : `${Math.min(sum.perDay, sum.total)} ready question(s) · ${queuedPhotos} file(s) waiting${state.minutesPerQuestion > 0 ? ` · up to ${Math.max(1, Math.round(Math.min(sum.perDay, Math.max(1, sum.total)) * state.minutesPerQuestion))} min` : ' · no timer'}`}
                 </p>
-                <button onClick={start} disabled={preparing} className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white font-semibold disabled:opacity-50">
+                <button onClick={start} disabled={preparing} className="flex min-h-11 items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white font-semibold disabled:opacity-50">
                   <Play className="w-4 h-4" /> {preparing ? 'Preparing questions…' : 'Start today\'s test'}
                 </button>
               </>
@@ -197,7 +197,7 @@ export default function DailyTest({ onStart, onExit }: { onStart: (paper: TestPa
 
           <div className={card}>
             <p className="font-semibold mb-3">Settings</p>
-            <div className="flex flex-wrap items-end gap-5">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-4 sm:gap-5">
               <label className="text-sm">
                 <span className="block mb-1 text-gray-600 dark:text-white/70">Questions per day</span>
                 <input type="number" min={1} max={MAX_PER_DAY} value={perDayInput} onChange={(e) => setPerDayInput(e.target.value)} onBlur={commitPerDay} className={inputCls} />

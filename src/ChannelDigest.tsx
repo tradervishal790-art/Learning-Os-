@@ -194,12 +194,12 @@ export default function ChannelDigest() {
           }}
           placeholder={c.addPlaceholder}
           disabled={adding || channels.length >= MAX_CHANNELS}
-          className="flex-1 min-w-0 px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-white/10 bg-transparent outline-none focus:border-gray-400 dark:focus:border-white/30"
+          className="flex-1 min-w-0 min-h-11 px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-white/10 bg-transparent outline-none focus:border-gray-400 dark:focus:border-white/30"
         />
         <button
           onClick={() => void onAdd()}
           disabled={adding || !input.trim() || channels.length >= MAX_CHANNELS}
-          className="inline-flex items-center gap-1.5 px-4 py-2 text-sm rounded-lg bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white disabled:opacity-40 transition"
+          className="min-h-11 inline-flex items-center gap-1.5 px-4 py-2 text-sm rounded-lg bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white disabled:opacity-40 transition"
         >
           <Plus className="w-4 h-4" />
           {adding ? c.adding : c.addButton}

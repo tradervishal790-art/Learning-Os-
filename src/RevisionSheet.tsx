@@ -77,7 +77,7 @@ export default function RevisionSheet({ id, onBack }: { id: string; onBack: () =
 
   return (
     <div className="max-w-3xl mx-auto">
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex flex-wrap items-center gap-2 mb-3">
         <button onClick={onBack} className="flex items-center gap-1.5 text-sm text-gray-600 dark:text-white/70 hover:text-black dark:hover:text-white">
           <ArrowLeft size={16} /> {t.back}
         </button>
@@ -88,13 +88,13 @@ export default function RevisionSheet({ id, onBack }: { id: string; onBack: () =
               setShownKeys(new Set());
             }}
             aria-pressed={recall}
-            className={`h-9 px-3 rounded-lg border text-xs flex items-center gap-1.5 ml-auto mr-2 ${recall ? 'bg-black text-white dark:bg-white dark:text-black border-transparent' : 'border-gray-200 dark:border-white/10'}`}
+            className={`min-h-11 px-3 rounded-lg border text-xs flex items-center gap-1.5 ml-auto mr-2 ${recall ? 'bg-black text-white dark:bg-white dark:text-black border-transparent' : 'border-gray-200 dark:border-white/10'}`}
           >
             {recall ? <EyeOff size={14} /> : <Eye size={14} />} {t.recall}
           </button>
         )}
         {shown.length > 0 && (
-          <button onClick={() => void copyAll()} className="h-9 px-3 rounded-lg border border-gray-200 dark:border-white/10 text-xs flex items-center gap-1.5">
+          <button onClick={() => void copyAll()} className="min-h-11 px-3 rounded-lg border border-gray-200 dark:border-white/10 text-xs flex items-center gap-1.5">
             <Copy size={14} /> {copied ? t.copied : t.copyAll}
           </button>
         )}
@@ -105,7 +105,7 @@ export default function RevisionSheet({ id, onBack }: { id: string; onBack: () =
         {format(t.summary, items?.length ?? 0)}
       </p>
 
-      <div className="flex gap-2 mb-4">
+      <div className="flex flex-wrap gap-2 mb-4">
         <button className={chip(tab === 'highlights')} onClick={() => setTab('highlights')}>{t.tabHighlights}</button>
         <button className={chip(tab === 'mistakes')} onClick={() => setTab('mistakes')}>{t.tabMistakes} ({mistakes.length})</button>
       </div>

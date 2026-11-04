@@ -145,14 +145,14 @@ export default function Dictionary() {
           maxLength={80}
           disabled={loading || loadError}
           autoFocus
-          className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg pl-9 pr-12 py-2.5 placeholder-gray-400 dark:placeholder-white/40 focus:outline-none focus:border-black dark:focus:border-white disabled:opacity-50"
+          className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg pl-9 pr-12 py-2.5 min-h-11 placeholder-gray-400 dark:placeholder-white/40 focus:outline-none focus:border-black dark:focus:border-white disabled:opacity-50"
         />
         <button
           type="button"
           onClick={() => void search(query)}
           disabled={loading || loadError || searching || !query.trim()}
           aria-label={t.dictionary.searchAria}
-          className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-md text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10 disabled:opacity-40"
+          className="absolute right-2 top-1/2 -translate-y-1/2 h-10 w-10 flex items-center justify-center rounded-md text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10 disabled:opacity-40"
         >
           {searching ? <span className="text-xs">…</span> : <Search className="w-4 h-4" />}
         </button>
@@ -162,7 +162,7 @@ export default function Dictionary() {
               <button
                 key={s}
                 onClick={() => search(s)}
-                className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-white/10 transition"
+                className="flex min-h-11 w-full items-center text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-white/10 transition"
               >
                 {s}
               </button>

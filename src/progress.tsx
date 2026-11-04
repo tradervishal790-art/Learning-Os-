@@ -88,7 +88,7 @@ export default function Progress({ goals = [] }: ProgressProps) {
             <div key={label} title={label} aria-label={`${label}: ${value}`} className="flex items-center gap-3 min-w-0">
               <Icon className="w-5 h-5 flex-shrink-0 text-gray-500 dark:text-white/50" strokeWidth={1.75} />
               <span className="text-lg md:text-xl font-bold tabular-nums">{value}</span>
-              <span className="hidden md:inline text-xs text-gray-400 dark:text-white/40 uppercase tracking-wider truncate">{label}</span>
+              <span className="text-[10px] md:text-xs text-gray-400 dark:text-white/40 uppercase tracking-wider truncate">{label}</span>
             </div>
           ))}
         </div>
