@@ -1,4 +1,5 @@
 import { pushToCloud, pullFromCloud } from './cloudSync';
+import { notifyProgressDataChanged } from './progressEvents';
 
 // Recall scores are separate from completion checkpoints: finishing a review
 // must not be treated as proof that the learner remembered the topic.
@@ -30,6 +31,7 @@ function readAll(): RecallMap {
 function writeAll(value: RecallMap): void {
   try {
     localStorage.setItem(LOCAL_KEY, JSON.stringify(value));
+    notifyProgressDataChanged();
   } catch {
     // Keep the revision flow usable when browser storage is unavailable.
   }
@@ -113,6 +115,7 @@ export async function hydrateRecallScoresFromCloud(): Promise<void> {
   if (Object.keys(safe).length === 0) return;
   try {
     localStorage.setItem(LOCAL_KEY, JSON.stringify(safe));
+    notifyProgressDataChanged();
   } catch {
     // Best-effort hydration.
   }
