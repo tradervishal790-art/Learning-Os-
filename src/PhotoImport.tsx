@@ -263,20 +263,20 @@ export default function PhotoImport({ questions, onAppendQuestions, onReplaceQue
   };
 
   const btn =
-    'flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white text-sm font-semibold transition disabled:opacity-40';
+    'flex min-h-11 items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white text-sm font-semibold transition disabled:opacity-40';
   const fileInput =
     'block w-full text-sm text-gray-500 dark:text-white/60 file:mr-3 file:px-3 file:py-2 file:rounded-lg file:border-0 file:bg-gray-100 dark:file:bg-white/10 file:text-black dark:file:text-white file:text-sm file:font-medium';
 
   return (
-    <div className="card rounded-2xl p-6 mb-6">
-      <div className="flex items-center justify-between mb-4">
+    <div className="card rounded-2xl p-4 sm:p-6 mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <h2 className="font-semibold">{t.title}</h2>
         <div className="flex rounded-lg border border-gray-200 dark:border-white/10 overflow-hidden text-xs font-medium">
           {(['en', 'hi'] as Lang[]).map((l) => (
             <button
               key={l}
               onClick={() => changeLang(l)}
-              className={`px-3 py-1.5 transition ${lang === l ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white' : 'hover:bg-gray-100 dark:hover:bg-white/10'}`}
+              className={`min-h-10 px-3 py-1.5 transition ${lang === l ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white' : 'hover:bg-gray-100 dark:hover:bg-white/10'}`}
             >
               {l === 'en' ? 'English' : 'हिन्दी'}
             </button>
