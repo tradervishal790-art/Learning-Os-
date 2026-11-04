@@ -65,6 +65,7 @@ function PageLoading() {
 }
 
 interface DashboardProps {
+  dashboardContextVersion: number;
   userData: UserOnboardingData | null;
   onUpdateUserData: (data: UserOnboardingData) => void;
   /** Re-runs roadmap generation with current userData + latest learning
@@ -199,7 +200,7 @@ function trackAndComputeStreak(): number {
   return streak;
 }
 
-function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGenerateForSubject, roadmapVersion, lastRoadmapError, goals, activeGoalId, onAddGoal, onEndGoal, onSwitchGoal }: DashboardProps) {
+function DashboardInner({ dashboardContextVersion, userData, onUpdateUserData, onRegenerateRoadmap, onGenerateForSubject, roadmapVersion, lastRoadmapError, goals, activeGoalId, onAddGoal, onEndGoal, onSwitchGoal }: DashboardProps) {
   const t = useTranslation();
   const prefersReducedMotion = useReducedMotion();
   const { isGuest, openSignIn } = useAuthPrompt();
@@ -272,6 +273,16 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   useEffect(() => {
     setStreak(trackAndComputeStreak());
   }, []);
+
+  // App.tsx increments this only after its shared cloud stores have hydrated.
+  // Refresh local-backed React state at that boundary so the map sees a
+  // profile restored from another device instead of incorrectly asking the
+  // learner to complete the profile again.
+  useEffect(() => {
+    setLearningProfile(getLearningProfile());
+    setPersonalityProfile(getPersonalityProfile());
+    setStreak(trackAndComputeStreak());
+  }, [dashboardContextVersion]);
 
   // Mission Control needs a small, reliable read-model of the SAME existing
   // learner stores used by Roadmap, Revision, Tests and Progress. Hydrate only
