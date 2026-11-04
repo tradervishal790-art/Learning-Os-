@@ -57,3 +57,14 @@ test('handoff values are bounded and unsupported sources are discarded', () => {
   values.set(MENTOR_LEARNING_CONTEXT_KEY, JSON.stringify({ topicTitle: 'Valid', source: 'unknown' }));
   assert.deepEqual(consumeMentorLearningContext(), { topicTitle: 'Valid' });
 });
+
+test('revision handoff retains the reviewed topic and its source', () => {
+  storage();
+  saveMentorLearningContext({ topicTitle: 'Closures', goalTitle: 'JavaScript mastery', difficulty: 'Intermediate', source: 'revision' });
+  assert.deepEqual(consumeMentorLearningContext(), {
+    topicTitle: 'Closures',
+    goalTitle: 'JavaScript mastery',
+    difficulty: 'Intermediate',
+    source: 'revision',
+  });
+});
