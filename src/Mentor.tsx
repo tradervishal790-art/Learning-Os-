@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { MENTOR_PREFILL_KEY } from './mentorPrefill';
+import { MENTOR_PREFILL_KEY, consumeMentorLearningContext } from './mentorPrefill';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Lightbulb, BookOpenText, Link2, ListChecks, Hammer, SendHorizontal, SquarePen, History, Trash2, X, CircleHelp } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -151,7 +151,8 @@ export default function Mentor() {
     }
   });
   const loading = pending.includes(chatId);
-  const [contextTopic, setContextTopic] = useState('');
+  const [learningContext] = useState(() => consumeMentorLearningContext());
+  const [contextTopic, setContextTopic] = useState(() => learningContext?.topicTitle ?? '');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   // While the keyboard is up the bottom bar steps aside so the input gets the room.
   const typing = useImmersive();
@@ -174,13 +175,16 @@ export default function Mentor() {
   // Watch history se context nikaal lo — used internally to give Gemini
   // relevant context, NOT shown in the UI (keeps the header clean).
   useEffect(() => {
+    // An explicit page-to-Mentor handoff outranks the generic latest-watch
+    // fallback. Never replace the topic the learner actually asked about.
+    if (learningContext?.topicTitle) return;
     try {
       const history = JSON.parse(localStorage.getItem('video_watch_history') || '[]');
       if (Array.isArray(history) && typeof history[0]?.title === 'string') {
         setContextTopic(history[0].title.slice(0, 120));
       }
     } catch {}
-  }, []);
+  }, [learningContext]);
 
   const sendMessage = async (text: string, ui = false) => {
     if (!text.trim() || loading) return;
@@ -199,7 +203,15 @@ export default function Mentor() {
     setInput('');
     setPending((p) => [...p, originId]);
 
-    const reply = await generateMentorResponse(text, contextTopic, priorHistory, t.mentor.errors, locale, ui);
+    const contextualPrompt = learningContext
+      ? [
+          `Learner's selected topic: ${learningContext.topicTitle}`,
+          learningContext.goalTitle ? `Learning goal: ${learningContext.goalTitle}` : '',
+          learningContext.difficulty ? `Roadmap difficulty: ${learningContext.difficulty}` : '',
+          learningContext.source ? `Came from: ${learningContext.source}` : '',
+        ].filter(Boolean).join('\n')
+      : contextTopic;
+    const reply = await generateMentorResponse(text, contextualPrompt, priorHistory, t.mentor.errors, locale, ui);
 
     const mentorMsg: Message = {
       id: (Date.now() + 1).toString(),
