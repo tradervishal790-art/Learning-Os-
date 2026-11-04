@@ -42,8 +42,8 @@ export function getNextBestStepRecommendation(input: NextBestStepInput): NextBes
   const due = Math.max(0, Number.isFinite(input.revisionDue) ? input.revisionDue : 0);
   const overdue = Math.max(0, Number.isFinite(input.revisionOverdue) ? input.revisionOverdue : 0);
   const activeGoals = Math.max(0, Number.isFinite(input.activeGoals) ? input.activeGoals : 0);
-  const topicCount = Math.max(0, Number.isFinite(input.roadmapTopicCount) ? input.roadmapTopicCount ?? 0 : 0);
-  const completedCount = Math.max(0, Number.isFinite(input.completedTopicCount) ? input.completedTopicCount ?? 0 : 0);
+  const topicCount = Math.max(0, typeof input.roadmapTopicCount === 'number' && Number.isFinite(input.roadmapTopicCount) ? input.roadmapTopicCount : 0);
+  const completedCount = Math.max(0, typeof input.completedTopicCount === 'number' && Number.isFinite(input.completedTopicCount) ? input.completedTopicCount : 0);
   const currentMastery = typeof input.currentTopicMastery === 'number' && Number.isFinite(input.currentTopicMastery)
     ? Math.max(0, Math.min(100, input.currentTopicMastery))
     : null;
