@@ -1,7 +1,7 @@
 # Mission Control — Phase 3: Unified Learning Experience
 
 **Branch:** `feat/mission-control-phase-2-intelligence`  
-**Status:** In progress  
+**Status:** Implementation substantially complete; full verification pending  
 **Base:** Phase 2 Next-Action Intelligence  
 **Non-negotiable constraints:** preserve the permanently visible Mission Control map and all five stages; reuse existing engines and stores; no duplicate learner database; do not merge to `main` without approval.
 
@@ -14,10 +14,10 @@ The goal is a continuous learning journey, not a set of disconnected pages.
 | Roadmap → Videos | Keep exact goal/topic ID, playlist and bridge | Existing hand-off already carries topic ID, bridge and goal context |
 | Videos → Mentor | Carry the selected roadmap topic and difficulty, not just the last watched title | Implemented; tests added |
 | Mentor → learner history | Keep the explicit topic context separate from saved chat history; consume navigation context once | Implemented |
-| Notes ↔ lessons | Connect notes to the relevant lesson/topic without changing the notebook database or editor engine | Roadmap topic → existing topic-keyed Deep Notes hand-off implemented; Notebook library metadata linking pending |
+| Notes ↔ lessons | Connect notes to the relevant lesson/topic without changing the notebook database or editor engine | Roadmap topic → existing topic-keyed Deep Notes hand-off implemented. Notebook library metadata linking intentionally deferred: `NoteMeta` has no stable goal/topic identity, and title/tag inference would create unsafe false links |
 | Revision ↔ learned topics | Preserve topic ID and goal attribution when reviewing; offer a useful return path to learning/help | Contextual Ask Mentor action implemented; return-to-topic audit pending |
-| Tests ↔ weak topics | Reuse scored attempt evidence and exact topic matching; never infer a topic from an unrelated test title | Pending implementation/audit |
-| Progress ↔ outcomes | Display actual shared engine outcomes, distinguish measured values from estimates | Existing aggregation found; cross-screen refresh and empty/loading states still to verify |
+| Tests ↔ weak topics | Reuse scored attempt evidence and exact topic matching; never infer a topic from an unrelated test title | Existing Progress aggregation uses exact normalized `TestAttempt.topic` matching. Attempts do not store a stable `goalId`/`topicId`, so no new topic navigation or inferred links are added; same-title topics across goals remain an acknowledged ambiguity |
+| Progress ↔ outcomes | Display actual shared engine outcomes, distinguish measured values from estimates | Shared refresh invalidation added for video engagement, roadmap, revision checkpoints/recall and scored test writes; cross-tab storage events refresh mounted Progress. Existing UI labels estimate vs observed recall/test evidence |
 | Navigation/loading/empty states | Consistent return path, no blank transitions, preserve in-progress work | Pending end-to-end verification |
 
 ## Repository findings
@@ -72,7 +72,7 @@ Updated `src/Revision.tsx`:
 - the prompt includes the checkpoint day so Mentor can explain the concept in the context of the current recall task;
 - it uses the same one-time session hand-off and does not alter revision scheduling or recall scoring.
 
-Added `tests/mentor-learning-context.test.mjs` for one-time consumption, malformed data, length bounds and source validation.
+Added `tests/mentor-learning-context.test.mjs` for one-time consumption, malformed data, length bounds and source validation.\n\n### Progress refresh invalidation\n\nAdded a small shared event (`src/progressEvents.ts`) that invalidates the Progress read model without becoming a data store. Existing engagement, roadmap, revision checkpoint, recall and test stores notify after successful local writes/hydration. The Progress page subscribes while mounted and also listens for relevant cross-tab `storage` events; it still reads the existing stores as the source of truth. Added `tests/progress-events.test.mjs` for browser event dispatch and server-render safety.
 
 ## Remaining work before Phase 3 can be called complete
 
