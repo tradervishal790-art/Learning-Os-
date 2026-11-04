@@ -9,7 +9,7 @@ import { getLearningProfile } from './learningProfileStore';
 import { maybeUpdateProfileFromEngagement } from './implicitProfileUpdate';
 import { getRoadmapData, saveRoadmapData, findTopicById } from './roadmapData';
 import { useNavigate } from 'react-router-dom';
-import { MENTOR_PREFILL_KEY } from './mentorPrefill';
+import { MENTOR_PREFILL_KEY, saveMentorLearningContext } from './mentorPrefill';
 import Notes from './Notes';
 import Research from './Research';
 import HintBubble from './HintBubble';
@@ -1072,12 +1072,18 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
 
                       <button
                         onClick={() => {
-                          const topicTitle = (activeTopicId && findTopicById(activeTopicId, getRoadmapData(activeGoalId))?.title) || selectedVideo.title;
+                          const topic = activeTopicId ? findTopicById(activeTopicId, getRoadmapData(activeGoalId)) : null;
+                          const topicTitle = topic?.title || selectedVideo.title;
                           try {
                             sessionStorage.setItem(MENTOR_PREFILL_KEY, `I'm studying "${topicTitle}" and I need help with: `);
                           } catch {
                             // best effort
                           }
+                          saveMentorLearningContext({
+                            topicTitle,
+                            difficulty: topic?.difficulty,
+                            source: 'videos',
+                          });
                           navigate('/dashboard/mentor');
                         }}
                         className="inline-flex min-h-11 items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10"
