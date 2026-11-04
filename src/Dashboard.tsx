@@ -221,6 +221,7 @@ function DashboardInner({ dashboardContextVersion, userData, onUpdateUserData, o
   const activePage = (location.pathname.replace(/^\/dashboard\/?/, '').split('/')[0] || 'dashboard') as DashboardPageId;
   const setActivePage = useCallback(
     (page: DashboardPageId) => {
+      if (page !== 'notes') setNotesTopicContext(null);
       navigate(page === 'dashboard' ? '/dashboard' : `/dashboard/${page}`);
     },
     [navigate]
@@ -247,6 +248,7 @@ function DashboardInner({ dashboardContextVersion, userData, onUpdateUserData, o
   // opened, so each topic keeps its own saved video instead of every topic
   // in a goal sharing one slot (see VideoIntel's activeTopicId).
   const [viewingTopicId, setViewingTopicId] = useState<string | null>(null);
+  const [notesTopicContext, setNotesTopicContext] = useState<Topic | null>(null);
 
   const [showSettings, setShowSettings] = useState(false);
   // Deep-settings: the full learning-profile report is hidden by default,
@@ -371,6 +373,11 @@ function DashboardInner({ dashboardContextVersion, userData, onUpdateUserData, o
     setPreloadedPlaylist(null);
     setViewingTopicId(topicId);
     setActivePage('videos');
+  };
+
+  const handleOpenTopicNotes = (topic: Topic) => {
+    setNotesTopicContext(topic);
+    setActivePage('notes');
   };
 
   // FIX: Pehle yahan sirf name/role/goal/language/hours bhej rahe the,
@@ -766,6 +773,7 @@ function DashboardInner({ dashboardContextVersion, userData, onUpdateUserData, o
             userData={userData}
             onLaunchPlaylist={handleLaunchPlaylist}
             onOpenSavedVideo={handleOpenSavedVideo}
+            onOpenTopicNotes={handleOpenTopicNotes}
             onGenerateForSubject={onGenerateForSubject}
             lastRoadmapError={lastRoadmapError}
             goals={goals}
@@ -787,7 +795,10 @@ function DashboardInner({ dashboardContextVersion, userData, onUpdateUserData, o
           </div>
         )}
         {activePage === 'mentor' && <Mentor />}
-        {activePage === 'notes' && <Notes />}
+        {activePage === 'notes' && (notesTopicContext
+          ? <Notes videoTitle={notesTopicContext.title} videoDescription={notesTopicContext.description} />
+          : <Notes />
+        )}
         {activePage === 'test' && <Test />}
         {activePage === 'progress' && <Progress goals={goals} />}
         {activePage === 'research' && <Research />}
