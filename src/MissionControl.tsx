@@ -317,12 +317,13 @@ export default function MissionControl({
             <div className="max-h-[55vh] overflow-y-auto p-3">
               {allFunctionNodes.map((node) => {
                 const NodeIcon = node.icon;
-                const checked = visibleNodeIds.includes(node.id);
-                return <label key={node.id} className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-3 transition hover:bg-white/[0.05]">
-                  <input type="checkbox" checked={checked} onChange={() => { mapPrefsEdited.current = true; setVisibleNodeIds((current) => checked ? current.filter((id) => id !== node.id) : [...current, node.id]); if (checked && selectedEngine === node.id) setSelectedEngine(null); }} className="h-4 w-4 accent-cyan-400" />
+                const isCoreStage = defaultNodeIds.includes(node.id);
+                const checked = isCoreStage || visibleNodeIds.includes(node.id);
+                return <label key={node.id} className={`flex items-center gap-3 rounded-xl px-3 py-3 transition hover:bg-white/[0.05] ${isCoreStage ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
+                  <input type="checkbox" checked={checked} disabled={isCoreStage} onChange={() => { mapPrefsEdited.current = true; setVisibleNodeIds((current) => checked ? current.filter((id) => id !== node.id) : [...current, node.id]); if (checked && selectedEngine === node.id) setSelectedEngine(null); }} className="h-4 w-4 accent-cyan-400 disabled:opacity-50" />
                   <span className="flex h-9 w-9 items-center justify-center rounded-lg" style={{ color: node.color, backgroundColor: `${node.color}20` }}><NodeIcon className="h-4 w-4" /></span>
                   <span className="min-w-0 flex-1"><span className="block text-sm font-medium text-slate-100">{node.title}</span><span className="block text-xs text-slate-500">{node.subtitle}</span></span>
-                  <span className="text-[10px] text-slate-500">{checked ? 'On map' : 'Add'}</span>
+                  <span className="text-[10px] text-slate-500">{isCoreStage ? 'Core stage' : checked ? 'On map' : 'Add'}</span>
                 </label>;
               })}
             </div>
