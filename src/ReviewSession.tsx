@@ -130,12 +130,12 @@ export default function ReviewSession({ topic, onMarkDone, onClose }: ReviewSess
           onKeyDown={(e) => e.key === 'Enter' && send()}
           disabled={loading}
           placeholder="Type your answer here..."
-          className="flex-1 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-purple-500/50"
+          className="flex-1 min-w-0 min-h-11 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-purple-500/50"
         />
         <button
           onClick={send}
           disabled={loading || !input.trim()}
-          className="px-4 py-2 rounded-lg bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white text-sm font-medium disabled:opacity-40"
+          className="min-h-11 min-w-16 px-4 py-2 rounded-lg bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white text-sm font-medium disabled:opacity-40"
         >
           Send
         </button>
@@ -147,13 +147,13 @@ export default function ReviewSession({ topic, onMarkDone, onClose }: ReviewSess
           <div className="flex gap-2">
             <button
               onClick={onClose}
-              className="flex-1 py-2 rounded-lg bg-red-100 text-red-700 text-xs font-medium"
+              className="flex-1 min-h-11 py-2 rounded-lg bg-red-100 text-red-700 text-xs font-medium"
             >
               Try Again Later
             </button>
             <button
               onClick={onMarkDone}
-              className="flex-1 py-2 rounded-lg bg-green-100 text-green-700 text-xs font-medium"
+              className="flex-1 min-h-11 py-2 rounded-lg bg-green-100 text-green-700 text-xs font-medium"
             >
               Done
             </button>
