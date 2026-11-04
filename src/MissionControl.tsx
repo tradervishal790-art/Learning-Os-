@@ -142,7 +142,7 @@ export default function MissionControl({
       </header>
 
       <section className="relative z-10 flex min-h-0 flex-1 flex-col overflow-y-auto px-3 pb-3 pt-3 md:px-6 md:pb-5 md:pt-4">
-        <div className="mb-3 grid shrink-0 gap-2 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
+        <div className="order-2 mb-3 grid shrink-0 gap-2 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] md:order-none">
           <button type="button" onClick={onContinueLearning} className="group flex min-h-[104px] items-center justify-between gap-4 rounded-2xl border border-violet-300/25 bg-gradient-to-r from-violet-500/[0.14] to-indigo-500/[0.08] px-4 py-4 text-left transition-[transform,border-color,background-color] duration-200 hover:-translate-y-0.5 hover:border-violet-200/45 hover:bg-violet-400/[0.12] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300 md:px-5">
             <span className="min-w-0">
               <span className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-violet-200/80">Pick up where you left off</span>
@@ -157,8 +157,8 @@ export default function MissionControl({
             <button type="button" onClick={() => onNavigate('mentor')} className="flex min-h-[104px] flex-col items-start justify-between rounded-2xl border border-white/[0.08] bg-white/[0.035] p-3 text-left transition-[transform,border-color,background-color] duration-200 hover:-translate-y-0.5 hover:border-cyan-300/30 hover:bg-cyan-300/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"><MessageCircle className="h-4 w-4 text-cyan-200" /><span><span className="block text-xs font-semibold text-white">AI Mentor</span><span className="mt-1 block text-[10px] text-slate-500">Ask</span></span></button>
           </div>
         </div>
-        <button type="button" onClick={() => { if (nextBestStepAction === 'profile') onOpenProfile(); else open(nextBestStepAction); }} className="mb-3 flex shrink-0 items-center justify-between gap-3 rounded-xl border border-cyan-300/12 bg-cyan-300/[0.035] px-3 py-2.5 text-left transition hover:border-cyan-300/25 hover:bg-cyan-300/[0.07] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"><span className="min-w-0"><span className="block text-[9px] uppercase tracking-[0.16em] text-cyan-200/65">Suggested next step</span><span className="block truncate text-xs font-medium text-slate-100">{!hasLearningProfile ? 'Set up your learning profile' : activeGoals === 0 ? 'Choose a learning goal' : revisionOverdue > 0 ? revisionOverdue + ' overdue topics to revise' : revisionDue > 0 ? revisionDue + ' topics ready for revision' : nextTopic || 'Open your learning roadmap'}</span></span><ArrowUpRight className="h-4 w-4 shrink-0 text-cyan-200/80" /></button>
-        <div className="mb-2 flex shrink-0 items-center justify-between px-1 md:px-3">
+        <button type="button" onClick={() => { if (nextBestStepAction === 'profile') onOpenProfile(); else open(nextBestStepAction); }} className="order-3 mb-3 flex shrink-0 md:order-none items-center justify-between gap-3 rounded-xl border border-cyan-300/12 bg-cyan-300/[0.035] px-3 py-2.5 text-left transition hover:border-cyan-300/25 hover:bg-cyan-300/[0.07] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"><span className="min-w-0"><span className="block text-[9px] uppercase tracking-[0.16em] text-cyan-200/65">Suggested next step</span><span className="block truncate text-xs font-medium text-slate-100">{!hasLearningProfile ? 'Set up your learning profile' : activeGoals === 0 ? 'Choose a learning goal' : revisionOverdue > 0 ? revisionOverdue + ' overdue topics to revise' : revisionDue > 0 ? revisionDue + ' topics ready for revision' : nextTopic || 'Open your learning roadmap'}</span></span><ArrowUpRight className="h-4 w-4 shrink-0 text-cyan-200/80" /></button>
+        <div className="order-1 mb-2 flex shrink-0 items-center justify-between px-1 md:order-none md:px-3">
           <div className="min-w-0">
             <span className="block text-[9px] uppercase tracking-[0.2em] text-slate-600">Your learning space</span>
             <span className="mt-0.5 block text-xs text-slate-400">Your complete learning journey</span>
@@ -167,7 +167,7 @@ export default function MissionControl({
         </div>
 
         {visibleRows.length === 0 && <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-center"><p className="text-sm font-medium text-white">Your map is empty</p><p className="mt-1 text-xs text-slate-400">Restore the learning engines to continue.</p><button type="button" onClick={() => { mapPrefsEdited.current = true; setVisibleNodeIds(defaultNodeIds); }} className="mt-3 rounded-lg border border-cyan-300/30 px-3 py-2 text-xs text-cyan-100">Restore learning engines</button></div>}
-        <div className="relative hidden flex-none overflow-visible rounded-[24px] border border-white/[0.07] bg-[#0b1221]/65 lg:block" style={{ height: `${mapHeight}px` }}>
+        <div className="relative order-1 hidden flex-none overflow-visible rounded-[24px] border border-white/[0.07] bg-[#0b1221]/65 lg:order-none lg:block" style={{ height: `${mapHeight}px` }}>
           <div className="relative min-h-[660px]" style={{ height: `${mapHeight}px` }}>
           <div className="absolute inset-0 opacity-[0.16]" style={{ backgroundImage: 'radial-gradient(#7dd3fc 0.7px, transparent 0.7px)', backgroundSize: '24px 24px' }} />
           <svg className="absolute inset-0 h-full w-full" viewBox={`0 0 1200 ${mapHeight}`} preserveAspectRatio="none" fill="none" aria-hidden="true">
@@ -262,7 +262,7 @@ export default function MissionControl({
           </div>
         </div>
 
-        <div className="relative flex-none rounded-2xl border border-white/[0.07] bg-[#0b1221]/70 p-3 lg:hidden">
+        <div className="relative order-1 flex-none rounded-2xl border border-white/[0.07] bg-[#0b1221]/70 p-3 lg:order-none lg:hidden">
           <div className="absolute bottom-8 left-[27px] top-8 w-px bg-gradient-to-b from-violet-400 via-cyan-300 to-fuchsia-400 opacity-60" />
           <div className="relative flex flex-col gap-2.5">
             <div className="mb-1 flex items-center gap-3 rounded-xl border border-violet-300/40 bg-[#211b40] p-3">
@@ -287,7 +287,7 @@ export default function MissionControl({
           </div>
         </div>
 
-        <div className="relative mt-2 flex shrink-0 flex-wrap items-center justify-between gap-2 px-1 text-[9px] text-slate-500 md:px-3">
+        <div className="relative order-4 mt-2 flex shrink-0 flex-wrap items-center justify-between gap-2 px-1 text-[9px] text-slate-500 md:order-none md:px-3">
           <div className="relative">
             <button type="button" onClick={() => setMoreOpen((value) => !value)} aria-expanded={moreOpen} className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-medium text-slate-200 transition hover:border-cyan-300/40 hover:bg-white/[0.07]">
               <MoreHorizontal className="h-4 w-4 text-cyan-300" /> More <ChevronDown className={`h-3.5 w-3.5 transition-transform ${moreOpen ? 'rotate-180' : ''}`} />
