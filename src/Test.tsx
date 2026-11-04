@@ -427,10 +427,10 @@ function TestList({
                 </div>
                 <div className="flex items-center justify-end gap-2 flex-shrink-0">
                   <button onClick={() => onLive(p)} className="h-11 md:h-auto min-w-11 flex items-center justify-center gap-1.5 md:px-3 md:py-2 rounded-full md:rounded-lg border border-gray-300 dark:border-white/20 text-sm font-semibold transition" title="Run live" aria-label="Run live">
-                    <Users className="w-4 h-4" /><span className="hidden md:inline">Live</span>
+                    <Users className="w-4 h-4" /><span>Live</span>
                   </button>
                   <button onClick={() => onTake(p)} className="h-11 md:h-auto min-w-11 flex items-center justify-center gap-1.5 md:px-4 md:py-2 rounded-full md:rounded-lg bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white text-sm font-semibold transition" title="Take test" aria-label="Take test">
-                    <Play className="w-4 h-4" fill="currentColor" /><span className="hidden md:inline">Take Test</span>
+                    <Play className="w-4 h-4" fill="currentColor" /><span>Take Test</span>
                   </button>
                 </div>
               </div>
@@ -442,7 +442,7 @@ function TestList({
       <h2 className="text-sm font-semibold text-gray-500 dark:text-white/50 mb-3">My tests</h2>
       <button
         onClick={onCreate}
-        className="w-full flex items-center justify-center gap-2 py-3.5 mb-6 md:mb-8 rounded-xl bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white font-semibold transition"
+        className="w-full min-h-11 flex items-center justify-center gap-2 py-3.5 mb-6 md:mb-8 rounded-xl bg-indigo-600" text-white dark:bg-indigo-500 dark:text-white font-semibold transition"
       >
         <Plus className="w-4 h-4" /> Create New Test
       </button>
