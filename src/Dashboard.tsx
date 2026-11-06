@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState, lazy, Suspense } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { Lock, Settings as SettingsIcon, ArrowLeft } from 'lucide-react';
+import { Settings as SettingsIcon, ArrowLeft } from 'lucide-react';
 import PagePlaceholder from './PagePlaceholder';
 import MissionControl from './MissionControl';
 import { getContinueLearningTarget } from './missionControlLogic';
@@ -109,11 +109,6 @@ interface Blueprint {
 // Pages that need a real account. Guests (no sign-up yet) can use the home page,
 // the Mind Blueprint, Videos and Dictionary; everything below asks them to sign in.
 // (The server enforces the same split for AI endpoints — see api/_lib/auth.ts.)
-
-function getSidebarItems(): { id: DashboardPageId; label: string }[] {
-  // Mission Control is the single navigation gateway for every learning tool.
-  return [{ id: 'dashboard', label: 'Mission Control' }];
-}
 
 const roleOptions = ['student', 'developer', 'researcher', 'business', 'exam', 'creator'];
 const languageOptions = ['hindi', 'english', 'hinglish', 'any'];
@@ -488,130 +483,37 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
     );
   }
 
-  const displayName = userData?.name?.trim() || t.dashboard.home.learnerFallback;
   const currentTopic = getCurrentTopic(getRoadmapData(activeGoalId));
   const roadmapProgress = getRoadmapProgress(getRoadmapData(activeGoalId));
   const revisionStats = getRevisionStats(getRevisionDataForGoals(t.revisionTasks, goals));
 
   const config = pageConfigs[activePage];
   const isMissionControl = activePage === 'dashboard';
-  // Guests can preview every section; account checks remain on protected actions.
-
-  // Two different locks: authLocked = needs a real account (guest);
-  // roadmapLocked = needs a roadmap first. A guest can never build a
-  // roadmap (it needs an account), so Videos stays open for them.
-  // Progressive disclosure: Revision/Notes/Videos/Progress only make sense
-  // once a roadmap exists (they're all built around topics), so a new user
-  // never lands on an empty page on their very first visit.
-  // Exploration-first navigation: let guests open every section to preview
-  // the interface. Individual save/sync actions can still request an account.
-  const navState = (_id: DashboardPageId) => ({
-    authLocked: false,
-    roadmapLocked: false,
-    isLocked: false,
-  });
-  const selectNav = (id: DashboardPageId, _label: string) => {
-    setActivePage(id);
-  };
-  const sidebarItems = getSidebarItems();
-
-  const SidebarContent = (
-    <>
-      <div className="mb-10 flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold bg-gradient-to-r from-purple-500 via-pink-500 to-orange-400 bg-clip-text text-transparent">Learning OS</h1>
-          <p className="text-xs text-gray-400 dark:text-white/40 mt-1">v1.0 - Beta</p>
-        </div>
-      </div>
-      <nav className="space-y-1 flex-1">
-        {sidebarItems.map((item, i) => {
-          const { isLocked } = navState(item.id);
-          return (
-            <motion.button
-              key={item.id}
-              id={`onborda-nav-${item.id}`}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.1 + i * 0.05, duration: 0.4 }}
-              onClick={() => selectNav(item.id, item.label)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
-                isMissionControl
-                  ? isLocked
-                    ? 'text-white/20'
-                    : activePage === item.id
-                    ? 'bg-indigo-500 text-white'
-                    : 'text-white/55 hover:text-white hover:bg-white/5'
-                  : isLocked
-                    ? 'text-gray-300 dark:text-white/20 hover:text-gray-400 dark:hover:text-white/30'
-                    : activePage === item.id
-                      ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white'
-                      : 'text-gray-500 dark:text-white/50 hover:text-black dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5'
-              }`}
-            >
-              <span className="flex-1 text-left">{item.label}</span>
-              {isLocked && <Lock className="w-3.5 h-3.5" strokeWidth={2} />}
-            </motion.button>
-          );
-        })}
-      </nav>
-      <div className={`mt-auto pt-6 border-t ${isMissionControl ? "border-white/10" : "border-gray-200 dark:border-white/10"}`}>
-        <div className="flex items-center gap-3 px-2">
-          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400 flex items-center justify-center text-sm font-bold text-white flex-shrink-0">
-            {displayName.charAt(0).toUpperCase()}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="text-sm font-medium bg-gradient-to-r from-purple-500 via-pink-500 to-orange-400 bg-clip-text text-transparent truncate">{displayName}</div>
-            <div className="text-xs text-gray-400 dark:text-white/40 truncate">{userData?.role ? (t.onboarding.roles[userData.role] ?? userData.role) : t.dashboard.home.learnerFallback}</div>
-          </div>
-        </div>
-      </div>
-    </>
-  );
-
   return (
-    <div className="min-h-dvh flex bg-[#080d19] text-white">
-      {!isMissionControl && <aside className="hidden md:flex w-64 bg-[#080d19] border-r border-white/10 p-6 flex-col flex-shrink-0">
-        {SidebarContent}
-      </aside>}
-
-      <div className={`flex-1 min-w-0 ${isMissionControl ? "h-dvh overflow-hidden bg-[#080d19]" : "min-h-dvh overflow-auto bg-[#080d19]"} md:pb-0 ${isMissionControl || immersive ? "" : "pb-[calc(4rem+env(safe-area-inset-bottom))]"}`}>
-        {!(activePage === 'notes' && noteOpen) && (
-        <motion.div
-          initial={{ y: -20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.6 }}
-          className="border-b border-white/[0.07] bg-[#080d19] text-white px-4 md:px-8 py-2 md:py-4 flex justify-between items-center gap-3"
+    <div className="min-h-dvh bg-[#080d19] text-white">
+      {/* Minimal floating controls: no sidebar and no full-width header strip. */}
+      {activePage !== 'dashboard' && (
+        <button
+          onClick={() => setActivePage('dashboard')}
+          aria-label="Back to Mission Control"
+          title="Back to Mission Control"
+          className="fixed left-4 top-4 z-40 h-10 w-10 rounded-full border border-white/10 bg-[#111827]/85 text-white shadow-lg backdrop-blur-md flex items-center justify-center hover:bg-white/10 transition-colors"
         >
-          <div className="flex items-center gap-3 min-w-0">
-            {activePage !== 'dashboard' && (
-              <>
-                <button
-                  onClick={() => setActivePage('dashboard')}
-                  aria-label="Back to Mission Control"
-                  title="Back to Mission Control"
-                  className="w-10 h-10 -ml-2 rounded-full flex items-center justify-center flex-shrink-0 hover:bg-gray-100 dark:hover:bg-white/10 active:bg-gray-200 dark:active:bg-white/15 transition-colors"
-                >
-                  <ArrowLeft className="w-5 h-5" strokeWidth={1.9} />
-                </button>
-                <h2 className={`text-lg md:text-2xl font-bold truncate ${isMissionControl ? "text-white" : ""}`}>
-                  {activePage === 'roadmap' ? t.dashboard.sidebar.roadmap : activePage === 'revision' ? t.dashboard.sidebar.revision : activePage === 'notes' ? t.dashboard.sidebar.notes : activePage === 'test' ? t.dashboard.sidebar.test : activePage === 'videos' ? t.dashboard.sidebar.videos : activePage === 'mentor' ? t.dashboard.sidebar.mentor : activePage === 'progress' ? t.dashboard.sidebar.progress : activePage === 'research' ? t.dashboard.sidebar.research : activePage === 'dictionary' ? t.dashboard.sidebar.dictionary : activePage === 'current-affairs' ? t.dashboard.sidebar.currentAffairs : 'Mission Control'}
-                </h2>
-              </>
-            )}
-            {activePage === 'dashboard' && (
-                <h2 className={`text-lg md:text-2xl font-bold truncate ${isMissionControl ? "text-white" : ""}`}>
-              Mission Control
-            </h2>
-            )}
-          </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <button id="onborda-settings-button" onClick={() => { setShowSettings(true); setShowFullProfileReport(false); }} aria-label={t.settingsModal.title} className={`w-10 h-10 md:w-auto md:h-auto md:px-4 md:py-2 rounded-full md:border text-sm flex items-center justify-center gap-2 transition-colors ${isMissionControl ? "border-white/10 text-white hover:bg-white/5" : "md:border-gray-300 md:dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10 active:bg-gray-200 dark:active:bg-white/15"}`}>
-            <SettingsIcon className="w-[21px] h-[21px] md:w-4 md:h-4" strokeWidth={1.75} />
-            <span className="hidden md:inline">Account &amp; Settings</span>
-          </button>
-          </div>
-        </motion.div>
-        )}
+          <ArrowLeft className="w-5 h-5" strokeWidth={1.9} />
+        </button>
+      )}
+      <button
+        id="onborda-settings-button"
+        onClick={() => { setShowSettings(true); setShowFullProfileReport(false); }}
+        aria-label="Account & Settings"
+        title="Account & Settings"
+        className="fixed right-4 top-4 z-40 h-10 px-3 rounded-full border border-white/10 bg-[#111827]/85 text-white shadow-lg backdrop-blur-md flex items-center gap-2 hover:bg-white/10 transition-colors"
+      >
+        <SettingsIcon className="w-4 h-4" strokeWidth={1.75} />
+        <span className="text-sm">Account &amp; Settings</span>
+      </button>
+
+      <div className={`min-h-dvh min-w-0 ${isMissionControl ? "h-dvh overflow-hidden" : "overflow-auto"} pt-16 md:pt-16 ${isMissionControl || immersive ? "" : "pb-[calc(4rem+env(safe-area-inset-bottom))]"}`}>
 
         <Suspense fallback={<PageLoading />}>
           <motion.div
