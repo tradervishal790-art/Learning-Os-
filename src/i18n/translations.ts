@@ -92,7 +92,7 @@ export interface TranslationShape {
         consistencyTitle: string; consistencyRange: string; dayStreakLabel: string; less: string; more: string;
         actions: { revision: string; tests: string; mentor: string; review: string; practice: string; ask: string; dueCount: string };
         nextStep: { label: string; setupProfile: string; chooseGoal: string; overdue: string; due: string; openRoadmap: string };
-        space: { eyebrow: string; hint: string; show: string; hide: string; emptyTitle: string; emptyBody: string; restore: string };
+        space: { eyebrow: string; hint: string; show: string; hide: string; emptyTitle: string; emptyBody: string; restore: string; coreStages: string; nextStep: string; yourNextStep: string; coreStage: string };
         student: string; youAreHere: string; learningGoal: string; startsWithCuriosity: string;
         legend: { student: string; engines: string; actions: string };
         moreMenu: { button: string; searchPlaceholder: string; noMatch: string };
@@ -1189,7 +1189,7 @@ export const translations: Record<Locale, TranslationShape> = {
           more: 'More',
           actions: { revision: 'Revision', tests: 'Tests', mentor: 'AI Mentor', review: 'Review', practice: 'Practice', ask: 'Ask', dueCount: '{0} due' },
           nextStep: { label: 'Suggested next step', setupProfile: 'Set up your learning profile', chooseGoal: 'Choose a learning goal', overdue: '{0} overdue topics to revise', due: '{0} topics ready for revision', openRoadmap: 'Open your learning roadmap' },
-          space: { eyebrow: 'Your learning space', hint: 'Your tools, in one place', show: 'Explore learning map', hide: 'Hide learning map', emptyTitle: 'Your map is empty', emptyBody: 'Restore the learning engines to continue.', restore: 'Restore learning engines' },
+          space: { eyebrow: 'Your learning space', hint: 'Your complete learning journey', show: 'Explore learning map', hide: 'Hide learning map', emptyTitle: 'Your map is empty', emptyBody: 'Restore the learning engines to continue.', restore: 'Restore learning engines', coreStages: '5 core stages', nextStep: 'Next step', yourNextStep: 'Your next step', coreStage: 'Core stage' },
           student: 'Student',
           youAreHere: 'You are here',
           learningGoal: 'Learning {0}',
@@ -3004,7 +3004,7 @@ export const translations: Record<Locale, TranslationShape> = {
           more: 'ज़्यादा',
           actions: { revision: 'रिवीज़न', tests: 'टेस्ट', mentor: 'AI मेंटर', review: 'दोहराएँ', practice: 'अभ्यास', ask: 'पूछें', dueCount: '{0} बाकी' },
           nextStep: { label: 'सुझाया गया अगला कदम', setupProfile: 'अपनी लर्निंग प्रोफ़ाइल बनाएँ', chooseGoal: 'सीखने का लक्ष्य चुनें', overdue: '{0} टॉपिक की रिवीज़न बाकी है', due: '{0} टॉपिक रिवीज़न के लिए तैयार हैं', openRoadmap: 'अपना लर्निंग रोडमैप खोलें' },
-          space: { eyebrow: 'आपकी सीखने की जगह', hint: 'आपके सभी टूल एक जगह', show: 'लर्निंग मैप देखें', hide: 'लर्निंग मैप छिपाएँ', emptyTitle: 'आपका मैप खाली है', emptyBody: 'आगे बढ़ने के लिए लर्निंग इंजन वापस लाएँ।', restore: 'लर्निंग इंजन वापस लाएँ' },
+          space: { eyebrow: 'आपकी सीखने की जगह', hint: 'आपकी पूरी सीखने की यात्रा', show: 'लर्निंग मैप देखें', hide: 'लर्निंग मैप छिपाएँ', emptyTitle: 'आपका मैप खाली है', emptyBody: 'आगे बढ़ने के लिए लर्निंग इंजन वापस लाएँ।', restore: 'लर्निंग इंजन वापस लाएँ', coreStages: '5 मुख्य चरण', nextStep: 'अगला कदम', yourNextStep: 'आपका अगला कदम', coreStage: 'मुख्य चरण' },
           student: 'विद्यार्थी',
           youAreHere: 'आप यहाँ हैं',
           learningGoal: '{0} सीख रहे हैं',
@@ -4813,7 +4813,7 @@ export const translations: Record<Locale, TranslationShape> = {
           more: 'Zyada',
           actions: { revision: 'Revision', tests: 'Tests', mentor: 'AI Mentor', review: 'Review', practice: 'Practice', ask: 'Pucho', dueCount: '{0} baaki' },
           nextStep: { label: 'Suggested next step', setupProfile: 'Apna learning profile set up karo', chooseGoal: 'Ek learning goal chuno', overdue: '{0} topics ka revision baaki hai', due: '{0} topics revision ke liye ready hain', openRoadmap: 'Apna learning roadmap kholo' },
-          space: { eyebrow: 'Aapka learning space', hint: 'Aapke saare tools ek jagah', show: 'Learning map dekho', hide: 'Learning map chhupao', emptyTitle: 'Aapka map khaali hai', emptyBody: 'Aage badhne ke liye learning engines wapas lao.', restore: 'Learning engines wapas lao' },
+          space: { eyebrow: 'Aapka learning space', hint: 'Aapki poori learning journey', show: 'Learning map dekho', hide: 'Learning map chhupao', emptyTitle: 'Aapka map khaali hai', emptyBody: 'Aage badhne ke liye learning engines wapas lao.', restore: 'Learning engines wapas lao', coreStages: '5 core stages', nextStep: 'Next step', yourNextStep: 'Aapka next step', coreStage: 'Core stage' },
           student: 'Student',
           youAreHere: 'Aap yahan ho',
           learningGoal: '{0} seekh rahe ho',

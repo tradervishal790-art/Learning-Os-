@@ -233,7 +233,7 @@ function NewspaperCurrentAffairs() {
                   }`}
                 >
                   <TabIcon className="w-4 h-4" strokeWidth={1.75} />
-                  <span className="hidden md:inline">{c.tabs[x]}</span>
+                  <span className="whitespace-nowrap">{c.tabs[x]}</span>
                 </button>
               );
             })}

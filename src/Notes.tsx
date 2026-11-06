@@ -379,7 +379,7 @@ export default function Notes({ videoTitle, videoDescription, videoId }: { video
             className="flex-shrink-0 w-12 md:w-auto h-12 md:h-auto md:px-6 md:py-3 flex items-center justify-center gap-2 bg-violet-500 text-white shadow-[0_0_18px_rgba(139,92,246,.35)] hover:bg-violet-400 disabled:opacity-40 disabled:shadow-none rounded-xl font-semibold transition"
           >
             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5 md:hidden" strokeWidth={1.75} />}
-            <span className="hidden md:inline">{loading ? '...' : t.notes.deepDiveCta}</span>
+            <span className="text-[11px] md:text-sm whitespace-nowrap">{loading ? '...' : t.notes.deepDiveCta}</span>
           </button>
         </div>
 
@@ -397,10 +397,10 @@ export default function Notes({ videoTitle, videoDescription, videoId }: { video
             disabled={loading || !youtubeUrl.trim()}
             aria-label={t.notes.fromVideoCta}
             title={t.notes.fromVideoCta}
-            className="flex-shrink-0 w-12 md:w-auto h-12 md:h-auto md:px-6 md:py-3 flex items-center justify-center gap-2 border border-gray-300 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/20 disabled:opacity-40 rounded-xl font-semibold transition"
+            className="flex-shrink-0 min-w-12 h-12 px-3 md:w-auto md:h-auto md:px-6 md:py-3 flex items-center justify-center gap-2 border border-gray-300 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/20 disabled:opacity-40 rounded-xl font-semibold transition"
           >
             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <CirclePlay className="w-5 h-5 md:hidden" strokeWidth={1.75} />}
-            <span className="hidden md:inline">{loading ? '...' : t.notes.fromVideoCta}</span>
+            <span className="text-[11px] md:text-sm whitespace-nowrap">{loading ? '...' : t.notes.fromVideoCta}</span>
           </button>
         </div>
 

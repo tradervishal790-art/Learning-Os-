@@ -211,7 +211,7 @@ export default function Revision({ goals = [] }: RevisionProps) {
         <>
       <NotesToRevise />
       {/* Top stats — one surface, icon-first on phones */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.5 }} className="rounded-2xl card overflow-hidden grid grid-cols-4 divide-x divide-gray-200 dark:divide-white/10 mb-5 md:mb-8">
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.5 }} className="rounded-2xl card overflow-hidden grid grid-cols-2 sm:grid-cols-4 divide-x divide-y sm:divide-y-0 divide-gray-200 dark:divide-white/10 mb-5 md:mb-8">
         {[
           { label: t.revision.stats.dueToday, value: String(stats.dueToday), Icon: Flame, tone: 'text-amber-300' },
           { label: t.revision.stats.overdue, value: String(stats.overdue), Icon: TriangleAlert, tone: 'text-red-300' },

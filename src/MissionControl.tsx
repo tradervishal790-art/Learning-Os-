@@ -64,7 +64,6 @@ export default function MissionControl({
 }: MissionControlProps) {
   const hub = useTranslation().dashboard.home.hub;
   const [selectedEngine, setSelectedEngine] = useState<string | null>(null);
-  const [mapExpanded, setMapExpanded] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const [customizeOpen, setCustomizeOpen] = useState(false);
   const [functionSearch, setFunctionSearch] = useState('');
@@ -96,8 +95,10 @@ export default function MissionControl({
     try { localStorage.setItem(MAP_NODES_STORAGE_KEY, JSON.stringify(visibleNodeIds)); } catch { /* Best effort */ }
     void pushToCloud('missionMapNodes', visibleNodeIds);
   }, [visibleNodeIds, mapPrefsHydrated]);
-  const visibleRows = useMemo(() => allFunctionNodes.filter((node) => visibleNodeIds.includes(node.id)), [visibleNodeIds]);
+  const visibleRows = useMemo(() => allFunctionNodes.filter((node) => defaultNodeIds.includes(node.id) || visibleNodeIds.includes(node.id)), [visibleNodeIds]);
   const mapHeight = Math.max(660, visibleRows.length <= 1 ? 660 : 132 + (visibleRows.length - 1) * 132);
+  const nextBestStepAction = getNextBestStepAction({ hasLearningProfile, revisionDue, revisionOverdue });
+  const nextStepStageId = nextBestStepAction === 'profile' ? 'know' : nextBestStepAction === 'revision' ? 'retain' : 'plan';
   const rowY = visibleRows.map((_, index) => visibleRows.length === 1 ? mapHeight / 2 : 66 + index * ((mapHeight - 132) / (visibleRows.length - 1)));
   const open = (action: 'profile' | DashboardPageId) => action === 'profile' ? onOpenProfile() : onNavigate(action);
   const activeDays = useMemo(() => readActiveDays(), [streak]);
@@ -111,7 +112,7 @@ export default function MissionControl({
     : nextTopic || hub.nextStep.openRoadmap;
 
   return (
-    <main className="mission-map relative flex h-[calc(100dvh-64px-env(safe-area-inset-bottom))] min-h-0 md:h-[calc(100dvh-64px)] w-full flex-col overflow-hidden bg-[#080d19] text-slate-100">
+    <main className="mission-map relative flex h-[calc(100dvh-128px-env(safe-area-inset-bottom))] min-h-0 md:h-[calc(100dvh-64px)] w-full flex-col overflow-hidden bg-[#080d19] text-slate-100">
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -left-40 top-[-220px] h-[520px] w-[520px] rounded-full bg-violet-600/[0.10] blur-[130px]" />
         <div className="absolute right-[-120px] top-[10%] h-[480px] w-[480px] rounded-full bg-cyan-500/[0.08] blur-[130px]" />
@@ -138,7 +139,7 @@ export default function MissionControl({
       </header>
 
       <section className="relative z-10 flex min-h-0 flex-1 flex-col overflow-y-auto px-3 pb-3 pt-3 md:px-6 md:pb-5 md:pt-4">
-        <div className="mb-3 grid shrink-0 gap-3 lg:grid-cols-12">
+        <div className="order-2 mb-3 grid shrink-0 gap-3 md:order-none lg:grid-cols-12">
           <GlassButton onClick={onContinueLearning} accent="#a78bfa" className="border-violet-300/25 bg-gradient-to-br from-violet-500/[0.14] to-indigo-500/[0.05] hover:border-violet-200/45 lg:col-span-7">
             <span className="flex items-center gap-4 p-4 md:gap-5 md:p-5">
               <ProgressRing value={progressPercent} color="#a78bfa" size={104}>
@@ -198,7 +199,7 @@ export default function MissionControl({
           </div>
         </GlassPanel>
 
-        <button type="button" onClick={() => { const action = getNextBestStepAction({ hasLearningProfile, revisionDue, revisionOverdue }); if (action === 'profile') onOpenProfile(); else open(action); }} className="mb-3 flex shrink-0 items-center justify-between gap-3 rounded-xl border border-cyan-300/12 bg-cyan-300/[0.035] px-3 py-2.5 text-left transition hover:border-cyan-300/25 hover:bg-cyan-300/[0.07] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300">
+        <button type="button" onClick={() => { if (nextBestStepAction === 'profile') onOpenProfile(); else open(nextBestStepAction); }} className="order-3 mb-3 flex shrink-0 md:order-none items-center justify-between gap-3 rounded-xl border border-cyan-300/12 bg-cyan-300/[0.035] px-3 py-2.5 text-left transition hover:border-cyan-300/25 hover:bg-cyan-300/[0.07] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300">
           <span className="min-w-0">
             <span className="block text-[9px] uppercase tracking-[0.16em] text-cyan-200/65">{hub.nextStep.label}</span>
             <span className="block truncate text-xs font-medium text-slate-100">{nextStepText}</span>
@@ -206,19 +207,16 @@ export default function MissionControl({
           <ArrowUpRight className="h-4 w-4 shrink-0 text-cyan-200/80" />
         </button>
 
-        <div className="mb-2 flex shrink-0 items-center justify-between px-1 md:px-3">
+        <div className="order-1 mb-2 flex shrink-0 items-center justify-between px-1 md:order-none md:px-3">
           <div className="min-w-0">
             <span className="block text-[9px] uppercase tracking-[0.2em] text-slate-600">{hub.space.eyebrow}</span>
             <span className="mt-0.5 block text-xs text-slate-400">{hub.space.hint}</span>
           </div>
-          <button type="button" onClick={() => setMapExpanded((value) => !value)} aria-expanded={mapExpanded} className="inline-flex items-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.035] px-3 py-2 text-[11px] font-medium text-slate-300 transition hover:border-cyan-300/25 hover:bg-white/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300">
-            {mapExpanded ? hub.space.hide : hub.space.show}
-            <ChevronDown className={mapExpanded ? 'h-3.5 w-3.5 rotate-180 transition-transform duration-200' : 'h-3.5 w-3.5 transition-transform duration-200'} />
-          </button>
+          <span className="rounded-full border border-cyan-300/15 bg-cyan-300/[0.05] px-3 py-2 text-[10px] font-medium text-cyan-100">{hub.space.coreStages}</span>
         </div>
 
-        {mapExpanded && visibleRows.length === 0 && <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-center"><p className="text-sm font-medium text-white">{hub.space.emptyTitle}</p><p className="mt-1 text-xs text-slate-400">{hub.space.emptyBody}</p><button type="button" onClick={() => { mapPrefsEdited.current = true; setVisibleNodeIds(defaultNodeIds); }} className="mt-3 rounded-lg border border-cyan-300/30 px-3 py-2 text-xs text-cyan-100">{hub.space.restore}</button></div>}
-        <div className={`relative hidden flex-none overflow-visible rounded-[24px] border border-white/[0.07] bg-[#0b1221]/65 ${mapExpanded ? 'lg:block' : ''} ${visibleRows.length === 0 ? 'hidden' : ''}`} style={{ height: `${mapHeight}px` }}>
+        {visibleRows.length === 0 && <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-center"><p className="text-sm font-medium text-white">{hub.space.emptyTitle}</p><p className="mt-1 text-xs text-slate-400">{hub.space.emptyBody}</p><button type="button" onClick={() => { mapPrefsEdited.current = true; setVisibleNodeIds(defaultNodeIds); }} className="mt-3 rounded-lg border border-cyan-300/30 px-3 py-2 text-xs text-cyan-100">{hub.space.restore}</button></div>}
+        <div className="relative order-1 hidden flex-none overflow-visible rounded-[24px] border border-white/[0.07] bg-[#0b1221]/65 lg:order-none lg:block" style={{ height: `${mapHeight}px` }}>
           <div className="relative min-h-[660px]" style={{ height: `${mapHeight}px` }}>
           <div className="absolute inset-0 opacity-[0.16]" style={{ backgroundImage: 'radial-gradient(#7dd3fc 0.7px, transparent 0.7px)', backgroundSize: '24px 24px' }} />
           <svg className="absolute inset-0 h-full w-full" viewBox={`0 0 1200 ${mapHeight}`} preserveAspectRatio="none" fill="none" aria-hidden="true">
@@ -267,6 +265,7 @@ export default function MissionControl({
                   type="button"
                   onClick={() => setSelectedEngine((current) => current === row.id ? null : row.id)}
                   aria-expanded={selectedEngine === row.id}
+                  aria-current={nextStepStageId === row.id ? 'step' : undefined}
                   className={`group absolute left-[35%] z-10 flex h-[76px] w-[22%] -translate-y-1/2 items-center gap-3 rounded-2xl border bg-[#111d31]/95 px-4 text-left shadow-[0_10px_35px_rgba(0,0,0,.25)] transition-[transform,background-color,box-shadow,border-color] duration-300 ease-out hover:scale-[1.015] hover:bg-[#17263d] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 ${selectedEngine === row.id ? 'ring-1 ring-white/30 bg-[#1a2940]' : ''}`}
                   style={{ top, transform: selectedEngine === row.id ? 'translateY(calc(-50% - 4px)) scale(1.015)' : undefined, borderColor: `${row.color}55`, boxShadow: selectedEngine === row.id ? `0 9px 32px ${row.color}24` : `0 0 22px ${row.color}12` }}
                 >
@@ -275,6 +274,7 @@ export default function MissionControl({
                     <span className="block text-[9px] font-semibold tracking-[0.18em]" style={{ color: row.color }}>{row.number}</span>
                     <span className="mt-0.5 block text-sm font-semibold text-white">{copy.title}</span>
                     <span className="mt-0.5 block truncate text-[10px] text-slate-500">{copy.subtitle}</span>
+                    {nextStepStageId === row.id && <span className="mt-0.5 inline-flex rounded-full bg-cyan-300/10 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wider text-cyan-200">{hub.space.nextStep}</span>}
                   </span>
                   <ArrowUpRight className="h-4 w-4 shrink-0 text-slate-600 transition group-hover:text-white" />
                 </button>
@@ -313,7 +313,7 @@ export default function MissionControl({
           </div>
         </div>
 
-        <div className={`relative min-h-0 flex-1 overflow-y-auto rounded-2xl border border-white/[0.07] bg-[#0b1221]/70 p-3 ${mapExpanded ? 'lg:hidden' : 'hidden'} ${visibleRows.length === 0 ? 'hidden' : ''}`}>
+        <div className="relative order-1 flex-none rounded-2xl border border-white/[0.07] bg-[#0b1221]/70 p-3 lg:order-none lg:hidden">
           <div className="absolute bottom-8 left-[27px] top-8 w-px bg-gradient-to-b from-violet-400 via-cyan-300 to-fuchsia-400 opacity-60" />
           <div className="relative flex flex-col gap-2.5">
             <div className="mb-1 flex items-center gap-3 rounded-xl border border-violet-300/40 bg-[#211b40] p-3">
@@ -325,9 +325,9 @@ export default function MissionControl({
               const copy = hub.engines[row.id];
               return (
                 <div key={row.id} className="relative ml-5 rounded-xl border bg-[#111d31] p-3" style={{ borderColor: `${row.color}50` }}>
-                  <button type="button" onClick={() => setSelectedEngine((current) => current === row.id ? null : row.id)} aria-expanded={selectedEngine === row.id} className="flex w-full items-center gap-3 text-left">
+                  <button type="button" onClick={() => setSelectedEngine((current) => current === row.id ? null : row.id)} aria-expanded={selectedEngine === row.id} aria-current={nextStepStageId === row.id ? 'step' : undefined} className={`flex w-full items-center gap-3 rounded-lg text-left ${nextStepStageId === row.id ? 'ring-1 ring-cyan-300/40' : ''}`}>
                     <Icon className="h-5 w-5" style={{ color: row.color }} />
-                    <span className="flex-1"><span className="block text-xs font-semibold text-white">{row.number} · {copy.title}</span><span className="block text-[10px] text-slate-500">{copy.subtitle}</span></span>
+                    <span className="flex-1"><span className="block text-xs font-semibold text-white">{row.number} · {copy.title}</span><span className="block text-[10px] text-slate-500">{copy.subtitle}</span>{nextStepStageId === row.id && <span className="mt-1 inline-flex rounded-full bg-cyan-300/10 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wider text-cyan-200">{hub.space.yourNextStep}</span>}</span>
                     <ArrowUpRight className="h-4 w-4 text-slate-500" />
                   </button>
                   {selectedEngine === row.id && <div className="ml-8 mt-2 flex flex-wrap gap-1.5">
@@ -339,7 +339,7 @@ export default function MissionControl({
           </div>
         </div>
 
-        <div className="relative mt-2 flex shrink-0 flex-wrap items-center justify-between gap-2 px-1 text-[9px] text-slate-500 md:px-3">
+        <div className="relative order-4 mt-2 flex shrink-0 flex-wrap items-center justify-between gap-2 px-1 text-[9px] text-slate-500 md:order-none md:px-3">
           <div className="relative">
             <button type="button" onClick={() => setMoreOpen((value) => !value)} aria-expanded={moreOpen} className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-medium text-slate-200 transition hover:border-cyan-300/40 hover:bg-white/[0.07]">
               <MoreHorizontal className="h-4 w-4 text-cyan-300" /> {hub.moreMenu.button} <ChevronDown className={`h-3.5 w-3.5 transition-transform ${moreOpen ? 'rotate-180' : ''}`} />
@@ -370,12 +370,13 @@ export default function MissionControl({
               {allFunctionNodes.map((node) => {
                 const NodeIcon = node.icon;
                 const copy = hub.engines[node.id];
-                const checked = visibleNodeIds.includes(node.id);
-                return <label key={node.id} className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-3 transition hover:bg-white/[0.05]">
-                  <input type="checkbox" checked={checked} onChange={() => { mapPrefsEdited.current = true; setVisibleNodeIds((current) => checked ? current.filter((id) => id !== node.id) : [...current, node.id]); if (checked && selectedEngine === node.id) setSelectedEngine(null); }} className="h-4 w-4 accent-cyan-400" />
+                const isCoreStage = defaultNodeIds.includes(node.id);
+                const checked = isCoreStage || visibleNodeIds.includes(node.id);
+                return <label key={node.id} className={`flex items-center gap-3 rounded-xl px-3 py-3 transition hover:bg-white/[0.05] ${isCoreStage ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
+                  <input type="checkbox" checked={checked} disabled={isCoreStage} onChange={() => { mapPrefsEdited.current = true; setVisibleNodeIds((current) => checked ? current.filter((id) => id !== node.id) : [...current, node.id]); if (checked && selectedEngine === node.id) setSelectedEngine(null); }} className="h-4 w-4 accent-cyan-400 disabled:opacity-50" />
                   <span className="flex h-9 w-9 items-center justify-center rounded-lg" style={{ color: node.color, backgroundColor: `${node.color}20` }}><NodeIcon className="h-4 w-4" /></span>
                   <span className="min-w-0 flex-1"><span className="block text-sm font-medium text-slate-100">{copy.title}</span><span className="block text-xs text-slate-500">{copy.subtitle}</span></span>
-                  <span className="text-[10px] text-slate-500">{checked ? hub.customize.onMap : hub.customize.add}</span>
+                  <span className="text-[10px] text-slate-500">{isCoreStage ? hub.space.coreStage : checked ? hub.customize.onMap : hub.customize.add}</span>
                 </label>;
               })}
             </div>

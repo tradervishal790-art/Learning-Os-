@@ -862,8 +862,8 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* LEFT: SEARCH */}
-            <div className="lg:col-span-1">
-              <div className="flex gap-2 mb-4">
+            <div className={`order-2 lg:order-1 lg:col-span-1 ${selectedVideo ? 'mt-4 lg:mt-0' : ''}`}>
+              <div className="flex flex-col gap-2 mb-4 sm:flex-row">
                 <div className="flex-1 relative">
                   <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400 dark:text-white/40" />
                   <input
@@ -875,13 +875,13 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                       setErrorMessage('');
                     }}
                     onKeyDown={(e) => e.key === 'Enter' && searchVideos()}
-                    className="w-full card border-0 rounded-xl pl-10 pr-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                    className="w-full min-h-11 card border-0 rounded-xl pl-10 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-400"
                   />
                 </div>
                 <button
                   onClick={searchVideos}
                   disabled={loading}
-                  className="px-5 py-2.5 bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white disabled:opacity-40 rounded-lg font-semibold transition"
+                  className="min-h-11 w-full px-5 py-2.5 bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white disabled:opacity-40 rounded-lg font-semibold transition sm:w-auto"
                 >
                   {loading ? '...' : t.videos.searchCta}
                 </button>
@@ -967,7 +967,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
             </div>
 
             {/* RIGHT: PLAYER */}
-            <div className="lg:col-span-2">
+            <div className={`order-1 lg:order-2 lg:col-span-2 ${selectedVideo ? '' : 'hidden lg:block'}`}>
               {selectedVideo ? (
                 <motion.div key={selectedVideo.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
                   {/* verified === false means Gemini actually checked the two videos'
@@ -1023,9 +1023,9 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                     />
                   )}
 
-                  <div className="card rounded-xl p-6">
+                  <div className="card rounded-xl p-4 sm:p-6">
                     <div className="mb-4">
-                      <h2 className="text-2xl font-bold mb-1">{selectedVideo.title}</h2>
+                      <h2 className="text-xl sm:text-2xl font-bold mb-1 leading-snug">{selectedVideo.title}</h2>
                       <p className="text-gray-500 dark:text-white/60">{selectedVideo.channel}</p>
                     </div>
 
@@ -1048,10 +1048,10 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                     )}
 
                     {/* Feedback + Next controls */}
-                    <div className="flex items-center gap-3 mb-4">
+                    <div className="flex flex-wrap items-center gap-2 mb-4">
                       <button
                         onClick={() => handleFeedback('like')}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition border ${
+                        className={`inline-flex min-h-11 items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition border ${
                           feedbackGiven === 'like'
                             ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white border-transparent'
                             : 'border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10'
@@ -1061,7 +1061,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                       </button>
                       <button
                         onClick={() => handleFeedback('dislike')}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition border ${
+                        className={`inline-flex min-h-11 items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition border ${
                           feedbackGiven === 'dislike'
                             ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white border-transparent'
                             : 'border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10'
@@ -1080,7 +1080,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                           }
                           navigate('/dashboard/mentor');
                         }}
-                        className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10"
+                        className="inline-flex min-h-11 items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10"
                       >
                         <MessageCircle className="w-4 h-4" /> Ask Mentor
                       </button>
@@ -1089,7 +1089,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                         <button
                           onClick={handleNextVideo}
                           disabled={loadingMore}
-                          className="ml-auto flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white hover:opacity-80 transition disabled:opacity-50"
+                          className="ml-auto inline-flex min-h-11 items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white hover:opacity-80 transition disabled:opacity-50"
                         >
                           {loadingMore ? t.videos.loadingNextCta : t.videos.nextCta} <SkipForward className="w-4 h-4" />
                         </button>
