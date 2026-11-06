@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { MENTOR_PREFILL_KEY } from './mentorPrefill';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Lightbulb, BookOpenText, Link2, ListChecks, Hammer, SendHorizontal, SquarePen, History, Trash2, X, CircleHelp, BrainCircuit, MessageCircle, Plus, Sparkles, ChevronRight } from 'lucide-react';
+import { Lightbulb, BookOpenText, Link2, ListChecks, Hammer, SendHorizontal, History, Trash2, X, CircleHelp, BrainCircuit, Sparkles, ChevronRight } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { setImmersive } from './immersive';
 import { useTranslation, useLanguage } from './i18n/LanguageContext';
@@ -269,65 +269,15 @@ export default function Mentor() {
           <div className="absolute bottom-[-35%] left-[30%] h-[460px] w-[460px] rounded-full bg-fuchsia-600/[0.08] blur-[130px]" />
         </div>
 
-        <aside className="relative z-10 hidden w-[248px] shrink-0 flex-col border-r border-white/[0.07] bg-[#0b1020]/85 px-4 py-5 backdrop-blur-xl md:flex">
-          <div className="mb-7 flex items-center gap-3 px-1">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 shadow-[0_0_24px_rgba(139,92,246,.35)]">
-              <BrainCircuit className="h-5 w-5 text-white" strokeWidth={1.8} />
-            </div>
-            <div>
-              <div className="text-sm font-semibold tracking-wide text-white">Learning OS</div>
-              <div className="text-[11px] text-slate-500">AI cognitive co-pilot</div>
-            </div>
-          </div>
-
-          <button
-            onClick={startNewChat}
-            className="mb-7 flex h-11 w-full items-center gap-3 rounded-xl bg-gradient-to-r from-violet-700/90 to-indigo-700/80 px-3 text-left text-sm font-semibold text-white shadow-[0_8px_24px_rgba(91,33,182,.18)] transition hover:from-violet-600 hover:to-indigo-600"
-          >
-            <Plus className="h-4 w-4" />
-            {t.mentor.newChat}
-          </button>
-
-          <div className="mb-3 flex items-center justify-between px-2">
-            <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">{t.mentor.history}</span>
-            <button onClick={openHistory} className="rounded-md px-2 py-1 text-[11px] text-slate-500 hover:bg-white/5 hover:text-slate-200">
-              View all
-            </button>
-          </div>
-          <div className="min-h-0 flex-1 space-y-1 overflow-y-auto pr-1">
-            {chats.length === 0 ? (
-              <div className="px-2 py-3 text-xs leading-relaxed text-slate-500">{t.mentor.historyEmpty}</div>
-            ) : (
-              chats.slice(0, 8).map((chat) => (
-                <div key={chat.id} className={`group flex items-center gap-1 rounded-lg transition ${chat.id === chatId ? 'bg-violet-500/15 text-white' : 'text-slate-400 hover:bg-white/[0.05] hover:text-slate-100'}`}>
-                  <button onClick={() => chat.id !== chatId ? switchTo(chat.id, false) : undefined} className="flex min-w-0 flex-1 items-center gap-2 px-2.5 py-2.5 text-left text-xs">
-                    <MessageCircle className="h-3.5 w-3.5 shrink-0 opacity-70" />
-                    <span className="truncate">{chat.title || t.mentor.newChat}</span>
-                  </button>
-                  <button onClick={() => setPendingDelete(chat.id)} aria-label={t.mentor.deleteChat} title={t.mentor.deleteChat} className="mr-1 hidden h-7 w-7 shrink-0 items-center justify-center rounded-md text-slate-500 hover:bg-white/10 hover:text-red-300 group-hover:flex">
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              ))
-            )}
-          </div>
-          <div className="mt-4 border-t border-white/[0.07] pt-4">
-            <div className="flex items-center gap-2 rounded-xl px-2 py-2 text-xs text-slate-500">
-              <Sparkles className="h-4 w-4 text-violet-300" />
-              <span>Personalized for your learning journey</span>
-            </div>
-          </div>
-        </aside>
-
         <main className="relative z-10 flex min-w-0 flex-1 flex-col">
           <header className="flex h-[60px] shrink-0 items-center justify-between border-b border-white/[0.06] px-4 md:px-7">
             <div className="flex min-w-0 items-center gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-500/15 text-violet-300 md:hidden">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-500/15 text-violet-300">
                 <BrainCircuit className="h-4 w-4" />
               </div>
               <div className="min-w-0">
-                <h1 className="truncate text-sm font-semibold text-white md:text-base">{t.mentor.header.title}</h1>
-                <p className="hidden truncate text-[11px] text-slate-500 sm:block">{t.mentor.header.subtitle}</p>
+                <h1 className="truncate text-sm font-semibold text-white md:text-base">AI Mentor</h1>
+                <p className="hidden truncate text-[11px] text-slate-500 sm:block">Your personal learning assistant</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -335,8 +285,8 @@ export default function Mentor() {
                 <History className="h-4 w-4" />
                 <span className="hidden sm:inline">{t.mentor.history}</span>
               </button>
-              <button onClick={startNewChat} aria-label={t.mentor.newChat} title={t.mentor.newChat} className="flex h-9 w-9 items-center justify-center rounded-full bg-violet-600 text-white shadow-[0_0_18px_rgba(139,92,246,.3)] transition hover:bg-violet-500">
-                <SquarePen className="h-4 w-4" />
+              <button onClick={startNewChat} aria-label={t.mentor.newChat} title={t.mentor.newChat} className="flex h-9 items-center gap-2 rounded-full bg-violet-600 px-3 text-xs font-semibold text-white shadow-[0_0_18px_rgba(139,92,246,.3)] transition hover:bg-violet-500">
+                <span>+</span>{t.mentor.newChat}
               </button>
             </div>
           </header>
@@ -349,7 +299,7 @@ export default function Mentor() {
                 </motion.div>
                 <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12, duration: 0.45 }} className="max-w-2xl">
                   <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.28em] text-violet-300/80">LEARNING OS · AI MENTOR</p>
-                  <h2 className="text-balance text-2xl font-semibold tracking-tight text-white sm:text-3xl md:text-[38px]">Welcome to your cognitive co-pilot</h2>
+                  <h2 className="text-balance text-2xl font-semibold tracking-tight text-white sm:text-3xl md:text-[38px]">What would you like to learn today?</h2>
                   <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-slate-400 md:text-[15px]">{t.mentor.header.subtitle}</p>
                 </motion.div>
 
