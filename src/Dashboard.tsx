@@ -23,7 +23,7 @@ import { selectPlaylistForConcept, analyzedVideoToVideo } from './PlaylistBuilde
 import { expandSearchQuery } from './queryExpander';
 import { useTheme } from './ThemeContext';
 import { signOutOfApp, getCurrentUser } from './authStore';
-import { useAuthPrompt, SignInButton } from './AuthPrompt';
+import { useAuthPrompt } from './AuthPrompt';
 import type { DashboardPageId, PageConfig, UserOnboardingData, LearningProfile, Video, Topic, Goal, TopicBridge } from './types';
 import { useTranslation } from './i18n/LanguageContext';
 import { format } from './i18n/format';
@@ -569,25 +569,26 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   );
 
   return (
-    <div className={`min-h-dvh flex text-black dark:text-white ${isMissionControl ? "bg-[#080d19] text-white" : "bg-[#f4f6ff] dark:bg-black"}`}>
-      {!isMissionControl && <aside className="hidden md:flex w-64 border-r border-gray-200 dark:border-white/10 p-6 flex-col flex-shrink-0">
+    <div className="min-h-dvh flex bg-[#080d19] text-white">
+      {!isMissionControl && <aside className="hidden md:flex w-64 bg-[#080d19] border-r border-white/10 p-6 flex-col flex-shrink-0">
         {SidebarContent}
       </aside>}
 
-      <div className={`flex-1 min-w-0 ${isMissionControl ? "h-dvh overflow-hidden bg-[#080d19]" : "overflow-auto"} md:pb-0 ${isMissionControl || immersive ? "" : "pb-[calc(4rem+env(safe-area-inset-bottom))]"}`}>
+      <div className={`flex-1 min-w-0 ${isMissionControl ? "h-dvh overflow-hidden bg-[#080d19]" : "min-h-dvh overflow-auto bg-[#080d19]"} md:pb-0 ${isMissionControl || immersive ? "" : "pb-[calc(4rem+env(safe-area-inset-bottom))]"}`}>
         {!(activePage === 'notes' && noteOpen) && (
         <motion.div
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.6 }}
-          className={`border-b px-4 md:px-8 py-2 md:py-4 flex justify-between items-center gap-3 ${isMissionControl ? "border-white/[0.07] bg-[#080d19]" : "border-gray-200 dark:border-white/10"}`}
+          className="border-b border-white/[0.07] bg-[#080d19] text-white px-4 md:px-8 py-2 md:py-4 flex justify-between items-center gap-3"
         >
           <div className="flex items-center gap-3 min-w-0">
             {activePage !== 'dashboard' && (
               <>
                 <button
                   onClick={() => setActivePage('dashboard')}
-                  aria-label="Back"
+                  aria-label="Back to Mission Control"
+                  title="Back to Mission Control"
                   className="w-10 h-10 -ml-2 rounded-full flex items-center justify-center flex-shrink-0 hover:bg-gray-100 dark:hover:bg-white/10 active:bg-gray-200 dark:active:bg-white/15 transition-colors"
                 >
                   <ArrowLeft className="w-5 h-5" strokeWidth={1.9} />
@@ -604,10 +605,9 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
             )}
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
-            <SignInButton className="px-3 md:px-4 py-2 rounded-full bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white text-sm font-semibold hover:opacity-90 transition" />
             <button id="onborda-settings-button" onClick={() => { setShowSettings(true); setShowFullProfileReport(false); }} aria-label={t.settingsModal.title} className={`w-10 h-10 md:w-auto md:h-auto md:px-4 md:py-2 rounded-full md:border text-sm flex items-center justify-center gap-2 transition-colors ${isMissionControl ? "border-white/10 text-white hover:bg-white/5" : "md:border-gray-300 md:dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10 active:bg-gray-200 dark:active:bg-white/15"}`}>
             <SettingsIcon className="w-[21px] h-[21px] md:w-4 md:h-4" strokeWidth={1.75} />
-            <span className="hidden md:inline">{t.settingsModal.title}</span>
+            <span className="hidden md:inline">Account &amp; Settings</span>
           </button>
           </div>
         </motion.div>
