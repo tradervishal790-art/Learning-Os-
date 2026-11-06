@@ -3,7 +3,7 @@ import { MENTOR_PREFILL_KEY } from './mentorPrefill';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Lightbulb, BookOpenText, Link2, ListChecks, Hammer, SendHorizontal, SquarePen, History, Trash2, X, CircleHelp, BrainCircuit, MessageCircle, Plus, Sparkles, ChevronRight } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { setImmersive, useImmersive } from './immersive';
+import { setImmersive } from './immersive';
 import { useTranslation, useLanguage } from './i18n/LanguageContext';
 import { format } from './i18n/format';
 import type { TranslationShape } from './i18n/translations';
@@ -154,7 +154,6 @@ export default function Mentor() {
   const [contextTopic, setContextTopic] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   // While the keyboard is up the bottom bar steps aside so the input gets the room.
-  const typing = useImmersive();
   useEffect(() => () => setImmersive(false), []);
 
   useEffect(() => {
@@ -469,4 +468,5 @@ export default function Mentor() {
         {pendingDelete && <ConfirmDialog danger message={t.mentor.deleteConfirm} confirmLabel={t.mentor.deleteCta} cancelLabel={t.mentor.cancelCta} onConfirm={confirmDelete} onCancel={() => setPendingDelete(null)} />}
       </div>
     </div>
-  );}
+  );
+}
