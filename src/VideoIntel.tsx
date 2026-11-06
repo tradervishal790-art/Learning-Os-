@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Play, CheckCircle, ThumbsUp, ThumbsDown, SkipForward, MessageCircle, Link2, X as CloseIcon } from 'lucide-react';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { Search, Play, CheckCircle, ThumbsUp, ThumbsDown, SkipForward, MessageCircle, Link2, ArrowLeft, ArrowRight, Film, Sparkles, Users, X as CloseIcon } from 'lucide-react';
 import type { Video, VideoWatchData, WatchHistoryEntry, EngagementSession, FeedbackValue, Topic, TopicBridge } from './types';
 import { withComputedSignal } from './engagementScoring';
 import { upsertEngagementSession } from './engagementStore';
@@ -21,6 +21,7 @@ import { format } from './i18n/format';
 import { authFetch } from './apiFetch';
 import { pullSharedSearch, pushSharedSearch } from './sharedVideoCache';
 import { contributeSharedVideoSignal, getSharedVideoLearningSummary, type SharedVideoLearningSummary } from './sharedLearningIntelligence';
+import { GlassPanel, GlassButton, ProgressRing } from './ui/kit';
 
 declare global {
   interface Window {
@@ -252,8 +253,15 @@ interface VideoIntelProps {
   allGoalIds?: string[];
 }
 
+// Shared class strings for the dark stage (kept here so every button looks and focuses the same).
+const FOCUS = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300';
+const PILL = `inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2 text-sm font-medium text-slate-200 transition hover:border-violet-300/40 hover:bg-violet-400/10 hover:text-white motion-reduce:transition-none disabled:opacity-50 ${FOCUS}`;
+const PILL_ON = `inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-transparent bg-violet-500 px-4 py-2 text-sm font-medium text-white shadow-[0_0_18px_rgba(139,92,246,.4)] transition hover:bg-violet-400 motion-reduce:transition-none ${FOCUS}`;
+const PRIMARY = `inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-violet-500 px-5 py-2 text-sm font-semibold text-white shadow-[0_0_18px_rgba(139,92,246,.4)] transition hover:-translate-y-0.5 hover:bg-violet-400 motion-reduce:transition-none motion-reduce:hover:translate-y-0 disabled:opacity-50 disabled:shadow-none disabled:hover:translate-y-0 ${FOCUS}`;
+
 export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicId, allGoalIds }: VideoIntelProps = {}) {
   const t = useTranslation();
+  const reduce = useReducedMotion();
   const { startOnborda } = useOnborda();
   // Every active goal, active-tab first (checked first so ties resolve in
   // the learner's favor) — deduped in case activeGoalId is also in the list.
@@ -740,7 +748,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data?.error || 'YouTube API error');
+        throw new Error(data?.error || t.videos.errors.searchFailed);
       }
       if (!data.items?.length) {
         setErrorMessage(t.videos.errors.noVideosFound);
@@ -842,330 +850,364 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
   const hasNextVideo = !!selectedVideo;
 
   return (
-    <div className="min-h-dvh text-black dark:text-white">
-      {showDeepNotes && selectedVideo ? (
-        <div className="p-4 md:p-8">
-          <button
-            onClick={() => setShowDeepNotes(false)}
-            className="mb-6 px-4 py-2 border border-gray-300 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg font-semibold transition"
-          >
-            {t.videos.backToVideo}
-          </button>
-          <Notes videoTitle={selectedVideo.title} videoId={selectedVideo.id} />
+    <div className="dark">
+      <div className="relative min-h-dvh overflow-hidden bg-[#080d19] p-4 text-slate-100 md:p-8">
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute -left-32 -top-40 h-[420px] w-[420px] rounded-full bg-violet-600/[0.13] blur-[120px]" />
+          <div className="absolute -right-24 top-1/3 h-[380px] w-[380px] rounded-full bg-cyan-500/[0.08] blur-[120px]" />
         </div>
-      ) : (
-        <div className="p-4 md:p-8">
-          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-5 md:mb-8">
-            <h1 className="text-2xl md:text-4xl font-bold mb-1 md:mb-2">{t.videos.header.title}</h1>
-            <p className="text-sm md:text-base text-gray-500 dark:text-white/60">{t.videos.header.subtitle}</p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* LEFT: SEARCH */}
-            <div className="lg:col-span-1">
-              <div className="flex gap-2 mb-4">
-                <div className="flex-1 relative">
-                  <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400 dark:text-white/40" />
-                  <input
-                    type="text"
-                    placeholder={t.videos.searchPlaceholder}
-                    value={searchQuery}
-                    onChange={(e) => {
-                      setSearchQuery(e.target.value);
-                      setErrorMessage('');
-                    }}
-                    onKeyDown={(e) => e.key === 'Enter' && searchVideos()}
-                    className="w-full card border-0 rounded-xl pl-10 pr-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                  />
-                </div>
-                <button
-                  onClick={searchVideos}
-                  disabled={loading}
-                  className="px-5 py-2.5 bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white disabled:opacity-40 rounded-lg font-semibold transition"
-                >
-                  {loading ? '...' : t.videos.searchCta}
-                </button>
-              </div>
-
-              <AnimatePresence>
-                {errorMessage && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="mb-4 border border-gray-300 dark:border-white/20 rounded-lg p-3 text-sm"
-                  >
-                    {errorMessage}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              <div className="flex flex-wrap gap-2 mb-6">
-                {suggestions.map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => setSearchQuery(s)}
-                    className="px-3 py-1.5 border border-gray-200 dark:border-white/10 rounded-full text-sm hover:bg-gray-100 dark:hover:bg-white/10 transition"
-                  >
-                    {s}
-                  </button>
-                ))}
-              </div>
-
-              {videos.length > 1 && (
-                <HintBubble id="video-picker" text="3 styles, same topic — pick the one that clicks, you don't need all 3." />
-              )}
-              <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
-                {videos.length === 0 ? (
-                  <div className="text-center py-8 md:py-12 text-gray-400 dark:text-white/60">
-                    <Play className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                    <p>{t.videos.noResultsYet}</p>
-                  </div>
-                ) : (
-                  videos.map((video, i) => {
-                    const watched = watchHistory.find((w) => w.videoId === video.id);
-                    return (
-                      <motion.button
-                        type="button"
-                        key={video.id}
-                        id={i === 0 ? 'onborda-video-primary' : i === 1 ? 'onborda-video-fallback' : undefined}
-                        aria-pressed={selectedVideo?.id === video.id}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: i * 0.04 }}
-                        onClick={() => {
-                          finalizeAndSaveSession();
-                          setSelectedVideo(video);
-                          // Verify against WHICHEVER video the learner actually
-                          // picked — primary or fallback — not always primary.
-                          void verifyBridgeForVideo(video);
-                        }}
-                        className={`w-full p-3 text-left rounded-lg cursor-pointer transition border ${
-                          selectedVideo?.id === video.id
-                            ? 'border-black dark:border-white bg-gray-50 dark:bg-white/10'
-                            : 'border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/10'
-                        }`}
-                      >
-                        <div className="flex gap-3">
-                          <div className="relative flex-shrink-0">
-                            <img src={video.thumbnail} alt="" className="w-20 h-12 rounded object-cover" />
-                            {watched && (
-                              <CheckCircle className="w-4 h-4 text-black dark:text-white absolute -top-1 -right-1 bg-white dark:bg-black rounded-full" />
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold text-sm line-clamp-2">{video.title}</h3>
-                            <p className="text-xs text-gray-500 dark:text-white/60">{video.channel}</p>
-                            {watched && <span className="text-xs text-gray-500 dark:text-white/60">{format(t.videos.score, watched.aiScore)}</span>}
-                          </div>
-                        </div>
-                      </motion.button>
-                    );
-                  })
-                )}
-              </div>
+        <div className="relative">
+          {showDeepNotes && selectedVideo ? (
+            <div>
+              <button type="button" onClick={() => setShowDeepNotes(false)} className={`${PILL} mb-6`}>
+                <ArrowLeft className="h-4 w-4" aria-hidden="true" /> {t.videos.backToVideo}
+              </button>
+              <Notes videoTitle={selectedVideo.title} videoId={selectedVideo.id} />
             </div>
+          ) : (
+            <>
+              <motion.div initial={reduce ? false : { opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-5 flex items-center gap-3 md:mb-8">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-400/15 text-violet-200">
+                  <Film className="h-5 w-5" strokeWidth={1.75} aria-hidden="true" />
+                </span>
+                <div className="min-w-0">
+                  <h1 className="text-2xl font-semibold tracking-tight md:text-4xl">{t.videos.header.title}</h1>
+                  <p className="mt-0.5 text-sm text-slate-400 md:text-base">{t.videos.header.subtitle}</p>
+                </div>
+              </motion.div>
 
-            {/* RIGHT: PLAYER */}
-            <div className="lg:col-span-2">
-              {selectedVideo ? (
-                <motion.div key={selectedVideo.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-                  {/* verified === false means Gemini actually checked the two videos'
-                      real content and found no genuine connection — showing the
-                      original unproven claim in that case would be worse than
-                      showing nothing, so it's suppressed rather than displayed
-                      softened. verified === undefined ("not checked") still shows
-                      normally, same as before this feature existed. Shown for
-                      whichever video is actually selected — primary or fallback —
-                      since verifyBridgeForVideo now re-checks on every pick. */}
-                  {activeBridge && activeBridge.verified !== false && (
-                    <div className="flex items-start gap-2 p-4 rounded-xl border border-gray-300 dark:border-white/20 card">
-                      <Link2 className="w-4 h-4 flex-shrink-0 mt-0.5" strokeWidth={1.75} />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1 text-xs text-gray-400 dark:text-white/40">
-                          <span>{activeBridge.fromTopicTitle}</span>
-                          <span>→</span>
-                          <span className="text-black dark:text-white font-medium">{activeBridge.toTopicTitle}</span>
-                          {activeBridge.verified === true && (
-                            <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded-full bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white">
-                              {t.videos.verifiedBadge}
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-sm text-gray-600 dark:text-white/70 leading-relaxed">{activeBridge.connectText}</p>
-                      </div>
-                      <button
-                        onClick={() => setActiveBridge(null)}
-                        className="w-10 h-10 -m-2 flex items-center justify-center text-gray-400 dark:text-white/40 hover:text-black dark:hover:text-white transition flex-shrink-0"
-                        aria-label={t.videos.dismissAria}
-                      >
-                        <CloseIcon className="w-4 h-4" strokeWidth={1.75} />
-                      </button>
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:gap-6">
+                {/* LEFT: SEARCH */}
+                <div className="lg:col-span-4">
+                  <div className="mb-3 flex gap-2">
+                    <div className="relative flex-1">
+                      <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" aria-hidden="true" />
+                      <input
+                        type="text"
+                        aria-label={t.videos.searchPlaceholder}
+                        placeholder={t.videos.searchPlaceholder}
+                        value={searchQuery}
+                        onChange={(e) => {
+                          setSearchQuery(e.target.value);
+                          setErrorMessage('');
+                        }}
+                        onKeyDown={(e) => e.key === 'Enter' && searchVideos()}
+                        className="w-full rounded-xl border border-white/10 bg-white/5 py-3 pl-10 pr-4 text-slate-100 placeholder-white/40 transition focus:border-violet-400 focus:shadow-[0_0_18px_rgba(139,92,246,.25)] focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-300/60"
+                      />
                     </div>
-                  )}
-                  <div className="bg-black rounded-2xl overflow-hidden border border-gray-200 dark:border-white/10">
-                    <YouTubePlayer
-                      videoId={selectedVideo.id}
-                      playerRef={playerRef}
-                      onReady={onPlayerReady}
-                      onStateChange={onPlayerStateChange}
-                      onPlaybackRateChange={onPlaybackRateChange}
-                    />
+                    <button type="button" onClick={searchVideos} disabled={loading} className={`${PRIMARY} shrink-0`}>
+                      {loading ? '...' : t.videos.searchCta}
+                    </button>
                   </div>
 
-                  {recallFor === selectedVideo.id && (
-                    <RecallCheck
-                      videoId={selectedVideo.id}
-                      onDone={() => {
-                        setRecallFor(null);
-                        handleNextVideo();
-                      }}
-                    />
-                  )}
-
-                  <div className="card rounded-xl p-6">
-                    <div className="mb-4">
-                      <h2 className="text-2xl font-bold mb-1">{selectedVideo.title}</h2>
-                      <p className="text-gray-500 dark:text-white/60">{selectedVideo.channel}</p>
-                    </div>
-
-                    {sharedLearningSummary && (
-                      <div className="rounded-xl border border-indigo-200/60 dark:border-indigo-400/20 bg-indigo-50/50 dark:bg-indigo-400/5 p-3 mb-4">
-                        <p className="text-xs font-semibold text-indigo-700 dark:text-indigo-300 mb-1">
-                          Community learning signal · 10+ accounts
-                        </p>
-                        <p className="text-sm text-gray-700 dark:text-white/80">
-                          {sharedLearningSummary.completedRate >= 65
-                            ? 'Most contributing accounts reached the end of this video.'
-                            : sharedLearningSummary.earlyDropRate >= 45
-                              ? 'Many contributing accounts stopped in the early part of this video.'
-                              : 'Learner outcomes are mixed for this video.'}
-                        </p>
-                        <p className="text-[11px] text-gray-500 dark:text-white/40 mt-1">
-                          {sharedLearningSummary.completedRate}% completed · {sharedLearningSummary.earlyDropRate}% stopped early. This is a group signal, not a prediction of your result.
-                        </p>
-                      </div>
+                  <AnimatePresence>
+                    {errorMessage && (
+                      <motion.div
+                        role="alert"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="mb-4 rounded-xl border border-red-400/30 bg-red-400/[0.08] p-3 text-sm text-red-200"
+                      >
+                        {errorMessage}
+                      </motion.div>
                     )}
+                  </AnimatePresence>
 
-                    {/* Feedback + Next controls */}
-                    <div className="flex items-center gap-3 mb-4">
+                  <div className="mb-5 flex flex-wrap gap-2">
+                    {suggestions.map((s) => (
                       <button
-                        onClick={() => handleFeedback('like')}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition border ${
-                          feedbackGiven === 'like'
-                            ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white border-transparent'
-                            : 'border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10'
-                        }`}
+                        type="button"
+                        key={s}
+                        onClick={() => setSearchQuery(s)}
+                        className={`rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs text-slate-300 transition hover:border-violet-300/50 hover:bg-violet-400/10 hover:text-white motion-reduce:transition-none ${FOCUS}`}
                       >
-                        <ThumbsUp className="w-4 h-4" /> {t.videos.helpfulCta}
+                        {s}
                       </button>
-                      <button
-                        onClick={() => handleFeedback('dislike')}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition border ${
-                          feedbackGiven === 'dislike'
-                            ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white border-transparent'
-                            : 'border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10'
-                        }`}
-                      >
-                        <ThumbsDown className="w-4 h-4" /> {t.videos.notForMeCta}
-                      </button>
+                    ))}
+                  </div>
 
-                      <button
-                        onClick={() => {
-                          const topicTitle = (activeTopicId && findTopicById(activeTopicId, getRoadmapData(activeGoalId))?.title) || selectedVideo.title;
-                          try {
-                            sessionStorage.setItem(MENTOR_PREFILL_KEY, `I'm studying "${topicTitle}" and I need help with: `);
-                          } catch {
-                            // best effort
-                          }
-                          navigate('/dashboard/mentor');
-                        }}
-                        className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10"
-                      >
-                        <MessageCircle className="w-4 h-4" /> Ask Mentor
-                      </button>
+                  {videos.length > 1 && <HintBubble id="video-picker" text={t.videos.pickHint} />}
+                  <div aria-busy={loading} className="max-h-[600px] space-y-3 overflow-y-auto pr-2 [scrollbar-color:rgba(255,255,255,.18)_transparent] [scrollbar-width:thin]">
+                    {videos.length === 0 ? (
+                      loading ? (
+                        <div aria-hidden="true" className="space-y-3">
+                          {[0, 1, 2].map((i) => (
+                            <div key={i} className="flex animate-pulse gap-3 rounded-2xl border border-white/[0.08] bg-white/[0.035] p-3 motion-reduce:animate-none">
+                              <div className="h-12 w-20 shrink-0 rounded-lg bg-white/10" />
+                              <div className="flex-1 space-y-2 pt-1">
+                                <div className="h-3 w-4/5 rounded bg-white/10" />
+                                <div className="h-3 w-2/5 rounded bg-white/[0.07]" />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="py-8 text-center text-slate-400 md:py-12">
+                          <span className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-violet-400/10 text-violet-300 shadow-[0_0_30px_rgba(139,92,246,.25)]">
+                            <Play className="h-7 w-7" aria-hidden="true" />
+                          </span>
+                          <p>{t.videos.noResultsYet}</p>
+                        </div>
+                      )
+                    ) : (
+                      videos.map((video, i) => {
+                        const watched = watchHistory.find((w) => w.videoId === video.id);
+                        const isSelected = selectedVideo?.id === video.id;
+                        return (
+                          <GlassButton
+                            key={video.id}
+                            id={i === 0 ? 'onborda-video-primary' : i === 1 ? 'onborda-video-fallback' : undefined}
+                            pressed={isSelected}
+                            accent="#a78bfa"
+                            className={`w-full ${isSelected ? 'ring-1 shadow-[0_0_24px_rgba(167,139,250,.2)]' : ''}`}
+                            onClick={() => {
+                              finalizeAndSaveSession();
+                              setSelectedVideo(video);
+                              // Verify against WHICHEVER video the learner actually
+                              // picked — primary or fallback — not always primary.
+                              void verifyBridgeForVideo(video);
+                            }}
+                          >
+                            <span className="flex gap-3 p-3">
+                              <span className="relative block shrink-0">
+                                <img src={video.thumbnail} alt="" loading="lazy" className="h-12 w-20 rounded-lg object-cover" />
+                                {watched && (
+                                  <CheckCircle className="absolute -right-1 -top-1 h-4 w-4 rounded-full bg-[#080d19] text-emerald-300" aria-hidden="true" />
+                                )}
+                              </span>
+                              <span className="block min-w-0 flex-1">
+                                <span className="line-clamp-2 block text-sm font-semibold">{video.title}</span>
+                                <span className="block truncate text-xs text-slate-400">{video.channel}</span>
+                                {watched && <span className="block text-xs text-emerald-300/80">{format(t.videos.score, watched.aiScore)}</span>}
+                              </span>
+                              {isSelected && (
+                                <span aria-hidden="true" className="mt-1 h-2 w-2 shrink-0 animate-pulse rounded-full bg-violet-300 shadow-[0_0_10px_rgba(167,139,250,.9)] motion-reduce:animate-none" />
+                              )}
+                            </span>
+                          </GlassButton>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
 
-                      {hasNextVideo && (
-                        <button
-                          onClick={handleNextVideo}
-                          disabled={loadingMore}
-                          className="ml-auto flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white hover:opacity-80 transition disabled:opacity-50"
-                        >
-                          {loadingMore ? t.videos.loadingNextCta : t.videos.nextCta} <SkipForward className="w-4 h-4" />
-                        </button>
+                {/* RIGHT: PLAYER */}
+                <div className="lg:col-span-8">
+                  {selectedVideo ? (
+                    <motion.div key={selectedVideo.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4 md:space-y-6">
+                      {/* verified === false means Gemini actually checked the two videos'
+                          real content and found no genuine connection — showing the
+                          original unproven claim in that case would be worse than
+                          showing nothing, so it's suppressed rather than displayed
+                          softened. verified === undefined ("not checked") still shows
+                          normally, same as before this feature existed. Shown for
+                          whichever video is actually selected — primary or fallback —
+                          since verifyBridgeForVideo now re-checks on every pick. */}
+                      {activeBridge && activeBridge.verified !== false && (
+                        <div className="flex items-start gap-3 rounded-2xl border border-cyan-300/20 bg-cyan-400/[0.06] p-4">
+                          <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-cyan-400/15 text-cyan-200">
+                            <Link2 className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <div className="mb-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-400">
+                              <span>{activeBridge.fromTopicTitle}</span>
+                              <ArrowRight className="h-3 w-3" aria-hidden="true" />
+                              <span className="font-medium text-slate-100">{activeBridge.toTopicTitle}</span>
+                              {activeBridge.verified === true && (
+                                <span className="rounded-full bg-emerald-400/15 px-2 py-0.5 text-[10px] font-medium text-emerald-200">
+                                  {t.videos.verifiedBadge}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-sm leading-relaxed text-slate-300">{activeBridge.connectText}</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setActiveBridge(null)}
+                            className={`-m-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-white/10 hover:text-white ${FOCUS}`}
+                            aria-label={t.videos.dismissAria}
+                          >
+                            <CloseIcon className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
+                          </button>
+                        </div>
                       )}
-                    </div>
 
-                    <div className="border border-gray-200 dark:border-white/10 rounded-lg p-4 mb-4">
-                      <h3 className="font-semibold mb-3">{t.videos.watchProgress.title}</h3>
-                      <div className="flex justify-between text-sm mb-2">
-                        <span>{t.videos.watchProgress.watched}</span>
-                        <span className="text-gray-500 dark:text-white/60">
-                          {formatTime(watchStats.watchedDuration)} / {formatTime(watchStats.totalDuration)}
-                        </span>
-                      </div>
-                      <div className="w-full bg-gray-100 dark:bg-white/10 rounded-full h-2 mb-4">
-                        <div
-                          className="h-full bg-black dark:bg-white rounded-full transition-all"
-                          style={{ width: `${watchStats.watchPercentage}%` }}
+                      <div className="overflow-hidden rounded-2xl border border-white/[0.08] bg-black shadow-[0_0_40px_rgba(167,139,250,.12)]">
+                        <YouTubePlayer
+                          videoId={selectedVideo.id}
+                          playerRef={playerRef}
+                          onReady={onPlayerReady}
+                          onStateChange={onPlayerStateChange}
+                          onPlaybackRateChange={onPlaybackRateChange}
                         />
                       </div>
-                      <div className="grid grid-cols-2 gap-2 text-sm">
-                        <div className="flex justify-between">
-                          <span>{t.videos.watchProgress.pauses}</span>
-                          <span className="text-gray-500 dark:text-white/60">{watchStats.pauseCount}x</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>{t.videos.watchProgress.rewinds}</span>
-                          <span className="text-gray-500 dark:text-white/60">{watchStats.rewindCount}x</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>{t.videos.watchProgress.speed}</span>
-                          <span className="text-gray-500 dark:text-white/60">{watchStats.playbackSpeed}x</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>{t.videos.watchProgress.complete}</span>
-                          <span className="text-gray-500 dark:text-white/60">{Math.round(watchStats.watchPercentage)}%</span>
-                        </div>
-                      </div>
-                    </div>
 
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => setShowDeepNotes(true)}
-                        className="flex-1 px-4 py-2.5 border border-gray-300 dark:border-white/10 rounded-lg font-semibold hover:bg-gray-100 dark:hover:bg-white/10 transition"
-                      >
-                        {t.videos.deepNotesCta}
-                      </button>
-                      <button
-                        onClick={() => setShowResearch((v) => !v)}
-                        className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-semibold transition border ${
-                          showResearch
-                            ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white border-transparent'
-                            : 'border-gray-300 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10'
-                        }`}
-                      >
-                        <Search className="w-4 h-4" /> {t.videos.researchCta}
-                      </button>
-                    </div>
-                  </div>
+                      {recallFor === selectedVideo.id && (
+                        <RecallCheck
+                          videoId={selectedVideo.id}
+                          onDone={() => {
+                            setRecallFor(null);
+                            handleNextVideo();
+                          }}
+                        />
+                      )}
 
-                  {showResearch && (
-                    <Research key={selectedVideo.id} embedded onClose={() => setShowResearch(false)} />
+                      <GlassPanel accent="#a78bfa">
+                        <div className="p-4 md:p-6">
+                          <div className="mb-4">
+                            <h2 className="mb-1 text-xl font-semibold md:text-2xl">{selectedVideo.title}</h2>
+                            <p className="text-slate-400">{selectedVideo.channel}</p>
+                          </div>
+
+                          {sharedLearningSummary && (
+                            <div className="mb-4 border-t border-white/[0.07] pt-4">
+                              <p className="mb-1 flex items-center gap-2 text-xs font-semibold text-emerald-200">
+                                <Users className="h-3.5 w-3.5" aria-hidden="true" /> {t.videos.community.title}
+                              </p>
+                              <p className="text-sm text-slate-200">
+                                {sharedLearningSummary.completedRate >= 65
+                                  ? t.videos.community.mostFinished
+                                  : sharedLearningSummary.earlyDropRate >= 45
+                                    ? t.videos.community.manyStopped
+                                    : t.videos.community.mixed}
+                              </p>
+                              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                                {[
+                                  { label: format(t.videos.community.completed, sharedLearningSummary.completedRate), value: sharedLearningSummary.completedRate, bar: 'from-emerald-400 to-cyan-300 shadow-[0_0_10px_rgba(52,211,153,.5)]' },
+                                  { label: format(t.videos.community.stoppedEarly, sharedLearningSummary.earlyDropRate), value: sharedLearningSummary.earlyDropRate, bar: 'from-amber-300 to-amber-400 shadow-[0_0_10px_rgba(252,211,77,.4)]' },
+                                ].map((row) => (
+                                  <div key={row.label}>
+                                    <div className="mb-1 text-[11px] text-slate-400">{row.label}</div>
+                                    <div className="h-1.5 overflow-hidden rounded-full bg-white/[0.07]">
+                                      <motion.div
+                                        initial={reduce ? false : { width: 0 }}
+                                        animate={{ width: `${Math.max(0, Math.min(100, row.value))}%` }}
+                                        transition={{ duration: 0.8, ease: 'easeOut' }}
+                                        className={`h-full rounded-full bg-gradient-to-r ${row.bar}`}
+                                      />
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                              <p className="mt-2 text-[11px] text-slate-500">{t.videos.community.disclaimer}</p>
+                            </div>
+                          )}
+
+                          {/* Feedback + Next controls */}
+                          <div className="mb-4 flex flex-wrap items-center gap-2 border-t border-white/[0.07] pt-4">
+                            <button
+                              type="button"
+                              aria-pressed={feedbackGiven === 'like'}
+                              onClick={() => handleFeedback('like')}
+                              className={feedbackGiven === 'like' ? PILL_ON : PILL}
+                            >
+                              <ThumbsUp className="h-4 w-4" aria-hidden="true" /> {t.videos.helpfulCta}
+                            </button>
+                            <button
+                              type="button"
+                              aria-pressed={feedbackGiven === 'dislike'}
+                              onClick={() => handleFeedback('dislike')}
+                              className={feedbackGiven === 'dislike' ? PILL_ON : PILL}
+                            >
+                              <ThumbsDown className="h-4 w-4" aria-hidden="true" /> {t.videos.notForMeCta}
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const topicTitle = (activeTopicId && findTopicById(activeTopicId, getRoadmapData(activeGoalId))?.title) || selectedVideo.title;
+                                try {
+                                  sessionStorage.setItem(MENTOR_PREFILL_KEY, format(t.videos.mentorPrefill, topicTitle));
+                                } catch {
+                                  // best effort
+                                }
+                                navigate('/dashboard/mentor');
+                              }}
+                              className={PILL}
+                            >
+                              <MessageCircle className="h-4 w-4" aria-hidden="true" /> {t.videos.askMentorCta}
+                            </button>
+
+                            {hasNextVideo && (
+                              <button type="button" onClick={handleNextVideo} disabled={loadingMore} aria-busy={loadingMore} className={`${PRIMARY} ml-auto`}>
+                                {loadingMore ? t.videos.loadingNextCta : t.videos.nextCta} <SkipForward className="h-4 w-4" aria-hidden="true" />
+                              </button>
+                            )}
+                          </div>
+
+                          <div className="border-t border-white/[0.07] pt-4">
+                            <h3 className="mb-3 text-sm font-semibold text-slate-200">{t.videos.watchProgress.title}</h3>
+                            <div className="flex items-center gap-4 md:gap-6">
+                              <div role="img" aria-label={`${t.videos.watchProgress.complete}: ${Math.round(watchStats.watchPercentage)}%`}>
+                                <ProgressRing value={watchStats.watchPercentage} size={96} stroke={8} color="#67e8f9">
+                                  <span className="text-xl font-semibold tabular-nums text-white">{Math.round(watchStats.watchPercentage)}%</span>
+                                  <span className="mt-0.5 text-[9px] uppercase tracking-[0.14em] text-slate-500">{t.videos.watchProgress.complete}</span>
+                                </ProgressRing>
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <div className="mb-3 flex items-baseline justify-between gap-2 text-sm">
+                                  <span className="text-slate-400">{t.videos.watchProgress.watched}</span>
+                                  <span className="tabular-nums text-slate-100">
+                                    {formatTime(watchStats.watchedDuration)} / {formatTime(watchStats.totalDuration)}
+                                  </span>
+                                </div>
+                                <div className="grid grid-cols-3 gap-2 text-center">
+                                  {[
+                                    { label: t.videos.watchProgress.pauses, value: `${watchStats.pauseCount}x` },
+                                    { label: t.videos.watchProgress.rewinds, value: `${watchStats.rewindCount}x` },
+                                    { label: t.videos.watchProgress.speed, value: `${watchStats.playbackSpeed}x` },
+                                  ].map((stat) => (
+                                    <div key={stat.label}>
+                                      <div className="text-lg font-semibold tabular-nums">{stat.value}</div>
+                                      <div className="text-[10px] uppercase tracking-wider text-slate-500">{stat.label}</div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="mt-4 flex flex-wrap gap-2 border-t border-white/[0.07] pt-4">
+                            <button type="button" onClick={() => setShowDeepNotes(true)} className={PILL}>
+                              <Sparkles className="h-4 w-4" aria-hidden="true" /> {t.videos.deepNotesCta}
+                            </button>
+                            <button
+                              type="button"
+                              aria-pressed={showResearch}
+                              onClick={() => setShowResearch((v) => !v)}
+                              className={showResearch ? PILL_ON : PILL}
+                            >
+                              <Search className="h-4 w-4" aria-hidden="true" /> {t.videos.researchCta}
+                            </button>
+                          </div>
+                        </div>
+                      </GlassPanel>
+
+                      {showResearch && (
+                        <Research key={selectedVideo.id} embedded onClose={() => setShowResearch(false)} />
+                      )}
+                    </motion.div>
+                  ) : (
+                    <div className="hidden h-96 lg:block">
+                      <GlassPanel accent="#a78bfa" className="h-full">
+                        <div className="flex h-full items-center justify-center p-6 text-center">
+                          <div>
+                            <span className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-violet-400/10 text-violet-300 shadow-[0_0_30px_rgba(139,92,246,.25)]">
+                              <Play className="h-7 w-7" aria-hidden="true" />
+                            </span>
+                            <p className="text-slate-400">{t.videos.selectVideoPrompt}</p>
+                          </div>
+                        </div>
+                      </GlassPanel>
+                    </div>
                   )}
-                </motion.div>
-              ) : (
-                <div className="hidden lg:flex h-96 card rounded-2xl items-center justify-center">
-                  <div className="text-center">
-                    <Play className="w-16 h-16 mx-auto mb-4 text-gray-300 dark:text-white/30" />
-                    <p className="text-gray-500 dark:text-white/60">{t.videos.selectVideoPrompt}</p>
-                  </div>
                 </div>
-              )}
-            </div>
-          </div>
+              </div>
+            </>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }

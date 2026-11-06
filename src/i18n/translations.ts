@@ -849,6 +849,18 @@ export interface TranslationShape {
     selectVideoPrompt: string;
     verifiedBadge: string;
     dismissAria: string;
+    pickHint: string;
+    askMentorCta: string;
+    mentorPrefill: string; // "{0}" = topic title; ends with a space so the learner can keep typing
+    community: {
+      title: string;
+      mostFinished: string;
+      manyStopped: string;
+      mixed: string;
+      completed: string; // "{0}" = percent
+      stoppedEarly: string; // "{0}" = percent
+      disclaimer: string;
+    };
     errors: {
       noMoreVideos: string; // "{0}" = search query
       searchSomethingFirst: string;
@@ -2640,7 +2652,7 @@ export const translations: Record<Locale, TranslationShape> = {
       searchPlaceholder: 'Search videos...',
       searchCta: 'Search',
       noResultsYet: 'Start with a search',
-      backToVideo: '← Back to Video',
+      backToVideo: 'Back to Video',
       score: 'Score: {0}/100',
       helpfulCta: 'Helpful',
       notForMeCta: 'Not for me',
@@ -2649,21 +2661,33 @@ export const translations: Record<Locale, TranslationShape> = {
       watchProgress: {
         title: 'Watch Progress',
         watched: 'Watched',
-        pauses: 'Pauses:',
-        rewinds: 'Rewinds:',
-        speed: 'Speed:',
-        complete: 'Complete:',
+        pauses: 'Pauses',
+        rewinds: 'Rewinds',
+        speed: 'Speed',
+        complete: 'Complete',
       },
       deepNotesCta: 'Deep Notes',
       researchCta: 'Research',
       selectVideoPrompt: 'Select a video to watch',
       verifiedBadge: 'verified',
       dismissAria: 'Dismiss',
+      pickHint: '3 styles, same topic — pick the one that clicks, you don\u2019t need all 3.',
+      askMentorCta: 'Ask Mentor',
+      mentorPrefill: "I'm studying \"{0}\" and I need help with: ",
+      community: {
+        title: 'Community learning signal · 10+ accounts',
+        mostFinished: 'Most contributing accounts reached the end of this video.',
+        manyStopped: 'Many contributing accounts stopped in the early part of this video.',
+        mixed: 'Learner outcomes are mixed for this video.',
+        completed: '{0}% completed',
+        stoppedEarly: '{0}% stopped early',
+        disclaimer: 'This is a group signal, not a prediction of your result.',
+      },
       errors: {
         noMoreVideos: 'No more new videos for "{0}" — you\u2019ve seen them all.',
         searchSomethingFirst: 'Search for something first',
         noVideosFound: 'No videos found, try searching something else',
-        searchFailed: 'Search failed, check console',
+        searchFailed: 'Search failed, please try again',
       },
     },
     mentor: {
@@ -4451,7 +4475,7 @@ export const translations: Record<Locale, TranslationShape> = {
       searchPlaceholder: 'वीडियो खोजें...',
       searchCta: 'खोजें',
       noResultsYet: 'खोजकर शुरू करें',
-      backToVideo: '← वीडियो पर वापस जाएं',
+      backToVideo: 'वीडियो पर वापस जाएं',
       score: 'स्कोर: {0}/100',
       helpfulCta: 'मददगार',
       notForMeCta: 'मेरे लिए नहीं',
@@ -4460,21 +4484,33 @@ export const translations: Record<Locale, TranslationShape> = {
       watchProgress: {
         title: 'देखने की प्रगति',
         watched: 'देखा गया',
-        pauses: 'रुका:',
-        rewinds: 'पीछे किया:',
-        speed: 'स्पीड:',
-        complete: 'पूरा:',
+        pauses: 'रुका',
+        rewinds: 'पीछे किया',
+        speed: 'स्पीड',
+        complete: 'पूरा',
       },
       deepNotesCta: 'डीप नोट्स',
       researchCta: 'रिसर्च',
       selectVideoPrompt: 'देखने के लिए एक वीडियो चुनें',
       verifiedBadge: 'सत्यापित',
       dismissAria: 'बंद करें',
+      pickHint: '3 अलग अंदाज़, एक ही टॉपिक — जो आपको जमे वही चुनें, तीनों देखने की ज़रूरत नहीं।',
+      askMentorCta: 'मेंटर से पूछें',
+      mentorPrefill: 'मैं "{0}" पढ़ रहा हूं और मुझे इसमें मदद चाहिए: ',
+      community: {
+        title: 'कम्युनिटी का सीखने का संकेत · 10+ अकाउंट',
+        mostFinished: 'योगदान देने वाले ज़्यादातर अकाउंट ने यह वीडियो आखिर तक देखा।',
+        manyStopped: 'योगदान देने वाले कई अकाउंट ने यह वीडियो शुरुआत में ही छोड़ दिया।',
+        mixed: 'इस वीडियो पर सीखने वालों के नतीजे मिले-जुले हैं।',
+        completed: '{0}% ने पूरा देखा',
+        stoppedEarly: '{0}% ने शुरुआत में छोड़ा',
+        disclaimer: 'यह समूह का संकेत है, आपके नतीजे की भविष्यवाणी नहीं।',
+      },
       errors: {
         noMoreVideos: '"{0}" के लिए और नए वीडियो नहीं मिले — सभी दिखाए जा चुके हैं।',
         searchSomethingFirst: 'पहले कुछ खोजें',
         noVideosFound: 'कोई वीडियो नहीं मिला, कुछ और खोजें',
-        searchFailed: 'खोज विफल हुई, कंसोल जांचें',
+        searchFailed: 'खोज विफल हुई, कृपया दोबारा कोशिश करें',
       },
     },
     mentor: {
@@ -6261,7 +6297,7 @@ export const translations: Record<Locale, TranslationShape> = {
       searchPlaceholder: 'Search videos...',
       searchCta: 'Search',
       noResultsYet: 'Search se start karo',
-      backToVideo: '← Back to Video',
+      backToVideo: 'Back to Video',
       score: 'Score: {0}/100',
       helpfulCta: 'Helpful',
       notForMeCta: 'Not for me',
@@ -6270,21 +6306,33 @@ export const translations: Record<Locale, TranslationShape> = {
       watchProgress: {
         title: 'Watch Progress',
         watched: 'Watched',
-        pauses: 'Pauses:',
-        rewinds: 'Rewinds:',
-        speed: 'Speed:',
-        complete: 'Complete:',
+        pauses: 'Pauses',
+        rewinds: 'Rewinds',
+        speed: 'Speed',
+        complete: 'Complete',
       },
       deepNotesCta: 'Deep Notes',
       researchCta: 'Research',
       selectVideoPrompt: 'Video select karo dekhne ke liye',
       verifiedBadge: 'verified',
       dismissAria: 'Dismiss',
+      pickHint: '3 styles, same topic — jo aapko samajh aaye wahi chuno, teeno dekhne ki zaroorat nahi.',
+      askMentorCta: 'Mentor se poochho',
+      mentorPrefill: 'Main "{0}" padh raha hoon aur mujhe isme help chahiye: ',
+      community: {
+        title: 'Community learning signal · 10+ accounts',
+        mostFinished: 'Zyaadatar contributing accounts ne yeh video end tak dekha.',
+        manyStopped: 'Kaafi contributing accounts ne yeh video shuru mein hi chhod diya.',
+        mixed: 'Is video par learners ke results mile-jule hain.',
+        completed: '{0}% ne poora dekha',
+        stoppedEarly: '{0}% ne shuru mein chhoda',
+        disclaimer: 'Yeh group signal hai, aapke result ki prediction nahi.',
+      },
       errors: {
         noMoreVideos: '"{0}" ke liye aur naye videos nahi mile — sab dikha diye gaye.',
         searchSomethingFirst: 'Kuch search karo pehle',
         noVideosFound: 'Koi video nahi mila, kuch aur search karo',
-        searchFailed: 'Search fail hui, console check karo',
+        searchFailed: 'Search fail hui, dobara try karo',
       },
     },
     mentor: {

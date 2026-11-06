@@ -311,7 +311,7 @@ export default function Research({ embedded = false, onClose }: ResearchProps) {
 
   if (embedded) {
     return (
-      <div className="bg-white dark:bg-black border border-gray-200 dark:border-white/10 rounded-xl p-4">
+      <div className="rounded-2xl border border-white/[0.08] bg-white/[0.035] p-4 text-slate-100">
         <div className="flex items-center gap-2 mb-3">
           <Search className="w-4 h-4" />
           <h3 className="font-semibold text-sm">{t.research.embedded.title}</h3>

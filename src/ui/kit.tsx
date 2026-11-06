@@ -41,17 +41,21 @@ export function GlassPanel({ children, className = '', accent = '#67e8f9' }: { c
 }
 
 /** A whole-surface button with the same glow, lift on hover and a visible focus ring. */
-export function GlassButton({ children, onClick, className = '', accent = '#67e8f9', label, disabled = false }: {
+export function GlassButton({ children, onClick, className = '', accent = '#67e8f9', label, disabled = false, id, pressed }: {
   children: ReactNode; onClick: () => void; className?: string; accent?: string; label?: string; disabled?: boolean;
+  /** Optional DOM id (e.g. for the guided tour) and toggle state (aria-pressed) for pick-one lists. */
+  id?: string; pressed?: boolean;
 }) {
   const { ref, onPointerMove } = useSpotlight<HTMLButtonElement>();
   return (
     <button
       ref={ref}
+      id={id}
       type="button"
       onClick={onClick}
       onPointerMove={onPointerMove}
       aria-label={label}
+      aria-pressed={pressed}
       disabled={disabled}
       className={`${PANEL_BASE} text-left transition-[transform,border-color] duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none motion-reduce:hover:translate-y-0 disabled:cursor-not-allowed disabled:hover:translate-y-0 ${className}`}
       style={{ ['--tw-ring-color' as string]: accent }}
