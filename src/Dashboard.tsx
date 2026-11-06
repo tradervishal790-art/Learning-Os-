@@ -548,7 +548,6 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                       : 'text-gray-500 dark:text-white/50 hover:text-black dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5'
               }`}
             >
-              {item.icon && <item.icon className="w-4 h-4" />}
               <span className="flex-1 text-left">{item.label}</span>
               {isLocked && <Lock className="w-3.5 h-3.5" strokeWidth={2} />}
             </motion.button>
