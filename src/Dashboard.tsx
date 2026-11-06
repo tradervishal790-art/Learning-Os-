@@ -1,12 +1,10 @@
 import { useCallback, useEffect, useState, lazy, Suspense } from 'react';
-import type { ComponentType } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { Search, BookOpen, ClipboardCheck, Newspaper, Lock, Settings as SettingsIcon, ArrowLeft } from 'lucide-react';
+import { Lock, Settings as SettingsIcon, ArrowLeft } from 'lucide-react';
 import PagePlaceholder from './PagePlaceholder';
 import MissionControl from './MissionControl';
 import { getContinueLearningTarget } from './missionControlLogic';
-import BottomNav from './BottomNav';
 import { useImmersive, useNoteOpen } from './immersive';
 import { getRoadmapData, getCurrentTopic, getRoadmapProgress } from './roadmapData';
 import { getRevisionStats, getRevisionDataForGoals } from './revisionData';
@@ -112,20 +110,9 @@ interface Blueprint {
 // the Mind Blueprint, Videos and Dictionary; everything below asks them to sign in.
 // (The server enforces the same split for AI endpoints — see api/_lib/auth.ts.)
 
-function getSidebarItems(t: ReturnType<typeof useTranslation>): { id: DashboardPageId; label: string; icon?: ComponentType<{ className?: string }> }[] {
-  return [
-    { id: 'dashboard', label: 'Mission Control' },
-    { id: 'roadmap', label: t.dashboard.sidebar.roadmap },
-    { id: 'revision', label: t.dashboard.sidebar.revision },
-    { id: 'notes', label: t.dashboard.sidebar.notes },
-    { id: 'test', label: t.dashboard.sidebar.test, icon: ClipboardCheck },
-    { id: 'videos', label: t.dashboard.sidebar.videos },
-    { id: 'mentor', label: t.dashboard.sidebar.mentor },
-    { id: 'progress', label: t.dashboard.sidebar.progress },
-    { id: 'research', label: t.dashboard.sidebar.research, icon: Search },
-    { id: 'dictionary', label: t.dashboard.sidebar.dictionary, icon: BookOpen },
-    { id: 'current-affairs', label: t.dashboard.sidebar.currentAffairs, icon: Newspaper },
-  ];
+function getSidebarItems(): { id: DashboardPageId; label: string }[] {
+  // Mission Control is the single navigation gateway for every learning tool.
+  return [{ id: 'dashboard', label: 'Mission Control' }];
 }
 
 const roleOptions = ['student', 'developer', 'researcher', 'business', 'exam', 'creator'];
@@ -516,7 +503,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   const selectNav = (id: DashboardPageId, _label: string) => {
     setActivePage(id);
   };
-  const sidebarItems = getSidebarItems(t);
+  const sidebarItems = getSidebarItems();
 
   const SidebarContent = (
     <>
@@ -590,7 +577,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
             {activePage !== 'dashboard' && (
               <>
                 <button
-                  onClick={() => (window.history.length > 1 ? navigate(-1) : setActivePage('dashboard'))}
+                  onClick={() => setActivePage('dashboard')}
                   aria-label="Back"
                   className="w-10 h-10 -ml-2 rounded-full flex items-center justify-center flex-shrink-0 hover:bg-gray-100 dark:hover:bg-white/10 active:bg-gray-200 dark:active:bg-white/15 transition-colors"
                 >
@@ -1121,14 +1108,6 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
         )}
       </AnimatePresence>
 
-      <BottomNav
-        items={sidebarItems.map((i) => ({ id: i.id, label: i.label, locked: navState(i.id).isLocked }))}
-        activeId={activePage}
-        onSelect={(id) => {
-          const item = sidebarItems.find((i) => i.id === id);
-          if (item) selectNav(item.id, item.label);
-        }}
-      />
     </div>
   );
 }
