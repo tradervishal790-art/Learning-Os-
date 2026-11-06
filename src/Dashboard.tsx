@@ -584,7 +584,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                   <ArrowLeft className="w-5 h-5" strokeWidth={1.9} />
                 </button>
                 <h2 className={`text-lg md:text-2xl font-bold truncate ${isMissionControl ? "text-white" : ""}`}>
-                  {sidebarItems.find((i) => i.id === activePage)?.label ?? ''}
+                  {activePage === 'roadmap' ? t.dashboard.sidebar.roadmap : activePage === 'revision' ? t.dashboard.sidebar.revision : activePage === 'notes' ? t.dashboard.sidebar.notes : activePage === 'test' ? t.dashboard.sidebar.test : activePage === 'videos' ? t.dashboard.sidebar.videos : activePage === 'mentor' ? t.dashboard.sidebar.mentor : activePage === 'progress' ? t.dashboard.sidebar.progress : activePage === 'research' ? t.dashboard.sidebar.research : activePage === 'dictionary' ? t.dashboard.sidebar.dictionary : activePage === 'current-affairs' ? t.dashboard.sidebar.currentAffairs : 'Mission Control'}
                 </h2>
               </>
             )}
