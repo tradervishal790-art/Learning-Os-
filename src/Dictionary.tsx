@@ -1,11 +1,45 @@
 import { useEffect, useRef, useState } from 'react';
-import { Search, Volume2, RotateCw, Sparkles, Shuffle, ArrowRight } from 'lucide-react';
+import { motion, useReducedMotion } from 'framer-motion';
+import { Search, Volume2, RotateCw, Sparkles, Shuffle, ArrowRight, BookOpen, History, AlertTriangle, Loader2 } from 'lucide-react';
 import { ensureDictionaryLoaded, getDictionaryDiscoveryWords, lookupWord, suggestWords } from './dictionaryStore';
 import type { DictionaryEntry } from './dictionaryStore';
 import { useTranslation } from './i18n/LanguageContext';
+import { format } from './i18n/format';
+import { GlassButton, GlassPanel } from './ui/kit';
 
 const RECENT_KEY = 'learning_os_dictionary_recent';
 const RECENT_LIMIT = 10;
+
+const ACCENT = '#a78bfa'; // violet — this screen's main colour
+const DANGER = '#f87171';
+
+/** Part-of-speech colour. The dictionary data uses words like "noun" / "adjective"; anything
+ *  else (idiom, prefix, …) falls back to the screen accent. */
+function posAccent(pos: string): string {
+  const key = pos.toLowerCase().replace(/[^a-z]/g, '');
+  if (key.startsWith('noun')) return '#67e8f9';
+  if (key.startsWith('verb')) return '#6ee7b7';
+  if (key.startsWith('adj')) return '#fbbf24';
+  if (key.startsWith('adv')) return '#e879f9';
+  return ACCENT;
+}
+
+function PosBadge({ pos }: { pos: string }) {
+  const color = posAccent(pos);
+  return (
+    <span
+      className="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-medium uppercase tracking-wide"
+      style={{ color, backgroundColor: `${color}1f`, boxShadow: `inset 0 0 0 1px ${color}40` }}
+    >
+      {pos}
+    </span>
+  );
+}
+
+/** Placeholder block for loading states. */
+function Shimmer({ className = '' }: { className?: string }) {
+  return <span aria-hidden="true" className={`block animate-pulse rounded-lg bg-white/[0.08] motion-reduce:animate-none ${className}`} />;
+}
 
 function localDateSeed(): string {
   const now = new Date();
@@ -14,6 +48,7 @@ function localDateSeed(): string {
 
 export default function Dictionary() {
   const t = useTranslation();
+  const reduce = useReducedMotion();
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [entry, setEntry] = useState<DictionaryEntry | null>(null);
@@ -120,203 +155,362 @@ export default function Dictionary() {
   const hindiSummary = entry
     ? Array.from(new Set(entry.senses.flatMap((sn) => sn.hindi))).slice(0, 6)
     : [];
+  const uniquePos = entry ? Array.from(new Set(entry.partsOfSpeech)) : [];
+  const typedLength = query.trim().length;
+  const searchDisabled = loading || loadError;
+  const showHome = !loading && !entry && !notFound && !loadError && !searching;
 
   return (
-    <div className="mx-auto w-full min-w-0 max-w-3xl break-words [overflow-wrap:anywhere]">
-      <header className="mb-5">
-        <h1 className="text-2xl md:text-3xl font-semibold">{t.dashboard.sidebar.dictionary}</h1>
-        <p className="text-sm text-gray-500 dark:text-white/45 mt-1">{t.dictionary.subtitle}</p>
-      </header>
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-white/40" />
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => {
-            searchIdRef.current += 1;
-            setSearching(false);
-            setQuery(e.target.value);
-            setEntry(null);
-            setNotFound(false);
-            setSearchError('');
-          }}
-          onKeyDown={(e) => e.key === 'Enter' && void search(query)}
-          placeholder={loading ? t.dictionary.loading : t.dictionary.searchPlaceholder}
-          maxLength={80}
-          disabled={loading || loadError}
-          autoFocus
-          className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg pl-9 pr-12 py-2.5 placeholder-gray-400 dark:placeholder-white/40 focus:outline-none focus:border-black dark:focus:border-white disabled:opacity-50"
-        />
-        <button
-          type="button"
-          onClick={() => void search(query)}
-          disabled={loading || loadError || searching || !query.trim()}
-          aria-label={t.dictionary.searchAria}
-          className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-md text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10 disabled:opacity-40"
-        >
-          {searching ? <span className="text-xs">…</span> : <Search className="w-4 h-4" />}
-        </button>
-        {suggestions.length > 0 && (
-          <div className="absolute z-10 mt-1 w-full bg-white dark:bg-neutral-900 border border-gray-200 dark:border-white/10 rounded-lg shadow-lg overflow-hidden">
-            {suggestions.map((s) => (
-              <button
-                key={s}
-                onClick={() => search(s)}
-                className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-white/10 transition"
-              >
-                {s}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {loadError && (
-        <div className="mt-6 flex items-center gap-3 text-sm text-red-500">
-          <p>{t.dictionary.loadError}</p>
-          <button type="button" onClick={loadDictionary} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-current/20 hover:bg-red-500/5">
-            <RotateCw className="w-4 h-4" /> {t.dictionary.retry}
-          </button>
+    <div className="dark">
+      <div className="relative min-h-dvh overflow-hidden bg-[#080d19] p-4 text-slate-100 md:p-8">
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute -left-32 -top-40 h-[420px] w-[420px] rounded-full bg-violet-600/[0.14] blur-[120px]" />
+          <div className="absolute -right-24 top-1/3 h-[380px] w-[380px] rounded-full bg-cyan-500/[0.08] blur-[120px]" />
+          <div className="absolute -bottom-40 left-1/4 h-[340px] w-[340px] rounded-full bg-fuchsia-600/[0.07] blur-[120px]" />
         </div>
-      )}
 
-      {!entry && !notFound && !loadError && discoveryWords.length > 0 && (
-        <section className="mt-6 rounded-xl card p-4">
-          <div className="flex items-start justify-between gap-3 mb-3">
+        <div className="relative mx-auto w-full min-w-0 max-w-5xl break-words [overflow-wrap:anywhere]">
+          <motion.header
+            initial={reduce ? false : { opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-5 flex items-center gap-3 md:mb-8"
+          >
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-400/15 text-violet-200">
+              <BookOpen className="h-5 w-5" aria-hidden="true" />
+            </span>
             <div className="min-w-0">
-              <h2 className="font-semibold flex items-center gap-2"><Sparkles className="w-4 h-4 text-indigo-500" /> {t.dictionary.discoveryTitle}</h2>
-              <p className="text-xs text-gray-500 dark:text-white/45 mt-1">{t.dictionary.discoverySubtitle}</p>
+              <h1 className="text-2xl font-semibold tracking-tight md:text-4xl">{t.dashboard.sidebar.dictionary}</h1>
+              <p className="mt-0.5 text-sm text-slate-400 md:text-base">{t.dictionary.subtitle}</p>
             </div>
-            <button type="button" onClick={() => setDiscoveryRound((round) => round + 1)} className="shrink-0 inline-flex items-center gap-1.5 text-xs px-2.5 py-2 rounded-lg border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10 transition">
-              <Shuffle className="w-3.5 h-3.5" /> {t.dictionary.surpriseMe}
-            </button>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-            {discoveryWords.map((word) => (
-              <button key={word} type="button" onClick={() => void search(word)} className="min-w-0 text-left rounded-lg border border-gray-200 dark:border-white/10 px-3 py-2.5 hover:bg-gray-100 dark:hover:bg-white/10 transition group">
-                <span className="block text-sm font-medium truncate">{word}</span>
-                <span className="mt-1 flex items-center gap-1 text-[10px] text-gray-400 dark:text-white/40 group-hover:text-indigo-500"><span>{t.dictionary.explore}</span><ArrowRight className="w-3 h-3" /></span>
-              </button>
-            ))}
-          </div>
-        </section>
-      )}
+          </motion.header>
 
-      {!entry && !notFound && !loadError && recent.length > 0 && (
-        <div className="mt-6">
-          <p className="text-sm text-gray-500 dark:text-white/40 mb-2">{t.dictionary.recent}</p>
-          <div className="flex flex-wrap gap-2">
-            {recent.map((r) => (
+          {/* Search */}
+          <div className="relative mx-auto mb-6 max-w-3xl">
+            <div
+              aria-busy={loading}
+              className={`flex items-center gap-2 rounded-2xl border border-white/[0.1] bg-white/[0.045] pl-4 pr-2 transition-[border-color,box-shadow,opacity] duration-200 focus-within:border-violet-400/70 focus-within:shadow-[0_0_0_4px_rgba(167,139,250,0.14),0_0_44px_rgba(167,139,250,0.28)] motion-reduce:transition-none ${searchDisabled ? 'opacity-60' : ''}`}
+            >
+              <Search className="h-5 w-5 shrink-0 text-violet-300" aria-hidden="true" />
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => {
+                  searchIdRef.current += 1;
+                  setSearching(false);
+                  setQuery(e.target.value);
+                  setEntry(null);
+                  setNotFound(false);
+                  setSearchError('');
+                }}
+                onKeyDown={(e) => e.key === 'Enter' && void search(query)}
+                placeholder={loading ? t.dictionary.loading : t.dictionary.searchPlaceholder}
+                aria-label={t.dictionary.searchAria}
+                maxLength={80}
+                disabled={searchDisabled}
+                autoFocus
+                className="min-h-14 min-w-0 flex-1 bg-transparent text-lg text-slate-100 placeholder-slate-500 focus:outline-none disabled:cursor-not-allowed"
+              />
               <button
-                key={r}
-                onClick={() => search(r)}
-                className="px-3 py-1.5 text-sm border border-gray-200 dark:border-white/10 rounded-full hover:bg-gray-100 dark:hover:bg-white/10 transition"
+                type="button"
+                onClick={() => void search(query)}
+                disabled={searchDisabled || searching || !query.trim()}
+                aria-label={t.dictionary.searchAria}
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-400/20 text-violet-100 transition hover:bg-violet-400/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-violet-400/20 motion-reduce:transition-none"
               >
-                {r}
+                {searching ? <Loader2 className="h-5 w-5 animate-spin motion-reduce:animate-none" aria-hidden="true" /> : <Search className="h-5 w-5" aria-hidden="true" />}
               </button>
-            ))}
-          </div>
-        </div>
-      )}
+            </div>
 
-      {searchError && <p role="alert" className="mt-6 text-sm text-red-500">{searchError}</p>}
-      {searching && <p role="status" className="mt-6 text-sm text-gray-500 dark:text-white/40">{t.dictionary.searching}</p>}
-      {notFound && (
-        <p className="mt-6 text-gray-500 dark:text-white/40">{t.dictionary.noEntry.replace("{0}", query)}</p>
-      )}
-
-      {entry && (
-        <div className="mt-6 space-y-5">
-          <div className="flex items-center gap-3 flex-wrap">
-            <h2 className="text-2xl font-semibold">{entry.word}</h2>
-            {entry.ipa && <span className="text-gray-500 dark:text-white/40">/{entry.ipa}/</span>}
-            {entry.audioUrl && (
-              <>
-                <button
-                  onClick={playAudio}
-                  aria-label={t.dictionary.pronunciation}
-                  className="p-1.5 rounded-full border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10 transition"
-                >
-                  <Volume2 className="w-4 h-4" />
-                </button>
-                <audio ref={audioRef} src={entry.audioUrl} preload="none" />
-              </>
-            )}
-            {entry.level && (
-              <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-white/50">
-                {entry.level}
-              </span>
+            {suggestions.length > 0 && (
+              <ul
+                aria-label={t.dictionary.suggestionsAria}
+                className="absolute inset-x-0 top-full z-20 mt-2 overflow-hidden rounded-2xl border border-white/10 bg-[#0d1424] shadow-[0_20px_60px_rgba(0,0,0,0.55)]"
+              >
+                {suggestions.map((s) => (
+                  <li key={s}>
+                    <button
+                      type="button"
+                      onClick={() => void search(s)}
+                      className="flex min-h-11 w-full items-center gap-3 px-4 py-2 text-left text-slate-400 transition hover:bg-violet-400/10 hover:text-white focus-visible:bg-violet-400/15 focus-visible:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-violet-300 motion-reduce:transition-none"
+                    >
+                      <Search className="h-4 w-4 shrink-0 text-slate-500" aria-hidden="true" />
+                      <span className="min-w-0 truncate">
+                        <span className="font-semibold text-white">{s.slice(0, typedLength)}</span>
+                        {s.slice(typedLength)}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
             )}
           </div>
 
-          <div className="rounded-lg card p-4 space-y-1">
-            <p>
-              <span className="text-gray-500 dark:text-white/40">{t.dictionary.hindi}: </span>
-              <span className="text-lg">{hindiSummary.join(', ') || '—'}</span>
-            </p>
-            <p>
-              <span className="text-gray-500 dark:text-white/40">{t.dictionary.sanskrit}: </span>
-              <span className="text-lg">
-                {entry.sanskritMatches?.map((m) => m.devanagari).join(', ') || '—'}
-              </span>
-            </p>
-          </div>
-
-          <div className="space-y-4">
-            {entry.senses.map((sense, i) => (
-              <div key={i} className="border border-gray-200 dark:border-white/10 rounded-lg p-4">
-                <span className="text-xs uppercase tracking-wide text-gray-500 dark:text-white/40">
-                  {sense.pos}
+          {/* Dictionary file loading: shimmering placeholders */}
+          {loading && (
+            <div aria-busy="true">
+              <p role="status" className="mb-4 flex items-center gap-2 text-sm text-slate-400">
+                <span className="relative flex h-2 w-2" aria-hidden="true">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-violet-400/60 motion-reduce:animate-none" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-violet-400" />
                 </span>
-                {sense.definition && <p className="mt-1">{sense.definition}</p>}
-                {sense.example && (
-                  <p className="mt-1 text-sm italic text-gray-500 dark:text-white/50">"{sense.example}"</p>
-                )}
-                {sense.hindi.length > 0 && (
-                  <p className="mt-2 text-sm">
-                    <span className="text-gray-500 dark:text-white/40">Hindi: </span>
-                    {sense.hindi.join(', ')}
-                  </p>
-                )}
+                {t.dictionary.loading}
+              </p>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+                {Array.from({ length: 5 }, (_, i) => (
+                  <div key={i} className="rounded-2xl border border-white/[0.08] bg-white/[0.035] p-4">
+                    <Shimmer className="h-4 w-2/3" />
+                    <Shimmer className="mt-3 h-3 w-1/3" />
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            </div>
+          )}
 
-          <div className="border border-gray-200 dark:border-white/10 rounded-lg p-4">
-            <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-white/40 mb-2">{t.dictionary.sanskrit}</p>
-            {entry.sanskritMatches && entry.sanskritMatches.length > 0 ? (
-              <>
-                <div className="space-y-2">
-                  {entry.sanskritMatches.map((m, i) => (
-                    <div key={i}>
-                      <span className="text-lg">{m.devanagari}</span>
-                      <span className="text-sm text-gray-500 dark:text-white/40"> ({m.slp1})</span>
-                      {m.meaning && (
-                        <span className="text-xs text-gray-400 dark:text-white/30"> · {m.meaning}</span>
+          {/* Load error */}
+          {loadError && (
+            <GlassPanel accent={DANGER} className="mx-auto max-w-3xl">
+              <div role="alert" className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-red-400/15 text-red-300">
+                  <AlertTriangle className="h-5 w-5" aria-hidden="true" />
+                </span>
+                <p className="min-w-0 flex-1 text-sm text-red-200 md:text-base">{t.dictionary.loadError}</p>
+                <button
+                  type="button"
+                  onClick={loadDictionary}
+                  className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-full border border-red-300/30 bg-red-400/10 px-4 text-sm text-red-100 transition hover:bg-red-400/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 motion-reduce:transition-none"
+                >
+                  <RotateCw className="h-4 w-4" aria-hidden="true" /> {t.dictionary.retry}
+                </button>
+              </div>
+            </GlassPanel>
+          )}
+
+          {/* Home: discovery + recent words */}
+          {showHome && discoveryWords.length > 0 && (
+            <section className="mb-8">
+              <div className="mb-3 flex items-start justify-between gap-3">
+                <div className="flex min-w-0 items-start gap-3">
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-400/15 text-violet-200">
+                    <Sparkles className="h-5 w-5" aria-hidden="true" />
+                  </span>
+                  <div className="min-w-0">
+                    <h2 className="text-lg font-semibold md:text-xl">{t.dictionary.discoveryTitle}</h2>
+                    <p className="mt-0.5 text-sm text-slate-400">{t.dictionary.discoverySubtitle}</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setDiscoveryRound((round) => round + 1)}
+                  className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-4 text-sm text-slate-200 transition hover:border-violet-300/50 hover:bg-violet-400/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300 motion-reduce:transition-none"
+                >
+                  <Shuffle className="h-4 w-4" aria-hidden="true" /> {t.dictionary.surpriseMe}
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+                {discoveryWords.map((word) => (
+                  <GlassButton key={word} onClick={() => void search(word)} accent={ACCENT} className="min-h-[76px] min-w-0">
+                    <span className="flex h-full min-w-0 flex-col justify-between gap-2 p-4">
+                      <span className="block truncate text-base font-medium">{word}</span>
+                      <span className="flex items-center gap-1 text-xs text-violet-300">
+                        <span>{t.dictionary.explore}</span>
+                        <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+                      </span>
+                    </span>
+                  </GlassButton>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {showHome && recent.length > 0 && (
+            <section>
+              <div className="mb-3 flex items-center gap-3">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/[0.06] text-slate-300">
+                  <History className="h-5 w-5" aria-hidden="true" />
+                </span>
+                <h2 className="text-lg font-semibold md:text-xl">{t.dictionary.recent}</h2>
+                <span className="rounded-full bg-violet-400/15 px-2.5 py-0.5 text-xs font-medium text-violet-200">{recent.length}</span>
+              </div>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+                {recent.map((r) => (
+                  <GlassButton key={r} onClick={() => void search(r)} accent={ACCENT} className="min-h-12 min-w-0">
+                    <span className="flex min-w-0 items-center justify-between gap-2 px-4 py-3">
+                      <span className="truncate text-sm font-medium">{r}</span>
+                      <ArrowRight className="h-4 w-4 shrink-0 text-slate-500" aria-hidden="true" />
+                    </span>
+                  </GlassButton>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* Lookup in progress */}
+          {searching && (
+            <div aria-busy="true">
+              <p role="status" className="mb-4 flex items-center gap-2 text-sm text-slate-400">
+                <span className="relative flex h-2 w-2" aria-hidden="true">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-violet-400/60 motion-reduce:animate-none" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-violet-400" />
+                </span>
+                {t.dictionary.searching}
+              </p>
+              <GlassPanel accent={ACCENT}>
+                <div className="space-y-4 p-5 md:p-6">
+                  <Shimmer className="h-9 w-1/2" />
+                  <Shimmer className="h-4 w-1/4" />
+                  <Shimmer className="h-4 w-full" />
+                  <Shimmer className="h-4 w-5/6" />
+                </div>
+              </GlassPanel>
+            </div>
+          )}
+
+          {searchError && (
+            <GlassPanel accent={DANGER} className="mx-auto max-w-3xl">
+              <p role="alert" className="flex items-center gap-3 p-4 text-sm text-red-200">
+                <AlertTriangle className="h-5 w-5 shrink-0 text-red-300" aria-hidden="true" />
+                {searchError}
+              </p>
+            </GlassPanel>
+          )}
+
+          {notFound && (
+            <GlassPanel accent={ACCENT} className="mx-auto max-w-3xl">
+              <div className="flex flex-col items-center gap-3 px-5 py-10 text-center">
+                <span className="flex h-14 w-14 items-center justify-center rounded-full bg-violet-400/10 text-violet-300 shadow-[0_0_30px_rgba(139,92,246,.25)]">
+                  <Search className="h-6 w-6" aria-hidden="true" />
+                </span>
+                <p className="text-base text-slate-300">{format(t.dictionary.noEntry, query)}</p>
+              </div>
+            </GlassPanel>
+          )}
+
+          {/* Result */}
+          {entry && (
+            <motion.div
+              initial={reduce ? false : { opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: reduce ? 0 : 0.2, ease: 'easeOut' }}
+              className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start"
+            >
+              <div className="min-w-0 space-y-4">
+                <GlassPanel accent={ACCENT}>
+                  <div className="p-5 md:p-6">
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                      <h2 className="min-w-0 text-3xl font-semibold tracking-tight md:text-5xl">{entry.word}</h2>
+                      {entry.ipa && <span className="text-lg text-slate-400">/{entry.ipa}/</span>}
+                      {entry.audioUrl && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={playAudio}
+                            aria-label={t.dictionary.pronunciation}
+                            className="flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] text-violet-200 transition hover:border-violet-300/50 hover:bg-violet-400/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300 motion-reduce:transition-none"
+                          >
+                            <Volume2 className="h-5 w-5" aria-hidden="true" />
+                          </button>
+                          <audio ref={audioRef} src={entry.audioUrl} preload="none" />
+                        </>
+                      )}
+                      {entry.level && (
+                        <span className="rounded-full bg-white/[0.08] px-2.5 py-1 text-xs font-medium text-slate-300">{entry.level}</span>
                       )}
                     </div>
-                  ))}
-                </div>
-                <p className="text-xs text-gray-400 dark:text-white/30 mt-2">
-                  {entry.sanskritMatches[0].src === 'a'
-                    ? "From Apte's Student's English–Sanskrit Dictionary (1920)."
-                    : entry.sanskritMatches[0].src === 'm'
-                      ? "From Monier-Williams' English–Sanskrit Dictionary (1851) — older and less precise, verify before relying on it."
-                      : 'Approximate: matched through the Hindi meaning, so a rare unrelated word is possible.'}
-                </p>
-              </>
-            ) : (
-              <p className="text-sm text-gray-500 dark:text-white/40">
-                No Sanskrit equivalent found — modern words often have none in classical Sanskrit.
-              </p>
-            )}
-          </div>
+                    {uniquePos.length > 0 && (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {uniquePos.map((pos) => <PosBadge key={pos} pos={pos} />)}
+                      </div>
+                    )}
 
-          {entry.forms && entry.forms.length > 0 && (
-            <p className="text-sm text-gray-500 dark:text-white/40">Other forms: {entry.forms.join(', ')}</p>
+                    <dl className="mt-5 grid gap-5 border-t border-white/[0.08] pt-5 sm:grid-cols-2">
+                      <div className="min-w-0">
+                        <dt className="text-xs uppercase tracking-wide text-slate-500">{t.dictionary.hindi}</dt>
+                        <dd className="mt-1 text-xl md:text-2xl">{hindiSummary.join(', ') || '—'}</dd>
+                      </div>
+                      <div className="min-w-0">
+                        <dt className="text-xs uppercase tracking-wide text-slate-500">{t.dictionary.sanskrit}</dt>
+                        <dd className="mt-1 text-xl md:text-2xl">{entry.sanskritMatches?.map((m) => m.devanagari).join(', ') || '—'}</dd>
+                      </div>
+                    </dl>
+                  </div>
+                </GlassPanel>
+
+                <GlassPanel accent={ACCENT}>
+                  <div className="p-5 md:p-6">
+                    <div className="mb-1 flex items-center gap-3">
+                      <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-400">{t.dictionary.meanings}</h3>
+                      <span className="rounded-full bg-violet-400/15 px-2.5 py-0.5 text-xs font-medium text-violet-200">{entry.senses.length}</span>
+                    </div>
+                    <ol className="divide-y divide-white/[0.08]">
+                      {entry.senses.map((sense, i) => (
+                        <li key={i} className="py-4 first:pt-3 last:pb-0">
+                          <div className="flex items-center gap-2">
+                            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/[0.08] text-xs text-slate-300">{i + 1}</span>
+                            <PosBadge pos={sense.pos} />
+                          </div>
+                          {sense.definition && <p className="mt-2 text-base leading-relaxed text-slate-100 md:text-lg">{sense.definition}</p>}
+                          {sense.example && (
+                            <blockquote className="mt-3 max-w-prose rounded-2xl rounded-tl-sm bg-white/[0.06] px-4 py-3 text-sm italic leading-relaxed text-slate-300">
+                              “{sense.example}”
+                            </blockquote>
+                          )}
+                          {sense.hindi.length > 0 && (
+                            <p className="mt-3 text-base">
+                              <span className="text-sm text-slate-500">{t.dictionary.hindi}: </span>
+                              {sense.hindi.join(', ')}
+                            </p>
+                          )}
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                </GlassPanel>
+              </div>
+
+              <div className="min-w-0 space-y-4">
+                <GlassPanel accent={ACCENT}>
+                  <div className="p-5">
+                    <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-400">{t.dictionary.sanskrit}</h3>
+                    {entry.sanskritMatches && entry.sanskritMatches.length > 0 ? (
+                      <>
+                        <ul className="space-y-2">
+                          {entry.sanskritMatches.map((m, i) => (
+                            <li key={i}>
+                              <span className="text-2xl">{m.devanagari}</span>
+                              <span className="text-sm text-slate-400"> ({m.slp1})</span>
+                              {m.meaning && <span className="text-xs text-slate-500"> · {m.meaning}</span>}
+                            </li>
+                          ))}
+                        </ul>
+                        <p className={`mt-3 text-xs leading-relaxed ${entry.sanskritMatches[0].src === 'a' ? 'text-slate-500' : 'text-amber-300/80'}`}>
+                          {entry.sanskritMatches[0].src === 'a'
+                            ? t.dictionary.sanskritSourceApte
+                            : entry.sanskritMatches[0].src === 'm'
+                              ? t.dictionary.sanskritSourceMonier
+                              : t.dictionary.sanskritSourceApprox}
+                        </p>
+                      </>
+                    ) : (
+                      <p className="text-sm leading-relaxed text-slate-400">{t.dictionary.noSanskrit}</p>
+                    )}
+                  </div>
+                </GlassPanel>
+
+                {entry.forms && entry.forms.length > 0 && (
+                  <div>
+                    <p className="mb-2 text-xs uppercase tracking-wide text-slate-500">{t.dictionary.forms}</p>
+                    <div className="flex flex-wrap gap-2">
+                      {entry.forms.map((form) => (
+                        <span key={form} className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-sm text-slate-300">{form}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </motion.div>
           )}
         </div>
-      )}
+      </div>
     </div>
   );
 }

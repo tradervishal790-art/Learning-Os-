@@ -914,6 +914,13 @@ export interface TranslationShape {
     pronunciation: string;
     explore: string;
     searchError: string;
+    meanings: string;
+    forms: string;
+    suggestionsAria: string;
+    noSanskrit: string;
+    sanskritSourceApte: string;
+    sanskritSourceMonier: string;
+    sanskritSourceApprox: string;
   };
   research: {
     header: { title: string; subtitle: string };
@@ -2722,6 +2729,13 @@ export const translations: Record<Locale, TranslationShape> = {
       pronunciation: 'Play pronunciation',
       explore: 'Explore',
       searchError: 'The word could not be loaded. Please try again.',
+      meanings: 'Meanings',
+      forms: 'Other forms',
+      suggestionsAria: 'Word suggestions',
+      noSanskrit: "No Sanskrit equivalent found — modern words often have none in classical Sanskrit.",
+      sanskritSourceApte: "From Apte's Student's English–Sanskrit Dictionary (1920).",
+      sanskritSourceMonier: "From Monier-Williams' English–Sanskrit Dictionary (1851) — older and less precise, verify before relying on it.",
+      sanskritSourceApprox: 'Approximate: matched through the Hindi meaning, so a rare unrelated word is possible.',
     },
     research: {
       header: { title: 'Research', subtitle: 'Search any topic — from the internet, for deeper reading' },
@@ -4525,6 +4539,13 @@ export const translations: Record<Locale, TranslationShape> = {
       pronunciation: 'उच्चारण सुनें',
       explore: 'देखें',
       searchError: 'शब्द लोड नहीं हो पाया। फिर कोशिश करें।',
+      meanings: 'अर्थ',
+      forms: 'अन्य रूप',
+      suggestionsAria: 'शब्द सुझाव',
+      noSanskrit: 'संस्कृत में कोई समकक्ष शब्द नहीं मिला — आधुनिक शब्दों के लिए शास्त्रीय संस्कृत में अक्सर शब्द ही नहीं होता।',
+      sanskritSourceApte: 'आप्टे की "स्टूडेंट्स इंग्लिश–संस्कृत डिक्शनरी" (1920) से।',
+      sanskritSourceMonier: 'मोनियर-विलियम्स की इंग्लिश–संस्कृत डिक्शनरी (1851) से — पुरानी और कम सटीक है, भरोसा करने से पहले जांच लें।',
+      sanskritSourceApprox: 'अनुमानित: हिंदी अर्थ के ज़रिए मिलाया गया है, इसलिए कभी-कभी असंबंधित शब्द भी आ सकता है।',
     },
     research: {
       header: { title: 'रिसर्च', subtitle: 'कोई भी टॉपिक खोजें — इंटरनेट से, गहराई से पढ़ने के लिए' },
@@ -6329,6 +6350,13 @@ export const translations: Record<Locale, TranslationShape> = {
       pronunciation: 'Pronunciation suno',
       explore: 'Explore karo',
       searchError: 'Word load nahi hua. Phir try karo.',
+      meanings: 'Meanings',
+      forms: 'Other forms',
+      suggestionsAria: 'Word suggestions',
+      noSanskrit: 'Sanskrit equivalent nahi mila — modern words ke liye classical Sanskrit mein aksar word hota hi nahi.',
+      sanskritSourceApte: "Apte ki Student's English–Sanskrit Dictionary (1920) se.",
+      sanskritSourceMonier: 'Monier-Williams ki English–Sanskrit Dictionary (1851) se — purani aur kam precise hai, use karne se pehle verify kar lo.',
+      sanskritSourceApprox: 'Approximate: Hindi meaning ke through match hua hai, isliye kabhi-kabhi unrelated word bhi aa sakta hai.',
     },
     research: {
       header: { title: 'Research', subtitle: 'Koi bhi topic search karo — internet se, deeper reading ke liye' },
