@@ -203,10 +203,20 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   const activePage = (location.pathname.replace(/^\/dashboard\/?/, '').split('/')[0] || 'dashboard') as DashboardPageId;
   const setActivePage = useCallback(
     (page: DashboardPageId) => {
-      navigate(page === 'dashboard' ? '/dashboard' : `/dashboard/${page}`);
+      navigate(page === 'dashboard' ? '/dashboard' : `/dashboard/${page}`, {
+        state: { missionControlNavigation: true },
+      });
     },
     [navigate]
   );
+
+  // Tool routes are valid only when reached through Mission Control.
+  // This also prevents bookmarked/direct URLs from becoming a second entry point.
+  useEffect(() => {
+    if (activePage !== 'dashboard' && location.state?.missionControlNavigation !== true) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [activePage, location.state, navigate]);
 
   const [streak, setStreak] = useState(0);
   const noteOpen = useNoteOpen();
