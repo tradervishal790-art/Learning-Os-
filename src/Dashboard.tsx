@@ -5,7 +5,7 @@ import { Settings as SettingsIcon, ArrowLeft } from 'lucide-react';
 import PagePlaceholder from './PagePlaceholder';
 import MissionControl from './MissionControl';
 import { getContinueLearningTarget } from './missionControlLogic';
-import { useImmersive, useNoteOpen } from './immersive';
+import { useImmersive } from './immersive';
 import { getRoadmapData, getCurrentTopic, getRoadmapProgress } from './roadmapData';
 import { getRevisionStats, getRevisionDataForGoals } from './revisionData';
 import { getPersonalityProfile, savePersonalityProfile, clearPersonalityProfile } from './personalityProfileStore';
@@ -214,7 +214,6 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   }, [activePage, location.state, navigate]);
 
   const [streak, setStreak] = useState(0);
-  const noteOpen = useNoteOpen();
   const immersive = useImmersive(); // true while a full-attention flow (e.g. a timed test) hides the bottom bar
   const [showLearningQuiz, setShowLearningQuiz] = useState(false);
   // Alternative onboarding path — does NOT replace showLearningQuiz above,
@@ -483,6 +482,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
     );
   }
 
+  const displayName = userData?.name?.trim() || t.dashboard.home.learnerFallback;
   const currentTopic = getCurrentTopic(getRoadmapData(activeGoalId));
   const roadmapProgress = getRoadmapProgress(getRoadmapData(activeGoalId));
   const revisionStats = getRevisionStats(getRevisionDataForGoals(t.revisionTasks, goals));
