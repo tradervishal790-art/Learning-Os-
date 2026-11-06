@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { MENTOR_PREFILL_KEY } from './mentorPrefill';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Lightbulb, BookOpenText, Link2, ListChecks, Hammer, SendHorizontal, SquarePen, History, Trash2, X, CircleHelp } from 'lucide-react';
+import { Lightbulb, BookOpenText, Link2, ListChecks, Hammer, SendHorizontal, History, Trash2, X, CircleHelp, BrainCircuit, Sparkles, ChevronRight } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { setImmersive, useImmersive } from './immersive';
+import { setImmersive } from './immersive';
 import { useTranslation, useLanguage } from './i18n/LanguageContext';
 import { format } from './i18n/format';
 import type { TranslationShape } from './i18n/translations';
@@ -137,7 +137,7 @@ export default function Mentor() {
   const chatIdRef = useRef(chatId);
   const [messages, setMessages] = useState<Message[]>(() => withWelcome(chatId));
   const [historyOpen, setHistoryOpen] = useState(false);
-  const [chats, setChats] = useState<MentorChatSummary[]>([]);
+  const [chats, setChats] = useState<MentorChatSummary[]>(() => listChats());
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
   // Chats with a reply still on the way (the student may switch chats meanwhile).
   const [pending, setPending] = useState<string[]>([]);
@@ -154,7 +154,6 @@ export default function Mentor() {
   const [contextTopic, setContextTopic] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   // While the keyboard is up the bottom bar steps aside so the input gets the room.
-  const typing = useImmersive();
   useEffect(() => () => setImmersive(false), []);
 
   useEffect(() => {
@@ -169,6 +168,7 @@ export default function Mentor() {
         .filter((m) => m.id !== WELCOME_ID)
         .map((m) => ({ id: m.id, role: m.role, content: m.content, timestamp: m.timestamp.toISOString(), ui: m.ui }))
     );
+    setChats(listChats());
   }, [messages, chatId]);
 
   // Watch history se context nikaal lo — used internally to give Gemini
@@ -231,6 +231,7 @@ export default function Mentor() {
 
   // A chat with no question yet is already "new" — don't stack empty ones.
   const isFresh = messages.every((m) => m.id === WELCOME_ID);
+  const showWelcome = messages.length === 1 && messages[0]?.id === WELCOME_ID;
   const startNewChat = () => {
     if (!isFresh) switchTo(newChatId(), true);
     setHistoryOpen(false);
@@ -261,217 +262,161 @@ export default function Mentor() {
 
   return (
     <div className="dark">
-    <div className="relative isolate flex min-h-dvh flex-col bg-[#080d19] px-4 pt-2 text-slate-100 md:h-[calc(100dvh-5rem)] md:min-h-0 md:px-8 md:pb-3 md:pt-3">
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute -left-32 -top-40 h-[420px] w-[420px] rounded-full bg-violet-600/[0.14] blur-[120px]" />
-        <div className="absolute -right-24 top-1/3 h-[380px] w-[380px] rounded-full bg-cyan-500/[0.09] blur-[120px]" />
-      </div>
-      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-2 flex w-full items-center justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-3">
-          <span aria-hidden="true" className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-400 via-fuchsia-400 to-cyan-300 shadow-[0_0_22px_rgba(139,92,246,.6)]">
-            <span className="h-4 w-4 rounded-full bg-white/70 blur-[3px]" />
-          </span>
-          <div className="min-w-0">
-            <h1 className="truncate text-base font-semibold leading-tight md:text-lg">{t.mentor.header.title}</h1>
-            <p className="hidden truncate text-xs text-slate-400 md:block">{t.mentor.header.subtitle}</p>
-          </div>
+      <div className="relative isolate flex h-[calc(100dvh-4rem)] min-h-[520px] w-full overflow-hidden bg-[#080d19] text-slate-100">
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-0 overflow-hidden">
+          <div className="absolute -left-40 -top-40 h-[460px] w-[460px] rounded-full bg-violet-600/[0.15] blur-[130px]" />
+          <div className="absolute right-[-10%] top-[35%] h-[420px] w-[420px] rounded-full bg-cyan-500/[0.09] blur-[130px]" />
+          <div className="absolute bottom-[-35%] left-[30%] h-[460px] w-[460px] rounded-full bg-fuchsia-600/[0.08] blur-[130px]" />
         </div>
-        <div className="flex gap-2">
-          <button
-            onClick={openHistory}
-            aria-label={t.mentor.history}
-            title={t.mentor.history}
-            className="w-10 h-10 flex items-center justify-center card rounded-full hover:bg-gray-100 dark:hover:bg-white/10 transition"
-          >
-            <History className="w-5 h-5" strokeWidth={1.75} />
-          </button>
-          <button
-            onClick={startNewChat}
-            disabled={isFresh}
-            aria-label={t.mentor.newChat}
-            title={t.mentor.newChat}
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-violet-500 text-white shadow-[0_0_16px_rgba(139,92,246,.45)] transition hover:bg-violet-400 disabled:opacity-40 disabled:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200"
-          >
-            <SquarePen className="w-5 h-5" strokeWidth={1.75} />
-          </button>
-        </div>
-      </motion.div>
 
-      <AnimatePresence>
-        {historyOpen && (
-          <motion.div
-            key="mentor-history"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[45] bg-black/40 flex items-end md:items-stretch md:justify-end"
-            onClick={() => setHistoryOpen(false)}
-          >
-            <motion.div
-              initial={{ y: 40 }}
-              animate={{ y: 0 }}
-              exit={{ y: 40 }}
-              role="dialog"
-              aria-label={t.mentor.history}
-              onClick={(e) => e.stopPropagation()}
-              className="w-full md:w-96 max-h-[80dvh] md:max-h-none rounded-t-2xl md:rounded-none bg-white dark:bg-[#0b1221] border-t md:border-t-0 md:border-l border-gray-200 dark:border-white/10 flex flex-col"
-            >
-              <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-white/10">
-                <h2 className="font-semibold">{t.mentor.history}</h2>
-                <button
-                  onClick={() => setHistoryOpen(false)}
-                  aria-label={t.mentor.closeCta}
-                  title={t.mentor.closeCta}
-                  className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-white/10"
-                >
-                  <X className="w-5 h-5" strokeWidth={1.75} />
-                </button>
+        <main className="relative z-10 flex min-w-0 flex-1 flex-col">
+          <header className="flex h-[60px] shrink-0 items-center justify-between border-b border-white/[0.06] px-4 md:px-7">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-500/15 text-violet-300">
+                <BrainCircuit className="h-4 w-4" />
               </div>
-              <div className="flex-1 overflow-y-auto p-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
-                {chats.length === 0 ? (
-                  <p className="p-4 text-sm text-gray-500 dark:text-white/60">{t.mentor.historyEmpty}</p>
-                ) : (
-                  chats.map((c) => (
-                    <div
-                      key={c.id}
-                      className={`flex items-center gap-1 rounded-xl ${
-                        c.id === chatId ? 'bg-violet-50 dark:bg-violet-500/15' : 'hover:bg-gray-100 dark:hover:bg-white/5'
-                      }`}
-                    >
-                      <button
-                        onClick={() => c.id !== chatId ? switchTo(c.id, false) : setHistoryOpen(false)}
-                        className="flex-1 min-w-0 text-left px-3 py-3"
-                      >
-                        <div className="text-sm truncate">{c.title || t.mentor.newChat}</div>
-                        <div className="text-xs text-gray-500 dark:text-white/50">{formatWhen(c.updatedAt)}</div>
-                      </button>
-                      <button
-                        onClick={() => setPendingDelete(c.id)}
-                        aria-label={t.mentor.deleteChat}
-                        title={t.mentor.deleteChat}
-                        className="flex-shrink-0 w-9 h-9 mr-1 flex items-center justify-center rounded-full text-gray-500 dark:text-white/50 hover:text-red-600 hover:bg-gray-200 dark:hover:bg-white/10"
-                      >
-                        <Trash2 className="w-4 h-4" strokeWidth={1.75} />
-                      </button>
-                    </div>
-                  ))
-                )}
+              <div className="min-w-0">
+                <h1 className="truncate text-sm font-semibold text-white md:text-base">AI Mentor</h1>
+                <p className="hidden truncate text-[11px] text-slate-500 sm:block">Your personal learning assistant</p>
               </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            </div>
+            <div className="flex items-center gap-2">
+              <button onClick={openHistory} aria-label={t.mentor.history} title={t.mentor.history} className="flex h-9 items-center gap-2 rounded-full border border-white/10 px-3 text-xs text-slate-300 transition hover:bg-white/5">
+                <History className="h-4 w-4" />
+                <span className="hidden sm:inline">{t.mentor.history}</span>
+              </button>
+              <button onClick={startNewChat} aria-label={t.mentor.newChat} title={t.mentor.newChat} className="flex h-9 items-center gap-2 rounded-full bg-violet-600 px-3 text-xs font-semibold text-white shadow-[0_0_18px_rgba(139,92,246,.3)] transition hover:bg-violet-500">
+                <span>+</span>{t.mentor.newChat}
+              </button>
+            </div>
+          </header>
 
-      {pendingDelete && (
-        <ConfirmDialog
-          danger
-          message={t.mentor.deleteConfirm}
-          confirmLabel={t.mentor.deleteCta}
-          cancelLabel={t.mentor.cancelCta}
-          onConfirm={confirmDelete}
-          onCancel={() => setPendingDelete(null)}
-        />
-      )}
+          <div className="flex min-h-0 flex-1 flex-col">
+            {showWelcome ? (
+              <div className="flex min-h-0 flex-1 flex-col items-center justify-center overflow-y-auto px-4 pb-5 pt-8 text-center md:px-8">
+                <motion.div initial={{ opacity: 0, scale: 0.8, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 0.55, ease: 'easeOut' }} className="mb-6 flex h-[76px] w-[76px] items-center justify-center rounded-full border border-violet-200/20 bg-[radial-gradient(circle_at_35%_30%,rgba(255,255,255,.95),rgba(196,181,253,.9)_12%,rgba(139,92,246,.8)_34%,rgba(49,46,129,.9)_68%,rgba(8,13,25,1)_100%)] shadow-[0_0_35px_rgba(139,92,246,.4),inset_0_0_18px_rgba(255,255,255,.18)]">
+                  <Sparkles className="h-7 w-7 text-white drop-shadow-[0_0_8px_rgba(255,255,255,.8)]" />
+                </motion.div>
+                <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12, duration: 0.45 }} className="max-w-2xl">
+                  <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.28em] text-violet-300/80">LEARNING OS · AI MENTOR</p>
+                  <h2 className="text-balance text-2xl font-semibold tracking-tight text-white sm:text-3xl md:text-[38px]">What would you like to learn today?</h2>
+                  <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-slate-400 md:text-[15px]">{t.mentor.header.subtitle}</p>
+                </motion.div>
 
-      {/* Chat area */}
-      <div className="flex-1 min-h-0 w-full flex flex-col">
-        <div className="flex-1 min-h-0 md:overflow-y-auto md:py-4 space-y-3 md:space-y-4">
-          <AnimatePresence>
-            {messages.map((msg) => (
-              <motion.div
-                key={msg.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
-                <div
-                  className={`max-w-[85%] md:max-w-[70%] px-4 py-3 md:p-4 rounded-2xl ${
-                    msg.role === 'user'
-                      ? 'bg-gradient-to-br from-violet-500 to-indigo-500 text-white shadow-[0_0_22px_rgba(139,92,246,.3)]'
-                      : 'border border-white/10 bg-white/[0.05] text-slate-100'
-                  }`}
-                >
-                  <div className="hidden md:block text-xs opacity-60 mb-1">
-                    {stripEmoji(msg.role === 'user' ? t.mentor.youLabel : t.mentor.mentorLabel)}
-                  </div>
-                  {msg.role === 'mentor' && msg.ui ? (
-                    <Renderer response={msg.content} library={mentorUiLibrary} isStreaming={false} />
-                  ) : msg.role === 'mentor' ? (
-                    <MentorText text={msg.content} />
-                  ) : (
-                    <div className="whitespace-pre-wrap text-sm leading-relaxed">{msg.content}</div>
-                  )}
+                <div className="mt-8 grid w-full max-w-[850px] grid-cols-1 gap-3 sm:grid-cols-3">
+                  {t.mentor.suggestedPrompts.slice(0, 3).map((p, i) => {
+                    const PromptIcon = PROMPT_ICONS[i] ?? Lightbulb;
+                    return (
+                      <motion.button
+                        key={p.label}
+                        initial={{ opacity: 0, y: 16 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.18 + i * 0.08, duration: 0.35 }}
+                        onClick={() => sendMessage(p.prompt, PROMPT_UI[i] === true)}
+                        disabled={loading}
+                        className="group min-h-[112px] rounded-2xl border border-white/[0.09] bg-white/[0.045] p-4 text-left transition hover:-translate-y-1 hover:border-violet-300/30 hover:bg-violet-500/[0.09] hover:shadow-[0_16px_38px_rgba(0,0,0,.2)] disabled:opacity-40"
+                      >
+                        <div className="mb-3 flex items-center justify-between">
+                          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-500/15 text-violet-300"><PromptIcon className="h-4 w-4" /></span>
+                          <ChevronRight className="h-4 w-4 text-slate-600 transition group-hover:translate-x-1 group-hover:text-violet-200" />
+                        </div>
+                        <span className="block text-sm font-semibold text-slate-100">{p.label}</span>
+                        <span className="mt-1 block line-clamp-2 text-xs leading-relaxed text-slate-400">{p.prompt}</span>
+                      </motion.button>
+                    );
+                  })}
                 </div>
-              </motion.div>
-            ))}
-            {loading && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-start">
-                <div className="rounded-2xl border border-white/10 bg-white/[0.05] p-4">
-                  <div className="flex gap-1">
-                    <span className="h-2 w-2 animate-bounce rounded-full bg-violet-300/80 motion-reduce:animate-none" style={{ animationDelay: '0ms' }} />
-                    <span className="h-2 w-2 animate-bounce rounded-full bg-violet-300/80 motion-reduce:animate-none" style={{ animationDelay: '150ms' }} />
-                    <span className="h-2 w-2 animate-bounce rounded-full bg-violet-300/80 motion-reduce:animate-none" style={{ animationDelay: '300ms' }} />
-                  </div>
+              </div>
+            ) : (
+              <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-5 md:px-8 md:py-7">
+                <div className="mx-auto flex w-full max-w-4xl flex-col gap-5">
+                  <AnimatePresence>
+                    {messages.filter((msg) => msg.id !== WELCOME_ID).map((msg) => (
+                      <motion.div key={msg.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                        <div className={`max-w-[92%] rounded-2xl px-4 py-3 md:max-w-[78%] md:px-5 md:py-4 ${msg.role === 'user' ? 'bg-gradient-to-br from-violet-600 to-indigo-600 text-white shadow-[0_10px_30px_rgba(91,33,182,.2)]' : 'border border-white/[0.08] bg-[#111827]/90 text-slate-100'}`}>
+                          <div className="mb-1 text-[10px] font-medium uppercase tracking-wider opacity-55">{stripEmoji(msg.role === 'user' ? t.mentor.youLabel : t.mentor.mentorLabel)}</div>
+                          {msg.role === 'mentor' && msg.ui ? <Renderer response={msg.content} library={mentorUiLibrary} isStreaming={false} /> : msg.role === 'mentor' ? <MentorText text={msg.content} /> : <div className="whitespace-pre-wrap text-sm leading-relaxed">{msg.content}</div>}
+                        </div>
+                      </motion.div>
+                    ))}
+                    {loading && (
+                      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-start">
+                        <div className="rounded-2xl border border-white/10 bg-white/[0.05] p-4">
+                          <div className="flex gap-1">
+                            <span className="h-2 w-2 animate-bounce rounded-full bg-violet-300/80 motion-reduce:animate-none" />
+                            <span className="h-2 w-2 animate-bounce rounded-full bg-violet-300/80 motion-reduce:animate-none" style={{ animationDelay: '150ms' }} />
+                            <span className="h-2 w-2 animate-bounce rounded-full bg-violet-300/80 motion-reduce:animate-none" style={{ animationDelay: '300ms' }} />
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                  <div ref={messagesEndRef} />
                 </div>
-              </motion.div>
+              </div>
             )}
-          </AnimatePresence>
-          <div className="h-44 md:hidden" aria-hidden="true" />
-          <div ref={messagesEndRef} />
-        </div>
 
-        {/* Prompts + input — pinned above the bottom bar on phones (Instagram DM style) */}
-        <div
-          className={`fixed inset-x-0 z-30 md:static bg-white/95 dark:bg-[#080d19]/95 backdrop-blur md:backdrop-blur-none md:bg-transparent border-t border-gray-200 dark:border-white/10 md:border-white/5 ${
-            typing ? 'bottom-[env(safe-area-inset-bottom)]' : 'bottom-[calc(3.5rem+env(safe-area-inset-bottom))]'
-          } md:bottom-auto`}
-        >
-          <div className="px-4 md:px-6 py-2 md:py-3 flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {t.mentor.suggestedPrompts.map((p, i) => {
-              const PromptIcon = PROMPT_ICONS[i] ?? Lightbulb;
-              return (
-                <button
-                  key={p.label}
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => sendMessage(input.trim() ? `${input.trim()}\n\n${p.prompt}` : p.prompt, PROMPT_UI[i] === true)}
+            <div className="shrink-0 border-t border-white/[0.06] bg-[#080d19]/80 px-4 pb-[calc(14px+env(safe-area-inset-bottom))] pt-3 backdrop-blur-xl md:px-8 md:pb-5">
+              {showWelcome && (
+                <div className="mx-auto mb-3 flex max-w-4xl flex-wrap justify-center gap-2">
+                  {t.mentor.suggestedPrompts.slice(3).map((p, i) => {
+                    const PromptIcon = PROMPT_ICONS[i + 3] ?? CircleHelp;
+                    return (
+                      <button key={p.label} onClick={() => sendMessage(p.prompt, PROMPT_UI[i + 3] === true)} disabled={loading} className="inline-flex h-8 items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.035] px-3 text-[11px] text-slate-400 transition hover:border-violet-300/30 hover:text-violet-200 disabled:opacity-40">
+                        <PromptIcon className="h-3.5 w-3.5" />{p.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+              <div className="mx-auto flex max-w-4xl items-end gap-2 rounded-2xl border border-white/[0.11] bg-[#171c2a] p-2 shadow-[0_14px_45px_rgba(0,0,0,.28)] transition focus-within:border-violet-400/40 focus-within:shadow-[0_0_0_3px_rgba(139,92,246,.08),0_14px_45px_rgba(0,0,0,.28)]">
+                <textarea
+                  rows={2}
+                  maxLength={4000}
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(input); } }}
+                  onFocus={() => setImmersive(true)}
+                  onBlur={() => setImmersive(false)}
+                  placeholder={t.mentor.inputPlaceholder}
                   disabled={loading}
-                  className="inline-flex h-9 flex-shrink-0 items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.05] px-3 text-xs text-slate-200 transition hover:border-violet-300/50 hover:bg-violet-400/10 hover:shadow-[0_0_14px_rgba(139,92,246,.25)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300 disabled:opacity-40"
-                >
-                  <PromptIcon className="h-3.5 w-3.5 text-violet-300" strokeWidth={1.75} />
-                  {p.label}
+                  className="max-h-36 min-h-[48px] flex-1 resize-none bg-transparent px-3 py-3 text-sm text-slate-100 outline-none placeholder:text-slate-500 disabled:opacity-50"
+                />
+                <button onMouseDown={(e) => e.preventDefault()} onClick={() => sendMessage(input)} disabled={loading || !input.trim()} aria-label={t.mentor.sendCta} title={t.mentor.sendCta} className="mb-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 text-white shadow-[0_0_18px_rgba(139,92,246,.32)] transition hover:brightness-110 disabled:opacity-35 disabled:shadow-none">
+                  <SendHorizontal className="h-4 w-4" />
                 </button>
-              );
-            })}
+              </div>
+              <p className="mx-auto mt-2 max-w-4xl text-center text-[10px] text-slate-600">Your mentor uses your learning context to make explanations more relevant.</p>
+            </div>
           </div>
+        </main>
 
-          <div className="px-4 pb-3 md:px-0 md:py-3 flex gap-2">
-            <input
-              type="text"
-              maxLength={4000}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && sendMessage(input)}
-              onFocus={() => setImmersive(true)}
-              onBlur={() => setImmersive(false)}
-              placeholder={t.mentor.inputPlaceholder}
-              disabled={loading}
-              className="flex-1 min-w-0 h-11 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-full md:rounded-xl px-4 placeholder-gray-400 dark:placeholder-white/40 focus:outline-none focus:border-violet-400 focus:shadow-[0_0_16px_rgba(139,92,246,.25)]"
-            />
-            <button
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => sendMessage(input)}
-              disabled={loading || !input.trim()}
-              aria-label={t.mentor.sendCta}
-              title={t.mentor.sendCta}
-              className="flex-shrink-0 w-11 h-11 md:w-auto md:px-5 flex items-center justify-center bg-violet-500 text-white shadow-[0_0_16px_rgba(139,92,246,.4)] hover:bg-violet-400 disabled:opacity-40 disabled:shadow-none rounded-full md:rounded-xl font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200"
-            >
-              <SendHorizontal className="w-5 h-5 md:hidden" strokeWidth={1.75} />
-              <span className="hidden md:inline">{t.mentor.sendCta}</span>
-            </button>
-          </div>
-        </div>
+        <AnimatePresence>
+          {historyOpen && (
+            <motion.div key="mentor-history" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[45] flex items-end bg-black/55 backdrop-blur-sm md:items-stretch md:justify-end" onClick={() => setHistoryOpen(false)}>
+              <motion.div initial={{ y: 40 }} animate={{ y: 0 }} exit={{ y: 40 }} role="dialog" aria-label={t.mentor.history} onClick={(e) => e.stopPropagation()} className="flex max-h-[82dvh] w-full flex-col rounded-t-2xl border-t border-white/10 bg-[#0b1221] md:max-h-none md:w-96 md:rounded-none md:border-l md:border-t-0">
+                <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
+                  <h2 className="font-semibold text-white">{t.mentor.history}</h2>
+                  <button onClick={() => setHistoryOpen(false)} aria-label={t.mentor.closeCta} title={t.mentor.closeCta} className="flex h-9 w-9 items-center justify-center rounded-full text-slate-400 hover:bg-white/10 hover:text-white"><X className="h-5 w-5" /></button>
+                </div>
+                <div className="flex-1 overflow-y-auto p-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
+                  {chats.length === 0 ? <p className="p-4 text-sm text-slate-500">{t.mentor.historyEmpty}</p> : chats.map((chat) => (
+                    <div key={chat.id} className={`flex items-center gap-1 rounded-xl ${chat.id === chatId ? 'bg-violet-500/15' : 'hover:bg-white/5'}`}>
+                      <button onClick={() => chat.id !== chatId ? switchTo(chat.id, false) : setHistoryOpen(false)} className="min-w-0 flex-1 px-3 py-3 text-left">
+                        <div className="truncate text-sm text-slate-100">{chat.title || t.mentor.newChat}</div>
+                        <div className="text-xs text-slate-500">{formatWhen(chat.updatedAt)}</div>
+                      </button>
+                      <button onClick={() => setPendingDelete(chat.id)} aria-label={t.mentor.deleteChat} title={t.mentor.deleteChat} className="mr-1 flex h-9 w-9 items-center justify-center rounded-full text-slate-500 hover:bg-white/10 hover:text-red-300"><Trash2 className="h-4 w-4" /></button>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {pendingDelete && <ConfirmDialog danger message={t.mentor.deleteConfirm} confirmLabel={t.mentor.deleteCta} cancelLabel={t.mentor.cancelCta} onConfirm={confirmDelete} onCancel={() => setPendingDelete(null)} />}
       </div>
-    </div>
     </div>
   );
 }
