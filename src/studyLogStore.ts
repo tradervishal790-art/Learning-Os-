@@ -1,4 +1,5 @@
 import { pullFromCloud, pushToCloud } from './cloudSync';
+import { markStudyDay } from './studyDay';
 
 /**
  * Daily study log — local-first, with best-effort per-user cloud sync.
@@ -119,6 +120,7 @@ export function addStudyLogEntry(input: AddStudyLogInput, state = loadStudyLog()
     throw new Error('Recall score must be between 0 and 100.');
   }
 
+  markStudyDay();
   const entry: StudyLogEntry = {
     id: `study_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`,
     date,

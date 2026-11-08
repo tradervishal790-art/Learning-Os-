@@ -18,6 +18,7 @@ import { analyzeAttempt, analyzeHistory } from './testAnalytics';
 import { getTestAttempts } from './testStore';
 import { getLearningProfile, saveLearningProfile } from './learningProfileStore';
 import { pushToCloud, pullFromCloud } from './cloudSync';
+import { ACTIVE_DAYS_STORAGE_KEY, STUDY_DAY_EVENT, readStudyDays, readStudyStreak } from './studyDay';
 import { buildCandidatePoolForConcept } from './conceptVideoPool';
 import { selectPlaylistForConcept, analyzedVideoToVideo } from './PlaylistBuilder';
 import { expandSearchQuery } from './queryExpander';
@@ -123,7 +124,6 @@ const deadlineOptions = [
 
 const pageConfigs: Partial<Record<DashboardPageId, PageConfig>> = {};
 
-const ACTIVE_DAYS_STORAGE_KEY = 'learning_os_active_days';
 const TOPIC_TIMING_STORAGE_KEY = 'learning_os_topic_timing';
 
 /**
@@ -146,35 +146,6 @@ export async function hydrateActiveDaysFromCloud(): Promise<void> {
       // Best-effort.
     }
   }
-}
-
-function trackAndComputeStreak(): number {
-  const todayKey = new Date().toISOString().slice(0, 10);
-  let activeDays: string[] = [];
-  try {
-    const saved = localStorage.getItem(ACTIVE_DAYS_STORAGE_KEY);
-    activeDays = saved ? (JSON.parse(saved) as string[]) : [];
-  } catch {
-    activeDays = [];
-  }
-  if (!activeDays.includes(todayKey)) {
-    activeDays.push(todayKey);
-    localStorage.setItem(ACTIVE_DAYS_STORAGE_KEY, JSON.stringify(activeDays));
-    // Cross-device streak sync — best-effort, mirrors the pattern used by
-    // learningProfileStore.ts/goalsStore.ts/etc. Only pushed when a NEW day
-    // is actually added, not on every render, to avoid redundant writes.
-    void pushToCloud('activeDays', activeDays);
-  }
-  const activeSet = new Set(activeDays);
-  let streak = 0;
-  const cursor = new Date();
-  while (true) {
-    const key = cursor.toISOString().slice(0, 10);
-    if (!activeSet.has(key)) break;
-    streak += 1;
-    cursor.setDate(cursor.getDate() - 1);
-  }
-  return streak;
 }
 
 function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGenerateForSubject, roadmapVersion, lastRoadmapError, goals, activeGoalId, onAddGoal, onEndGoal, onSwitchGoal }: DashboardProps) {
@@ -254,8 +225,16 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   const [customLoading, setCustomLoading] = useState(false);
   const [customError, setCustomError] = useState('');
 
+  // The streak counts STUDY days only (see studyDay.ts) — opening the app no longer marks a day.
   useEffect(() => {
-    setStreak(trackAndComputeStreak());
+    setStreak(readStudyStreak());
+    const onStudyDay = () => {
+      setStreak(readStudyStreak());
+      // Cross-device streak sync — only fires when a NEW study day is added.
+      void pushToCloud('activeDays', readStudyDays());
+    };
+    window.addEventListener(STUDY_DAY_EVENT, onStudyDay);
+    return () => window.removeEventListener(STUDY_DAY_EVENT, onStudyDay);
   }, []);
 
   useEffect(() => {

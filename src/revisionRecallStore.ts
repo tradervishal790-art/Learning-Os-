@@ -1,4 +1,5 @@
 import { pushToCloud, pullFromCloud } from './cloudSync';
+import { markStudyDay } from './studyDay';
 
 // Recall scores are separate from completion checkpoints: finishing a review
 // must not be treated as proof that the learner remembered the topic.
@@ -77,6 +78,7 @@ export function saveRecallRating(topicId: string, day: number, rating: RecallRat
   const record: RecallRecord = { topicId, day, rating, recordedAt: new Date().toISOString() };
   all[topicId] = [...existing.filter((item) => item.day !== day), record].sort((a, b) => a.day - b.day);
   writeAll(all);
+  markStudyDay();
   return record;
 }
 

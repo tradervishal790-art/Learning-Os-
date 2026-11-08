@@ -1,4 +1,5 @@
 import { pushToCloud, pullFromCloud } from './cloudSync';
+import { markStudyDay } from './studyDay';
 
 // Checkpoints stay in the legacy day map for compatibility. Actual review
 // timestamps live beside it so the next interval starts when the learner
@@ -141,6 +142,7 @@ export function markDayReviewed(topicId: string, day: number, reviewedAt = new D
   dates[topicId] ??= {};
   dates[topicId][String(day)] = reviewedAt;
   saveReviewDates(dates);
+  markStudyDay();
 }
 
 /** Undo a checkpoint, including its timestamp, if it was clicked by mistake. */

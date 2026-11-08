@@ -488,6 +488,9 @@ export interface TranslationShape {
       noRevisionBody: string;
       allCaughtUpTitle: string;
       allCaughtUpBody: string;
+      earnedBreakTitle: string;
+      earnedBreakBody: string;
+      earnedBreakCta: string;
     };
   };
   notebook: {
@@ -1909,6 +1912,9 @@ export const translations: Record<Locale, TranslationShape> = {
         noRevisionBody: 'Start a topic on your roadmap or watch a video — a revision schedule will build itself here.',
         allCaughtUpTitle: 'All caught up!',
         allCaughtUpBody: 'No items in this category right now.',
+        earnedBreakTitle: 'Revision done. You earned a break.',
+        earnedBreakBody: 'Take 2 minutes of Shorts from your chosen interests, then back to learning.',
+        earnedBreakCta: 'Start 2-minute break',
       },
     },
     notebook: {
@@ -3720,6 +3726,9 @@ export const translations: Record<Locale, TranslationShape> = {
         noRevisionBody: 'रोडमैप में कोई टॉपिक शुरू करें या कोई वीडियो देखें — रिवीज़न शेड्यूल अपने आप यहां बन जाएगा।',
         allCaughtUpTitle: 'सब कुछ पूरा हो गया!',
         allCaughtUpBody: 'इस श्रेणी में अभी कोई आइटम नहीं है।',
+        earnedBreakTitle: 'रिवीज़न पूरा हुआ। आपने ब्रेक कमाया है।',
+        earnedBreakBody: 'अपनी चुनी हुई रुचियों के 2 मिनट के Shorts देखें, फिर वापस पढ़ाई पर।',
+        earnedBreakCta: '2 मिनट का ब्रेक शुरू करें',
       },
     },
     notebook: {
@@ -5530,6 +5539,9 @@ export const translations: Record<Locale, TranslationShape> = {
         noRevisionBody: 'Roadmap mein koi topic start karo ya video dekho — revision schedule yahin apne aap ban jayega.',
         allCaughtUpTitle: 'All caught up!',
         allCaughtUpBody: 'No items in this category right now.',
+        earnedBreakTitle: 'Revision ho gaya. Aapne break kamaya.',
+        earnedBreakBody: 'Apni chuni hui interests ke 2 minute ke Shorts dekho, phir wapas padhai.',
+        earnedBreakCta: '2 minute ka break shuru karo',
       },
     },
     notebook: {

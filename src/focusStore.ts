@@ -59,3 +59,15 @@ export const setLocalTs = (t: number) => localStorage.setItem(TS_KEY, String(t))
 
 export const pullFocusState = () => pullFromCloud<FocusCloud>('focusState');
 export const pushFocusState = (state: FocusCloud) => void pushToCloud('focusState', state);
+
+export const BREAK_PREFS_KEY = 'learning_os_focus_break_prefs';
+
+/** Shorts interests the learner chose in Focus (max 3). Empty = no break is offered. */
+export function loadBreakInterests(): string[] {
+  try {
+    const p = JSON.parse(localStorage.getItem(BREAK_PREFS_KEY) ?? '');
+    return Array.isArray(p?.interests) ? p.interests.filter((x: unknown): x is string => typeof x === 'string').slice(0, 3) : [];
+  } catch {
+    return [];
+  }
+}
