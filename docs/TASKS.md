@@ -4,7 +4,7 @@
 - [ ] Integrate LifeQuest-style 50-question Mind Map assessment → extract 8 learning dimensions in a single Gemini call.
 - [ ] i18n wiring (3-phase handoff plan, see `hindi-i18n-wiring-prompt.md`):
   - [x] Phase 1 — locale persisted, `LOCKED_TO_ENGLISH` is false
-  - [ ] Phase 2 — wire every component to `useTranslation()`, file-by-file with tsc+build after each
+  - [~] Phase 2 — wire every component to `useTranslation()`, file-by-file with tsc+build after each. DONE: RecallCheck, DailyHabit, WelcomeBack, PagePlaceholder, GrowthEdgesCard, ReviewSession, ShortsBank, BreakFeed, DailyTest, TestBuilder, LiveJoin, LiveHost, FocusPlayer, PdfPage, and Test (done in the UI redesign). Guarded by `tests/i18n-phase2.test.mjs`: all 3 languages complete, same `{n}` placeholders, Hindi in Devanagari. LEFT: see the line under "UX problems".
   - [~] Phase 3 — mentor, blueprint-interview, generate-notes done; see Known gaps
 
 ## Guest mode (code done, committed locally, not pushed — needs YOU in the Firebase console)
@@ -56,7 +56,7 @@
 
 ## UX problems found in the Oct 22 audit — still open
 - [ ] Taste Onboarding needs 5 videos x 45+ min before any value; consider a skippable/shorter path (check whether any skip exists)
-- [ ] ~14 screens still have hard-coded English text (BreakFeed, DailyHabit, DailyTest, Dictionary, FocusPlayer, GrowthEdgesCard, LiveHost, LiveJoin, PdfPage, PersonalityQuiz, RecallCheck, ShortsBank, Test, TestBuilder — heuristic scan, Oct 27). 39 of 91 .tsx files import i18n; the rest are mostly sub-components that get labels via props. (The Oct 22 audit said ~40: overstated.) -> Phase 2 i18n
+- [~] Hard-coded English left after Phase 2 (heuristic scan): PersonalityQuiz + its question text and PersonalityReportCard (a content-translation job, needs a review), PhotoImport (inside TestBuilder), a few strings in TestAnalysis / CurrentAffairs / Roadmap / VideoIntel / BlueprintInterview / Research / Dictionary / SharedLearningInsights, the playful BreakFeed taglines and the interest names (Cricket, Comedy …), and the English prompts sent to the AI in ReviewSession.
 - [ ] 18 native `prompt()`/`confirm()` calls left in 11 files (Oct 27 recount; Oct 22 said ~14): NoteLibrary 7, NoteEditor 4 (erase-all ink, OCR consent, unlink video, circle consent), EditorToolbar link, LiveHost, NoteTools, PageAttachments, PageImages, RevisionSheet, StudyPlan, **DailyTest ("Delete the whole question bank" — destructive, fix first)**. Need an in-app prompt dialog next to `ConfirmDialog`
 - [ ] Daily Test bank is localStorage-only: a lost phone / cleared browser loses it (Backup/Restore exists but is manual)
 - [ ] Per-instance rate limits are inconsistent unless the Redis budget is enabled

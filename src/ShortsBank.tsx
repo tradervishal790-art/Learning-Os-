@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { ChevronLeft, Wallet } from 'lucide-react';
 import type { SavedShort } from './focusStore';
 import { decodeHtml } from './textUtil';
+import { useTranslation } from './i18n/LanguageContext';
+import { format } from './i18n/format';
 
 // ============================================================
 // ShortsBank.tsx — the separate "bank" section.
@@ -30,6 +32,7 @@ export default function ShortsBank({
   onRemove: (id: string) => void;
   onBack: () => void;
 }) {
+  const t = useTranslation().shortsBank;
   const [watching, setWatching] = useState<SavedShort | null>(null);
   const canWatch = bankSec >= WATCH_COST_SEC;
 
@@ -39,34 +42,34 @@ export default function ShortsBank({
     <div className="min-h-dvh bg-white text-black dark:bg-black dark:text-white">
       <div className="mx-auto max-w-3xl px-4 py-8">
         <div className="mb-6 flex items-center justify-between">
-          <h1 className="text-2xl font-bold flex items-center gap-2"><Wallet className="w-6 h-6" strokeWidth={1.75} />Shorts bank</h1>
-          <button onClick={onBack} aria-label="Back" title="Back" className="w-11 h-11 flex items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10">
+          <h1 className="text-2xl font-bold flex items-center gap-2"><Wallet className="w-6 h-6" strokeWidth={1.75} />{t.title}</h1>
+          <button onClick={onBack} aria-label={t.back} title={t.back} className="w-11 h-11 flex items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10">
             <ChevronLeft className="w-6 h-6" strokeWidth={1.75} />
           </button>
         </div>
 
         <div className="grid grid-cols-3 gap-3">
           <div className={stat}>
-            <p className="text-xs opacity-60">In your bank</p>
-            <p className="text-2xl font-bold">{Math.floor(bankSec / 60)} min</p>
+            <p className="text-xs opacity-60">{t.inBank}</p>
+            <p className="text-2xl font-bold">{format(t.minutes, Math.floor(bankSec / 60))}</p>
           </div>
           <div className={stat}>
-            <p className="text-xs opacity-60">Earned today</p>
-            <p className="text-2xl font-bold">{Math.round(earnedTodaySec / 60)} min</p>
+            <p className="text-xs opacity-60">{t.earnedToday}</p>
+            <p className="text-2xl font-bold">{format(t.minutes, Math.round(earnedTodaySec / 60))}</p>
           </div>
           <div className={stat}>
-            <p className="text-xs opacity-60">Skips today</p>
+            <p className="text-xs opacity-60">{t.skipsToday}</p>
             <p className="text-2xl font-bold">{skipsToday}</p>
           </div>
         </div>
-        <p className="mt-2 text-xs opacity-60">Total skips so far: {skipsTotal}</p>
+        <p className="mt-2 text-xs opacity-60">{format(t.totalSkips, skipsTotal)}</p>
 
-        <h2 className="mb-1 mt-8 font-semibold">Saved Shorts</h2>
-        <p className="mb-3 text-sm opacity-60">Skip a break and a few Shorts get saved here. Watching one costs 1 min from your bank.</p>
+        <h2 className="mb-1 mt-8 font-semibold">{t.savedTitle}</h2>
+        <p className="mb-3 text-sm opacity-60">{t.savedHint}</p>
 
         {saved.length === 0 && (
           <p className="rounded-2xl border border-dashed border-black/20 p-6 text-center text-sm opacity-60 dark:border-white/25">
-            Nothing saved yet. Skip your next break to earn some.
+            {t.nothingSaved}
           </p>
         )}
 
@@ -75,7 +78,7 @@ export default function ShortsBank({
             <div key={s.id} className="flex items-center gap-3 rounded-2xl border border-black/10 p-3 dark:border-white/15">
               <img src={`https://i.ytimg.com/vi/${s.id}/mqdefault.jpg`} alt="" className="h-20 w-14 shrink-0 rounded-lg object-cover" />
               <div className="min-w-0 flex-1">
-                <p className="line-clamp-2 text-sm font-medium">{decodeHtml(s.title) || 'Short'}</p>
+                <p className="line-clamp-2 text-sm font-medium">{decodeHtml(s.title) || t.shortFallback}</p>
                 <p className="mt-0.5 text-xs opacity-60">{s.channel}</p>
               </div>
               <div className="flex shrink-0 flex-col gap-1">
@@ -87,22 +90,22 @@ export default function ShortsBank({
                   }}
                   className={`rounded-lg px-3 py-1.5 text-sm font-medium ${canWatch ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white' : 'border border-black/15 opacity-50 dark:border-white/20'}`}
                 >
-                  Watch · 1 min
+                  {t.watch}
                 </button>
                 <button onClick={() => onRemove(s.id)} className="text-xs opacity-50 hover:opacity-100">
-                  Remove
+                  {t.remove}
                 </button>
               </div>
             </div>
           ))}
         </div>
-        {!canWatch && saved.length > 0 && <p className="mt-3 text-xs opacity-60">Your bank is empty. Skip a break to earn more.</p>}
+        {!canWatch && saved.length > 0 && <p className="mt-3 text-xs opacity-60">{t.bankEmpty}</p>}
       </div>
 
       {watching && (
         <div className="fixed inset-0 z-50 flex flex-col bg-black text-white">
           <div className="flex items-center justify-between px-4 py-3">
-            <span className="text-sm opacity-70 inline-flex items-center gap-1.5"><Wallet className="w-4 h-4" strokeWidth={1.75} />Paid from your bank</span>
+            <span className="text-sm opacity-70 inline-flex items-center gap-1.5"><Wallet className="w-4 h-4" strokeWidth={1.75} />{t.paidFromBank}</span>
             <button
               onClick={() => {
                 onRemove(watching.id);
@@ -110,7 +113,7 @@ export default function ShortsBank({
               }}
               className="rounded-lg px-3 py-1.5 text-sm hover:bg-white/10"
             >
-              Done
+              {t.done}
             </button>
           </div>
           <div className="mx-auto flex w-full max-w-sm flex-1 items-center justify-center pb-6">

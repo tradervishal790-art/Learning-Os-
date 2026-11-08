@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { authFetch } from './apiFetch';
+import { useTranslation } from './i18n/LanguageContext';
+import { format } from './i18n/format';
 
 // Reuses the same server proxy Mentor.tsx already calls — no new API
 // endpoint needed. We just scope the conversation to one topic and ask
@@ -37,6 +39,7 @@ interface ReviewSessionProps {
 // the learner honestly rates how well they recalled it. "Try Again Later" does
 // NOT mark the checkpoint done, so it stays due/overdue and they can retry.
 export default function ReviewSession({ topic, onMarkDone, onClose }: ReviewSessionProps) {
+  const t = useTranslation().reviewSession;
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(true);
@@ -54,7 +57,7 @@ export default function ReviewSession({ topic, onMarkDone, onClose }: ReviewSess
         const reply = await callMentorChat('Generate a short quiz (1-2 questions) on this topic to test my recall.', topic, []);
         setMessages([{ id: 'm1', role: 'mentor', content: reply }]);
       } catch (err: any) {
-        setMessages([{ id: 'm1', role: 'mentor', content: `Quiz failed to load: ${err.message}` }]);
+        setMessages([{ id: 'm1', role: 'mentor', content: format(t.quizFailed, err.message) }]);
       } finally {
         setLoading(false);
       }
@@ -79,7 +82,7 @@ export default function ReviewSession({ topic, onMarkDone, onClose }: ReviewSess
       );
       setMessages((prev) => [...prev, { id: Date.now().toString() + 'm', role: 'mentor', content: reply }]);
     } catch (err: any) {
-      setMessages((prev) => [...prev, { id: Date.now().toString() + 'm', role: 'mentor', content: `Error: ${err.message}` }]);
+      setMessages((prev) => [...prev, { id: Date.now().toString() + 'm', role: 'mentor', content: format(t.errorPrefix, err.message) }]);
     } finally {
       setLoading(false);
     }
@@ -129,7 +132,7 @@ export default function ReviewSession({ topic, onMarkDone, onClose }: ReviewSess
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && send()}
           disabled={loading}
-          placeholder="Type your answer here..."
+          placeholder={t.inputPlaceholder}
           className="flex-1 min-w-0 min-h-11 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-purple-500/50"
         />
         <button
@@ -137,25 +140,25 @@ export default function ReviewSession({ topic, onMarkDone, onClose }: ReviewSess
           disabled={loading || !input.trim()}
           className="min-h-11 min-w-16 px-4 py-2 rounded-lg bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white text-sm font-medium disabled:opacity-40"
         >
-          Send
+          {t.send}
         </button>
       </div>
 
       {exchanged && (
         <div>
-          <p className="text-xs text-gray-400 mb-2">Honestly, how well did you recall it?</p>
+          <p className="text-xs text-gray-400 mb-2">{t.howWell}</p>
           <div className="flex gap-2">
             <button
               onClick={onClose}
               className="flex-1 min-h-11 py-2 rounded-lg bg-red-100 text-red-700 text-xs font-medium"
             >
-              Try Again Later
+              {t.tryLater}
             </button>
             <button
               onClick={onMarkDone}
               className="flex-1 min-h-11 py-2 rounded-lg bg-green-100 text-green-700 text-xs font-medium"
             >
-              Done
+              {t.done}
             </button>
           </div>
         </div>

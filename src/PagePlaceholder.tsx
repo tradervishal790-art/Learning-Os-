@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { Check, Construction } from 'lucide-react';
 import type { PageStatus } from './types';
+import { useTranslation } from './i18n/LanguageContext';
 
 interface PagePlaceholderProps {
   title: string;
@@ -10,13 +11,9 @@ interface PagePlaceholderProps {
   status: PageStatus;
 }
 
-const statusBadgeConfig: Record<PageStatus, string> = {
-  'coming-soon': 'Coming Soon',
-  beta: 'Beta',
-  active: 'Active',
-};
-
 export default function PagePlaceholder({ title, description, icon, features, status }: PagePlaceholderProps) {
+  const t = useTranslation().pagePlaceholder;
+  const statusBadgeConfig: Record<PageStatus, string> = { 'coming-soon': t.comingSoon, beta: t.beta, active: t.active };
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -70,9 +67,9 @@ export default function PagePlaceholder({ title, description, icon, features, st
         className="p-8 rounded-2xl card text-center"
       >
         <Construction className="w-12 h-12 mx-auto mb-4 text-gray-400 dark:text-white/40" strokeWidth={1.5} />
-        <h3 className="text-xl font-semibold mb-2">Under Construction</h3>
+        <h3 className="text-xl font-semibold mb-2">{t.underConstruction}</h3>
         <p className="text-gray-500 dark:text-white/60 text-sm max-w-md mx-auto">
-          Part of the Learning OS roadmap — UI ready, connecting it to data and engines next.
+          {t.underConstructionBody}
         </p>
       </motion.div>
     </motion.div>

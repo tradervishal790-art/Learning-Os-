@@ -19,6 +19,8 @@ import {
   MAX_PER_DAY,
 } from './dailyTestStore';
 import { askConfirm, showNotice } from './dialogApi';
+import { useTranslation } from './i18n/LanguageContext';
+import { format } from './i18n/format';
 
 // ============================================================
 // DailyTest.tsx — setup + "today's test" screen for the Daily Test feature
@@ -27,6 +29,7 @@ import { askConfirm, showNotice } from './dialogApi';
 // ============================================================
 
 export default function DailyTest({ onStart, onExit }: { onStart: (paper: TestPaper) => void; onExit: () => void }) {
+  const t = useTranslation().dailyTest;
   const [state, setState] = useState(() => loadDaily());
   const [editingBank, setEditingBank] = useState(false);
   const [message, setMessage] = useState('');
@@ -50,7 +53,7 @@ export default function DailyTest({ onStart, onExit }: { onStart: (paper: TestPa
     return (
       <div>
         <p className="max-w-3xl mx-auto mb-4 text-sm text-gray-500 dark:text-white/60">
-          Queue photos/PDFs without AI analysis, or paste/type questions. Questions need answers before they can appear in a test. Press <b>Save Question Bank</b> when finished.
+          {t.queueHintBefore}<b>{t.saveBank}</b>{t.queueHintAfter}
         </p>
         <TestBuilder
           variant="daily"
@@ -58,12 +61,12 @@ export default function DailyTest({ onStart, onExit }: { onStart: (paper: TestPa
           onCancel={() => setEditingBank(false)}
           onSave={(p) => {
             if (!saveBank(p.questions)) {
-              void showNotice('Could not save — your browser storage is full. Remove some questions or clear old data, then try again.');
+              void showNotice(t.bankFull);
               return;
             }
             setEditingBank(false);
             void getQueuedPhotoCount().then(setQueuedPhotos);
-            setMessage(p.questions.length ? `Question bank saved: ${p.questions.length} question(s).` : 'Question bank saved. Queued photos will be analyzed only when a test needs more questions.');
+            setMessage(p.questions.length ? format(t.bankSaved, p.questions.length) : t.bankSavedQueued);
             refresh();
           }}
         />
@@ -100,20 +103,20 @@ export default function DailyTest({ onStart, onExit }: { onStart: (paper: TestPa
         current = loadDaily();
         if (result.errors.length) {
           importFailed = true;
-          setMessage(`Processed ${result.processedPages} page(s). ${result.errors[0]} Remaining pages/files are saved for retry.`);
+          setMessage(format(t.processedErr, result.processedPages, result.errors[0]));
         }
-        else if (result.processedPages > 0) setMessage(`Processed only ${result.processedPages} page(s) needed for this test. ${result.remainingFiles} source file(s) remain queued for later tests.`);
+        else if (result.processedPages > 0) setMessage(format(t.processedPartial, result.processedPages, result.remainingFiles));
       }
       const paper = getOrCreateTodayTest();
       if (!paper) {
         refresh();
-        if (getReadyDailyQuestionCount(current.bank) === 0 && !importFailed) setMessage(current.bank.length > 0 ? 'Questions were saved, but some need answers first. Open Edit question bank and complete their answers before starting a test.' : 'No questions are ready. Add photos/PDFs or type questions first.');
+        if (getReadyDailyQuestionCount(current.bank) === 0 && !importFailed) setMessage(current.bank.length > 0 ? t.needAnswers : t.noneReady);
         return;
       }
       refresh();
       onStart(paper);
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'Could not prepare the Daily Test. Your queued files have been kept.');
+      setMessage(err instanceof Error ? err.message : t.prepareFailed);
       refresh();
     } finally {
       setPreparing(false);
@@ -136,12 +139,12 @@ export default function DailyTest({ onStart, onExit }: { onStart: (paper: TestPa
   const restore = async (file: File | undefined) => {
     if (!file) return;
     const ok = importDailyBackup(await file.text());
-    setMessage(ok ? 'Backup restored.' : 'That file is not a valid Daily Test backup.');
+    setMessage(ok ? t.restored : t.badBackup);
     refresh();
     if (fileRef.current) fileRef.current.value = '';
   };
   const reset = async () => {
-    if (!(await askConfirm('Delete the whole question bank and all Daily Test progress? Your finished results stay in Past attempts.', { danger: true }))) return;
+    if (!(await askConfirm(t.confirmReset, { danger: true }))) return;
     resetDaily();
     void clearQueuedDailyPhotos().then(() => setQueuedPhotos(0));
     setMessage('');
@@ -155,21 +158,21 @@ export default function DailyTest({ onStart, onExit }: { onStart: (paper: TestPa
   return (
     <div className="max-w-3xl mx-auto">
       <button onClick={onExit} className="flex min-h-11 items-center gap-1.5 text-sm text-gray-500 dark:text-white/60 mb-5 hover:underline">
-        <ArrowLeft className="w-4 h-4" /> Back to tests
+        <ArrowLeft className="w-4 h-4" /> {t.backToTests}
       </button>
       <h2 className="flex items-center gap-2 text-2xl font-bold mb-1">
-        <CalendarCheck className="w-6 h-6" /> Daily Test
+        <CalendarCheck className="w-6 h-6" /> {t.title}
       </h2>
-      <p className="text-sm text-gray-500 dark:text-white/60 mb-6">Queue photos once. AI reads only as many files as needed when you request a test; unused files stay saved for later.</p>
+      <p className="text-sm text-gray-500 dark:text-white/60 mb-6">{t.intro}</p>
 
       {message && <p className="mb-4 text-sm text-emerald-600 dark:text-emerald-400">{message}</p>}
 
       {status === 'empty' && queuedPhotos === 0 ? (
         <div className={card}>
-          <p className="font-semibold mb-1">Start by adding your questions</p>
-          <p className="text-sm text-gray-500 dark:text-white/60 mb-4">Add photos or PDFs of your question paper (or paste/type the questions). You do this only once.</p>
+          <p className="font-semibold mb-1">{t.startTitle}</p>
+          <p className="text-sm text-gray-500 dark:text-white/60 mb-4">{t.startBody}</p>
           <button onClick={() => setEditingBank(true)} className="min-h-11 px-5 py-2.5 rounded-xl bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white font-semibold">
-            Add questions
+            {t.addQuestions}
           </button>
         </div>
       ) : (
@@ -177,67 +180,67 @@ export default function DailyTest({ onStart, onExit }: { onStart: (paper: TestPa
           <div className={card}>
             {status === 'done' ? (
               <>
-                <p className="font-semibold">Today's test is done</p>
-                <p className="text-sm text-gray-500 dark:text-white/60">Your next test will be ready tomorrow. See your result in Past attempts.</p>
+                <p className="font-semibold">{t.doneTitle}</p>
+                <p className="text-sm text-gray-500 dark:text-white/60">{t.doneBody}</p>
               </>
             ) : (
               <>
-                <p className="font-semibold">{status === 'pending' ? (isMissed ? 'Your missed test is waiting' : "Today's test is ready") : state.bank.length === 0 ? 'Prepare a test from queued files' : "Today's test"}</p>
+                <p className="font-semibold">{status === 'pending' ? (isMissed ? t.statusMissed : t.statusReady) : state.bank.length === 0 ? t.statusPrepare : t.statusToday}</p>
                 <p className="text-sm text-gray-500 dark:text-white/60 mb-4">
                   {state.pending
-                    ? `${state.pending.questions.length} questions${state.pending.durationMinutes > 0 ? ` · ${state.pending.durationMinutes} min` : ' · no timer'}${isMissed ? ' · same questions, not skipped' : ''}`
-                    : `${Math.min(sum.perDay, sum.total)} ready question(s) · ${queuedPhotos} file(s) waiting${state.minutesPerQuestion > 0 ? ` · up to ${Math.max(1, Math.round(Math.min(sum.perDay, Math.max(1, sum.total)) * state.minutesPerQuestion))} min` : ' · no timer'}`}
+                    ? format(t.pendingLine, state.pending.questions.length, state.pending.durationMinutes > 0 ? format(t.minutesSuffix, state.pending.durationMinutes) : t.noTimer, isMissed ? t.sameQuestions : '')
+                    : format(t.readyLine, Math.min(sum.perDay, sum.total), queuedPhotos, state.minutesPerQuestion > 0 ? format(t.upTo, Math.max(1, Math.round(Math.min(sum.perDay, Math.max(1, sum.total)) * state.minutesPerQuestion))) : t.noTimer)}
                 </p>
                 <button onClick={start} disabled={preparing} className="flex min-h-11 items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white font-semibold disabled:opacity-50">
-                  <Play className="w-4 h-4" /> {preparing ? 'Preparing questions…' : 'Start today\'s test'}
+                  <Play className="w-4 h-4" /> {preparing ? t.preparing : t.startToday}
                 </button>
               </>
             )}
           </div>
 
           <div className={card}>
-            <p className="font-semibold mb-3">Settings</p>
+            <p className="font-semibold mb-3">{t.settings}</p>
             <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-4 sm:gap-5">
               <label className="text-sm">
-                <span className="block mb-1 text-gray-600 dark:text-white/70">Questions per day</span>
+                <span className="block mb-1 text-gray-600 dark:text-white/70">{t.perDay}</span>
                 <input type="number" min={1} max={MAX_PER_DAY} value={perDayInput} onChange={(e) => setPerDayInput(e.target.value)} onBlur={commitPerDay} className={inputCls} />
               </label>
               <label className="text-sm">
-                <span className="block mb-1 text-gray-600 dark:text-white/70">Minutes per question (0 = no timer)</span>
+                <span className="block mb-1 text-gray-600 dark:text-white/70">{t.minPerQ}</span>
                 <input type="number" min={0} max={10} step={0.5} value={minInput} onChange={(e) => setMinInput(e.target.value)} onBlur={commitMinutes} className={inputCls} />
               </label>
             </div>
-            <p className="mt-3 text-xs text-gray-500 dark:text-white/50">A changed number applies from the next test (a waiting test keeps its questions).</p>
+            <p className="mt-3 text-xs text-gray-500 dark:text-white/50">{t.settingsNote}</p>
           </div>
 
           <div className={card}>
-            <p className="font-semibold mb-2">Your progress</p>
+            <p className="font-semibold mb-2">{t.progress}</p>
             <p className="text-sm text-gray-600 dark:text-white/70">
-              {sum.total} questions in your bank · {queuedPhotos} photo/PDF file(s) waiting · {sum.daysCompleted} daily test{sum.daysCompleted !== 1 ? 's' : ''} finished · round {sum.round}
+              {format(t.progressLine1, sum.total, queuedPhotos, sum.daysCompleted, sum.round)}
             </p>
             <p className="text-sm text-gray-600 dark:text-white/70">
-              {sum.left} questions not used yet in this round · about {sum.daysPerRound} days for the whole bank
+              {format(t.progressLine2, sum.left, sum.daysPerRound)}
             </p>
-            {sum.wrongCount > 0 && <p className="text-sm text-gray-600 dark:text-white/70">{sum.wrongCount} questions you got wrong — they come first in the next round.</p>}
+            {sum.wrongCount > 0 && <p className="text-sm text-gray-600 dark:text-white/70">{format(t.wrongLine, sum.wrongCount)}</p>}
           </div>
 
           <div className="flex flex-wrap gap-3 mb-5">
             <button onClick={() => setEditingBank(true)} className={btn}>
-              <Pencil className="w-4 h-4" /> Edit question bank / add more photos
+              <Pencil className="w-4 h-4" /> {t.editBank}
             </button>
             <button onClick={download} className={btn}>
-              <Download className="w-4 h-4" /> Backup
+              <Download className="w-4 h-4" /> {t.backup}
             </button>
             <button onClick={() => fileRef.current?.click()} className={btn}>
-              <Upload className="w-4 h-4" /> Restore
+              <Upload className="w-4 h-4" /> {t.restore}
             </button>
             <input ref={fileRef} type="file" accept="application/json,.json" className="hidden" onChange={(e) => restore(e.target.files?.[0])} />
             <button onClick={reset} className={`${btn} text-red-500`}>
-              <Trash2 className="w-4 h-4" /> Reset
+              <Trash2 className="w-4 h-4" /> {t.reset}
             </button>
           </div>
           <p className="text-xs text-gray-500 dark:text-white/50">
-            Your question bank and daily tests are saved in this browser only. Clearing browser data erases them — use <b>Backup</b> now and then (and <b>Restore</b> on another device).
+            {t.footerBefore}<b>{t.backup}</b>{t.footerMid}<b>{t.restore}</b>{t.footerAfter}
           </p>
         </>
       )}
