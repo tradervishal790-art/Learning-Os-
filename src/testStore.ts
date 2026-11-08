@@ -1,4 +1,5 @@
 import { pushToCloud, pullFromCloud } from './cloudSync';
+import { markStudyDay } from './studyDay';
 import type { TestAttempt } from './types';
 
 // ============================================================
@@ -57,6 +58,7 @@ export function getTestAttempt(id: string): TestAttempt | undefined {
 export function saveTestAttempt(attempt: TestAttempt): void {
   const attempts = [attempt, ...loadAttempts().filter((a) => a.id !== attempt.id)].slice(0, MAX_STORED_ATTEMPTS);
   saveAttempts(attempts);
+  markStudyDay();
 }
 
 /** Alias of saveTestAttempt — used when the learner self-grades a subjective answer after submit, to persist the updated score. */

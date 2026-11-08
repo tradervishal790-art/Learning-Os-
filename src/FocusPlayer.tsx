@@ -9,6 +9,7 @@ import { cacheGet, cacheSet } from './mediaCache';
 import { loadShorts, prefetchShorts } from './shortsData';
 import {
   MAX_SAVED,
+  BREAK_PREFS_KEY,
   SAVED_KEY,
   getLocalTs,
   loadSaved,
@@ -44,7 +45,6 @@ type Lang = 'any' | 'hi' | 'en';
 
 const NOTES_PREFIX = 'learning_os_focus_notes_';
 const LAST_TOPIC_KEY = 'learning_os_focus_last_topic';
-const BREAK_PREFS_KEY = 'learning_os_focus_break_prefs';
 const MINUTE_OPTIONS = [3, 5, 7, 10]; // break length — kept short on purpose
 const EVERY_OPTIONS = [10, 15, 20, 25, 30, 45]; // focus time between breaks
 const MAX_FOCUS_MIN = 60;

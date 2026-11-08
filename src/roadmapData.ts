@@ -1,5 +1,6 @@
 import type { Topic } from './types';
 import { pushToCloud, pullFromCloud } from './cloudSync';
+import { markStudyDay } from './studyDay';
 
 // Re-export Topic so existing `import { roadmapData, type Topic } from './roadmapData'`
 // statements elsewhere in the app keep working without changes.
@@ -143,6 +144,7 @@ export function markTopicFinished(
 
   const current = children[index];
   if (current.status === finalStatus) return; // already there, nothing to do
+  markStudyDay();
 
   const updatedChildren = [...children];
   updatedChildren[index] = { ...current, status: finalStatus };

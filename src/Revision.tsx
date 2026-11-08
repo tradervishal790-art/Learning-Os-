@@ -11,6 +11,8 @@ import type { RevisionStatus, RevisionDifficulty, RevisionItem, Goal } from './t
 import { useTranslation } from './i18n/LanguageContext';
 import { format } from './i18n/format';
 import StudyPlan from './StudyPlan';
+import BreakFeed from './BreakFeed';
+import { loadBreakInterests } from './focusStore';
 import { studyPlanText } from './studyPlanText';
 import { useLanguage } from './i18n/LanguageContext';
 import { contributeRevisionPattern } from './sharedLearningPatterns';
@@ -71,6 +73,9 @@ export default function Revision({ goals = [] }: RevisionProps) {
   const [reviewingId, setReviewingId] = useState<string | null>(null);
   const [recallAccuracy, setRecallAccuracy] = useState<number | null>(() => getRecallAccuracy());
   const [recallTrend, setRecallTrend] = useState<RecallTrendPoint[]>(() => getRecallTrend());
+  // Check-ins done in this visit; once the due queue is cleared they earn ONE short in-app break.
+  const [reviewedNow, setReviewedNow] = useState(0);
+  const [breakOpen, setBreakOpen] = useState(false);
 
   // ON-DEMAND CLOUD HYDRATION: only pulled down when the Revision page is
   // actually opened, not upfront on sign-in. No-op if this device already
@@ -90,6 +95,7 @@ export default function Revision({ goals = [] }: RevisionProps) {
   const handleMarkDone = (item: RevisionItem & { goalId?: string }) => {
     if (item.status === 'mastered') return;
     markDayReviewed(item.topicId, item.day);
+    setReviewedNow((n) => n + 1);
     const refreshed = getRevisionDataForGoals(t.revisionTasks, goals);
     setItems(refreshed);
     if (reviewingId === item.id) setReviewingId(null);
@@ -117,6 +123,8 @@ export default function Revision({ goals = [] }: RevisionProps) {
   const stats = getRevisionStats(items);
   const dueItems = getDueRevisionItems(items);
   const nextReviewItem = dueItems[0];
+  const breakInterests = reviewedNow > 0 ? loadBreakInterests() : [];
+  const earnedBreak = reviewedNow > 0 && dueItems.length === 0 && breakInterests.length > 0;
 
   const filteredItems = filter === 'all'
     ? items
@@ -225,6 +233,29 @@ export default function Revision({ goals = [] }: RevisionProps) {
           </div>
         ))}
       </motion.div>
+
+      {earnedBreak && (
+        <section className="mx-auto mb-5 rounded-2xl border border-emerald-300/25 bg-gradient-to-br from-emerald-500/[0.12] to-transparent p-4 md:p-5" aria-label={t.revision.emptyState.earnedBreakTitle}>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <h2 className="text-sm font-semibold">{t.revision.emptyState.earnedBreakTitle}</h2>
+              <p className="mt-1 text-xs text-gray-500 dark:text-white/60">{t.revision.emptyState.earnedBreakBody}</p>
+            </div>
+            <button type="button" onClick={() => setBreakOpen(true)} className="inline-flex h-10 shrink-0 items-center justify-center rounded-full bg-emerald-400 px-5 text-sm font-semibold text-black transition hover:bg-emerald-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200">
+              {t.revision.emptyState.earnedBreakCta}
+            </button>
+          </div>
+        </section>
+      )}
+      {breakOpen && (
+        <BreakFeed
+          interests={breakInterests}
+          minutes={2}
+          bankSec={0}
+          onSpend={() => {}}
+          onDone={() => { setBreakOpen(false); setReviewedNow(0); }}
+        />
+      )}
 
       <SharedLearningInsights kind="revision" />
 

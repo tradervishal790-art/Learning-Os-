@@ -1,4 +1,5 @@
 import type { EngagementSession } from './types';
+import { MIN_WATCH_SECONDS, markStudyDay } from './studyDay';
 
 // Single choke-point for engagement persistence. Right now it writes to
 // localStorage (matches the pattern used elsewhere in this app — onboarding
@@ -34,6 +35,7 @@ export function saveEngagementSession(session: EngagementSession): void {
  * tab mid-video instead of losing all data until a "final" save.
  */
 export function upsertEngagementSession(session: EngagementSession): void {
+  if (session.watchedSeconds >= MIN_WATCH_SECONDS) markStudyDay();
   try {
     const existing = getEngagementSessions();
     const index = existing.findIndex((s) => s.id === session.id);
