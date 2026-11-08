@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { loadShorts, type Short } from './shortsData';
+import { useTranslation } from './i18n/LanguageContext';
 
 // ============================================================
 // BreakFeed.tsx — the in-app "reels-style" break.
@@ -136,6 +137,7 @@ export default function BreakFeed({
   onSpend: (sec: number) => void;
   onDone: () => void;
 }) {
+  const t = useTranslation().breakFeed;
   const [shorts, setShorts] = useState<Short[]>([]);
   const [index, setIndex] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -156,7 +158,7 @@ export default function BreakFeed({
         const seen = new Set<string>();
         const merged = lists.flat().filter((s) => s.id && !seen.has(s.id) && seen.add(s.id));
         if (cancelled) return;
-        if (merged.length === 0) setError('No shorts right now. Back to your video?');
+        if (merged.length === 0) setError(t.noShorts);
         setShorts(shuffle(merged));
       } finally {
         if (!cancelled) setLoading(false);
@@ -203,14 +205,14 @@ export default function BreakFeed({
       }}
     >
       <div className="flex items-center justify-between px-4 py-3">
-        <span className="text-sm opacity-70">Break</span>
+        <span className="text-sm opacity-70">{t.title}</span>
         <button onClick={onDone} className="rounded-lg px-3 py-1.5 text-sm hover:bg-white/10">
-          Back to video
+          {t.backToVideo}
         </button>
       </div>
 
       <div className="relative mx-auto flex w-full max-w-sm flex-1 items-center justify-center px-1 pb-8">
-        {loading && <p className="opacity-60">Loading your break…</p>}
+        {loading && <p className="opacity-60">{t.loading}</p>}
         {!loading && error && <p className="px-6 text-center opacity-70">{error}</p>}
         {!loading && current && !timeUp && (
           <>
@@ -222,8 +224,8 @@ export default function BreakFeed({
               className="aspect-[9/16] max-h-full w-full rounded-xl bg-black"
             />
             <div className="absolute right-1 top-1/2 flex -translate-y-1/2 flex-col gap-3">
-              <button onClick={() => go(-1)} className="rounded-full bg-white/15 px-3 py-2" aria-label="Previous">▲</button>
-              <button onClick={() => go(1)} className="rounded-full bg-white/15 px-3 py-2" aria-label="Next">▼</button>
+              <button onClick={() => go(-1)} className="rounded-full bg-white/15 px-3 py-2" aria-label={t.previous}>▲</button>
+              <button onClick={() => go(1)} className="rounded-full bg-white/15 px-3 py-2" aria-label={t.next}>▼</button>
             </div>
           </>
         )}
@@ -242,7 +244,7 @@ export default function BreakFeed({
           <div className="absolute inset-x-0 bottom-0">
             <div
               role="progressbar"
-              aria-label="Break timeline"
+              aria-label={t.timeline}
               aria-valuemin={0}
               aria-valuemax={100}
               aria-valuenow={Math.round(progress * 100)}
@@ -258,11 +260,11 @@ export default function BreakFeed({
 
         {timeUp && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black px-6 text-center">
-            <p className="text-xl font-semibold">Break time is up</p>
+            <p className="text-xl font-semibold">{t.timeUp}</p>
             <p className="text-sm">{upMsg}</p>
-            <p className="text-xs opacity-60">Your video is waiting where you left it.</p>
+            <p className="text-xs opacity-60">{t.waiting}</p>
             <button onClick={onDone} className="rounded-xl bg-white px-6 py-3 font-medium text-black">
-              Back to video
+              {t.backToVideo}
             </button>
             {bankSec >= EXTRA_SECONDS && extensions < MAX_EXTENSIONS ? (
               <button
@@ -274,10 +276,10 @@ export default function BreakFeed({
                 }}
                 className="rounded-xl border border-white/30 px-6 py-3"
               >
-                Spend 2 min from your bank 💰
+                {t.spend}
               </button>
             ) : (
-              <p className="text-xs opacity-60">Skip a break to earn more Shorts time 💰</p>
+              <p className="text-xs opacity-60">{t.earnMore}</p>
             )}
           </div>
         )}

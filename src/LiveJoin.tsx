@@ -6,6 +6,8 @@ import { TakingScreen, type QuestionStatus } from './Test';
 import { JoinError, beginLiveAttempt, joinLiveSession, normalizeCode, normalizePhone, submitLiveAnswers, subscribeSession, type LiveSession } from './liveTest';
 import { loadSavedTheme } from './ThemeContext';
 import ConfirmDialog from './ConfirmDialog';
+import { useTranslation } from './i18n/LanguageContext';
+import { format } from './i18n/format';
 
 // ============================================================
 // LiveJoin.tsx — public page at /live/:code (outside the login gate).
@@ -47,6 +49,7 @@ function writeJson(key: string, value: unknown): void {
 }
 
 export default function LiveJoin() {
+  const t = useTranslation().liveJoin;
   const location = useLocation();
   const code = normalizeCode(location.pathname.split('/')[2] ?? '');
 
@@ -112,17 +115,17 @@ export default function LiveJoin() {
           setSubmitted(true);
           setSubmitNote('already-or-closed');
         } else if (reason === 'NOT_ALLOWED') {
-          setFormError('This number is not on the test list or is already linked to another device. Check it or ask your host for help.');
+          setFormError(t.errNotAllowed);
         } else if (reason === 'OTHER_DEVICE') {
-          setFormError('This number is already in use on another device. Ask your host to unlock it.');
+          setFormError(t.errOtherDevice);
         } else {
-          setFormError('Could not join. Check your internet and try again.');
+          setFormError(t.errJoin);
         }
       } finally {
         setBusy(false);
       }
     },
-    [code]
+    [code, t]
   );
 
   // Refresh / reopen: silently re-join with the saved name + phone.
@@ -136,8 +139,8 @@ export default function LiveJoin() {
   const handleJoin = () => {
     const n = name.trim();
     const phone = normalizePhone(phoneInput);
-    if (n.length < 2) return setFormError('Please enter your full name.');
-    if (!phone) return setFormError('Please enter a valid 10-digit phone number.');
+    if (n.length < 2) return setFormError(t.errName);
+    if (!phone) return setFormError(t.errPhone);
     void join(n, phone);
   };
 
@@ -236,7 +239,7 @@ export default function LiveJoin() {
       setOffsetMs(r.offsetMs);
       setStartedAtMs(r.startedAtMs);
     } catch {
-      setFormError('Could not start. Check your internet and try again.');
+      setFormError(t.errStart);
     } finally {
       setBusy(false);
     }
@@ -279,7 +282,7 @@ export default function LiveJoin() {
   };
   const confirmSubmit = () => {
     const unanswered = paper ? paper.questions.length - answers.filter((a) => isAnswered(a)).length : 0;
-    const msg = unanswered > 0 ? `${unanswered} question(s) unanswered. Submit anyway?` : 'Submit the test now?';
+    const msg = unanswered > 0 ? format(t.unanswered, unanswered) : t.submitNow;
     setSubmitPrompt(msg);
   };
 
@@ -289,12 +292,12 @@ export default function LiveJoin() {
   );
   const box = 'w-full max-w-md card rounded-2xl p-6 text-center';
 
-  if (session === 'loading') return shell(<p className="text-gray-400">Loading...</p>);
+  if (session === 'loading') return shell(<p className="text-gray-400">{t.loading}</p>);
   if (!live) {
     return shell(
       <div className={box}>
-        <p className="font-semibold mb-1">Test not found</p>
-        <p className="text-sm text-gray-500 dark:text-white/60">Check the code or link ({code || 'no code'}) and try again.</p>
+        <p className="font-semibold mb-1">{t.notFound}</p>
+        <p className="text-sm text-gray-500 dark:text-white/60">{format(t.checkCode, code || t.noCode)}</p>
       </div>
     );
   }
@@ -302,17 +305,17 @@ export default function LiveJoin() {
   if (submitted) {
     return shell(
       <div className={box}>
-        <p className="text-xl font-bold mb-2">Submitted ✓</p>
+        <p className="text-xl font-bold mb-2">{t.submitted}</p>
         <p className="text-sm text-gray-500 dark:text-white/60">
-          {submitNote ? 'Your answers are already recorded (or the test has closed). ' : 'Your answers have been recorded. '}
-          The ranking will be shared by your host. You can safely close this page now.
+          {submitNote ? t.alreadyRecorded : t.recorded}
+          {t.rankingNote}
         </p>
         {/* Funnel for the people who joined via a shared link: let them build their own practice. */}
         <a
           href="/dashboard/test"
           className="mt-5 inline-block w-full py-3 rounded-xl border border-gray-200 dark:border-white/10 text-sm font-medium hover:bg-gray-100 dark:hover:bg-white/10"
         >
-          Make your own practice tests — free
+          {t.makeOwn}
         </a>
       </div>
     );
@@ -322,7 +325,7 @@ export default function LiveJoin() {
     return shell(
       <div className={box}>
         <p className="font-semibold mb-1">{live.title}</p>
-        <p className="text-sm text-gray-500 dark:text-white/60">This test has already ended.</p>
+        <p className="text-sm text-gray-500 dark:text-white/60">{t.alreadyEnded}</p>
       </div>
     );
   }
@@ -330,27 +333,27 @@ export default function LiveJoin() {
   if (!joined) {
     return shell(
       <div className={box}>
-        <p className="text-xs uppercase tracking-wide text-gray-400 dark:text-white/40 mb-1">Live test</p>
+        <p className="text-xs uppercase tracking-wide text-gray-400 dark:text-white/40 mb-1">{t.liveTest}</p>
         <h1 className="text-2xl font-bold mb-1">{live.title}</h1>
         <p className="text-sm text-gray-500 dark:text-white/60 mb-5">
-          {live.questions.length} questions{live.durationMinutes > 0 ? ` · ${live.durationMinutes} min` : ''}
+          {live.durationMinutes > 0 ? format(t.questionsMinutes, live.questions.length, live.durationMinutes) : format(t.questionsCount, live.questions.length)}
         </p>
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="Your full name"
+          placeholder={t.namePlaceholder}
           className="w-full mb-3 px-4 py-3 rounded-xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 focus:outline-none focus:border-black dark:focus:border-white"
         />
         <input
           value={phoneInput}
           onChange={(e) => setPhoneInput(e.target.value)}
           inputMode="numeric"
-          placeholder="Phone number (10 digits)"
+          placeholder={t.phonePlaceholder}
           className="w-full mb-3 px-4 py-3 rounded-xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 focus:outline-none focus:border-black dark:focus:border-white"
         />
         {formError && <p className="text-sm text-red-500 mb-3">{formError}</p>}
         <button onClick={handleJoin} disabled={busy} className="w-full py-3 rounded-xl bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white font-semibold disabled:opacity-40">
-          {busy ? 'Joining...' : 'Join test'}
+          {busy ? t.joining : t.joinTest}
         </button>
       </div>
     );
@@ -360,7 +363,7 @@ export default function LiveJoin() {
     return shell(
       <div className={box}>
         <p className="font-semibold mb-1">{live.title}</p>
-        <p className="text-sm text-gray-500 dark:text-white/60">The host has closed this test.</p>
+        <p className="text-sm text-gray-500 dark:text-white/60">{t.hostClosed}</p>
       </div>
     );
   }
@@ -368,17 +371,17 @@ export default function LiveJoin() {
   if (startedAtMs === null) {
     return shell(
       <div className={box}>
-        <p className="text-xs uppercase tracking-wide text-gray-400 dark:text-white/40 mb-1">Ready, {player?.name}?</p>
+        <p className="text-xs uppercase tracking-wide text-gray-400 dark:text-white/40 mb-1">{format(t.ready, player?.name ?? '')}</p>
         <h1 className="text-2xl font-bold mb-3">{live.title}</h1>
         <ul className="text-sm text-gray-500 dark:text-white/60 text-left space-y-1.5 mb-5 list-disc pl-5">
-          <li>{live.questions.length} questions</li>
-          <li>{live.durationMinutes > 0 ? `${live.durationMinutes} minutes — the timer starts when you press Start` : 'No timer'}</li>
-          <li>You can take this test only once</li>
-          <li>Keep this page open until you submit</li>
+          <li>{format(t.questionsCount, live.questions.length)}</li>
+          <li>{live.durationMinutes > 0 ? format(t.timerStarts, live.durationMinutes) : t.noTimer}</li>
+          <li>{t.onlyOnce}</li>
+          <li>{t.keepOpen}</li>
         </ul>
         {formError && <p className="text-sm text-red-500 mb-3">{formError}</p>}
         <button onClick={handleBegin} disabled={busy} className="w-full py-3 rounded-xl bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white font-semibold disabled:opacity-40">
-          {busy ? 'Starting...' : 'Start test'}
+          {busy ? t.starting : t.startTest}
         </button>
       </div>
     );
@@ -388,22 +391,22 @@ export default function LiveJoin() {
     return shell(
       <div className={box}>
         <p className="font-semibold mb-1">{live.title}</p>
-        <p className="text-sm text-gray-500 dark:text-white/60">The host has ended this test.</p>
+        <p className="text-sm text-gray-500 dark:text-white/60">{t.hostEnded}</p>
       </div>
     );
   }
 
   // running (or ended-while-sending)
-  if (!paper || !currentQuestion || answers.length === 0) return shell(<p className="text-gray-400">Loading test...</p>);
+  if (!paper || !currentQuestion || answers.length === 0) return shell(<p className="text-gray-400">{t.loadingTest}</p>);
 
   return (
     <div className="min-h-screen bg-white dark:bg-black text-black dark:text-white p-4 md:p-8">
       {submitState !== 'idle' && (
         <div className="max-w-6xl mx-auto mb-4 px-4 py-3 rounded-xl bg-amber-100 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300 text-sm flex items-center justify-between gap-3">
-          <span>{submitState === 'sending' ? 'Sending your answers...' : 'Could not send your answers. Check your internet.'}</span>
+          <span>{submitState === 'sending' ? t.sending : t.sendFailed}</span>
           {submitState === 'failed' && (
             <button onClick={() => void doSubmit()} className="px-3 py-1.5 rounded-lg bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white font-semibold">
-              Retry
+              {t.retry}
             </button>
           )}
         </div>
@@ -428,8 +431,8 @@ export default function LiveJoin() {
       {submitPrompt && (
         <ConfirmDialog
           message={submitPrompt}
-          confirmLabel="Submit"
-          cancelLabel="Keep working"
+          confirmLabel={t.submit}
+          cancelLabel={t.keepWorking}
           onConfirm={() => { setSubmitPrompt(null); void doSubmit(); }}
           onCancel={() => setSubmitPrompt(null)}
         />

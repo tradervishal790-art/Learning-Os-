@@ -18,6 +18,8 @@ import {
   setLocalTs,
   type SavedShort,
 } from './focusStore';
+import { useTranslation } from './i18n/LanguageContext';
+import { format } from './i18n/format';
 
 // ============================================================
 // FocusPlayer.tsx — standalone, distraction-free learning player.
@@ -182,6 +184,7 @@ function saveClock(start: number) {
 }
 
 export default function FocusPlayer({ initialTopic = '', onClose }: { initialTopic?: string; onClose?: () => void }) {
+  const tr = useTranslation().focusPlayer;
   const [topic, setTopic] = useState(initialTopic || localStorage.getItem(LAST_TOPIC_KEY) || '');
   const [lang, setLang] = useState<Lang>('any');
   const [picks, setPicks] = useState<FocusVideo[]>([]);
@@ -235,7 +238,7 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
       if (l !== 'any') params.set('relevanceLanguage', l);
       const res = await authFetch(`/api/youtube?${params.toString()}`);
       const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || 'Could not load videos');
+      if (!res.ok) throw new Error(data?.error || tr.errLoad);
       const items: FocusVideo[] = (data.items ?? []).map((it: any) => ({
         id: it.id.videoId,
         title: it.snippet.title,
@@ -245,7 +248,7 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
       }));
       if (items.length === 0) {
         setPicks([]);
-        setError('No videos found. Try a simpler topic.');
+        setError(tr.errNone);
         return;
       }
       setPicks(pickThree(items));
@@ -253,7 +256,7 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
       pushSharedSearch(key, items, data.nextPageToken ?? null);
     } catch (e: any) {
       setPicks([]);
-      setError(e?.message || 'Something went wrong. Try again.');
+      setError(e?.message || tr.errGeneric);
     } finally {
       setLoading(false);
     }
@@ -430,8 +433,8 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
     });
     setBankToast(
       earn > 0
-        ? `Skipped! +${Math.round(earn / 60)} min and a few Shorts saved to your bank 💰`
-        : 'Skipped! Your Shorts bank is full 💰'
+        ? format(tr.skippedEarn, Math.round(earn / 60))
+        : tr.skippedFull
     );
     // The Shorts the user skipped are saved for later (from the cached pool, so no extra quota).
     const interests = breakPrefs.interests;
@@ -529,7 +532,7 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
       <div className="flex min-h-screen flex-col bg-white text-black dark:bg-black dark:text-white">
         <div className="flex items-center gap-3 border-b border-black/10 px-4 py-3 dark:border-white/10">
           <button onClick={() => setActive(null)} className="rounded-lg px-3 py-1.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/10">
-            ← Back
+            {tr.back}
           </button>
           <p className="min-w-0 flex-1 truncate text-sm font-medium">{decodeHtml(active.title)}</p>
           {bank.skipsTotal > 0 && <span className="shrink-0 text-xs opacity-70">💰 {Math.floor(bank.bankSec / 60)} min</span>}
@@ -542,16 +545,16 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
         {breakPrompt && (
           <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 p-6">
             <div className="w-full max-w-sm rounded-2xl bg-white p-6 text-center text-black dark:bg-neutral-900 dark:text-white">
-              <p className="text-lg font-semibold">Nice focus! Time for your shorts?</p>
-              <p className="mt-1 text-sm opacity-60">{breakPrefs.minutes} min. Your video is paused and will resume right here.</p>
+              <p className="text-lg font-semibold">{tr.breakTitle}</p>
+              <p className="mt-1 text-sm opacity-60">{format(tr.breakBody, breakPrefs.minutes)}</p>
               <button onClick={startBreak} className="mt-5 w-full rounded-xl bg-black px-4 py-3 font-medium text-white dark:bg-white dark:text-black">
-                Start shorts
+                {tr.startShorts}
               </button>
               <button
                 onClick={skipBreak}
                 className="mt-2 w-full rounded-xl px-4 py-3 text-sm opacity-70"
               >
-                Skip
+                {tr.skip}
               </button>
             </div>
           </div>
@@ -560,7 +563,7 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
         {breaksOn && (
           <div
             role="progressbar"
-            aria-label="Approaching your break"
+            aria-label={tr.approaching}
             aria-valuemin={0}
             aria-valuemax={100}
             aria-valuenow={Math.round(breakProgress * 100)}
@@ -579,27 +582,27 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
             </div>
 
             <div className="rounded-xl border border-black/10 p-3 dark:border-white/15">
-              {timelineState === 'loading' && <p className="text-sm opacity-60">Finding the concepts in this video…</p>}
+              {timelineState === 'loading' && <p className="text-sm opacity-60">{tr.timelineLoading}</p>}
               {timelineState === 'none' && (
                 <div className="text-sm opacity-60">
-                  <p>Concept timeline isn't available for this video.</p>
-                  {timelineReason && <p className="mt-0.5 text-xs">Reason: {timelineReason}</p>}
+                  <p>{tr.timelineNone}</p>
+                  {timelineReason && <p className="mt-0.5 text-xs">{format(tr.reason, timelineReason)}</p>}
                 </div>
               )}
               {timelineState === 'ready' && timeline && (
                 <>
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="text-xs opacity-60">Now teaching</p>
+                      <p className="text-xs opacity-60">{tr.nowTeaching}</p>
                       <p className="font-semibold">{timeline[nowIdx]?.title}</p>
                       {timeline[nowIdx]?.summary && <p className="mt-0.5 text-sm opacity-70">{timeline[nowIdx].summary}</p>}
                     </div>
                     <div className="flex shrink-0 flex-col gap-1">
                       <button onClick={addTimestamp} className="rounded-lg bg-black px-3 py-1.5 text-sm font-medium text-white dark:bg-white dark:text-black">
-                        + Note
+                        {tr.addNote}
                       </button>
                       <button onClick={() => setShowOutline((v) => !v)} className="text-xs opacity-60 hover:opacity-100">
-                        {showOutline ? 'Hide concepts' : `All concepts (${timeline.length})`}
+                        {showOutline ? tr.hideConcepts : format(tr.allConcepts, timeline.length)}
                       </button>
                     </div>
                   </div>
@@ -618,7 +621,7 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
                         ))}
                       </div>
                       <button onClick={addOutline} className="mt-2 text-xs underline opacity-70 hover:opacity-100">
-                        Add all concepts to my notes
+                        {tr.addAll}
                       </button>
                     </div>
                   )}
@@ -628,19 +631,19 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
           </div>
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
-              <h2 className="font-semibold">My notes</h2>
+              <h2 className="font-semibold">{tr.myNotes}</h2>
               <button onClick={addTimestamp} className="rounded-lg border border-black/15 px-3 py-1 text-sm hover:bg-black/5 dark:border-white/20 dark:hover:bg-white/10">
-                + Time
+                {tr.addTime}
               </button>
             </div>
             <textarea
               ref={notesRef}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Write what you learn here…"
+              placeholder={tr.notesPlaceholder}
               className={`${inputCls} min-h-[240px] flex-1 resize-none lg:min-h-0`}
             />
-            <p className="text-xs opacity-50">Saved automatically</p>
+            <p className="text-xs opacity-50">{tr.savedAuto}</p>
           </div>
         </div>
       </div>
@@ -668,12 +671,12 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
       <div className="mx-auto max-w-3xl px-4 py-10">
         <div className="mb-8 flex items-start justify-between">
           <div>
-            <h1 className="text-3xl font-bold">Focus Player</h1>
-            <p className="mt-1 text-sm opacity-60">One topic. Three videos. No distractions.</p>
+            <h1 className="text-3xl font-bold">{tr.title}</h1>
+            <p className="mt-1 text-sm opacity-60">{tr.subtitle}</p>
           </div>
           {onClose && (
             <button onClick={onClose} className="rounded-lg px-3 py-1.5 text-sm hover:bg-black/5 dark:hover:bg-white/10">
-              Close
+              {tr.close}
             </button>
           )}
         </div>
@@ -683,20 +686,20 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && void search(topic, lang)}
-            placeholder="What do you want to learn?"
+            placeholder={tr.topicPlaceholder}
             className={`${inputCls} flex-1`}
           />
           <select value={lang} onChange={(e) => setLang(e.target.value as Lang)} className={inputCls}>
-            <option value="any">Any language</option>
-            <option value="hi">Hindi</option>
-            <option value="en">English</option>
+            <option value="any">{tr.langAny}</option>
+            <option value="hi">{tr.langHi}</option>
+            <option value="en">{tr.langEn}</option>
           </select>
           <button
             onClick={() => void search(topic, lang)}
             disabled={loading || !topic.trim()}
             className="rounded-xl bg-black px-6 py-3 font-medium text-white disabled:opacity-40 dark:bg-white dark:text-black"
           >
-            {loading ? 'Finding…' : 'Show me'}
+            {loading ? tr.finding : tr.showMe}
           </button>
         </div>
 
@@ -706,14 +709,14 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
             className="mt-6 flex w-full items-center justify-between rounded-2xl border border-black/10 p-4 text-left transition hover:border-black dark:border-white/15 dark:hover:border-white"
           >
             <div>
-              <p className="text-xs opacity-60">Your Shorts bank</p>
-              <p className="text-2xl font-bold">💰 {Math.floor(bank.bankSec / 60)} min</p>
+              <p className="text-xs opacity-60">{tr.yourBank}</p>
+              <p className="text-2xl font-bold">💰 {format(tr.minutes, Math.floor(bank.bankSec / 60))}</p>
             </div>
             <div className="text-right text-sm">
               <p>
-                Skipped today: <span className="font-semibold">{bank.skipsToday}</span>
+                {tr.skippedToday}<span className="font-semibold">{bank.skipsToday}</span>
               </p>
-              <p className="opacity-60">{saved.length} Shorts saved · Open →</p>
+              <p className="opacity-60">{format(tr.savedOpen, saved.length)}</p>
             </div>
           </button>
         )}
@@ -721,22 +724,22 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
         <div className="mt-6 rounded-2xl border border-black/10 p-4 dark:border-white/15">
           {breakPrefs.locked ? (
             <p className="text-sm">
-              Shorts break after every <span className="font-semibold">{breakPrefs.everyMin} min</span> of focus, {breakPrefs.minutes} min each.
-              <span className="mt-1 block text-xs opacity-60">You set this once, so it stays steady.</span>
+              {format(tr.locked, breakPrefs.everyMin, breakPrefs.minutes)}
+              <span className="mt-1 block text-xs opacity-60">{tr.lockedNote}</span>
             </p>
           ) : (
             <>
               <div className="flex items-center justify-between gap-3">
-                <p className="text-sm font-medium">Shorts break after every</p>
+                <p className="text-sm font-medium">{tr.breakEvery}</p>
                 <select
                   value={breakPrefs.everyMin}
                   onChange={(e) => setBreakPrefs((p) => ({ ...p, everyMin: Number(e.target.value), bonusSec: 0 }))}
                   className={`${inputCls} py-1.5 text-sm`}
                 >
-                  <option value={0}>No breaks</option>
+                  <option value={0}>{tr.noBreaks}</option>
                   {EVERY_OPTIONS.map((m) => (
                     <option key={m} value={m}>
-                      {m} min of focus
+                      {format(tr.minOfFocus, m)}
                     </option>
                   ))}
                 </select>
@@ -744,7 +747,7 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
               {breakPrefs.everyMin > 0 && (
                 <>
                   <div className="mt-3 flex items-center justify-between gap-3">
-                    <p className="text-sm">Each break lasts</p>
+                    <p className="text-sm">{tr.eachBreak}</p>
                     <select
                       value={breakPrefs.minutes}
                       onChange={(e) => setBreakPrefs((p) => ({ ...p, minutes: Number(e.target.value) }))}
@@ -752,12 +755,12 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
                     >
                       {MINUTE_OPTIONS.map((m) => (
                         <option key={m} value={m}>
-                          {m} min
+                          {format(tr.minutes, m)}
                         </option>
                       ))}
                     </select>
                   </div>
-                  <p className="mt-2 text-xs opacity-60">You can choose this only once.</p>
+                  <p className="mt-2 text-xs opacity-60">{tr.chooseOnce}</p>
                 </>
               )}
             </>
@@ -765,7 +768,7 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
           {breakPrefs.everyMin > 0 && (
             <>
               <p className="mt-3 text-xs opacity-60">
-                {breakPrefs.interests.length === 0 ? 'Pick at least 1 interest to turn breaks on (up to 3)' : 'Pick up to 3 interests for your break feed'}
+                {breakPrefs.interests.length === 0 ? tr.pickAtLeast : tr.pickUpTo}
               </p>
               <div className="mt-2 flex flex-wrap gap-2">
                 {INTEREST_OPTIONS.map((name) => {
@@ -801,7 +804,7 @@ export default function FocusPlayer({ initialTopic = '', onClose }: { initialTop
             >
               <img src={v.thumbnail} alt="" className="h-24 w-40 shrink-0 rounded-lg object-cover" />
               <div className="min-w-0">
-                <p className="text-xs opacity-50">Pick {i + 1}</p>
+                <p className="text-xs opacity-50">{format(tr.pickN, i + 1)}</p>
                 <p className="line-clamp-2 font-semibold">{decodeHtml(v.title)}</p>
                 <p className="mt-1 text-sm opacity-60">{v.channel}</p>
               </div>

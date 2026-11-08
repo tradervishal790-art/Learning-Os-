@@ -978,6 +978,328 @@ export interface TranslationShape {
     tabs: { all: string; national: string; international: string; economy: string; sports: string; scitech: string; other: string };
     aiNote: string;
   };
+  recallCheck: {
+    title: string;
+    hint: string;
+    placeholder: string;
+    doneNext: string;
+    skip: string;
+  };
+  dailyHabit: {
+    title: string;
+    niceOne: string;
+    done: string;
+    notToday: string;
+  };
+  welcomeBack: {
+    title: string;
+    nextTopic: string;
+    noTopic: string;
+    startRevision: string;
+    openRoadmap: string;
+    notNow: string;
+  };
+  pagePlaceholder: {
+    comingSoon: string;
+    beta: string;
+    active: string;
+    underConstruction: string;
+    underConstructionBody: string;
+  };
+  growthEdgesCard: {
+    title: string;
+    needPersonality: string;
+    none: string;
+    intro: string;
+    evidenceActivity: string;
+    evidenceTests: string;
+    tryLabel: string;
+  };
+  reviewSession: {
+    inputPlaceholder: string;
+    send: string;
+    howWell: string;
+    tryLater: string;
+    done: string;
+    quizFailed: string;
+    errorPrefix: string;
+  };
+  shortsBank: {
+    title: string;
+    back: string;
+    inBank: string;
+    earnedToday: string;
+    skipsToday: string;
+    minutes: string;
+    totalSkips: string;
+    savedTitle: string;
+    savedHint: string;
+    nothingSaved: string;
+    shortFallback: string;
+    watch: string;
+    remove: string;
+    bankEmpty: string;
+    paidFromBank: string;
+    done: string;
+  };
+  breakFeed: {
+    title: string;
+    backToVideo: string;
+    loading: string;
+    noShorts: string;
+    previous: string;
+    next: string;
+    timeline: string;
+    timeUp: string;
+    waiting: string;
+    spend: string;
+    earnMore: string;
+  };
+  dailyTest: {
+    queueHintBefore: string;
+    saveBank: string;
+    queueHintAfter: string;
+    bankFull: string;
+    bankSaved: string;
+    bankSavedQueued: string;
+    processedErr: string;
+    processedPartial: string;
+    needAnswers: string;
+    noneReady: string;
+    prepareFailed: string;
+    restored: string;
+    badBackup: string;
+    confirmReset: string;
+    backToTests: string;
+    title: string;
+    intro: string;
+    startTitle: string;
+    startBody: string;
+    addQuestions: string;
+    doneTitle: string;
+    doneBody: string;
+    statusMissed: string;
+    statusReady: string;
+    statusPrepare: string;
+    statusToday: string;
+    pendingLine: string;
+    minutesSuffix: string;
+    noTimer: string;
+    sameQuestions: string;
+    readyLine: string;
+    upTo: string;
+    preparing: string;
+    startToday: string;
+    settings: string;
+    perDay: string;
+    minPerQ: string;
+    settingsNote: string;
+    progress: string;
+    progressLine1: string;
+    progressLine2: string;
+    wrongLine: string;
+    editBank: string;
+    backup: string;
+    restore: string;
+    reset: string;
+    footerBefore: string;
+    footerMid: string;
+    footerAfter: string;
+  };
+  testBuilder: {
+    errTitle: string;
+    errTopic: string;
+    errNoQuestions: string;
+    errEmpty: string;
+    errOptions: string;
+    errCorrect: string;
+    errModel: string;
+    titleLabel: string;
+    titlePlaceholder: string;
+    durationLabel: string;
+    topicLabel: string;
+    topicPlaceholder: string;
+    addMcq: string;
+    addSubjective: string;
+    bulkImport: string;
+    saveBank: string;
+    saveChanges: string;
+    saveTest: string;
+    cancel: string;
+    closeBulk: string;
+    bulkHintBefore: string;
+    bulkHintAfter: string;
+    hideExample: string;
+    showExample: string;
+    bulkPlaceholder: string;
+    importQuestions: string;
+    mcq: string;
+    subjective: string;
+    moveUp: string;
+    moveDown: string;
+    removeQuestion: string;
+    questionPlaceholder: string;
+    optionsHint: string;
+    setCorrectAria: string;
+    correct: string;
+    setCorrect: string;
+    optionAria: string;
+    optionPlaceholder: string;
+    removeOptionAria: string;
+    addOption: string;
+    radioHint: string;
+    modelAnswerPlaceholder: string;
+    explanationPlaceholder: string;
+    marks: string;
+    negativeMarks: string;
+  };
+  liveJoin: {
+    errNotAllowed: string;
+    errOtherDevice: string;
+    errJoin: string;
+    errName: string;
+    errPhone: string;
+    errStart: string;
+    unanswered: string;
+    submitNow: string;
+    loading: string;
+    notFound: string;
+    checkCode: string;
+    noCode: string;
+    submitted: string;
+    alreadyRecorded: string;
+    recorded: string;
+    rankingNote: string;
+    makeOwn: string;
+    alreadyEnded: string;
+    liveTest: string;
+    questionsCount: string;
+    questionsMinutes: string;
+    namePlaceholder: string;
+    phonePlaceholder: string;
+    joining: string;
+    joinTest: string;
+    hostClosed: string;
+    ready: string;
+    timerStarts: string;
+    noTimer: string;
+    onlyOnce: string;
+    keepOpen: string;
+    starting: string;
+    startTest: string;
+    hostEnded: string;
+    loadingTest: string;
+    sending: string;
+    sendFailed: string;
+    retry: string;
+    submit: string;
+    keepWorking: string;
+  };
+  liveHost: {
+    errKey: string;
+    errCreate: string;
+    errEnd: string;
+    confirmTaking: string;
+    confirmNotTaken: string;
+    confirmEnd: string;
+    back: string;
+    title: string;
+    intro: string;
+    loading: string;
+    loadingSession: string;
+    willUse: string;
+    timerAll: string;
+    noTimerEnd: string;
+    leftOut: string;
+    creating: string;
+    create: string;
+    noGradable: string;
+    live: string;
+    joinCode: string;
+    copyCode: string;
+    joinLink: string;
+    copyLink: string;
+    timerEach: string;
+    noTimerEach: string;
+    onList: string;
+    takingNow: string;
+    submitted: string;
+    endShow: string;
+    calculating: string;
+    enrolled: string;
+    topScore: string;
+    downloadPdf: string;
+    rank: string;
+    name: string;
+    phone: string;
+    marks: string;
+    time: string;
+    notSubmitted: string;
+    newSession: string;
+    noValid: string;
+    typeFirst: string;
+    added: string;
+    addedInvalid: string;
+    errSaveNumbers: string;
+    allowedTitle: string;
+    allowedHint: string;
+    numbersPlaceholder: string;
+    adding: string;
+    addNumbers: string;
+    statusSubmitted: string;
+    statusJoined: string;
+    statusNotJoined: string;
+    unlockTitle: string;
+    removeTitle: string;
+  };
+  focusPlayer: {
+    errLoad: string;
+    errNone: string;
+    errGeneric: string;
+    skippedEarn: string;
+    skippedFull: string;
+    breakTitle: string;
+    breakBody: string;
+    startShorts: string;
+    skip: string;
+    approaching: string;
+    back: string;
+    timelineLoading: string;
+    timelineNone: string;
+    reason: string;
+    nowTeaching: string;
+    addNote: string;
+    hideConcepts: string;
+    allConcepts: string;
+    addAll: string;
+    myNotes: string;
+    addTime: string;
+    notesPlaceholder: string;
+    savedAuto: string;
+    title: string;
+    subtitle: string;
+    close: string;
+    topicPlaceholder: string;
+    langAny: string;
+    langHi: string;
+    langEn: string;
+    finding: string;
+    showMe: string;
+    yourBank: string;
+    minutes: string;
+    skippedToday: string;
+    savedOpen: string;
+    locked: string;
+    lockedNote: string;
+    breakEvery: string;
+    noBreaks: string;
+    minOfFocus: string;
+    eachBreak: string;
+    chooseOnce: string;
+    pickAtLeast: string;
+    pickUpTo: string;
+    pickN: string;
+  };
 }
 
 export const translations: Record<Locale, TranslationShape> = {
@@ -2794,6 +3116,328 @@ export const translations: Record<Locale, TranslationShape> = {
       tabs: { all: 'All', national: 'National', international: 'International', economy: 'Economy', sports: 'Sports', scitech: 'Sci & Tech', other: 'Other' },
       aiNote: 'Written by AI from the channel\'s own videos. It shows what the channel said, not verified facts — check the video for anything important.',
     },
+    recallCheck: {
+      title: 'Quick recall — before the next video',
+      hint: 'Without scrolling back, write the 2–3 main things you remember. Even half-right is fine — this is what makes it stick.',
+      placeholder: 'What I remember…',
+      doneNext: 'Done — next video',
+      skip: 'Skip',
+    },
+    dailyHabit: {
+      title: 'Today\'s habit',
+      niceOne: 'Nice one. See you tomorrow.',
+      done: 'Done',
+      notToday: 'Not today',
+    },
+    welcomeBack: {
+      title: 'Welcome back',
+      nextTopic: 'No pressure. Just one small thing: a quick revision of “{0}”. Five minutes is enough.',
+      noTopic: 'No pressure. Pick one topic from your roadmap and do just a little today.',
+      startRevision: 'Start 5-min revision',
+      openRoadmap: 'Open roadmap',
+      notNow: 'Not now',
+    },
+    pagePlaceholder: {
+      comingSoon: 'Coming Soon',
+      beta: 'Beta',
+      active: 'Active',
+      underConstruction: 'Under Construction',
+      underConstructionBody: 'Part of the Learning OS roadmap — UI ready, connecting it to data and engines next.',
+    },
+    growthEdgesCard: {
+      title: 'Your growth edges',
+      needPersonality: 'Take the Personality Check in Settings to see which of your habits show up in your tests.',
+      none: 'Nothing in your tests points to a growth edge yet. This updates as you take more tests.',
+      intro: 'Habits from your personality that your tests also show. Small things to try next.',
+      evidenceActivity: 'In your Learning OS activity',
+      evidenceTests: 'In your Learning OS tests',
+      tryLabel: 'Try:',
+    },
+    reviewSession: {
+      inputPlaceholder: 'Type your answer here...',
+      send: 'Send',
+      howWell: 'Honestly, how well did you recall it?',
+      tryLater: 'Try Again Later',
+      done: 'Done',
+      quizFailed: 'Quiz failed to load: {0}',
+      errorPrefix: 'Error: {0}',
+    },
+    shortsBank: {
+      title: 'Shorts bank',
+      back: 'Back',
+      inBank: 'In your bank',
+      earnedToday: 'Earned today',
+      skipsToday: 'Skips today',
+      minutes: '{0} min',
+      totalSkips: 'Total skips so far: {0}',
+      savedTitle: 'Saved Shorts',
+      savedHint: 'Skip a break and a few Shorts get saved here. Watching one costs 1 min from your bank.',
+      nothingSaved: 'Nothing saved yet. Skip your next break to earn some.',
+      shortFallback: 'Short',
+      watch: 'Watch · 1 min',
+      remove: 'Remove',
+      bankEmpty: 'Your bank is empty. Skip a break to earn more.',
+      paidFromBank: 'Paid from your bank',
+      done: 'Done',
+    },
+    breakFeed: {
+      title: 'Break',
+      backToVideo: 'Back to video',
+      loading: 'Loading your break…',
+      noShorts: 'No shorts right now. Back to your video?',
+      previous: 'Previous',
+      next: 'Next',
+      timeline: 'Break timeline',
+      timeUp: 'Break time is up',
+      waiting: 'Your video is waiting where you left it.',
+      spend: 'Spend 2 min from your bank 💰',
+      earnMore: 'Skip a break to earn more Shorts time 💰',
+    },
+    dailyTest: {
+      queueHintBefore: 'Queue photos/PDFs without AI analysis, or paste/type questions. Questions need answers before they can appear in a test. Press ',
+      saveBank: 'Save Question Bank',
+      queueHintAfter: ' when finished.',
+      bankFull: 'Could not save — your browser storage is full. Remove some questions or clear old data, then try again.',
+      bankSaved: 'Question bank saved: {0} question(s).',
+      bankSavedQueued: 'Question bank saved. Queued photos will be analyzed only when a test needs more questions.',
+      processedErr: 'Processed {0} page(s). {1} Remaining pages/files are saved for retry.',
+      processedPartial: 'Processed only {0} page(s) needed for this test. {1} source file(s) remain queued for later tests.',
+      needAnswers: 'Questions were saved, but some need answers first. Open Edit question bank and complete their answers before starting a test.',
+      noneReady: 'No questions are ready. Add photos/PDFs or type questions first.',
+      prepareFailed: 'Could not prepare the Daily Test. Your queued files have been kept.',
+      restored: 'Backup restored.',
+      badBackup: 'That file is not a valid Daily Test backup.',
+      confirmReset: 'Delete the whole question bank and all Daily Test progress? Your finished results stay in Past attempts.',
+      backToTests: 'Back to tests',
+      title: 'Daily Test',
+      intro: 'Queue photos once. AI reads only as many files as needed when you request a test; unused files stay saved for later.',
+      startTitle: 'Start by adding your questions',
+      startBody: 'Add photos or PDFs of your question paper (or paste/type the questions). You do this only once.',
+      addQuestions: 'Add questions',
+      doneTitle: 'Today\'s test is done',
+      doneBody: 'Your next test will be ready tomorrow. See your result in Past attempts.',
+      statusMissed: 'Your missed test is waiting',
+      statusReady: 'Today\'s test is ready',
+      statusPrepare: 'Prepare a test from queued files',
+      statusToday: 'Today\'s test',
+      pendingLine: '{0} questions{1}{2}',
+      minutesSuffix: ' · {0} min',
+      noTimer: ' · no timer',
+      sameQuestions: ' · same questions, not skipped',
+      readyLine: '{0} ready question(s) · {1} file(s) waiting{2}',
+      upTo: ' · up to {0} min',
+      preparing: 'Preparing questions…',
+      startToday: 'Start today\'s test',
+      settings: 'Settings',
+      perDay: 'Questions per day',
+      minPerQ: 'Minutes per question (0 = no timer)',
+      settingsNote: 'A changed number applies from the next test (a waiting test keeps its questions).',
+      progress: 'Your progress',
+      progressLine1: '{0} questions in your bank · {1} photo/PDF file(s) waiting · {2} daily test(s) finished · round {3}',
+      progressLine2: '{0} questions not used yet in this round · about {1} days for the whole bank',
+      wrongLine: '{0} questions you got wrong — they come first in the next round.',
+      editBank: 'Edit question bank / add more photos',
+      backup: 'Backup',
+      restore: 'Restore',
+      reset: 'Reset',
+      footerBefore: 'Your question bank and daily tests are saved in this browser only. Clearing browser data erases them — use ',
+      footerMid: ' now and then (and ',
+      footerAfter: ' on another device).',
+    },
+    testBuilder: {
+      errTitle: 'Give the test a title.',
+      errTopic: 'Give the test a topic/subject.',
+      errNoQuestions: 'Add at least one question.',
+      errEmpty: 'Question {0} is empty.',
+      errOptions: 'Question {0}: fill at least {1} options.',
+      errCorrect: 'Question {0}: select the correct option (it must be one of the filled options), or add the answer sheet.',
+      errModel: 'Question {0}: add a model answer.',
+      titleLabel: 'Test title',
+      titlePlaceholder: 'e.g. Unit 3 Mock Test',
+      durationLabel: 'Duration (min, 0 = no timer)',
+      topicLabel: 'Topic / Subject',
+      topicPlaceholder: 'e.g. Organic Chemistry',
+      addMcq: 'Add MCQ Question',
+      addSubjective: 'Add Subjective Question',
+      bulkImport: 'Bulk Import',
+      saveBank: 'Save Question Bank',
+      saveChanges: 'Save Changes',
+      saveTest: 'Save Test',
+      cancel: 'Cancel',
+      closeBulk: 'Close bulk import',
+      bulkHintBefore: 'Paste as many questions as you want, one after another, separated by a line with just ',
+      bulkHintAfter: '.',
+      hideExample: 'Hide format example',
+      showExample: 'Show format example',
+      bulkPlaceholder: 'Paste your questions here...',
+      importQuestions: 'Import Questions',
+      mcq: 'MCQ',
+      subjective: 'Subjective',
+      moveUp: 'Move up',
+      moveDown: 'Move down',
+      removeQuestion: 'Remove question',
+      questionPlaceholder: 'Question text',
+      optionsHint: 'Options · select the correct answer',
+      setCorrectAria: 'Set option {0} as correct answer',
+      correct: 'Correct',
+      setCorrect: 'Set correct',
+      optionAria: 'Option {0} text',
+      optionPlaceholder: 'Enter option {0}',
+      removeOptionAria: 'Remove option {0}',
+      addOption: 'Add option',
+      radioHint: 'Select the radio button next to the correct option. {0}–{1} options allowed; empty options are dropped when you save.',
+      modelAnswerPlaceholder: 'Model answer (shown to you after you submit, for self-grading)',
+      explanationPlaceholder: 'Explanation (optional, shown in results)',
+      marks: 'Marks',
+      negativeMarks: 'Negative marks',
+    },
+    liveJoin: {
+      errNotAllowed: 'This number is not on the test list or is already linked to another device. Check it or ask your host for help.',
+      errOtherDevice: 'This number is already in use on another device. Ask your host to unlock it.',
+      errJoin: 'Could not join. Check your internet and try again.',
+      errName: 'Please enter your full name.',
+      errPhone: 'Please enter a valid 10-digit phone number.',
+      errStart: 'Could not start. Check your internet and try again.',
+      unanswered: '{0} question(s) unanswered. Submit anyway?',
+      submitNow: 'Submit the test now?',
+      loading: 'Loading...',
+      notFound: 'Test not found',
+      checkCode: 'Check the code or link ({0}) and try again.',
+      noCode: 'no code',
+      submitted: 'Submitted ✓',
+      alreadyRecorded: 'Your answers are already recorded (or the test has closed). ',
+      recorded: 'Your answers have been recorded. ',
+      rankingNote: 'The ranking will be shared by your host. You can safely close this page now.',
+      makeOwn: 'Make your own practice tests — free',
+      alreadyEnded: 'This test has already ended.',
+      liveTest: 'Live test',
+      questionsCount: '{0} questions',
+      questionsMinutes: '{0} questions · {1} min',
+      namePlaceholder: 'Your full name',
+      phonePlaceholder: 'Phone number (10 digits)',
+      joining: 'Joining...',
+      joinTest: 'Join test',
+      hostClosed: 'The host has closed this test.',
+      ready: 'Ready, {0}?',
+      timerStarts: '{0} minutes — the timer starts when you press Start',
+      noTimer: 'No timer',
+      onlyOnce: 'You can take this test only once',
+      keepOpen: 'Keep this page open until you submit',
+      starting: 'Starting...',
+      startTest: 'Start test',
+      hostEnded: 'The host has ended this test.',
+      loadingTest: 'Loading test...',
+      sending: 'Sending your answers...',
+      sendFailed: 'Could not send your answers. Check your internet.',
+      retry: 'Retry',
+      submit: 'Submit',
+      keepWorking: 'Keep working',
+    },
+    liveHost: {
+      errKey: 'Could not load the answer key.',
+      errCreate: 'Could not create the session.',
+      errEnd: 'Could not end the test. Check your internet and try again.',
+      confirmTaking: '{0} student(s) are still taking the test right now. Their unsent answers will be lost if you end it. End anyway?',
+      confirmNotTaken: '{0} student(s) on the list have not taken the test. Once you end it, nobody can join. End now?',
+      confirmEnd: 'End the test and show the ranking?',
+      back: 'Back to tests',
+      title: 'Live Test · {0}',
+      intro: 'One test, many people at the same time. Everyone is ranked by marks at the end.',
+      loading: 'Loading...',
+      loadingSession: 'Loading session...',
+      willUse: '{0} question(s) will be used',
+      timerAll: 'Timer: {0} min for everyone.',
+      noTimerEnd: 'No timer — you end the test yourself.',
+      leftOut: '{0} question(s) left out: they have no answer key, or are short-answer questions that need self-marking.',
+      creating: 'Creating...',
+      create: 'Create live session',
+      noGradable: 'This test has no auto-gradable questions yet.',
+      live: 'LIVE — students on the list can take the test any time until you end it',
+      joinCode: 'Join code',
+      copyCode: 'Copy code',
+      joinLink: 'Join link (share on WhatsApp / screen)',
+      copyLink: 'Copy link',
+      timerEach: 'Each student gets {0} min from the moment THEY press Start.',
+      noTimerEach: 'No timer — each student finishes when they submit.',
+      onList: 'On list',
+      takingNow: 'Taking now',
+      submitted: 'Submitted',
+      endShow: 'End test & show ranking',
+      calculating: 'Calculating ranking...',
+      enrolled: 'Enrolled',
+      topScore: 'Top score',
+      downloadPdf: 'Download ranking PDF',
+      rank: 'Rank',
+      name: 'Name',
+      phone: 'Phone',
+      marks: 'Marks',
+      time: 'Time',
+      notSubmitted: 'Not submitted',
+      newSession: 'Start a new live session for this test',
+      noValid: 'No valid 10-digit number found ({0} line(s) skipped).',
+      typeFirst: 'Type or paste phone numbers first.',
+      added: '{0} added.',
+      addedInvalid: '{0} added, {1} invalid skipped.',
+      errSaveNumbers: 'Could not save the numbers. Check your internet and try again.',
+      allowedTitle: 'Allowed students · {0} added · {1} joined',
+      allowedHint: 'Only these phone numbers can join, and each number can take the test only once.',
+      numbersPlaceholder: 'One per line — number, or "Name, number"\n9876543210\nRavi Kumar, 98765 43211',
+      adding: 'Adding...',
+      addNumbers: 'Add numbers',
+      statusSubmitted: 'Submitted',
+      statusJoined: 'Joined',
+      statusNotJoined: 'Not joined',
+      unlockTitle: 'Unlock this number so the student can join again from another phone',
+      removeTitle: 'Remove from the list',
+    },
+    focusPlayer: {
+      errLoad: 'Could not load videos',
+      errNone: 'No videos found. Try a simpler topic.',
+      errGeneric: 'Something went wrong. Try again.',
+      skippedEarn: 'Skipped! +{0} min and a few Shorts saved to your bank 💰',
+      skippedFull: 'Skipped! Your Shorts bank is full 💰',
+      breakTitle: 'Nice focus! Time for your shorts?',
+      breakBody: '{0} min. Your video is paused and will resume right here.',
+      startShorts: 'Start shorts',
+      skip: 'Skip',
+      approaching: 'Approaching your break',
+      back: '← Back',
+      timelineLoading: 'Finding the concepts in this video…',
+      timelineNone: 'Concept timeline isn\'t available for this video.',
+      reason: 'Reason: {0}',
+      nowTeaching: 'Now teaching',
+      addNote: '+ Note',
+      hideConcepts: 'Hide concepts',
+      allConcepts: 'All concepts ({0})',
+      addAll: 'Add all concepts to my notes',
+      myNotes: 'My notes',
+      addTime: '+ Time',
+      notesPlaceholder: 'Write what you learn here…',
+      savedAuto: 'Saved automatically',
+      title: 'Focus Player',
+      subtitle: 'One topic. Three videos. No distractions.',
+      close: 'Close',
+      topicPlaceholder: 'What do you want to learn?',
+      langAny: 'Any language',
+      langHi: 'Hindi',
+      langEn: 'English',
+      finding: 'Finding…',
+      showMe: 'Show me',
+      yourBank: 'Your Shorts bank',
+      minutes: '{0} min',
+      skippedToday: 'Skipped today: ',
+      savedOpen: '{0} Shorts saved · Open →',
+      locked: 'Shorts break after every {0} min of focus, {1} min each.',
+      lockedNote: 'You set this once, so it stays steady.',
+      breakEvery: 'Shorts break after every',
+      noBreaks: 'No breaks',
+      minOfFocus: '{0} min of focus',
+      eachBreak: 'Each break lasts',
+      chooseOnce: 'You can choose this only once.',
+      pickAtLeast: 'Pick at least 1 interest to turn breaks on (up to 3)',
+      pickUpTo: 'Pick up to 3 interests for your break feed',
+      pickN: 'Pick {0}',
+    },
   },
 
   hi: {
@@ -4602,6 +5246,328 @@ export const translations: Record<Locale, TranslationShape> = {
       watch: 'देखें',
       tabs: { all: 'सभी', national: 'राष्ट्रीय', international: 'अंतरराष्ट्रीय', economy: 'अर्थव्यवस्था', sports: 'खेल', scitech: 'विज्ञान और तकनीक', other: 'अन्य' },
       aiNote: 'यह चैनल के अपने वीडियो से AI द्वारा लिखा गया है। इसमें वही है जो चैनल ने कहा, पुष्ट तथ्य नहीं — ज़रूरी बात के लिए वीडियो ज़रूर देखें।',
+    },
+    recallCheck: {
+      title: 'जल्दी याद करें — अगले वीडियो से पहले',
+      hint: 'पीछे स्क्रॉल किए बिना, जो 2–3 मुख्य बातें याद हैं वे लिखें। आधा-अधूरा भी चलेगा — इसी से बात दिमाग में बैठती है।',
+      placeholder: 'मुझे जो याद है…',
+      doneNext: 'हो गया — अगला वीडियो',
+      skip: 'छोड़ें',
+    },
+    dailyHabit: {
+      title: 'आज की आदत',
+      niceOne: 'बहुत बढ़िया। कल मिलते हैं।',
+      done: 'हो गया',
+      notToday: 'आज नहीं',
+    },
+    welcomeBack: {
+      title: 'वापसी पर स्वागत है',
+      nextTopic: 'कोई दबाव नहीं। बस एक छोटा-सा काम: “{0}” का एक छोटा रिविज़न। पाँच मिनट काफ़ी हैं।',
+      noTopic: 'कोई दबाव नहीं। अपने रोडमैप से एक टॉपिक चुनें और आज थोड़ा-सा ही करें।',
+      startRevision: '5 मिनट का रिविज़न शुरू करें',
+      openRoadmap: 'रोडमैप खोलें',
+      notNow: 'अभी नहीं',
+    },
+    pagePlaceholder: {
+      comingSoon: 'जल्द आ रहा है',
+      beta: 'बीटा',
+      active: 'चालू',
+      underConstruction: 'निर्माणाधीन',
+      underConstructionBody: 'Learning OS रोडमैप का हिस्सा — UI तैयार है, अब इसे डेटा और इंजन से जोड़ा जाएगा।',
+    },
+    growthEdgesCard: {
+      title: 'आपके सुधार के क्षेत्र',
+      needPersonality: 'जानने के लिए Settings में पर्सनैलिटी चेक लें कि आपकी कौन-सी आदतें आपके टेस्ट में दिखती हैं।',
+      none: 'आपके टेस्ट में अभी कोई सुधार का क्षेत्र नहीं दिख रहा। जैसे-जैसे आप और टेस्ट देंगे यह अपडेट होता रहेगा।',
+      intro: 'आपकी पर्सनैलिटी की वे आदतें जो आपके टेस्ट में भी दिखती हैं। आगे आज़माने के लिए छोटी बातें।',
+      evidenceActivity: 'आपकी Learning OS गतिविधि में',
+      evidenceTests: 'आपके Learning OS टेस्ट में',
+      tryLabel: 'आज़माएँ:',
+    },
+    reviewSession: {
+      inputPlaceholder: 'अपना जवाब यहाँ लिखें...',
+      send: 'भेजें',
+      howWell: 'ईमानदारी से बताइए, आपको यह कितना याद था?',
+      tryLater: 'बाद में फिर कोशिश करें',
+      done: 'हो गया',
+      quizFailed: 'क्विज़ लोड नहीं हो सका: {0}',
+      errorPrefix: 'त्रुटि: {0}',
+    },
+    shortsBank: {
+      title: 'शॉर्ट्स बैंक',
+      back: 'वापस',
+      inBank: 'आपके बैंक में',
+      earnedToday: 'आज कमाए',
+      skipsToday: 'आज के स्किप',
+      minutes: '{0} मिनट',
+      totalSkips: 'अब तक कुल स्किप: {0}',
+      savedTitle: 'सेव किए गए शॉर्ट्स',
+      savedHint: 'ब्रेक स्किप करें तो कुछ शॉर्ट्स यहाँ सेव हो जाते हैं। एक देखने पर आपके बैंक से 1 मिनट कटता है।',
+      nothingSaved: 'अभी कुछ सेव नहीं है। कुछ कमाने के लिए अगला ब्रेक स्किप करें।',
+      shortFallback: 'शॉर्ट',
+      watch: 'देखें · 1 मिनट',
+      remove: 'हटाएँ',
+      bankEmpty: 'आपका बैंक खाली है। और कमाने के लिए ब्रेक स्किप करें।',
+      paidFromBank: 'आपके बैंक से चुकाया गया',
+      done: 'हो गया',
+    },
+    breakFeed: {
+      title: 'ब्रेक',
+      backToVideo: 'वीडियो पर वापस',
+      loading: 'आपका ब्रेक लोड हो रहा है…',
+      noShorts: 'अभी कोई शॉर्ट्स नहीं हैं। अपने वीडियो पर वापस चलें?',
+      previous: 'पिछला',
+      next: 'अगला',
+      timeline: 'ब्रेक की टाइमलाइन',
+      timeUp: 'ब्रेक का समय खत्म',
+      waiting: 'आपका वीडियो वहीं इंतज़ार कर रहा है जहाँ आपने छोड़ा था।',
+      spend: 'बैंक से 2 मिनट खर्च करें 💰',
+      earnMore: 'और शॉर्ट्स का समय कमाने के लिए ब्रेक स्किप करें 💰',
+    },
+    dailyTest: {
+      queueHintBefore: 'AI विश्लेषण के बिना फ़ोटो/PDF कतार में डालें, या प्रश्न पेस्ट/टाइप करें। टेस्ट में आने से पहले प्रश्नों के उत्तर ज़रूरी हैं। काम पूरा होने पर ',
+      saveBank: 'प्रश्न बैंक सेव करें',
+      queueHintAfter: ' दबाएँ।',
+      bankFull: 'सेव नहीं हो सका — आपके ब्राउज़र का स्टोरेज भर गया है। कुछ प्रश्न हटाएँ या पुराना डेटा साफ़ करें, फिर दोबारा कोशिश करें।',
+      bankSaved: 'प्रश्न बैंक सेव हो गया: {0} प्रश्न।',
+      bankSavedQueued: 'प्रश्न बैंक सेव हो गया। कतार की फ़ोटो तभी जाँची जाएँगी जब किसी टेस्ट को और प्रश्न चाहिए होंगे।',
+      processedErr: '{0} पृष्ठ प्रोसेस हुए। {1} बाकी पृष्ठ/फ़ाइलें दोबारा कोशिश के लिए सेव हैं।',
+      processedPartial: 'इस टेस्ट के लिए ज़रूरी सिर्फ़ {0} पृष्ठ प्रोसेस हुए। {1} स्रोत फ़ाइलें आगे के टेस्ट के लिए कतार में हैं।',
+      needAnswers: 'प्रश्न सेव हो गए, पर कुछ के उत्तर पहले चाहिए। टेस्ट शुरू करने से पहले "प्रश्न बैंक बदलें" खोलकर उनके उत्तर पूरे करें।',
+      noneReady: 'कोई प्रश्न तैयार नहीं है। पहले फ़ोटो/PDF जोड़ें या प्रश्न टाइप करें।',
+      prepareFailed: 'डेली टेस्ट तैयार नहीं हो सका। आपकी कतार की फ़ाइलें सुरक्षित हैं।',
+      restored: 'बैकअप वापस आ गया।',
+      badBackup: 'यह फ़ाइल डेली टेस्ट का सही बैकअप नहीं है।',
+      confirmReset: 'पूरा प्रश्न बैंक और डेली टेस्ट की सारी प्रगति मिटा दें? आपके पूरे हो चुके नतीजे "पिछले प्रयास" में रहेंगे।',
+      backToTests: 'टेस्ट पर वापस',
+      title: 'डेली टेस्ट',
+      intro: 'फ़ोटो एक बार कतार में डालें। टेस्ट माँगने पर AI उतनी ही फ़ाइलें पढ़ता है जितनी ज़रूरी हों; बाकी आगे के लिए सेव रहती हैं।',
+      startTitle: 'पहले अपने प्रश्न जोड़ें',
+      startBody: 'अपने प्रश्नपत्र की फ़ोटो या PDF जोड़ें (या प्रश्न पेस्ट/टाइप करें)। यह सिर्फ़ एक बार करना है।',
+      addQuestions: 'प्रश्न जोड़ें',
+      doneTitle: 'आज का टेस्ट पूरा हो गया',
+      doneBody: 'आपका अगला टेस्ट कल तैयार होगा। नतीजा "पिछले प्रयास" में देखें।',
+      statusMissed: 'आपका छूटा हुआ टेस्ट इंतज़ार कर रहा है',
+      statusReady: 'आज का टेस्ट तैयार है',
+      statusPrepare: 'कतार की फ़ाइलों से टेस्ट तैयार करें',
+      statusToday: 'आज का टेस्ट',
+      pendingLine: '{0} प्रश्न{1}{2}',
+      minutesSuffix: ' · {0} मिनट',
+      noTimer: ' · कोई टाइमर नहीं',
+      sameQuestions: ' · वही प्रश्न, छोड़े नहीं गए',
+      readyLine: '{0} प्रश्न तैयार · {1} फ़ाइलें प्रतीक्षा में{2}',
+      upTo: ' · अधिकतम {0} मिनट',
+      preparing: 'प्रश्न तैयार हो रहे हैं…',
+      startToday: 'आज का टेस्ट शुरू करें',
+      settings: 'सेटिंग्स',
+      perDay: 'रोज़ के प्रश्न',
+      minPerQ: 'प्रति प्रश्न मिनट (0 = कोई टाइमर नहीं)',
+      settingsNote: 'बदली हुई संख्या अगले टेस्ट से लागू होगी (इंतज़ार कर रहे टेस्ट के प्रश्न वही रहते हैं)।',
+      progress: 'आपकी प्रगति',
+      progressLine1: 'बैंक में {0} प्रश्न · {1} फ़ोटो/PDF फ़ाइलें प्रतीक्षा में · {2} डेली टेस्ट पूरे · राउंड {3}',
+      progressLine2: 'इस राउंड में {0} प्रश्न अभी इस्तेमाल नहीं हुए · पूरे बैंक के लिए लगभग {1} दिन',
+      wrongLine: '{0} प्रश्न जो आपने गलत किए — अगले राउंड में वे सबसे पहले आएँगे।',
+      editBank: 'प्रश्न बैंक बदलें / और फ़ोटो जोड़ें',
+      backup: 'बैकअप',
+      restore: 'रिस्टोर',
+      reset: 'रीसेट',
+      footerBefore: 'आपका प्रश्न बैंक और डेली टेस्ट सिर्फ़ इसी ब्राउज़र में सेव हैं। ब्राउज़र डेटा साफ़ करने पर वे मिट जाएँगे — बीच-बीच में ',
+      footerMid: ' करते रहें (और दूसरे डिवाइस पर ',
+      footerAfter: ' करें)।',
+    },
+    testBuilder: {
+      errTitle: 'टेस्ट को एक शीर्षक दें।',
+      errTopic: 'टेस्ट का विषय/टॉपिक दें।',
+      errNoQuestions: 'कम से कम एक प्रश्न जोड़ें।',
+      errEmpty: 'प्रश्न {0} खाली है।',
+      errOptions: 'प्रश्न {0}: कम से कम {1} विकल्प भरें।',
+      errCorrect: 'प्रश्न {0}: सही विकल्प चुनें (वह भरे हुए विकल्पों में से एक होना चाहिए), या उत्तर-पत्र जोड़ें।',
+      errModel: 'प्रश्न {0}: आदर्श उत्तर जोड़ें।',
+      titleLabel: 'टेस्ट का शीर्षक',
+      titlePlaceholder: 'जैसे: यूनिट 3 मॉक टेस्ट',
+      durationLabel: 'अवधि (मिनट, 0 = कोई टाइमर नहीं)',
+      topicLabel: 'टॉपिक / विषय',
+      topicPlaceholder: 'जैसे: ऑर्गेनिक केमिस्ट्री',
+      addMcq: 'MCQ प्रश्न जोड़ें',
+      addSubjective: 'विषयपरक प्रश्न जोड़ें',
+      bulkImport: 'एक साथ इम्पोर्ट',
+      saveBank: 'प्रश्न बैंक सेव करें',
+      saveChanges: 'बदलाव सेव करें',
+      saveTest: 'टेस्ट सेव करें',
+      cancel: 'रद्द करें',
+      closeBulk: 'एक साथ इम्पोर्ट बंद करें',
+      bulkHintBefore: 'जितने चाहें उतने प्रश्न एक के बाद एक पेस्ट करें, बीच में सिर्फ़ ',
+      bulkHintAfter: ' वाली एक लाइन रखें।',
+      hideExample: 'फ़ॉर्मैट का उदाहरण छिपाएँ',
+      showExample: 'फ़ॉर्मैट का उदाहरण दिखाएँ',
+      bulkPlaceholder: 'अपने प्रश्न यहाँ पेस्ट करें...',
+      importQuestions: 'प्रश्न इम्पोर्ट करें',
+      mcq: 'MCQ',
+      subjective: 'विषयपरक',
+      moveUp: 'ऊपर ले जाएँ',
+      moveDown: 'नीचे ले जाएँ',
+      removeQuestion: 'प्रश्न हटाएँ',
+      questionPlaceholder: 'प्रश्न का पाठ',
+      optionsHint: 'विकल्प · सही उत्तर चुनें',
+      setCorrectAria: 'विकल्प {0} को सही उत्तर बनाएँ',
+      correct: 'सही',
+      setCorrect: 'सही चुनें',
+      optionAria: 'विकल्प {0} का पाठ',
+      optionPlaceholder: 'विकल्प {0} लिखें',
+      removeOptionAria: 'विकल्प {0} हटाएँ',
+      addOption: 'विकल्प जोड़ें',
+      radioHint: 'सही विकल्प के पास वाला रेडियो बटन चुनें। {0}–{1} विकल्प रख सकते हैं; सेव करते समय खाली विकल्प हट जाते हैं।',
+      modelAnswerPlaceholder: 'आदर्श उत्तर (जमा करने के बाद आपको दिखेगा, खुद जाँचने के लिए)',
+      explanationPlaceholder: 'व्याख्या (वैकल्पिक, नतीजों में दिखेगी)',
+      marks: 'अंक',
+      negativeMarks: 'नेगेटिव अंक',
+    },
+    liveJoin: {
+      errNotAllowed: 'यह नंबर टेस्ट की सूची में नहीं है या पहले से किसी दूसरे डिवाइस से जुड़ा है। इसे जाँचें या अपने होस्ट से मदद माँगें।',
+      errOtherDevice: 'यह नंबर पहले से किसी दूसरे डिवाइस पर इस्तेमाल हो रहा है। अपने होस्ट से इसे अनलॉक करने को कहें।',
+      errJoin: 'जुड़ नहीं सके। अपना इंटरनेट जाँचें और दोबारा कोशिश करें।',
+      errName: 'कृपया अपना पूरा नाम लिखें।',
+      errPhone: 'कृपया सही 10 अंकों का फ़ोन नंबर लिखें।',
+      errStart: 'शुरू नहीं हो सका। अपना इंटरनेट जाँचें और दोबारा कोशिश करें।',
+      unanswered: '{0} प्रश्न बिना उत्तर के हैं। फिर भी जमा करें?',
+      submitNow: 'क्या अभी टेस्ट जमा करें?',
+      loading: 'लोड हो रहा है...',
+      notFound: 'टेस्ट नहीं मिला',
+      checkCode: 'कोड या लिंक ({0}) जाँचें और दोबारा कोशिश करें।',
+      noCode: 'कोई कोड नहीं',
+      submitted: 'जमा हो गया ✓',
+      alreadyRecorded: 'आपके उत्तर पहले ही दर्ज हो चुके हैं (या टेस्ट बंद हो गया है)। ',
+      recorded: 'आपके उत्तर दर्ज हो गए हैं। ',
+      rankingNote: 'रैंकिंग आपका होस्ट साझा करेगा। अब आप इस पेज को आराम से बंद कर सकते हैं।',
+      makeOwn: 'अपने खुद के प्रैक्टिस टेस्ट बनाएँ — मुफ़्त',
+      alreadyEnded: 'यह टेस्ट पहले ही खत्म हो चुका है।',
+      liveTest: 'लाइव टेस्ट',
+      questionsCount: '{0} प्रश्न',
+      questionsMinutes: '{0} प्रश्न · {1} मिनट',
+      namePlaceholder: 'आपका पूरा नाम',
+      phonePlaceholder: 'फ़ोन नंबर (10 अंक)',
+      joining: 'जुड़ रहे हैं...',
+      joinTest: 'टेस्ट से जुड़ें',
+      hostClosed: 'होस्ट ने यह टेस्ट बंद कर दिया है।',
+      ready: 'तैयार हैं, {0}?',
+      timerStarts: '{0} मिनट — टाइमर "शुरू करें" दबाने पर चालू होगा',
+      noTimer: 'कोई टाइमर नहीं',
+      onlyOnce: 'यह टेस्ट आप सिर्फ़ एक बार दे सकते हैं',
+      keepOpen: 'जमा करने तक इस पेज को खुला रखें',
+      starting: 'शुरू हो रहा है...',
+      startTest: 'टेस्ट शुरू करें',
+      hostEnded: 'होस्ट ने यह टेस्ट खत्म कर दिया है।',
+      loadingTest: 'टेस्ट लोड हो रहा है...',
+      sending: 'आपके उत्तर भेजे जा रहे हैं...',
+      sendFailed: 'आपके उत्तर नहीं भेजे जा सके। अपना इंटरनेट जाँचें।',
+      retry: 'फिर कोशिश करें',
+      submit: 'जमा करें',
+      keepWorking: 'लिखते रहें',
+    },
+    liveHost: {
+      errKey: 'उत्तर-कुंजी लोड नहीं हो सकी।',
+      errCreate: 'सेशन नहीं बन सका।',
+      errEnd: 'टेस्ट खत्म नहीं हो सका। अपना इंटरनेट जाँचें और दोबारा कोशिश करें।',
+      confirmTaking: '{0} विद्यार्थी अभी भी टेस्ट दे रहे हैं। टेस्ट खत्म करने पर उनके न भेजे गए उत्तर खो जाएँगे। फिर भी खत्म करें?',
+      confirmNotTaken: 'सूची में {0} विद्यार्थियों ने टेस्ट नहीं दिया है। खत्म करने के बाद कोई जुड़ नहीं सकेगा। अभी खत्म करें?',
+      confirmEnd: 'टेस्ट खत्म करके रैंकिंग दिखाएँ?',
+      back: 'टेस्ट पर वापस',
+      title: 'लाइव टेस्ट · {0}',
+      intro: 'एक टेस्ट, एक ही समय पर कई लोग। अंत में सबकी रैंकिंग अंकों के आधार पर होती है।',
+      loading: 'लोड हो रहा है...',
+      loadingSession: 'सेशन लोड हो रहा है...',
+      willUse: '{0} प्रश्न इस्तेमाल होंगे',
+      timerAll: 'टाइमर: सबके लिए {0} मिनट।',
+      noTimerEnd: 'कोई टाइमर नहीं — टेस्ट आप खुद खत्म करते हैं।',
+      leftOut: '{0} प्रश्न छोड़े गए: उनकी उत्तर-कुंजी नहीं है, या वे छोटे उत्तर वाले प्रश्न हैं जिन्हें खुद जाँचना पड़ता है।',
+      creating: 'बन रहा है...',
+      create: 'लाइव सेशन बनाएँ',
+      noGradable: 'इस टेस्ट में अभी कोई ऑटो-ग्रेड होने वाला प्रश्न नहीं है।',
+      live: 'लाइव — सूची के विद्यार्थी आपके टेस्ट खत्म करने तक कभी भी टेस्ट दे सकते हैं',
+      joinCode: 'जुड़ने का कोड',
+      copyCode: 'कोड कॉपी करें',
+      joinLink: 'जुड़ने का लिंक (WhatsApp / स्क्रीन पर साझा करें)',
+      copyLink: 'लिंक कॉपी करें',
+      timerEach: 'हर विद्यार्थी को उस पल से {0} मिनट मिलते हैं जब वह खुद "शुरू करें" दबाता है।',
+      noTimerEach: 'कोई टाइमर नहीं — हर विद्यार्थी जमा करने पर खत्म करता है।',
+      onList: 'सूची में',
+      takingNow: 'अभी दे रहे हैं',
+      submitted: 'जमा किए',
+      endShow: 'टेस्ट खत्म करें और रैंकिंग दिखाएँ',
+      calculating: 'रैंकिंग निकाली जा रही है...',
+      enrolled: 'नामांकित',
+      topScore: 'सबसे ऊँचा स्कोर',
+      downloadPdf: 'रैंकिंग PDF डाउनलोड करें',
+      rank: 'रैंक',
+      name: 'नाम',
+      phone: 'फ़ोन',
+      marks: 'अंक',
+      time: 'समय',
+      notSubmitted: 'जमा नहीं किया',
+      newSession: 'इस टेस्ट के लिए नया लाइव सेशन शुरू करें',
+      noValid: 'कोई सही 10 अंकों का नंबर नहीं मिला ({0} लाइनें छोड़ी गईं)।',
+      typeFirst: 'पहले फ़ोन नंबर टाइप या पेस्ट करें।',
+      added: '{0} जोड़े गए।',
+      addedInvalid: '{0} जोड़े गए, {1} गलत नंबर छोड़े गए।',
+      errSaveNumbers: 'नंबर सेव नहीं हो सके। अपना इंटरनेट जाँचें और दोबारा कोशिश करें।',
+      allowedTitle: 'अनुमत विद्यार्थी · {0} जोड़े · {1} जुड़े',
+      allowedHint: 'सिर्फ़ यही फ़ोन नंबर जुड़ सकते हैं, और हर नंबर टेस्ट सिर्फ़ एक बार दे सकता है।',
+      numbersPlaceholder: 'हर लाइन में एक — नंबर, या "नाम, नंबर"\n9876543210\nरवि कुमार, 98765 43211',
+      adding: 'जोड़ रहे हैं...',
+      addNumbers: 'नंबर जोड़ें',
+      statusSubmitted: 'जमा किया',
+      statusJoined: 'जुड़ा',
+      statusNotJoined: 'नहीं जुड़ा',
+      unlockTitle: 'इस नंबर को अनलॉक करें ताकि विद्यार्थी दूसरे फ़ोन से फिर जुड़ सके',
+      removeTitle: 'सूची से हटाएँ',
+    },
+    focusPlayer: {
+      errLoad: 'वीडियो लोड नहीं हो सके',
+      errNone: 'कोई वीडियो नहीं मिला। कोई आसान टॉपिक आज़माएँ।',
+      errGeneric: 'कुछ गड़बड़ हो गई। दोबारा कोशिश करें।',
+      skippedEarn: 'स्किप हो गया! +{0} मिनट और कुछ शॉर्ट्स आपके बैंक में सेव हो गए 💰',
+      skippedFull: 'स्किप हो गया! आपका शॉर्ट्स बैंक भरा हुआ है 💰',
+      breakTitle: 'शानदार फ़ोकस! अब अपने शॉर्ट्स का समय?',
+      breakBody: '{0} मिनट। आपका वीडियो रुका हुआ है और यहीं से फिर चलेगा।',
+      startShorts: 'शॉर्ट्स शुरू करें',
+      skip: 'स्किप करें',
+      approaching: 'आपका ब्रेक पास आ रहा है',
+      back: '← वापस',
+      timelineLoading: 'इस वीडियो के कॉन्सेप्ट खोजे जा रहे हैं…',
+      timelineNone: 'इस वीडियो के लिए कॉन्सेप्ट टाइमलाइन उपलब्ध नहीं है।',
+      reason: 'कारण: {0}',
+      nowTeaching: 'अभी सिखा रहे हैं',
+      addNote: '+ नोट',
+      hideConcepts: 'कॉन्सेप्ट छिपाएँ',
+      allConcepts: 'सभी कॉन्सेप्ट ({0})',
+      addAll: 'सभी कॉन्सेप्ट मेरे नोट्स में जोड़ें',
+      myNotes: 'मेरे नोट्स',
+      addTime: '+ समय',
+      notesPlaceholder: 'जो सीखें वह यहाँ लिखें…',
+      savedAuto: 'अपने आप सेव हो जाता है',
+      title: 'फ़ोकस प्लेयर',
+      subtitle: 'एक टॉपिक। तीन वीडियो। कोई ध्यान भटकाने वाली चीज़ नहीं।',
+      close: 'बंद करें',
+      topicPlaceholder: 'आप क्या सीखना चाहते हैं?',
+      langAny: 'कोई भी भाषा',
+      langHi: 'हिंदी',
+      langEn: 'अंग्रेज़ी',
+      finding: 'खोज रहे हैं…',
+      showMe: 'दिखाएँ',
+      yourBank: 'आपका शॉर्ट्स बैंक',
+      minutes: '{0} मिनट',
+      skippedToday: 'आज स्किप किए: ',
+      savedOpen: '{0} शॉर्ट्स सेव · खोलें →',
+      locked: 'हर {0} मिनट के फ़ोकस के बाद शॉर्ट्स ब्रेक, हर ब्रेक {1} मिनट का।',
+      lockedNote: 'यह आपने एक बार तय किया है, इसलिए स्थिर रहता है।',
+      breakEvery: 'शॉर्ट्स ब्रेक हर',
+      noBreaks: 'कोई ब्रेक नहीं',
+      minOfFocus: '{0} मिनट के फ़ोकस के बाद',
+      eachBreak: 'हर ब्रेक की अवधि',
+      chooseOnce: 'इसे आप सिर्फ़ एक बार चुन सकते हैं।',
+      pickAtLeast: 'ब्रेक चालू करने के लिए कम से कम 1 रुचि चुनें (अधिकतम 3)',
+      pickUpTo: 'अपनी ब्रेक फ़ीड के लिए अधिकतम 3 रुचियाँ चुनें',
+      pickN: 'चुनाव {0}',
     },
   },
 
@@ -6414,6 +7380,328 @@ export const translations: Record<Locale, TranslationShape> = {
       watch: 'Dekho',
       tabs: { all: 'Sab', national: 'National', international: 'International', economy: 'Economy', sports: 'Sports', scitech: 'Sci & Tech', other: 'Other' },
       aiNote: 'Ye channel ke apne videos se AI ne likha hai. Isme wahi hai jo channel ne kaha, verified facts nahi — zaroori baat ke liye video zaroor dekho.',
+    },
+    recallCheck: {
+      title: 'Quick recall — agle video se pehle',
+      hint: 'Peeche scroll kiye bina, jo 2–3 main baatein yaad hain woh likho. Aadha-adhura bhi chalega — isi se baat yaad rehti hai.',
+      placeholder: 'Mujhe jo yaad hai…',
+      doneNext: 'Ho gaya — agla video',
+      skip: 'Skip',
+    },
+    dailyHabit: {
+      title: 'Aaj ki habit',
+      niceOne: 'Bahut badhiya. Kal milte hain.',
+      done: 'Ho gaya',
+      notToday: 'Aaj nahi',
+    },
+    welcomeBack: {
+      title: 'Welcome back',
+      nextTopic: 'Koi pressure nahi. Bas ek chhoti si cheez: “{0}” ka ek quick revision. Paanch minute kaafi hain.',
+      noTopic: 'Koi pressure nahi. Apne roadmap se ek topic chuno aur aaj bas thoda sa karo.',
+      startRevision: '5-min revision shuru karo',
+      openRoadmap: 'Roadmap kholo',
+      notNow: 'Abhi nahi',
+    },
+    pagePlaceholder: {
+      comingSoon: 'Jald aa raha hai',
+      beta: 'Beta',
+      active: 'Active',
+      underConstruction: 'Under Construction',
+      underConstructionBody: 'Learning OS roadmap ka hissa — UI ready hai, ab ise data aur engines se jodna baaki hai.',
+    },
+    growthEdgesCard: {
+      title: 'Aapke growth edges',
+      needPersonality: 'Settings mein Personality Check lo, phir dikhega ki aapki kaun si habits aapke tests mein dikhti hain.',
+      none: 'Aapke tests mein abhi koi growth edge nahi dikh raha. Jaise-jaise aap aur tests doge yeh update hota rahega.',
+      intro: 'Aapki personality ki woh habits jo aapke tests mein bhi dikhti hain. Aage try karne ke liye chhoti baatein.',
+      evidenceActivity: 'Aapki Learning OS activity mein',
+      evidenceTests: 'Aapke Learning OS tests mein',
+      tryLabel: 'Try karo:',
+    },
+    reviewSession: {
+      inputPlaceholder: 'Apna jawab yahan likho...',
+      send: 'Send',
+      howWell: 'Imaandari se batao, tumhe yeh kitna yaad tha?',
+      tryLater: 'Baad mein phir try karo',
+      done: 'Ho gaya',
+      quizFailed: 'Quiz load nahi ho paaya: {0}',
+      errorPrefix: 'Error: {0}',
+    },
+    shortsBank: {
+      title: 'Shorts bank',
+      back: 'Back',
+      inBank: 'Aapke bank mein',
+      earnedToday: 'Aaj kamaye',
+      skipsToday: 'Aaj ke skips',
+      minutes: '{0} min',
+      totalSkips: 'Ab tak total skips: {0}',
+      savedTitle: 'Saved Shorts',
+      savedHint: 'Break skip karo toh kuch Shorts yahan save ho jaate hain. Ek dekhne par bank se 1 min katta hai.',
+      nothingSaved: 'Abhi kuch saved nahi hai. Kuch kamane ke liye agla break skip karo.',
+      shortFallback: 'Short',
+      watch: 'Dekho · 1 min',
+      remove: 'Hatao',
+      bankEmpty: 'Aapka bank khaali hai. Aur kamane ke liye break skip karo.',
+      paidFromBank: 'Aapke bank se paid',
+      done: 'Ho gaya',
+    },
+    breakFeed: {
+      title: 'Break',
+      backToVideo: 'Video pe wapas',
+      loading: 'Aapka break load ho raha hai…',
+      noShorts: 'Abhi koi shorts nahi hain. Apne video pe wapas chalein?',
+      previous: 'Pichla',
+      next: 'Agla',
+      timeline: 'Break timeline',
+      timeUp: 'Break ka time khatam',
+      waiting: 'Aapka video wahin intezaar kar raha hai jahan aapne chhoda tha.',
+      spend: 'Bank se 2 min kharch karo 💰',
+      earnMore: 'Aur Shorts time kamane ke liye break skip karo 💰',
+    },
+    dailyTest: {
+      queueHintBefore: 'AI analysis ke bina photos/PDF queue mein daalo, ya questions paste/type karo. Test mein aane se pehle questions ke answers zaroori hain. Kaam hone par ',
+      saveBank: 'Save Question Bank',
+      queueHintAfter: ' dabao.',
+      bankFull: 'Save nahi ho paaya — aapke browser ka storage full hai. Kuch questions hatao ya purana data saaf karo, phir dobara try karo.',
+      bankSaved: 'Question bank save ho gaya: {0} question(s).',
+      bankSavedQueued: 'Question bank save ho gaya. Queued photos tabhi analyze hongi jab kisi test ko aur questions chahiye honge.',
+      processedErr: '{0} page(s) process hue. {1} Baaki pages/files retry ke liye save hain.',
+      processedPartial: 'Is test ke liye zaroori sirf {0} page(s) process hue. {1} source file(s) aage ke tests ke liye queue mein hain.',
+      needAnswers: 'Questions save ho gaye, par kuch ke answers pehle chahiye. Test shuru karne se pehle Edit question bank kholkar unke answers poore karo.',
+      noneReady: 'Koi question ready nahi hai. Pehle photos/PDF jodo ya questions type karo.',
+      prepareFailed: 'Daily Test taiyaar nahi ho paaya. Aapki queued files safe hain.',
+      restored: 'Backup restore ho gaya.',
+      badBackup: 'Yeh file valid Daily Test backup nahi hai.',
+      confirmReset: 'Poora question bank aur Daily Test ka saara progress delete kar dein? Aapke finished results Past attempts mein rahenge.',
+      backToTests: 'Tests pe wapas',
+      title: 'Daily Test',
+      intro: 'Photos ek baar queue mein daalo. Test maangne par AI utni hi files padhta hai jitni zaroori ho; baaki aage ke liye save rehti hain.',
+      startTitle: 'Pehle apne questions jodo',
+      startBody: 'Apne question paper ki photos ya PDF jodo (ya questions paste/type karo). Yeh sirf ek baar karna hai.',
+      addQuestions: 'Questions jodo',
+      doneTitle: 'Aaj ka test ho gaya',
+      doneBody: 'Aapka agla test kal ready hoga. Result Past attempts mein dekho.',
+      statusMissed: 'Aapka missed test wait kar raha hai',
+      statusReady: 'Aaj ka test ready hai',
+      statusPrepare: 'Queued files se test taiyaar karo',
+      statusToday: 'Aaj ka test',
+      pendingLine: '{0} questions{1}{2}',
+      minutesSuffix: ' · {0} min',
+      noTimer: ' · no timer',
+      sameQuestions: ' · wahi questions, skip nahi hue',
+      readyLine: '{0} question(s) ready · {1} file(s) waiting{2}',
+      upTo: ' · up to {0} min',
+      preparing: 'Questions taiyaar ho rahe hain…',
+      startToday: 'Aaj ka test shuru karo',
+      settings: 'Settings',
+      perDay: 'Roz ke questions',
+      minPerQ: 'Minutes per question (0 = no timer)',
+      settingsNote: 'Badla hua number agle test se lagu hoga (waiting test ke questions wahi rehte hain).',
+      progress: 'Aapka progress',
+      progressLine1: 'Bank mein {0} questions · {1} photo/PDF file(s) waiting · {2} daily test(s) finished · round {3}',
+      progressLine2: 'Is round mein {0} questions abhi use nahi hue · poore bank ke liye lagbhag {1} din',
+      wrongLine: '{0} questions jo aapne galat kiye — agle round mein woh sabse pehle aayenge.',
+      editBank: 'Edit question bank / aur photos jodo',
+      backup: 'Backup',
+      restore: 'Restore',
+      reset: 'Reset',
+      footerBefore: 'Aapka question bank aur daily tests sirf isi browser mein save hain. Browser data clear karne par woh mit jaayenge — beech-beech mein ',
+      footerMid: ' karte raho (aur doosre device par ',
+      footerAfter: ' karo).',
+    },
+    testBuilder: {
+      errTitle: 'Test ko ek title do.',
+      errTopic: 'Test ka topic/subject do.',
+      errNoQuestions: 'Kam se kam ek question jodo.',
+      errEmpty: 'Question {0} khaali hai.',
+      errOptions: 'Question {0}: kam se kam {1} options bharo.',
+      errCorrect: 'Question {0}: sahi option chuno (woh bhare hue options mein se hona chahiye), ya answer sheet jodo.',
+      errModel: 'Question {0}: model answer jodo.',
+      titleLabel: 'Test title',
+      titlePlaceholder: 'jaise: Unit 3 Mock Test',
+      durationLabel: 'Duration (min, 0 = no timer)',
+      topicLabel: 'Topic / Subject',
+      topicPlaceholder: 'jaise: Organic Chemistry',
+      addMcq: 'MCQ Question jodo',
+      addSubjective: 'Subjective Question jodo',
+      bulkImport: 'Bulk Import',
+      saveBank: 'Save Question Bank',
+      saveChanges: 'Save Changes',
+      saveTest: 'Save Test',
+      cancel: 'Cancel',
+      closeBulk: 'Bulk import band karo',
+      bulkHintBefore: 'Jitne chahe utne questions ek ke baad ek paste karo, beech mein sirf ',
+      bulkHintAfter: ' wali ek line rakho.',
+      hideExample: 'Format example chhupao',
+      showExample: 'Format example dikhao',
+      bulkPlaceholder: 'Apne questions yahan paste karo...',
+      importQuestions: 'Questions Import karo',
+      mcq: 'MCQ',
+      subjective: 'Subjective',
+      moveUp: 'Upar le jao',
+      moveDown: 'Neeche le jao',
+      removeQuestion: 'Question hatao',
+      questionPlaceholder: 'Question text',
+      optionsHint: 'Options · sahi answer chuno',
+      setCorrectAria: 'Option {0} ko sahi answer banao',
+      correct: 'Sahi',
+      setCorrect: 'Sahi chuno',
+      optionAria: 'Option {0} ka text',
+      optionPlaceholder: 'Option {0} likho',
+      removeOptionAria: 'Option {0} hatao',
+      addOption: 'Option jodo',
+      radioHint: 'Sahi option ke paas wala radio button chuno. {0}–{1} options rakh sakte ho; save karte waqt khaali options hat jaate hain.',
+      modelAnswerPlaceholder: 'Model answer (submit karne ke baad aapko dikhega, khud check karne ke liye)',
+      explanationPlaceholder: 'Explanation (optional, results mein dikhega)',
+      marks: 'Marks',
+      negativeMarks: 'Negative marks',
+    },
+    liveJoin: {
+      errNotAllowed: 'Yeh number test ki list mein nahi hai ya pehle se kisi doosre device se juda hai. Ise check karo ya apne host se madad maango.',
+      errOtherDevice: 'Yeh number pehle se kisi doosre device par use ho raha hai. Apne host se ise unlock karne ko kaho.',
+      errJoin: 'Join nahi ho paaye. Apna internet check karo aur dobara try karo.',
+      errName: 'Kripya apna poora naam likho.',
+      errPhone: 'Kripya sahi 10 digit ka phone number likho.',
+      errStart: 'Shuru nahi ho paaya. Apna internet check karo aur dobara try karo.',
+      unanswered: '{0} question(s) bina answer ke hain. Phir bhi submit karein?',
+      submitNow: 'Kya abhi test submit karein?',
+      loading: 'Loading...',
+      notFound: 'Test nahi mila',
+      checkCode: 'Code ya link ({0}) check karo aur dobara try karo.',
+      noCode: 'koi code nahi',
+      submitted: 'Submit ho gaya ✓',
+      alreadyRecorded: 'Aapke answers pehle hi record ho chuke hain (ya test band ho gaya hai). ',
+      recorded: 'Aapke answers record ho gaye hain. ',
+      rankingNote: 'Ranking aapka host share karega. Ab aap is page ko aaram se band kar sakte ho.',
+      makeOwn: 'Apne khud ke practice tests banao — free',
+      alreadyEnded: 'Yeh test pehle hi khatam ho chuka hai.',
+      liveTest: 'Live test',
+      questionsCount: '{0} questions',
+      questionsMinutes: '{0} questions · {1} min',
+      namePlaceholder: 'Aapka poora naam',
+      phonePlaceholder: 'Phone number (10 digits)',
+      joining: 'Join ho rahe hain...',
+      joinTest: 'Test join karo',
+      hostClosed: 'Host ne yeh test band kar diya hai.',
+      ready: 'Ready ho, {0}?',
+      timerStarts: '{0} minutes — timer "Start" dabane par chalu hoga',
+      noTimer: 'No timer',
+      onlyOnce: 'Yeh test aap sirf ek baar de sakte ho',
+      keepOpen: 'Submit karne tak is page ko khula rakho',
+      starting: 'Shuru ho raha hai...',
+      startTest: 'Test shuru karo',
+      hostEnded: 'Host ne yeh test khatam kar diya hai.',
+      loadingTest: 'Test load ho raha hai...',
+      sending: 'Aapke answers bheje ja rahe hain...',
+      sendFailed: 'Aapke answers nahi bheje ja sake. Apna internet check karo.',
+      retry: 'Retry',
+      submit: 'Submit',
+      keepWorking: 'Likhte raho',
+    },
+    liveHost: {
+      errKey: 'Answer key load nahi ho saki.',
+      errCreate: 'Session nahi ban saka.',
+      errEnd: 'Test khatam nahi ho paaya. Apna internet check karo aur dobara try karo.',
+      confirmTaking: '{0} student(s) abhi bhi test de rahe hain. Test khatam karne par unke na bheje gaye answers kho jaayenge. Phir bhi khatam karein?',
+      confirmNotTaken: 'List mein {0} student(s) ne test nahi diya hai. Khatam karne ke baad koi join nahi kar paayega. Abhi khatam karein?',
+      confirmEnd: 'Test khatam karke ranking dikhayein?',
+      back: 'Tests pe wapas',
+      title: 'Live Test · {0}',
+      intro: 'Ek test, ek hi time par kai log. End mein sabki ranking marks ke hisaab se hoti hai.',
+      loading: 'Loading...',
+      loadingSession: 'Session load ho raha hai...',
+      willUse: '{0} question(s) use honge',
+      timerAll: 'Timer: sabke liye {0} min.',
+      noTimerEnd: 'No timer — test aap khud khatam karte ho.',
+      leftOut: '{0} question(s) chhode gaye: unki answer key nahi hai, ya woh short-answer questions hain jinhe khud check karna padta hai.',
+      creating: 'Ban raha hai...',
+      create: 'Live session banao',
+      noGradable: 'Is test mein abhi koi auto-gradable question nahi hai.',
+      live: 'LIVE — list ke students aapke test khatam karne tak kabhi bhi test de sakte hain',
+      joinCode: 'Join code',
+      copyCode: 'Code copy karo',
+      joinLink: 'Join link (WhatsApp / screen par share karo)',
+      copyLink: 'Link copy karo',
+      timerEach: 'Har student ko us pal se {0} min milte hain jab WOH khud "Start" dabata hai.',
+      noTimerEach: 'No timer — har student submit karne par khatam karta hai.',
+      onList: 'List mein',
+      takingNow: 'Abhi de rahe hain',
+      submitted: 'Submit kiye',
+      endShow: 'Test khatam karo aur ranking dikhao',
+      calculating: 'Ranking nikali ja rahi hai...',
+      enrolled: 'Enrolled',
+      topScore: 'Top score',
+      downloadPdf: 'Ranking PDF download karo',
+      rank: 'Rank',
+      name: 'Naam',
+      phone: 'Phone',
+      marks: 'Marks',
+      time: 'Time',
+      notSubmitted: 'Submit nahi kiya',
+      newSession: 'Is test ke liye naya live session shuru karo',
+      noValid: 'Koi sahi 10 digit number nahi mila ({0} line(s) chhodi gayi).',
+      typeFirst: 'Pehle phone numbers type ya paste karo.',
+      added: '{0} add hue.',
+      addedInvalid: '{0} add hue, {1} galat number chhode gaye.',
+      errSaveNumbers: 'Numbers save nahi ho paaye. Apna internet check karo aur dobara try karo.',
+      allowedTitle: 'Allowed students · {0} add hue · {1} join hue',
+      allowedHint: 'Sirf yahi phone numbers join kar sakte hain, aur har number test sirf ek baar de sakta hai.',
+      numbersPlaceholder: 'Ek line mein ek — number, ya "Name, number"\n9876543210\nRavi Kumar, 98765 43211',
+      adding: 'Add ho rahe hain...',
+      addNumbers: 'Numbers add karo',
+      statusSubmitted: 'Submit kiya',
+      statusJoined: 'Join hua',
+      statusNotJoined: 'Join nahi hua',
+      unlockTitle: 'Is number ko unlock karo taaki student doosre phone se phir join kar sake',
+      removeTitle: 'List se hatao',
+    },
+    focusPlayer: {
+      errLoad: 'Videos load nahi ho paaye',
+      errNone: 'Koi video nahi mila. Koi simple topic try karo.',
+      errGeneric: 'Kuch gadbad ho gayi. Dobara try karo.',
+      skippedEarn: 'Skip ho gaya! +{0} min aur kuch Shorts aapke bank mein save ho gaye 💰',
+      skippedFull: 'Skip ho gaya! Aapka Shorts bank full hai 💰',
+      breakTitle: 'Shandaar focus! Ab apne shorts ka time?',
+      breakBody: '{0} min. Aapka video ruka hua hai aur yahin se phir chalega.',
+      startShorts: 'Shorts shuru karo',
+      skip: 'Skip',
+      approaching: 'Aapka break paas aa raha hai',
+      back: '← Back',
+      timelineLoading: 'Is video ke concepts dhoondhe ja rahe hain…',
+      timelineNone: 'Is video ke liye concept timeline available nahi hai.',
+      reason: 'Wajah: {0}',
+      nowTeaching: 'Abhi sikha rahe hain',
+      addNote: '+ Note',
+      hideConcepts: 'Concepts chhupao',
+      allConcepts: 'Saare concepts ({0})',
+      addAll: 'Saare concepts mere notes mein jodo',
+      myNotes: 'Mere notes',
+      addTime: '+ Time',
+      notesPlaceholder: 'Jo seekho woh yahan likho…',
+      savedAuto: 'Apne aap save ho jaata hai',
+      title: 'Focus Player',
+      subtitle: 'Ek topic. Teen videos. Koi distraction nahi.',
+      close: 'Close',
+      topicPlaceholder: 'Aap kya seekhna chahte ho?',
+      langAny: 'Koi bhi language',
+      langHi: 'Hindi',
+      langEn: 'English',
+      finding: 'Dhoondh rahe hain…',
+      showMe: 'Dikhao',
+      yourBank: 'Aapka Shorts bank',
+      minutes: '{0} min',
+      skippedToday: 'Aaj skip kiye: ',
+      savedOpen: '{0} Shorts saved · Kholo →',
+      locked: 'Har {0} min ke focus ke baad Shorts break, har break {1} min ka.',
+      lockedNote: 'Yeh aapne ek baar set kiya hai, isliye steady rehta hai.',
+      breakEvery: 'Shorts break har',
+      noBreaks: 'Koi break nahi',
+      minOfFocus: '{0} min ke focus ke baad',
+      eachBreak: 'Har break kitne ka',
+      chooseOnce: 'Ise aap sirf ek baar chun sakte ho.',
+      pickAtLeast: 'Break chalu karne ke liye kam se kam 1 interest chuno (max 3)',
+      pickUpTo: 'Apni break feed ke liye max 3 interests chuno',
+      pickN: 'Pick {0}',
     },
   },
 };

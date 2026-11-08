@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, Check, Copy, Download, RotateCcw, Square, Users, X } from 'lucide-react';
 import type { TestPaper, TestQuestion } from './types';
 import {
@@ -22,6 +22,8 @@ import {
 } from './liveTest';
 import { downloadLeaderboardPdf } from './testPdf';
 import { askConfirm } from './dialogApi';
+import { useTranslation } from './i18n/LanguageContext';
+import { format } from './i18n/format';
 
 // ============================================================
 // LiveHost.tsx — the host's control room for a Live Test.
@@ -41,6 +43,9 @@ function formatClock(totalSeconds: number): string {
 }
 
 export default function LiveHost({ paper, onExit }: { paper: TestPaper; onExit: () => void }) {
+  const t = useTranslation().liveHost;
+  const errKeyRef = useRef(t.errKey); // the effect below must not re-subscribe when the language changes
+  errKeyRef.current = t.errKey;
   const { playable, skipped } = useMemo(() => splitPlayable(paper), [paper]);
   const [code, setCode] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -79,7 +84,7 @@ export default function LiveHost({ paper, onExit }: { paper: TestPaper; onExit: 
     if (!code) return;
     const unsubSession = subscribeSession(code, setSession);
     const unsubRoster = subscribeRoster(code, setPlayers, setSubmissions, setAllowed);
-    void fetchHostQuestions(code).then(setKeyQuestions).catch(() => setError('Could not load the answer key.'));
+    void fetchHostQuestions(code).then(setKeyQuestions).catch(() => setError(errKeyRef.current));
     return () => {
       unsubSession();
       unsubRoster();
@@ -110,7 +115,7 @@ export default function LiveHost({ paper, onExit }: { paper: TestPaper; onExit: 
       setAllowed([]);
       setCode(c);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not create the session.');
+      setError(e instanceof Error ? e.message : t.errCreate);
     } finally {
       setBusy(false);
     }
@@ -122,17 +127,17 @@ export default function LiveHost({ paper, onExit }: { paper: TestPaper; onExit: 
     if (!code) return;
     const msg =
       takingNow > 0
-        ? `${takingNow} student(s) are still taking the test right now. Their unsent answers will be lost if you end it. End anyway?`
+        ? format(t.confirmTaking, takingNow)
         : allowed.length - submissions.length > 0
-          ? `${allowed.length - submissions.length} student(s) on the list have not taken the test. Once you end it, nobody can join. End now?`
-          : 'End the test and show the ranking?';
+          ? format(t.confirmNotTaken, allowed.length - submissions.length)
+          : t.confirmEnd;
     if (!(await askConfirm(msg, { danger: true }))) return;
     setBusy(true);
     setError('');
     try {
       await endLiveSession(code);
     } catch {
-      setError('Could not end the test. Check your internet and try again.');
+      setError(t.errEnd);
     } finally {
       setBusy(false);
     }
@@ -171,75 +176,75 @@ export default function LiveHost({ paper, onExit }: { paper: TestPaper; onExit: 
   return (
     <div className="max-w-3xl mx-auto">
       <button onClick={onExit} className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-white/60 mb-5 hover:underline">
-        <ArrowLeft className="w-4 h-4" /> Back to tests
+        <ArrowLeft className="w-4 h-4" /> {t.back}
       </button>
 
       <div className="mb-6">
-        <h2 className="text-2xl font-bold">Live Test · {paper.title}</h2>
-        <p className="text-sm text-gray-500 dark:text-white/60">One test, many people at the same time. Everyone is ranked by marks at the end.</p>
+        <h2 className="text-2xl font-bold">{format(t.title, paper.title)}</h2>
+        <p className="text-sm text-gray-500 dark:text-white/60">{t.intro}</p>
       </div>
 
       {error && <p className="mb-4 px-4 py-3 rounded-xl bg-red-100 dark:bg-red-500/10 text-red-600 dark:text-red-400 text-sm">{error}</p>}
 
-      {loading && <p className="text-gray-400">Loading...</p>}
+      {loading && <p className="text-gray-400">{t.loading}</p>}
 
       {/* ---------- 1. create ---------- */}
       {!loading && !code && (
         <div className={card}>
-          <p className="font-semibold mb-1">{playable.length} question{playable.length !== 1 ? 's' : ''} will be used</p>
+          <p className="font-semibold mb-1">{format(t.willUse, playable.length)}</p>
           <p className="text-sm text-gray-500 dark:text-white/60 mb-4">
-            {paper.durationMinutes > 0 ? `Timer: ${paper.durationMinutes} min for everyone.` : 'No timer — you end the test yourself.'}
+            {paper.durationMinutes > 0 ? format(t.timerAll, paper.durationMinutes) : t.noTimerEnd}
           </p>
           {skipped > 0 && (
             <p className="text-sm mb-4 px-3 py-2 rounded-lg bg-amber-100 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300">
-              {skipped} question(s) left out: they have no answer key, or are short-answer questions that need self-marking.
+              {format(t.leftOut, skipped)}
             </p>
           )}
           <button onClick={handleCreate} disabled={busy || playable.length === 0} className={primaryBtn}>
-            {busy ? 'Creating...' : 'Create live session'}
+            {busy ? t.creating : t.create}
           </button>
-          {playable.length === 0 && <p className="text-sm text-red-500 mt-3">This test has no auto-gradable questions yet.</p>}
+          {playable.length === 0 && <p className="text-sm text-red-500 mt-3">{t.noGradable}</p>}
         </div>
       )}
 
-      {code && !session && <p className="text-gray-400">Loading session...</p>}
+      {code && !session && <p className="text-gray-400">{t.loadingSession}</p>}
 
       {/* ---------- 2. live ---------- */}
       {code && session && session.status !== 'ended' && (
         <div className="space-y-5">
           <div className={card}>
             <p className="flex items-center gap-2 text-sm font-semibold text-emerald-600 dark:text-emerald-400 mb-3">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> LIVE — students on the list can take the test any time until you end it
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> {t.live}
             </p>
-            <p className="text-xs uppercase tracking-wide text-gray-400 dark:text-white/40 mb-1">Join code</p>
+            <p className="text-xs uppercase tracking-wide text-gray-400 dark:text-white/40 mb-1">{t.joinCode}</p>
             <div className="flex items-center gap-3 flex-wrap">
               <span className="text-4xl font-mono font-bold tracking-[0.3em]">{code}</span>
               <button onClick={() => copy('code')} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-white/10 text-sm">
-                {copied === 'code' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />} Copy code
+                {copied === 'code' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />} {t.copyCode}
               </button>
             </div>
-            <p className="text-xs uppercase tracking-wide text-gray-400 dark:text-white/40 mt-5 mb-1">Join link (share on WhatsApp / screen)</p>
+            <p className="text-xs uppercase tracking-wide text-gray-400 dark:text-white/40 mt-5 mb-1">{t.joinLink}</p>
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-sm break-all">{joinLink}</span>
               <button onClick={() => copy('link')} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-white/10 text-sm">
-                {copied === 'link' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />} Copy link
+                {copied === 'link' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />} {t.copyLink}
               </button>
             </div>
             <p className="text-xs text-gray-400 dark:text-white/40 mt-4">
-              {paper.durationMinutes > 0 ? `Each student gets ${paper.durationMinutes} min from the moment THEY press Start.` : 'No timer — each student finishes when they submit.'}
+              {paper.durationMinutes > 0 ? format(t.timerEach, paper.durationMinutes) : t.noTimerEach}
             </p>
           </div>
 
           <div className="grid grid-cols-3 gap-3">
-            <Stat label="On list" value={String(allowed.length)} />
-            <Stat label="Taking now" value={String(takingNow)} />
-            <Stat label="Submitted" value={String(submissions.length)} />
+            <Stat label={t.onList} value={String(allowed.length)} />
+            <Stat label={t.takingNow} value={String(takingNow)} />
+            <Stat label={t.submitted} value={String(submissions.length)} />
           </div>
 
           {guestPanel}
 
           <button onClick={handleEnd} disabled={busy} className={`${primaryBtn} flex items-center gap-2 !bg-red-500 !text-white`}>
-            <Square className="w-4 h-4" /> End test &amp; show ranking
+            <Square className="w-4 h-4" /> {t.endShow}
           </button>
         </div>
       )}
@@ -248,31 +253,31 @@ export default function LiveHost({ paper, onExit }: { paper: TestPaper; onExit: 
       {code && session?.status === 'ended' && (
         <div className="space-y-5">
           {!keyQuestions ? (
-            <p className="text-gray-400">Calculating ranking...</p>
+            <p className="text-gray-400">{t.calculating}</p>
           ) : (
             <>
               <div className="grid grid-cols-3 gap-3">
-                <Stat label="Enrolled" value={String(roster.length)} />
-                <Stat label="Submitted" value={String(submissions.length)} />
-                <Stat label="Top score" value={rows.find((r) => r.submitted) ? `${rows.find((r) => r.submitted)!.obtained}/${session.totalMarks}` : '—'} />
+                <Stat label={t.enrolled} value={String(roster.length)} />
+                <Stat label={t.submitted} value={String(submissions.length)} />
+                <Stat label={t.topScore} value={rows.find((r) => r.submitted) ? `${rows.find((r) => r.submitted)!.obtained}/${session.totalMarks}` : '—'} />
               </div>
 
               <button
                 onClick={() => downloadLeaderboardPdf(session.title, rows, session.totalMarks, players.length, roster.length)}
                 className={`${primaryBtn} flex items-center gap-2`}
               >
-                <Download className="w-4 h-4" /> Download ranking PDF
+                <Download className="w-4 h-4" /> {t.downloadPdf}
               </button>
 
               <div className="overflow-x-auto rounded-2xl border border-gray-200 dark:border-white/10">
                 <table className="w-full text-sm">
                   <thead className="bg-gray-100 dark:bg-white/10 text-left">
                     <tr>
-                      <th className="px-3 py-2">Rank</th>
-                      <th className="px-3 py-2">Name</th>
-                      <th className="px-3 py-2">Phone</th>
-                      <th className="px-3 py-2 text-right">Marks</th>
-                      <th className="px-3 py-2 text-right">Time</th>
+                      <th className="px-3 py-2">{t.rank}</th>
+                      <th className="px-3 py-2">{t.name}</th>
+                      <th className="px-3 py-2">{t.phone}</th>
+                      <th className="px-3 py-2 text-right">{t.marks}</th>
+                      <th className="px-3 py-2 text-right">{t.time}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -281,7 +286,7 @@ export default function LiveHost({ paper, onExit }: { paper: TestPaper; onExit: 
                         <td className="px-3 py-2 font-semibold">{r.rank ?? '—'}</td>
                         <td className="px-3 py-2">{r.name}</td>
                         <td className="px-3 py-2">{r.phone}</td>
-                        <td className="px-3 py-2 text-right">{r.submitted ? `${r.obtained}/${r.total}` : 'Not submitted'}</td>
+                        <td className="px-3 py-2 text-right">{r.submitted ? `${r.obtained}/${r.total}` : t.notSubmitted}</td>
                         <td className="px-3 py-2 text-right">{r.submitted ? formatClock(r.timeTakenSeconds) : '—'}</td>
                       </tr>
                     ))}
@@ -290,7 +295,7 @@ export default function LiveHost({ paper, onExit }: { paper: TestPaper; onExit: 
               </div>
 
               <button onClick={handleNew} className="text-sm underline text-gray-500 dark:text-white/60">
-                Start a new live session for this test
+                {t.newSession}
               </button>
             </>
           )}
@@ -326,6 +331,7 @@ function GuestList({
   locked: boolean;
   onError: (m: string) => void;
 }) {
+  const t = useTranslation().liveHost;
   const [text, setText] = useState('');
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
@@ -335,7 +341,7 @@ function GuestList({
   const add = async () => {
     const { entries, invalid } = parseAllowedInput(text);
     if (entries.length === 0) {
-      setNote(invalid.length ? `No valid 10-digit number found (${invalid.length} line(s) skipped).` : 'Type or paste phone numbers first.');
+      setNote(invalid.length ? format(t.noValid, invalid.length) : t.typeFirst);
       return;
     }
     setBusy(true);
@@ -343,9 +349,9 @@ function GuestList({
     try {
       await addAllowed(code, entries);
       setText('');
-      setNote(`${entries.length} added${invalid.length ? `, ${invalid.length} invalid skipped` : ''}.`);
+      setNote(invalid.length ? format(t.addedInvalid, entries.length, invalid.length) : format(t.added, entries.length));
     } catch {
-      onError('Could not save the numbers. Check your internet and try again.');
+      onError(t.errSaveNumbers);
     } finally {
       setBusy(false);
     }
@@ -357,9 +363,9 @@ function GuestList({
   return (
     <div className="card rounded-2xl p-6">
       <p className="flex items-center gap-2 font-semibold mb-1">
-        <Users className="w-4 h-4" /> Allowed students · {allowed.length} added · {joinedCount} joined
+        <Users className="w-4 h-4" /> {format(t.allowedTitle, allowed.length, joinedCount)}
       </p>
-      <p className="text-xs text-gray-500 dark:text-white/60 mb-3">Only these phone numbers can join, and each number can take the test only once.</p>
+      <p className="text-xs text-gray-500 dark:text-white/60 mb-3">{t.allowedHint}</p>
 
       {!locked && (
         <>
@@ -367,12 +373,12 @@ function GuestList({
             value={text}
             onChange={(e) => setText(e.target.value)}
             rows={4}
-            placeholder={'One per line — number, or "Name, number"\n9876543210\nRavi Kumar, 98765 43211'}
+            placeholder={t.numbersPlaceholder}
             className="w-full bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-black dark:focus:border-white resize-none"
           />
           <div className="flex items-center gap-3 mt-2 mb-4">
             <button onClick={add} disabled={busy} className="px-4 py-2 rounded-xl bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white text-sm font-semibold disabled:opacity-40">
-              {busy ? 'Adding...' : 'Add numbers'}
+              {busy ? t.adding : t.addNumbers}
             </button>
             {note && <span className="text-xs text-gray-500 dark:text-white/60">{note}</span>}
           </div>
@@ -393,19 +399,19 @@ function GuestList({
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <span className={`text-xs ${isDone ? 'text-emerald-600 dark:text-emerald-400' : isJoined ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 dark:text-white/40'}`}>
-                    {isDone ? 'Submitted' : isJoined ? 'Joined' : 'Not joined'}
+                    {isDone ? t.statusSubmitted : isJoined ? t.statusJoined : t.statusNotJoined}
                   </span>
                   {!locked && isJoined && !isDone && (
                     <button
                       onClick={() => void resetPlayer(code, a.phone)}
-                      title="Unlock this number so the student can join again from another phone"
+                      title={t.unlockTitle}
                       className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10"
                     >
                       <RotateCcw className="w-3.5 h-3.5" />
                     </button>
                   )}
                   {!locked && !isDone && (
-                    <button onClick={() => void removeAllowed(code, a.phone)} title="Remove from the list" className="p-1.5 rounded-lg hover:bg-red-100 dark:hover:bg-red-500/10 text-red-500">
+                    <button onClick={() => void removeAllowed(code, a.phone)} title={t.removeTitle} className="p-1.5 rounded-lg hover:bg-red-100 dark:hover:bg-red-500/10 text-red-500">
                       <X className="w-3.5 h-3.5" />
                     </button>
                   )}
