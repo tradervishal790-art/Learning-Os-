@@ -102,14 +102,8 @@ export default function MissionControl({
   const rowY = visibleRows.map((_, index) => visibleRows.length === 1 ? mapHeight / 2 : 66 + index * ((mapHeight - 132) / (visibleRows.length - 1)));
   const open = (action: 'profile' | DashboardPageId) => action === 'profile' ? onOpenProfile() : onNavigate(action);
   const activeDays = useMemo(() => readActiveDays(), [streak]);
-  const revisionTotal = revisionDue + revisionOverdue;
   const moreItems = functionNodes.map((node) => ({ id: node.id, icon: node.children[0].icon, action: node.children[0].action, label: hub.engines[node.id].title, detail: hub.engines[node.id].subtitle }));
   const filteredMoreItems = moreItems.filter((item) => item.label.toLowerCase().includes(functionSearch.toLowerCase()));
-  const nextStepText = !hasLearningProfile ? hub.nextStep.setupProfile
-    : activeGoals === 0 ? hub.nextStep.chooseGoal
-    : revisionOverdue > 0 ? format(hub.nextStep.overdue, revisionOverdue)
-    : revisionDue > 0 ? format(hub.nextStep.due, revisionDue)
-    : nextTopic || hub.nextStep.openRoadmap;
 
   return (
     <main className="mission-map relative flex h-[calc(100dvh-128px-env(safe-area-inset-bottom))] min-h-0 md:h-[calc(100dvh-64px)] w-full flex-col overflow-hidden bg-[#080d19] text-slate-100">
@@ -121,16 +115,9 @@ export default function MissionControl({
 
       <header className="relative z-10 flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-white/[0.07] px-5 py-3 md:px-8">
         <div className="min-w-0">
-          <div className="flex items-center gap-2 text-[9px] font-semibold uppercase tracking-[0.24em] text-cyan-300/80">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,.9)]" />
-            {hub.eyebrow}
-          </div>
           <h1 className="mt-1 text-lg font-semibold tracking-tight text-white md:text-xl">{hub.mapTitle}</h1>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2 text-[10px] sm:gap-3">
-          <span className="hidden max-w-[16rem] truncate rounded-full border border-white/[0.08] bg-white/[0.035] px-3 py-2 text-slate-400 sm:inline-flex">
-            <span className="mr-1.5 text-cyan-300">●</span> {goalTitle || hub.noGoal}
-          </span>
           <span className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.035] px-3 py-2 text-slate-300">
             <Flame className={`h-3.5 w-3.5 ${streak > 0 ? 'text-amber-300' : 'text-slate-500'}`} />
             {format(hub.streakChip, streak)}
@@ -180,39 +167,6 @@ export default function MissionControl({
               <div className="flex justify-end"><HeatmapLegend less={hub.less} more={hub.more} color="#6ee7b7" /></div>
             </div>
           </GlassPanel>
-        </div>
-
-        <GlassPanel accent="#67e8f9" className="mb-3 shrink-0">
-          <div className="grid grid-cols-3 divide-x divide-white/[0.07]">
-            <button type="button" onClick={() => onNavigate('revision')} className="flex min-h-[92px] flex-col items-start justify-between p-3.5 text-left transition-colors hover:bg-emerald-300/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-300">
-              <RotateCcw className="h-4 w-4 text-emerald-200" />
-              <span><span className="block text-xs font-semibold text-white">{hub.actions.revision}</span><span className={`mt-1 block text-[11px] ${revisionTotal > 0 ? 'text-emerald-200' : 'text-slate-500'}`}>{revisionTotal > 0 ? format(hub.actions.dueCount, revisionTotal) : hub.actions.review}</span></span>
-            </button>
-            <button type="button" onClick={() => onNavigate('test')} className="flex min-h-[92px] flex-col items-start justify-between p-3.5 text-left transition-colors hover:bg-fuchsia-300/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-fuchsia-300">
-              <CheckCircle2 className="h-4 w-4 text-fuchsia-200" />
-              <span><span className="block text-xs font-semibold text-white">{hub.actions.tests}</span><span className="mt-1 block text-[11px] text-slate-500">{hub.actions.practice}</span></span>
-            </button>
-            <button type="button" onClick={() => onNavigate('mentor')} className="flex min-h-[92px] flex-col items-start justify-between p-3.5 text-left transition-colors hover:bg-cyan-300/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-cyan-300">
-              <MessageCircle className="h-4 w-4 text-cyan-200" />
-              <span><span className="block text-xs font-semibold text-white">{hub.actions.mentor}</span><span className="mt-1 block text-[11px] text-slate-500">{hub.actions.ask}</span></span>
-            </button>
-          </div>
-        </GlassPanel>
-
-        <button type="button" onClick={() => { if (nextBestStepAction === 'profile') onOpenProfile(); else open(nextBestStepAction); }} className="order-3 mb-3 flex shrink-0 md:order-none items-center justify-between gap-3 rounded-xl border border-cyan-300/12 bg-cyan-300/[0.035] px-3 py-2.5 text-left transition hover:border-cyan-300/25 hover:bg-cyan-300/[0.07] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300">
-          <span className="min-w-0">
-            <span className="block text-[9px] uppercase tracking-[0.16em] text-cyan-200/65">{hub.nextStep.label}</span>
-            <span className="block truncate text-xs font-medium text-slate-100">{nextStepText}</span>
-          </span>
-          <ArrowUpRight className="h-4 w-4 shrink-0 text-cyan-200/80" />
-        </button>
-
-        <div className="order-1 mb-2 flex shrink-0 items-center justify-between px-1 md:order-none md:px-3">
-          <div className="min-w-0">
-            <span className="block text-[9px] uppercase tracking-[0.2em] text-slate-600">{hub.space.eyebrow}</span>
-            <span className="mt-0.5 block text-xs text-slate-400">{hub.space.hint}</span>
-          </div>
-          <span className="rounded-full border border-cyan-300/15 bg-cyan-300/[0.05] px-3 py-2 text-[10px] font-medium text-cyan-100">{hub.space.coreStages}</span>
         </div>
 
         {visibleRows.length === 0 && <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-center"><p className="text-sm font-medium text-white">{hub.space.emptyTitle}</p><p className="mt-1 text-xs text-slate-400">{hub.space.emptyBody}</p><button type="button" onClick={() => { mapPrefsEdited.current = true; setVisibleNodeIds(defaultNodeIds); }} className="mt-3 rounded-lg border border-cyan-300/30 px-3 py-2 text-xs text-cyan-100">{hub.space.restore}</button></div>}
