@@ -355,13 +355,13 @@ export default function Notes({ videoTitle, videoDescription, videoId }: { video
   };
 
   return (
-    <div className="min-h-dvh text-black dark:text-white p-4 md:p-8">
+    <div className="mx-auto min-h-dvh w-full max-w-5xl text-black dark:text-white p-4 md:p-8">
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-5 md:mb-8">
         <h1 className="text-2xl md:text-4xl font-bold mb-1 md:mb-2">{t.notes.header.title}</h1>
         <p className="text-sm md:text-base text-gray-500 dark:text-white/60">{t.notes.header.subtitle}</p>
       </motion.div>
 
-      <div className="max-w-4xl mx-auto mb-6">
+      <div className="mb-6">
         <div className="flex gap-2">
           <input
             type="text"
@@ -408,7 +408,7 @@ export default function Notes({ videoTitle, videoDescription, videoId }: { video
       </div>
 
       {notes && (
-        <div className="max-w-5xl mx-auto">
+        <div>
           <div className="flex gap-2 mb-4 md:mb-6 overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {sections.map((s) => {
               const SectionIcon = SECTION_ICONS[s.id] ?? FileText;

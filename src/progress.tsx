@@ -57,7 +57,7 @@ export default function Progress({ goals = [] }: ProgressProps) {
 
   return (
     <div className="dark">
-    <div className="relative mx-auto max-w-6xl overflow-hidden rounded-none bg-[#080d19] p-4 text-slate-100 md:m-4 md:rounded-3xl md:p-8">
+    <div className="relative mx-auto max-w-6xl overflow-hidden rounded-none bg-[#080d19] p-4 text-slate-100 md:my-4 md:rounded-3xl md:p-8">
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -left-32 -top-40 h-[420px] w-[420px] rounded-full bg-violet-600/[0.12] blur-[120px]" />
         <div className="absolute -right-24 top-1/3 h-[380px] w-[380px] rounded-full bg-emerald-500/[0.08] blur-[120px]" />

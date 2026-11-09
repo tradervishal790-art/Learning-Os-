@@ -185,7 +185,7 @@ export default function Dictionary() {
           </motion.header>
 
           {/* Search */}
-          <div className="relative mx-auto mb-6 max-w-3xl">
+          <div className="relative mb-6">
             <div
               aria-busy={loading}
               className={`flex items-center gap-2 rounded-2xl border border-white/[0.1] bg-white/[0.045] pl-4 pr-2 transition-[border-color,box-shadow,opacity] duration-200 focus-within:border-violet-400/70 focus-within:shadow-[0_0_0_4px_rgba(167,139,250,0.14),0_0_44px_rgba(167,139,250,0.28)] motion-reduce:transition-none ${searchDisabled ? 'opacity-60' : ''}`}
@@ -268,7 +268,7 @@ export default function Dictionary() {
 
           {/* Load error */}
           {loadError && (
-            <GlassPanel accent={DANGER} className="mx-auto max-w-3xl">
+            <GlassPanel accent={DANGER} className="w-full">
               <div role="alert" className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center">
                 <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-red-400/15 text-red-300">
                   <AlertTriangle className="h-5 w-5" aria-hidden="true" />
@@ -366,7 +366,7 @@ export default function Dictionary() {
           )}
 
           {searchError && (
-            <GlassPanel accent={DANGER} className="mx-auto max-w-3xl">
+            <GlassPanel accent={DANGER} className="w-full">
               <p role="alert" className="flex items-center gap-3 p-4 text-sm text-red-200">
                 <AlertTriangle className="h-5 w-5 shrink-0 text-red-300" aria-hidden="true" />
                 {searchError}
@@ -375,7 +375,7 @@ export default function Dictionary() {
           )}
 
           {notFound && (
-            <GlassPanel accent={ACCENT} className="mx-auto max-w-3xl">
+            <GlassPanel accent={ACCENT} className="w-full">
               <div className="flex flex-col items-center gap-3 px-5 py-10 text-center">
                 <span className="flex h-14 w-14 items-center justify-center rounded-full bg-violet-400/10 text-violet-300 shadow-[0_0_30px_rgba(139,92,246,.25)]">
                   <Search className="h-6 w-6" aria-hidden="true" />

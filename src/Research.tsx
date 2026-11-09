@@ -338,7 +338,7 @@ export default function Research({ embedded = false, onClose }: ResearchProps) {
           <div className="absolute -left-32 -top-40 h-[420px] w-[420px] rounded-full bg-cyan-500/[0.09] blur-[120px]" />
           <div className="absolute -right-24 top-1/3 h-[380px] w-[380px] rounded-full bg-violet-600/[0.13] blur-[120px]" />
         </div>
-        <div className="relative">
+        <div className="relative mx-auto w-full max-w-5xl">
           <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-5 flex items-center gap-3 md:mb-8">
             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-cyan-400/15 text-cyan-200"><Search className="h-5 w-5" /></span>
             <div className="min-w-0">
@@ -347,7 +347,7 @@ export default function Research({ embedded = false, onClose }: ResearchProps) {
             </div>
           </motion.div>
 
-          <div className="mx-auto mb-6 max-w-3xl">
+          <div className="mb-6">
             {searchBar}
             {error && <p className="mt-2 text-sm text-red-400">{error}</p>}
 
@@ -370,7 +370,7 @@ export default function Research({ embedded = false, onClose }: ResearchProps) {
           </div>
 
           {result && result.results.length > 0 && (
-            <div className="mx-auto mb-6 max-w-4xl rounded-2xl border border-white/[0.08] bg-white/[0.035] p-2 md:p-4">
+            <div className="mb-6 rounded-2xl border border-white/[0.08] bg-white/[0.035] p-2 md:p-4">
               <ResultMap query={result.query} results={result.results} activeIdx={activeIdx} onActive={setActiveIdx} onPick={pickResult} ariaLabel={t.research.mapAria} />
             </div>
           )}

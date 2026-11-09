@@ -350,10 +350,10 @@ export default function Test() {
 
   return (
     <div className="dark">
-      <div className="relative mx-auto max-w-6xl overflow-hidden rounded-none bg-[#080d19] p-4 text-slate-100 md:m-4 md:rounded-3xl md:p-8">
+      <div className="relative mx-auto max-w-6xl overflow-hidden rounded-none bg-[#080d19] p-4 text-slate-100 md:my-4 md:rounded-3xl md:p-8">
         {stageBlobs}
         <div className="relative">
-          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-5 md:mb-8">
+          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className={`mb-5 md:mb-8 ${stage === 'list' ? '' : 'mx-auto max-w-3xl'}`}>
             <h1 className="mb-1 text-2xl font-semibold tracking-tight md:text-4xl">{tt.title}</h1>
             <p className="text-sm text-slate-400">{tt.subtitle}</p>
           </motion.div>
@@ -449,7 +449,7 @@ function TestList({
     </button>
   );
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="w-full">
       <GlassButton onClick={onDaily} accent="#a78bfa" className="mb-6 w-full border-violet-300/25 bg-gradient-to-r from-violet-500/[0.14] to-transparent md:mb-8">
         <span className="flex items-center justify-between gap-3 px-4 py-3.5">
           <span className="flex min-w-0 items-center gap-3">
@@ -466,7 +466,7 @@ function TestList({
       {OFFICIAL_TESTS.length > 0 && (
         <div className="mb-10">
           <h2 className="mb-3 text-sm font-semibold text-slate-400">{tt.list.officialTests}</h2>
-          <div className="space-y-3">
+          <div className="grid gap-3 lg:grid-cols-2">
             {OFFICIAL_TESTS.map((p) => (
               <PaperRow key={p.id} p={p}>{liveButton(p)}{takeButton(p)}</PaperRow>
             ))}
@@ -485,7 +485,7 @@ function TestList({
       {papers.length === 0 ? (
         <p className="mb-10 text-center text-slate-500">{tt.list.noTestsYet}</p>
       ) : (
-        <div className="mb-10 space-y-3">
+        <div className="mb-10 grid gap-3 lg:grid-cols-2">
           {papers.map((p) => (
             <PaperRow key={p.id} p={p}>
               <button onClick={() => onEdit(p)} className="flex h-11 w-11 items-center justify-center rounded-full text-slate-300 hover:bg-white/10 md:h-auto md:w-auto md:rounded-lg md:p-2" aria-label={tt.list.editTest} title={tt.list.editTest}>
@@ -506,7 +506,7 @@ function TestList({
           <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-400">
             <History className="h-4 w-4" /> {tt.list.pastAttempts}
           </h2>
-          <div className="space-y-2">
+          <div className="grid gap-2 lg:grid-cols-2">
             {history.slice(0, 8).map((a) => (
               <button
                 key={a.id}
@@ -545,7 +545,7 @@ function Instructions({ paper, onStart, onBack }: { paper: TestPaper; onStart: (
   ];
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div className="mx-auto max-w-3xl">
       <GlassPanel accent="#67e8f9">
         <div className="p-5 md:p-8">
           <h2 className="mb-1 text-2xl font-semibold text-white">{paper.title}</h2>
