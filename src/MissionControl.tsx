@@ -6,6 +6,7 @@ import { pullFromCloud, pushToCloud } from './cloudSync';
 import { getNextBestStepAction } from './missionControlLogic';
 import { useTranslation } from './i18n/LanguageContext';
 import { format } from './i18n/format';
+import { formatClock } from './resumeStore';
 import { GlassButton, GlassPanel, Heatmap, HeatmapLegend, ProgressRing, readActiveDays } from './ui/kit';
 
 interface MissionControlProps {
@@ -24,6 +25,8 @@ interface MissionControlProps {
   topicsTotal: number;
   onNavigate: (page: DashboardPageId) => void;
   onOpenProfile: () => void;
+  /** Where the learner stopped, if anything is half-finished (drives the Continue card text). */
+  resume: { kind: 'video'; title: string; seconds: number } | { kind: 'revision'; title: string } | { kind: 'test'; title: string } | null;
   onContinueLearning: () => void;
 }
 
@@ -60,7 +63,7 @@ const defaultNodeIds: string[] = ['know', 'plan', 'learn', 'retain', 'prove'];
 
 export default function MissionControl({
   name, goalTitle, nextTopic, nextTopicDetail, hasLearningProfile,
-  revisionDue, revisionOverdue, streak, activeGoals, progressPercent, topicsDone, topicsTotal, onNavigate, onOpenProfile, onContinueLearning,
+  revisionDue, revisionOverdue, streak, activeGoals, progressPercent, onNavigate, onOpenProfile, onContinueLearning, resume,
 }: MissionControlProps) {
   const hub = useTranslation().dashboard.home.hub;
   const [selectedEngine, setSelectedEngine] = useState<string | null>(null);
@@ -127,44 +130,43 @@ export default function MissionControl({
 
       <section className="relative z-10 flex min-h-0 flex-1 flex-col overflow-y-auto px-3 pb-3 pt-3 md:px-6 md:pb-5 md:pt-4">
         <div className="order-2 mb-3 grid shrink-0 gap-3 md:order-none lg:grid-cols-12">
+          {/* Slim Continue strip: one clear action, exactly where the learner stopped. */}
           <GlassButton onClick={onContinueLearning} accent="#a78bfa" className="border-violet-300/25 bg-gradient-to-br from-violet-500/[0.14] to-indigo-500/[0.05] hover:border-violet-200/45 lg:col-span-7">
-            <span className="flex items-center gap-4 p-4 md:gap-5 md:p-5">
-              <ProgressRing value={progressPercent} color="#a78bfa" size={104}>
-                <span className="text-2xl font-semibold tabular-nums text-white">{progressPercent}%</span>
+            <span className="flex items-center gap-3 p-3 md:gap-4 md:p-4">
+              <ProgressRing value={progressPercent} color="#a78bfa" size={64} stroke={6}>
+                <span className="text-sm font-semibold tabular-nums text-white">{progressPercent}%</span>
               </ProgressRing>
               <span className="min-w-0 flex-1">
-                <span className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-violet-200/80">{hub.continueEyebrow}</span>
-                <span className="mt-1 block truncate text-lg font-semibold text-white md:text-xl">{nextTopic ?? hub.continueTitle}</span>
-                <span className="mt-1 block truncate text-xs text-slate-400">
-                  {nextTopic ? nextTopicDetail : goalTitle ? format(hub.continueWithGoal, goalTitle) : hub.continueEmpty}
+                <span className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-violet-200/80">
+                  {resume ? (resume.kind === 'video' ? hub.resumeVideo : resume.kind === 'revision' ? hub.resumeRevision : hub.resumeTest) : hub.continueEyebrow}
                 </span>
-                {topicsTotal > 0 && (
-                  <span className="mt-3 block text-[11px] text-violet-100/70">
-                    {hub.progressLabel} · {format(hub.topicsProgress, topicsDone, topicsTotal)}
-                  </span>
-                )}
+                <span className="mt-0.5 block truncate text-base font-semibold text-white md:text-lg">
+                  {resume?.title || nextTopic || hub.continueTitle}
+                </span>
+                <span className="mt-0.5 block truncate text-xs text-slate-400">
+                  {resume
+                    ? resume.kind === 'video' ? format(hub.stoppedAt, formatClock(resume.seconds))
+                      : resume.kind === 'revision' ? hub.resumeRevisionDetail : hub.resumeTestDetail
+                    : nextTopic ? nextTopicDetail : goalTitle ? format(hub.continueWithGoal, goalTitle) : hub.continueEmpty}
+                </span>
               </span>
-              <span className="hidden shrink-0 items-center gap-2 rounded-xl bg-violet-300/15 px-3 py-2 text-xs font-semibold text-violet-100 sm:inline-flex">
-                {hub.continueTitle} <ArrowUpRight className="h-4 w-4" />
+              <span className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-violet-300/20 px-3 py-2 text-xs font-semibold text-violet-50">
+                {resume ? hub.resumeCta : hub.continueTitle} <ArrowUpRight className="h-4 w-4" />
               </span>
-              <ArrowUpRight className="h-5 w-5 shrink-0 text-violet-200 sm:hidden" />
             </span>
           </GlassButton>
 
           <GlassPanel accent="#6ee7b7" className="lg:col-span-5">
-            <div className="flex h-full flex-col justify-between gap-3 p-4">
-              <div className="flex items-end justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-200/80">{hub.consistencyTitle}</div>
-                  <div className="mt-0.5 text-[11px] text-slate-500">{format(hub.consistencyRange, 12)}</div>
-                </div>
-                <div className="flex items-baseline gap-1.5">
-                  <span className="text-3xl font-semibold tabular-nums text-white">{streak}</span>
+            <div className="flex items-center justify-between gap-3 p-3 md:p-4">
+              <div className="min-w-0">
+                <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-200/80">{hub.consistencyTitle}</div>
+                <div className="mt-1 flex items-baseline gap-1.5">
+                  <span className="text-2xl font-semibold tabular-nums text-white">{streak}</span>
                   <span className="text-[11px] text-slate-400">{hub.dayStreakLabel}</span>
                 </div>
+                <div className="mt-1"><HeatmapLegend less={hub.less} more={hub.more} color="#6ee7b7" /></div>
               </div>
-              <Heatmap days={activeDays} weeks={12} color="#6ee7b7" />
-              <div className="flex justify-end"><HeatmapLegend less={hub.less} more={hub.more} color="#6ee7b7" /></div>
+              <div className="shrink-0 overflow-hidden"><Heatmap days={activeDays} weeks={12} color="#6ee7b7" compact /></div>
             </div>
           </GlassPanel>
         </div>

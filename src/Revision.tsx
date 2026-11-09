@@ -17,6 +17,7 @@ import { studyPlanText } from './studyPlanText';
 import { useLanguage } from './i18n/LanguageContext';
 import { contributeRevisionPattern } from './sharedLearningPatterns';
 import SharedLearningInsights from './SharedLearningInsights';
+import { getResume, setResume, clearResume } from './resumeStore';
 
 const statusIcons: Record<RevisionStatus, ReactNode> = {
   'due-today': <Flame className="w-3 h-3" strokeWidth={2} />,
@@ -77,6 +78,27 @@ export default function Revision({ goals = [] }: RevisionProps) {
   const [reviewedNow, setReviewedNow] = useState(0);
   const [breakOpen, setBreakOpen] = useState(false);
 
+  // Remember which card is open, so Home → Continue learning (or coming back later) reopens the same one.
+  useEffect(() => {
+    if (!reviewingId) return;
+    const open = items.find((i) => i.id === reviewingId);
+    if (open) setResume({ kind: 'revision', itemId: open.id, title: open.topic, at: Date.now() });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reviewingId]);
+  // On arrival: reopen the card that was left half-done (if it is still due), else forget it.
+  useEffect(() => {
+    const saved = getResume();
+    if (saved?.kind !== 'revision') return;
+    const target = items.find((i) => i.id === saved.itemId);
+    if (!target || (target.status !== 'overdue' && target.status !== 'due-today')) { clearResume('revision'); return; }
+    setFilter('due');
+    setReviewingId(target.id);
+    requestAnimationFrame(() => {
+      document.getElementById(`revision-item-${encodeURIComponent(target.id)}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // ON-DEMAND CLOUD HYDRATION: only pulled down when the Revision page is
   // actually opened, not upfront on sign-in. No-op if this device already
   // has revision data.
@@ -98,7 +120,7 @@ export default function Revision({ goals = [] }: RevisionProps) {
     setReviewedNow((n) => n + 1);
     const refreshed = getRevisionDataForGoals(t.revisionTasks, goals);
     setItems(refreshed);
-    if (reviewingId === item.id) setReviewingId(null);
+    if (reviewingId === item.id) { setReviewingId(null); clearResume('revision'); }
 
     // If that was the last checkpoint, the topic is now fully mastered —
     // propagate that to the roadmap so the next locked step unlocks too.

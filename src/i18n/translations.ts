@@ -88,6 +88,7 @@ export interface TranslationShape {
       hub: {
         eyebrow: string; mapTitle: string; noGoal: string; streakChip: string;
         continueEyebrow: string; continueTitle: string; continueWithGoal: string; continueEmpty: string;
+        resumeVideo: string; resumeRevision: string; resumeTest: string; resumeCta: string; stoppedAt: string; resumeRevisionDetail: string; resumeTestDetail: string;
         progressLabel: string; topicsProgress: string;
         consistencyTitle: string; consistencyRange: string; dayStreakLabel: string; less: string; more: string;
         actions: { revision: string; tests: string; mentor: string; review: string; practice: string; ask: string; dueCount: string };
@@ -1505,6 +1506,13 @@ export const translations: Record<Locale, TranslationShape> = {
           continueTitle: 'Continue learning',
           continueWithGoal: 'Continue with {0}',
           continueEmpty: 'Choose a goal and build your first learning path',
+          resumeVideo: 'Resume video',
+          resumeRevision: 'Resume revision',
+          resumeTest: 'Resume test',
+          resumeCta: 'Resume',
+          stoppedAt: 'Stopped at {0}',
+          resumeRevisionDetail: 'Same card, right where you left',
+          resumeTestDetail: 'Your answers are saved',
           progressLabel: 'Roadmap progress',
           topicsProgress: '{0} of {1} topics',
           consistencyTitle: 'Consistency',
@@ -3645,6 +3653,13 @@ export const translations: Record<Locale, TranslationShape> = {
           continueTitle: 'सीखना जारी रखें',
           continueWithGoal: '{0} के साथ आगे बढ़ें',
           continueEmpty: 'एक लक्ष्य चुनें और अपना पहला लर्निंग पाथ बनाएँ',
+          resumeVideo: 'वीडियो जारी रखें',
+          resumeRevision: 'रिवीज़न जारी रखें',
+          resumeTest: 'टेस्ट जारी रखें',
+          resumeCta: 'जारी रखें',
+          stoppedAt: '{0} पर रुके थे',
+          resumeRevisionDetail: 'वही कार्ड, जहाँ छोड़ा था',
+          resumeTestDetail: 'आपके उत्तर सेव हैं',
           progressLabel: 'रोडमैप प्रगति',
           topicsProgress: '{1} में से {0} टॉपिक',
           consistencyTitle: 'निरंतरता',
@@ -5779,6 +5794,13 @@ export const translations: Record<Locale, TranslationShape> = {
           continueTitle: 'Learning jaari rakho',
           continueWithGoal: '{0} ke saath aage badho',
           continueEmpty: 'Ek goal chuno aur apna pehla learning path banao',
+          resumeVideo: 'Video wahin se chalao',
+          resumeRevision: 'Revision wahin se karo',
+          resumeTest: 'Test wahin se karo',
+          resumeCta: 'Resume',
+          stoppedAt: '{0} par ruke the',
+          resumeRevisionDetail: 'Wahi card, jahan chhoda tha',
+          resumeTestDetail: 'Tumhare answers saved hain',
           progressLabel: 'Roadmap progress',
           topicsProgress: '{1} mein se {0} topics',
           consistencyTitle: 'Consistency',

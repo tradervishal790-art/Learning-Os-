@@ -7,7 +7,9 @@ import MissionControl from './MissionControl';
 import { getContinueLearningTarget } from './missionControlLogic';
 import { useImmersive } from './immersive';
 import { getRoadmapData, getCurrentTopic, getRoadmapProgress } from './roadmapData';
-import { getRevisionStats, getRevisionDataForGoals } from './revisionData';
+import { getRevisionStats, getRevisionDataForGoals, getDueRevisionItems } from './revisionData';
+import { getResume, pickContinueTarget } from './resumeStore';
+import { loadDraft } from './testDraft';
 import { getPersonalityProfile, savePersonalityProfile, clearPersonalityProfile } from './personalityProfileStore';
 import type { PersonalityProfile } from './personalityScoring';
 import GrowthEdgesCard from './GrowthEdgesCard';
@@ -464,7 +466,17 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   const displayName = userData?.name?.trim() || t.dashboard.home.learnerFallback;
   const currentTopic = getCurrentTopic(getRoadmapData(activeGoalId));
   const roadmapProgress = getRoadmapProgress(getRoadmapData(activeGoalId));
-  const revisionStats = getRevisionStats(getRevisionDataForGoals(t.revisionTasks, goals));
+  const revisionItems = getRevisionDataForGoals(t.revisionTasks, goals);
+  const revisionStats = getRevisionStats(revisionItems);
+  // Where the learner really stopped (video second / revision card / unfinished test); only needed on Home.
+  const continueTarget = activePage === 'dashboard'
+    ? pickContinueTarget({
+        resume: getResume(),
+        hasTestDraft: loadDraft() !== null,
+        currentTopicId: currentTopic?.id ?? null,
+        openRevisionIds: getDueRevisionItems(revisionItems).map((i) => i.id),
+      })
+    : null;
 
   const config = pageConfigs[activePage];
   const isMissionControl = activePage === 'dashboard';
@@ -518,9 +530,19 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
             topicsTotal={roadmapProgress.total}
             onNavigate={setActivePage}
             onOpenProfile={handleOpenLearningProfile}
+            resume={continueTarget?.type === 'video' ? { kind: 'video', title: continueTarget.point.title, seconds: continueTarget.point.seconds }
+              : continueTarget?.type === 'revision' ? { kind: 'revision', title: continueTarget.point?.title ?? '' }
+              : continueTarget?.type === 'test' ? { kind: 'test', title: loadDraft()?.paper.title ?? '' }
+              : null}
             onContinueLearning={() => {
-              if (getContinueLearningTarget(Boolean(currentTopic)) === 'videos' && currentTopic) handleOpenSavedVideo(currentTopic.id);
-              else setActivePage('roadmap');
+              switch (continueTarget?.type) {
+                case 'video': handleOpenSavedVideo(continueTarget.point.topicId); break;   // video reopens at the saved second
+                case 'revision': setActivePage('revision'); break;                        // Revision reopens the same card
+                case 'test': setActivePage('test'); break;                                // Test resumes its saved draft
+                default:
+                  if (getContinueLearningTarget(Boolean(currentTopic)) === 'videos' && currentTopic) handleOpenSavedVideo(currentTopic.id);
+                  else setActivePage('roadmap');
+              }
             }}
           />
         )}

@@ -21,6 +21,7 @@ import { format } from './i18n/format';
 import { authFetch } from './apiFetch';
 import { pullSharedSearch, pushSharedSearch } from './sharedVideoCache';
 import { contributeSharedVideoSignal, getSharedVideoLearningSummary, type SharedVideoLearningSummary } from './sharedLearningIntelligence';
+import { saveVideoPosition, getVideoSeekSeconds, clearResume } from './resumeStore';
 
 declare global {
   interface Window {
@@ -532,6 +533,12 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
         watchDataRef.current.totalDuration = duration;
         watchDataRef.current.watchPercentage = duration ? (currentTime / duration) * 100 : 0;
 
+        // Remember where the learner is, so Home → Continue learning reopens this video at this second.
+        if (activeTopicId && Math.floor(currentTime) % 5 === 0) {
+          if (watchDataRef.current.watchPercentage >= LEARNING_TO_COMPLETED_THRESHOLD) clearResume('video');
+          else saveVideoPosition({ goalId: activeGoalId ?? null, topicId: activeTopicId, videoId: selectedVideo.id, seconds: currentTime, title: selectedVideo.title });
+        }
+
         if (sessionRef.current) {
           sessionRef.current.watchedSeconds = currentTime;
           sessionRef.current.totalDuration = duration;
@@ -566,6 +573,10 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
 
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
+      // Final position when the learner leaves the page (not only every 5 s).
+      if (activeTopicId && lastTimeRef.current > 0 && watchDataRef.current.watchPercentage < LEARNING_TO_COMPLETED_THRESHOLD) {
+        saveVideoPosition({ goalId: activeGoalId ?? null, topicId: activeTopicId, videoId: selectedVideo.id, seconds: lastTimeRef.current, title: selectedVideo.title });
+      }
     };
   }, [selectedVideo]);
 
@@ -582,6 +593,11 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
       playbackSpeed: 1,
     };
     lastTimeRef.current = 0;
+    // Resume where the learner stopped last time (same video + topic only).
+    const resumeAt = getVideoSeekSeconds(activeTopicId, selectedVideo.id);
+    if (resumeAt > 0) {
+      try { event.target.seekTo(resumeAt, true); lastTimeRef.current = resumeAt; } catch { /* player not ready: start from 0 */ }
+    }
     hasEndedRef.current = false;
     hasSavedProgressRef.current = null;
     playStartTimeRef.current = null;

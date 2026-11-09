@@ -104,7 +104,7 @@ export function readActiveDays(): string[] {
 const LEVEL_ALPHA = ['', '55', '99', 'ff'];
 
 /** Week-by-week activity grid. Brighter cells = part of a longer run of consecutive active days. */
-export function Heatmap({ days, weeks = 12, color = '#6ee7b7' }: { days: string[]; weeks?: number; color?: string }) {
+export function Heatmap({ days, weeks = 12, color = '#6ee7b7', compact = false }: { days: string[]; weeks?: number; color?: string; compact?: boolean }) {
   const cells = useMemo(() => {
     const active = new Set(days);
     const today = new Date();
@@ -137,14 +137,16 @@ export function Heatmap({ days, weeks = 12, color = '#6ee7b7' }: { days: string[
     <div
       role="img"
       aria-label={`${days.length}`}
-      className="grid w-full gap-1"
-      style={{ gridTemplateRows: 'repeat(7, minmax(0, 1fr))', gridAutoFlow: 'column', gridTemplateColumns: `repeat(${weeks}, minmax(0, 1fr))` }}
+      className={compact ? 'grid w-fit gap-[3px]' : 'grid w-full gap-1'}
+      style={compact
+        ? { gridTemplateRows: 'repeat(7, 10px)', gridAutoFlow: 'column', gridTemplateColumns: `repeat(${weeks}, 10px)` }
+        : { gridTemplateRows: 'repeat(7, minmax(0, 1fr))', gridAutoFlow: 'column', gridTemplateColumns: `repeat(${weeks}, minmax(0, 1fr))` }}
     >
       {cells.map((cell) => (
         <span
           key={cell.key}
           title={cell.label}
-          className={`aspect-square rounded-[4px] transition-transform duration-150 hover:scale-125 motion-reduce:transition-none ${cell.level === 0 ? 'bg-white/[0.06]' : ''} ${cell.isToday ? 'ring-1 ring-white/60' : ''}`}
+          className={`${compact ? '' : 'aspect-square'} rounded-[3px] transition-transform duration-150 hover:scale-125 motion-reduce:transition-none ${cell.level === 0 ? 'bg-white/[0.06]' : ''} ${cell.isToday ? 'ring-1 ring-white/60' : ''}`}
           style={cell.level > 0 ? { backgroundColor: `${color}${LEVEL_ALPHA[cell.level]}`, boxShadow: cell.level === 3 ? `0 0 8px ${color}66` : undefined } : undefined}
         />
       ))}
