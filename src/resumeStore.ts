@@ -7,11 +7,13 @@ const KEY = 'learning_os_resume_point';
 
 export type ResumePoint =
   | { kind: 'video'; goalId: string | null; topicId: string; videoId: string; seconds: number; title: string; at: number }
-  | { kind: 'revision'; itemId: string; title: string; at: number };
+  | { kind: 'revision'; itemId: string; title: string; at: number }
+  | { kind: 'note'; noteId: string; title: string; at: number };
 
 export type ContinueTarget =
   | { type: 'video'; point: Extract<ResumePoint, { kind: 'video' }> }
   | { type: 'revision'; point: Extract<ResumePoint, { kind: 'revision' }> | null }
+  | { type: 'note'; point: Extract<ResumePoint, { kind: 'note' }> }
   | { type: 'test' }
   | { type: 'topic' }
   | { type: 'roadmap' };
@@ -23,6 +25,7 @@ export function getResume(): ResumePoint | null {
     const p = JSON.parse(raw) as ResumePoint;
     if (p?.kind === 'video' && typeof p.videoId === 'string' && typeof p.topicId === 'string' && Number.isFinite(p.seconds)) return p;
     if (p?.kind === 'revision' && typeof p.itemId === 'string') return p;
+    if (p?.kind === 'note' && typeof p.noteId === 'string') return p;
     return null;
   } catch { return null; }
 }
@@ -61,9 +64,11 @@ export function pickContinueTarget(input: {
   hasTestDraft: boolean;
   currentTopicId: string | null;
   openRevisionIds: string[];
+  liveNoteIds?: string[];
 }): ContinueTarget {
-  const { resume, hasTestDraft, currentTopicId, openRevisionIds } = input;
+  const { resume, hasTestDraft, currentTopicId, openRevisionIds, liveNoteIds = [] } = input;
   if (resume?.kind === 'revision' && openRevisionIds.includes(resume.itemId)) return { type: 'revision', point: resume };
+  if (resume?.kind === 'note' && liveNoteIds.includes(resume.noteId)) return { type: 'note', point: resume };
   if (resume?.kind === 'video' && currentTopicId === resume.topicId) return { type: 'video', point: resume };
   if (hasTestDraft) return { type: 'test' };
   if (currentTopicId) return { type: 'topic' };

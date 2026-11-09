@@ -9,7 +9,7 @@ import {
   FOLDER_COLORS, createFolder, createNote, deleteFolder, deleteNotesForever, duplicateNote,
   applyIndexUndo, captureIndexUndo, getAllSnapshots, hydrateNotebook, setEditorOpen, startLiveNotebookSync, importSnapshots, loadConflict, moveNotes, recolorFolder, renameFolder, renameNote, resolveConflict, restoreNotes,
   searchNoteIds, setArchived, setConfidence, setExamDate, setNoteTags, setStudyStatus, snapshotIndex, toggleFavorite, togglePin, trashNotes,
-  useNoteConflicts, useNotebookIndex, type NoteFolder, type NoteMeta, type StudyStatus,
+  useNoteConflicts, useNotebookIndex, getIndex, type NoteFolder, type NoteMeta, type StudyStatus,
 } from './notebookStore';
 import { SaveChip } from './SaveChip';
 import { buildBackupJson, parseBackup } from './backup';
@@ -23,6 +23,7 @@ import { STUDY_STATUSES, examChip, examSoon, examSortKey } from './studyInfo';
 import { askConfirm, askText } from './dialogApi';
 import type { IndexUndo } from './indexUndo';
 import { GlassButton } from './ui/kit';
+import { getResume, setResume, clearResume } from './resumeStore';
 // The rich-text editor (TipTap) is the heaviest part of the notebook — load it only when a note opens.
 const NoteEditor = lazy(() => import('./NoteEditor'));
 const RevisionSheet = lazy(() => import('./RevisionSheet'));
@@ -122,7 +123,11 @@ export default function NoteLibrary() {
   const [safetyBusy, setSafetyBusy] = useState(false);
   const importInput = useRef<HTMLInputElement>(null);
 
-  const [openId, setOpenId] = useState<string | null>(null);
+  // Reopen the note the learner left open (if it still exists); a fresh blank note is never auto-reopened.
+  const [openId, setOpenId] = useState<string | null>(() => {
+    const saved = getResume();
+    return saved?.kind === 'note' && getIndex().notes.some((n) => n.id === saved.noteId && !n.trashedAt) ? saved.noteId : null;
+  });
   const createdThisSession = useRef(new Set<string>());
   const [sheetId, setSheetId] = useState<string | null>(null);
   const [view, setView] = useState<View>('all');
@@ -149,6 +154,11 @@ export default function NoteLibrary() {
   // While a note is open we never merge other devices' changes into it; they are merged when it closes.
   useEffect(() => {
     setEditorOpen(openId !== null);
+    if (openId) {
+      const title = idx.notes.find((n) => n.id === openId)?.title ?? '';
+      setResume({ kind: 'note', noteId: openId, title, at: Date.now() });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openId]);
   useEffect(() => () => setEditorOpen(false), []);
 
@@ -264,6 +274,7 @@ export default function NoteLibrary() {
   // Only notes created in this visit are ever dropped, never an older one.
   const closeNote = (noteId: string, untouched?: boolean) => {
     setOpenId(null);
+    clearResume('note');
     if (untouched && createdThisSession.current.delete(noteId)) void deleteNotesForever([noteId]).catch(() => undefined);
   };
 

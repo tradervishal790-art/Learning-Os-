@@ -10,6 +10,7 @@ import { getRoadmapData, getCurrentTopic, getRoadmapProgress } from './roadmapDa
 import { getRevisionStats, getRevisionDataForGoals, getDueRevisionItems } from './revisionData';
 import { getResume, pickContinueTarget } from './resumeStore';
 import { loadDraft } from './testDraft';
+import { getIndex as getNotebookIndex } from './notebookStore';
 import { getPersonalityProfile, savePersonalityProfile, clearPersonalityProfile } from './personalityProfileStore';
 import type { PersonalityProfile } from './personalityScoring';
 import GrowthEdgesCard from './GrowthEdgesCard';
@@ -475,6 +476,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
         hasTestDraft: loadDraft() !== null,
         currentTopicId: currentTopic?.id ?? null,
         openRevisionIds: getDueRevisionItems(revisionItems).map((i) => i.id),
+        liveNoteIds: getNotebookIndex().notes.filter((n) => !n.trashedAt).map((n) => n.id),
       })
     : null;
 
@@ -532,12 +534,14 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
             onOpenProfile={handleOpenLearningProfile}
             resume={continueTarget?.type === 'video' ? { kind: 'video', title: continueTarget.point.title, seconds: continueTarget.point.seconds }
               : continueTarget?.type === 'revision' ? { kind: 'revision', title: continueTarget.point?.title ?? '' }
+              : continueTarget?.type === 'note' ? { kind: 'note', title: continueTarget.point.title }
               : continueTarget?.type === 'test' ? { kind: 'test', title: loadDraft()?.paper.title ?? '' }
               : null}
             onContinueLearning={() => {
               switch (continueTarget?.type) {
                 case 'video': handleOpenSavedVideo(continueTarget.point.topicId); break;   // video reopens at the saved second
                 case 'revision': setActivePage('revision'); break;                        // Revision reopens the same card
+                case 'note': setActivePage('notes'); break;                               // Notes reopens the same note
                 case 'test': setActivePage('test'); break;                                // Test resumes its saved draft
                 default:
                   if (getContinueLearningTarget(Boolean(currentTopic)) === 'videos' && currentTopic) handleOpenSavedVideo(currentTopic.id);

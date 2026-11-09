@@ -88,7 +88,7 @@ export interface TranslationShape {
       hub: {
         eyebrow: string; mapTitle: string; noGoal: string; streakChip: string;
         continueEyebrow: string; continueTitle: string; continueWithGoal: string; continueEmpty: string;
-        resumeVideo: string; resumeRevision: string; resumeTest: string; resumeCta: string; stoppedAt: string; resumeRevisionDetail: string; resumeTestDetail: string;
+        resumeVideo: string; resumeRevision: string; resumeTest: string; resumeCta: string; stoppedAt: string; resumeRevisionDetail: string; resumeTestDetail: string; resumeNote: string; resumeNoteDetail: string;
         progressLabel: string; topicsProgress: string;
         consistencyTitle: string; consistencyRange: string; dayStreakLabel: string; less: string; more: string;
         actions: { revision: string; tests: string; mentor: string; review: string; practice: string; ask: string; dueCount: string };
@@ -1513,6 +1513,8 @@ export const translations: Record<Locale, TranslationShape> = {
           stoppedAt: 'Stopped at {0}',
           resumeRevisionDetail: 'Same card, right where you left',
           resumeTestDetail: 'Your answers are saved',
+          resumeNote: 'Resume note',
+          resumeNoteDetail: 'Same note, right where you left',
           progressLabel: 'Roadmap progress',
           topicsProgress: '{0} of {1} topics',
           consistencyTitle: 'Consistency',
@@ -3660,6 +3662,8 @@ export const translations: Record<Locale, TranslationShape> = {
           stoppedAt: '{0} पर रुके थे',
           resumeRevisionDetail: 'वही कार्ड, जहाँ छोड़ा था',
           resumeTestDetail: 'आपके उत्तर सेव हैं',
+          resumeNote: 'नोट जारी रखें',
+          resumeNoteDetail: 'वही नोट, जहाँ छोड़ा था',
           progressLabel: 'रोडमैप प्रगति',
           topicsProgress: '{1} में से {0} टॉपिक',
           consistencyTitle: 'निरंतरता',
@@ -5801,6 +5805,8 @@ export const translations: Record<Locale, TranslationShape> = {
           stoppedAt: '{0} par ruke the',
           resumeRevisionDetail: 'Wahi card, jahan chhoda tha',
           resumeTestDetail: 'Tumhare answers saved hain',
+          resumeNote: 'Note wahin se kholo',
+          resumeNoteDetail: 'Wahi note, jahan chhoda tha',
           progressLabel: 'Roadmap progress',
           topicsProgress: '{1} mein se {0} topics',
           consistencyTitle: 'Consistency',

@@ -32,3 +32,9 @@ test('clock format', () => {
   assert.equal(r.formatClock(754), '12:34');
   assert.equal(r.formatClock(3725), '1:02:05');
 });
+
+test('left in a note: continue reopens it, but not a deleted note', () => {
+  const note = { kind: 'note', noteId: 'n1', title: 'Grammar', at: 3 };
+  assert.equal(r.pickContinueTarget({ resume: note, hasTestDraft: false, currentTopicId: 't1', openRevisionIds: [], liveNoteIds: ['n1'] }).type, 'note');
+  assert.equal(r.pickContinueTarget({ resume: note, hasTestDraft: false, currentTopicId: 't1', openRevisionIds: [], liveNoteIds: [] }).type, 'topic');
+});

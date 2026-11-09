@@ -26,7 +26,7 @@ interface MissionControlProps {
   onNavigate: (page: DashboardPageId) => void;
   onOpenProfile: () => void;
   /** Where the learner stopped, if anything is half-finished (drives the Continue card text). */
-  resume: { kind: 'video'; title: string; seconds: number } | { kind: 'revision'; title: string } | { kind: 'test'; title: string } | null;
+  resume: { kind: 'video'; title: string; seconds: number } | { kind: 'revision'; title: string } | { kind: 'test'; title: string } | { kind: 'note'; title: string } | null;
   onContinueLearning: () => void;
 }
 
@@ -138,7 +138,7 @@ export default function MissionControl({
               </ProgressRing>
               <span className="min-w-0 flex-1">
                 <span className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-violet-200/80">
-                  {resume ? (resume.kind === 'video' ? hub.resumeVideo : resume.kind === 'revision' ? hub.resumeRevision : hub.resumeTest) : hub.continueEyebrow}
+                  {resume ? (resume.kind === 'video' ? hub.resumeVideo : resume.kind === 'revision' ? hub.resumeRevision : resume.kind === 'note' ? hub.resumeNote : hub.resumeTest) : hub.continueEyebrow}
                 </span>
                 <span className="mt-0.5 block truncate text-base font-semibold text-white md:text-lg">
                   {resume?.title || nextTopic || hub.continueTitle}
@@ -146,7 +146,7 @@ export default function MissionControl({
                 <span className="mt-0.5 block truncate text-xs text-slate-400">
                   {resume
                     ? resume.kind === 'video' ? format(hub.stoppedAt, formatClock(resume.seconds))
-                      : resume.kind === 'revision' ? hub.resumeRevisionDetail : hub.resumeTestDetail
+                      : resume.kind === 'revision' ? hub.resumeRevisionDetail : resume.kind === 'note' ? hub.resumeNoteDetail : hub.resumeTestDetail
                     : nextTopic ? nextTopicDetail : goalTitle ? format(hub.continueWithGoal, goalTitle) : hub.continueEmpty}
                 </span>
               </span>
