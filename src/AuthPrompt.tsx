@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import type { ReactNode } from 'react';
 import { onAuthStateChanged, onIdTokenChanged, type User } from 'firebase/auth';
 import { auth } from './firebase';
-import { mergeGuestLocalDataToAccount } from './cloudSync';
+import { hydrateLocalDataFromAccount, mergeGuestLocalDataToAccount } from './cloudSync';
 import { ACCOUNT_REQUIRED_EVENT } from './apiFetch';
 import { format } from './i18n/format';
 import { useTranslation } from './i18n/LanguageContext';
@@ -72,9 +72,13 @@ export function AuthPromptProvider({ children }: { children: ReactNode }) {
       previousGuestUid.current = user.uid;
       return;
     }
-    if (user && previousGuestUid.current) {
+    if (user) {
+      const upgradingGuest = Boolean(previousGuestUid.current);
       previousGuestUid.current = null;
-      void mergeGuestLocalDataToAccount();
+      void (async () => {
+        if (upgradingGuest) await mergeGuestLocalDataToAccount();
+        await hydrateLocalDataFromAccount();
+      })();
     }
   }, [user?.uid, hasAccount]);
 
