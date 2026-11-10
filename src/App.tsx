@@ -139,9 +139,9 @@ function App() {
       openSignIn(t.dashboard.sidebar.roadmap);
       return false;
     }
-    const subject = typeof data.subject === 'string' && data.subject.trim()
-      ? data.subject.trim()
-      : data.goal.trim();
+    // Never treat the broad intent category (e.g. "skill" or "job") as
+    // the concrete topic. A missing subject must stop here, not reach the API.
+    const subject = typeof data.subject === 'string' ? data.subject.trim() : '';
     const hours = Number(data.hours);
     if (!subject || !Number.isFinite(hours) || hours <= 0 || hours > 168) {
       setLastRoadmapError('Please enter a subject and weekly study time between 1 and 168 hours.');
