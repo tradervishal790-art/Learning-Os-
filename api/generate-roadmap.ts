@@ -219,7 +219,9 @@ Return only JSON, in this EXACT shape, no extra text or markdown backticks:
 };
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const uid = await requireUser(req, res);
+  // Roadmap generation is the guest's first useful learning outcome; the
+  // shared auth guard still applies its tighter anonymous-user quotas.
+  const uid = await requireUser(req, res, { allowAnonymous: true });
   if (!uid) return;
 
   if (req.method !== 'POST') {
