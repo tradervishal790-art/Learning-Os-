@@ -1,5 +1,5 @@
 import { auth, db } from './firebase';
-import { doc, getDoc, setDoc, deleteDoc, onSnapshot, runTransaction } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, setDoc, deleteDoc, onSnapshot, runTransaction } from 'firebase/firestore';
 import { serverIso } from './serverClock';
 
 // ============================================================
@@ -121,10 +121,16 @@ export async function mergeGuestLocalDataToAccount(): Promise<void> {
     return accountValue === undefined || accountValue === null ? localValue : accountValue;
   };
 
-  const entries = localEntries.map(([localKey, value]) => ({
-    ref: doc(db, 'users', user.uid, 'data', cloudKeyForLocalKey(localKey)),
-    value,
-  }));
+  const entries = localEntries.flatMap(([localKey, value]) => {
+    const refs = [
+      doc(db, 'users', user.uid, 'data', `local:${localKey.replace(/\\//g, '_')}`),
+    ];
+    const appCloudKey = cloudKeyForLocalKey(localKey);
+    if (appCloudKey !== `local:${localKey.replace(/\\//g, '_')}`) {
+      refs.push(doc(db, 'users', user.uid, 'data', appCloudKey));
+    }
+    return refs.map((ref) => ({ ref, value }));
+  });
 
   try {
     await runTransaction(db, async (transaction) => {
@@ -141,6 +147,34 @@ export async function mergeGuestLocalDataToAccount(): Promise<void> {
   } catch (error) {
     // Keep all guest data on this device if account sync is temporarily unavailable.
     console.warn('Guest data merge did not complete; local data is preserved.', error);
+  }
+}
+
+/**
+ * Restore local-only guest records on a device where the account is already
+ * signed in. Existing local values are never overwritten; normal store
+ * hydration continues to handle its own cloud documents.
+ */
+export async function hydrateLocalDataFromAccount(): Promise<void> {
+  const uid = currentUid();
+  if (!uid) return;
+  try {
+    const snapshot = await getDocs(collection(db, 'users', uid, 'data'));
+    snapshot.forEach((entry) => {
+      if (!entry.id.startsWith('local:')) return;
+      const localKey = entry.id.slice('local:'.length);
+      if (!localKey.startsWith('learning_os_')) return;
+      try {
+        if (localStorage.getItem(localKey) !== null) return;
+        const value = entry.data()?.value;
+        if (value === undefined) return;
+        localStorage.setItem(localKey, typeof value === 'string' ? value : JSON.stringify(value));
+      } catch {
+        // One unavailable key must not block restoring the remaining guest data.
+      }
+    });
+  } catch {
+    // Cloud unavailable — this device can still use any local data it already has.
   }
 }
 
