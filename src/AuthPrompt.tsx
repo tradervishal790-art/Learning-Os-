@@ -12,8 +12,8 @@ import AuthForm from './AuthForm';
 // AuthPrompt.tsx
 //
 // Guest -> account, on demand. Learning OS is browsable without signing up
-// (Mind Blueprint, video analysis, video search, dictionary). Features that
-// need an account call `requireAccount('Notes')`: a guest gets the sign-in
+// (Mind Blueprint, roadmap generation, video analysis/search, dictionary).
+// Account-only actions call `requireAccount('Notes')`: a guest gets the sign-in
 // modal and `false`; an account holder gets `true` and nothing happens.
 //
 // Also: the header "Sign in" button (<SignInButton />), the in-page
