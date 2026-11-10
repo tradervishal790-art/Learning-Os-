@@ -139,13 +139,28 @@ function App() {
       openSignIn(t.dashboard.sidebar.roadmap);
       return false;
     }
+    const subject = typeof data.subject === 'string' && data.subject.trim()
+      ? data.subject.trim()
+      : data.goal.trim();
+    const hours = Number(data.hours);
+    if (!subject || !Number.isFinite(hours) || hours <= 0 || hours > 168) {
+      setLastRoadmapError('Please enter a subject and weekly study time between 1 and 168 hours.');
+      return false;
+    }
     try {
       const learningProfile = getLearningProfile();
       const personalityBrief = buildPersonalityBrief(getPersonalityProfile());
       const res = await authFetch('/api/generate-roadmap', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...data, ...(learningProfile ? { learningProfile } : {}), ...(personalityBrief.length ? { personality: personalityBrief } : {}) }),
+        body: JSON.stringify({
+          ...data,
+          subject,
+          goal: subject,
+          hours,
+          ...(learningProfile ? { learningProfile } : {}),
+          ...(personalityBrief.length ? { personality: personalityBrief } : {}),
+        }),
       });
       const result = await res.json();
       if (res.ok && result.roadmap) {
@@ -196,7 +211,7 @@ function App() {
     // roadmap key in roadmapData.ts, same as pre-multi-goal behaviour.
     const primaryGoal: Goal = {
       id: 'primary',
-      title: data.goal,
+      title: data.subject?.trim() || data.goal,
       hours: data.hours,
       deadline: data.deadline,
       deadlineDays: data.deadlineDays,
@@ -258,7 +273,7 @@ function App() {
     // Regenerate with the active goal's own subject/hours/deadline (not
     // necessarily userData's, if this isn't the primary goal).
     const data: UserOnboardingData = activeGoal
-      ? { ...userData, goal: activeGoal.title, hours: activeGoal.hours, deadline: activeGoal.deadline, deadlineDays: activeGoal.deadlineDays }
+      ? { ...userData, goal: activeGoal.title, subject: activeGoal.title, hours: activeGoal.hours, deadline: activeGoal.deadline, deadlineDays: activeGoal.deadlineDays }
       : userData;
     const success = await generateAndSaveRoadmap(data, activeGoalId);
     if (success) setRoadmapVersion((v) => v + 1);
@@ -321,6 +336,7 @@ function App() {
     const updatedData: UserOnboardingData = {
       ...userData,
       goal: trimmed,
+      subject: trimmed,
       hours,
       deadline: deadlineLabel,
       deadlineDays,
