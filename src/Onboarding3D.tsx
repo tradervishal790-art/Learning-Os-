@@ -193,6 +193,7 @@ export default function Onboarding3D({ onComplete }: Onboarding3DProps) {
               whileHover={{ scale: 1.05, y: -4 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => {
+                setValidationError('');
                 if (step === 0) setData({ ...data, role: option.id });
                 else if (step === 1) setData({ ...data, goal: option.id });
                 else if (step === 2) {
