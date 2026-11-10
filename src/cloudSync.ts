@@ -76,7 +76,7 @@ export async function mergeGuestLocalDataToAccount(): Promise<void> {
     if (key === 'learning_os_personality_profile') return 'personalityProfile';
     if (key === 'learning_os_active_days') return 'activeDays';
     if (key === 'learning_os_test_attempts') return 'testAttempts';
-    return `local:${key.replace(/\\//g, '_')}`;
+    return `local:${key.split('/').join('_')}`;
   };
 
   const mergeValues = (localValue: unknown, accountValue: unknown, field = ''): unknown => {
@@ -123,10 +123,10 @@ export async function mergeGuestLocalDataToAccount(): Promise<void> {
 
   const entries = localEntries.flatMap(([localKey, value]) => {
     const refs = [
-      doc(db, 'users', user.uid, 'data', `local:${localKey.replace(/\\//g, '_')}`),
+      doc(db, 'users', user.uid, 'data', `local:${localKey.split('/').join('_')}`),
     ];
     const appCloudKey = cloudKeyForLocalKey(localKey);
-    if (appCloudKey !== `local:${localKey.replace(/\\//g, '_')}`) {
+    if (appCloudKey !== `local:${localKey.split('/').join('_')}`) {
       refs.push(doc(db, 'users', user.uid, 'data', appCloudKey));
     }
     return refs.map((ref) => ({ ref, value }));
