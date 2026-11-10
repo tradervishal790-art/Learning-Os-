@@ -1,7 +1,8 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { onAuthStateChanged, onIdTokenChanged, type User } from 'firebase/auth';
 import { auth } from './firebase';
+import { mergeGuestLocalDataToAccount } from './cloudSync';
 import { ACCOUNT_REQUIRED_EVENT } from './apiFetch';
 import { format } from './i18n/format';
 import { useTranslation } from './i18n/LanguageContext';
@@ -62,6 +63,20 @@ export function AuthPromptProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const hasAccount = !!user && !user.isAnonymous;
+  // Remember that this browser was in guest mode. When that guest links a
+  // credential or signs into an existing account, move its local learning
+  // data into the account's cloud documents without prompting before value.
+  const previousGuestUid = useRef<string | null>(user?.isAnonymous ? user.uid : null);
+  useEffect(() => {
+    if (user?.isAnonymous) {
+      previousGuestUid.current = user.uid;
+      return;
+    }
+    if (user && previousGuestUid.current) {
+      previousGuestUid.current = null;
+      void mergeGuestLocalDataToAccount();
+    }
+  }, [user?.uid, hasAccount]);
 
   const openSignIn = useCallback((f?: string, m: 'signin' | 'create' = 'create') => {
     setFeature(f);
