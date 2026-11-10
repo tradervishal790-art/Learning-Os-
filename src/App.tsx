@@ -1,3 +1,4 @@
+import { loadOnboardingData, saveOnboardingData, hydrateOnboardingFromCloud } from './onboardingStore';
 import { useState, useEffect, useRef, Suspense, lazy } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -23,19 +24,9 @@ const Onboarding3D = lazy(() => import('./Onboarding3D'));
 
 type Page = 'landing' | 'onboarding' | 'dashboard';
 
-const ONBOARDING_STORAGE_KEY = 'learning_os_onboarding_data';
 // A guest who finishes onboarding has no account yet, and roadmap generation needs one.
 // We remember which goal is waiting and build its roadmap right after they sign in.
 const PENDING_ROADMAP_KEY = 'learning_os_pending_roadmap';
-
-function loadSavedOnboardingData(): UserOnboardingData | null {
-  try {
-    const saved = localStorage.getItem(ONBOARDING_STORAGE_KEY);
-    return saved ? (JSON.parse(saved) as UserOnboardingData) : null;
-  } catch {
-    return null;
-  }
-}
 
 /** Roadmap API needs a goal and weekly hours > 0 (generate-roadmap.ts rejects 0). */
 function hasRoadmapInputs(d: UserOnboardingData): boolean {
@@ -44,7 +35,7 @@ function hasRoadmapInputs(d: UserOnboardingData): boolean {
 
 function App() {
   const t = useTranslation();
-  const { isGuest } = useAuthPrompt();
+  const { isGuest, user: authUser } = useAuthPrompt();
   const { setLanguage } = useLanguage();
   const demoSteps = t.demo.steps;
   const navigate = useNavigate();
@@ -60,7 +51,7 @@ function App() {
   const setPage = (p: Page) => {
     navigate(p === 'dashboard' ? '/dashboard' : p === 'onboarding' ? '/onboarding' : '/');
   };
-  const [userData, setUserData] = useState<UserOnboardingData | null>(loadSavedOnboardingData);
+  const [userData, setUserData] = useState<UserOnboardingData | null>(loadOnboardingData);
   const [showDemo, setShowDemo] = useState(false);
 
   // SYNC FIX: setLanguage() was previously only called at the moment
@@ -83,10 +74,30 @@ function App() {
   // once, each with its own roadmap (roadmapData.ts keys it by goal id).
   // getGoals() auto-wraps a pre-existing single roadmap as a 'primary'
   // goal the first time this runs, so old users see it as Goal #1.
-  const [goals, setGoals] = useState<Goal[]>(() => getGoals(loadSavedOnboardingData()));
+  const [goals, setGoals] = useState<Goal[]>(() => getGoals(loadOnboardingData()));
   const [activeGoalId, setActiveGoalId] = useState<string | null>(
-    () => getActiveGoals(getGoals(loadSavedOnboardingData()))[0]?.id ?? null
+    () => getActiveGoals(getGoals(loadOnboardingData()))[0]?.id ?? null
   );
+
+  // NEW DEVICE / NEW BROWSER: once someone is signed in (guest or account), pull their saved
+  // onboarding answers from the account. Newest copy wins. If the account already has answers,
+  // skip onboarding and go straight to the dashboard.
+  const onboardingSyncedFor = useRef<string | null>(null);
+  useEffect(() => {
+    const uid = authUser?.uid;
+    if (!uid || onboardingSyncedFor.current === uid) return;
+    onboardingSyncedFor.current = uid;
+    void hydrateOnboardingFromCloud().then((restored) => {
+      if (!restored) return;
+      setUserData(restored);
+      setLanguage(mapOnboardingLanguage(restored.language));
+      const freshGoals = getGoals(restored);
+      setGoals(freshGoals);
+      setActiveGoalId((current) => current ?? getActiveGoals(freshGoals)[0]?.id ?? null);
+      if (location.pathname.startsWith('/onboarding')) navigate('/dashboard', { replace: true });
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authUser?.uid]);
 
   // ON-DEMAND CLOUD HYDRATION, dashboard-wide pieces only: pulls the
   // learning profile, goal list, and streak/active-days down from
@@ -114,7 +125,7 @@ function App() {
       // resolved, so a new device picks up the cloud data without needing
       // a manual refresh. No-op (same values) for a device that already
       // had everything locally.
-      const freshUserData = loadSavedOnboardingData();
+      const freshUserData = loadOnboardingData();
       setUserData(freshUserData);
       const freshGoals = getGoals(freshUserData);
       setGoals(freshGoals);
@@ -191,7 +202,7 @@ function App() {
   goal: (data as unknown as Record<string, string>).goal,
   language: (data as unknown as Record<string, string>).language,
 });
-    localStorage.setItem(ONBOARDING_STORAGE_KEY, JSON.stringify(data));
+    saveOnboardingData(data);
 
     // First-ever goal always gets id 'primary' — aliases the legacy flat
     // roadmap key in roadmapData.ts, same as pre-multi-goal behaviour.
@@ -229,7 +240,7 @@ function App() {
   const handleUpdateUserData = (data: UserOnboardingData) => {
     setUserData(data);
     setLanguage(mapOnboardingLanguage(data.language));
-    localStorage.setItem(ONBOARDING_STORAGE_KEY, JSON.stringify(data));
+    saveOnboardingData(data);
   };
 
   // Regenerate Roadmap button (Settings panel) — re-runs generation with the
@@ -332,7 +343,7 @@ function App() {
     // language etc. stay shared) — a 2nd goal just updates its own Goal record.
     if (goalId === 'primary') {
       setUserData(updatedData);
-      localStorage.setItem(ONBOARDING_STORAGE_KEY, JSON.stringify(updatedData));
+      saveOnboardingData(updatedData);
     }
     const updatedGoals = updateGoal(goals, goalId, {
       title: trimmed,
