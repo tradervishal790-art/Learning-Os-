@@ -1,5 +1,5 @@
 import { auth, db } from './firebase';
-import { doc, getDoc, setDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, setDoc, deleteDoc, onSnapshot, runTransaction } from 'firebase/firestore';
 import { serverIso } from './serverClock';
 
 // ============================================================
@@ -30,7 +30,118 @@ import { serverIso } from './serverClock';
 // ============================================================
 
 function currentUid(): string | null {
-  return auth.currentUser?.uid ?? null;
+  const user = auth.currentUser;
+  return user && !user.isAnonymous ? user.uid : null;
+}
+
+/**
+ * Merge local guest work into the account that the guest just upgraded to
+ * or signed into. Guest sessions never write to Firestore; this is the
+ * deliberate hand-off point from device-only storage to account sync.
+ *
+ * Core app stores are copied to their existing cloud document keys. Other
+ * Learning OS localStorage entries are preserved under a namespaced local:
+ * document so no guest work is silently discarded during the transition.
+ */
+export async function mergeGuestLocalDataToAccount(): Promise<void> {
+  const user = auth.currentUser;
+  if (!user || user.isAnonymous) return;
+
+  let localEntries: Array<[string, unknown]> = [];
+  try {
+    localEntries = Object.keys(localStorage)
+      .filter((key) => key.startsWith('learning_os_'))
+      .flatMap((key) => {
+        const raw = localStorage.getItem(key);
+        if (raw === null) return [];
+        try {
+          return [[key, JSON.parse(raw)] as [string, unknown]];
+        } catch {
+          return [[key, raw] as [string, unknown]];
+        }
+      });
+  } catch {
+    return;
+  }
+  if (localEntries.length === 0) return;
+
+  const cloudKeyForLocalKey = (key: string): string => {
+    if (key === 'learning_os_onboarding_data') return 'onboardingData';
+    if (key === 'learning_os_goals') return 'goals';
+    if (key === 'learning_os_generated_roadmap') return 'roadmap:primary';
+    if (key.startsWith('learning_os_generated_roadmap:')) {
+      return `roadmap:${key.slice('learning_os_generated_roadmap:'.length)}`;
+    }
+    if (key === 'learning_os_learning_profile') return 'learningProfile';
+    if (key === 'learning_os_personality_profile') return 'personalityProfile';
+    if (key === 'learning_os_active_days') return 'activeDays';
+    if (key === 'learning_os_test_attempts') return 'testAttempts';
+    return `local:${key.replace(/\\//g, '_')}`;
+  };
+
+  const mergeValues = (localValue: unknown, accountValue: unknown, field = ''): unknown => {
+    if (Array.isArray(localValue) && Array.isArray(accountValue)) {
+      const identity = (item: unknown): string => {
+        if (item && typeof item === 'object') {
+          const record = item as Record<string, unknown>;
+          for (const candidate of ['id', 'videoId', 'noteId', 'topicId', 'sessionId']) {
+            if (typeof record[candidate] === 'string') return `${candidate}:${record[candidate]}`;
+          }
+        }
+        return JSON.stringify(item);
+      };
+      const merged = new Map<string, unknown>();
+      // Account values are inserted first and remain authoritative on conflicts.
+      for (const item of accountValue) merged.set(identity(item), item);
+      for (const item of localValue) {
+        const key = identity(item);
+        merged.set(key, merged.has(key) ? mergeValues(item, merged.get(key), field) : item);
+      }
+      return [...merged.values()];
+    }
+    if (
+      localValue && accountValue &&
+      typeof localValue === 'object' && typeof accountValue === 'object' &&
+      !Array.isArray(localValue) && !Array.isArray(accountValue)
+    ) {
+      const localRecord = localValue as Record<string, unknown>;
+      const accountRecord = accountValue as Record<string, unknown>;
+      const merged: Record<string, unknown> = { ...localRecord, ...accountRecord };
+      for (const key of Object.keys(localRecord)) {
+        if (key in accountRecord) merged[key] = mergeValues(localRecord[key], accountRecord[key], key);
+      }
+      return merged;
+    }
+    if (field === 'status' && typeof localValue === 'string' && typeof accountValue === 'string') {
+      const rank: Record<string, number> = { locked: 0, learning: 1, completed: 2, mastered: 3 };
+      if (localValue in rank && accountValue in rank) {
+        return rank[localValue] > rank[accountValue] ? localValue : accountValue;
+      }
+    }
+    return accountValue === undefined || accountValue === null ? localValue : accountValue;
+  };
+
+  const entries = localEntries.map(([localKey, value]) => ({
+    ref: doc(db, 'users', user.uid, 'data', cloudKeyForLocalKey(localKey)),
+    value,
+  }));
+
+  try {
+    await runTransaction(db, async (transaction) => {
+      const snapshots = await Promise.all(entries.map(({ ref }) => transaction.get(ref)));
+      const updatedAt = serverIso();
+      entries.forEach(({ ref, value }, index) => {
+        const existing = snapshots[index].exists() ? snapshots[index].data()?.value : null;
+        transaction.set(ref, {
+          value: existing === null || existing === undefined ? value : mergeValues(value, existing),
+          updatedAt,
+        });
+      });
+    });
+  } catch (error) {
+    // Keep all guest data on this device if account sync is temporarily unavailable.
+    console.warn('Guest data merge did not complete; local data is preserved.', error);
+  }
 }
 
 /** Best-effort cloud write. Never throws — caller's localStorage write already succeeded. */
