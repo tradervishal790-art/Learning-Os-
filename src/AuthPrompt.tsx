@@ -160,3 +160,48 @@ export function LoginRequired({ feature }: { feature: string }) {
     </div>
   );
 }
+
+const NUDGE_DISMISSED_KEY = 'learning_os_save_nudge_dismissed';
+
+/**
+ * Soft, dismissible "save your progress" card. Shown to a guest only AFTER they got something
+ * of value (e.g. their roadmap). Never blocks anything — the guest keeps all local data and
+ * it carries over when they create an account (the guest session is upgraded in place).
+ */
+export function GuestSaveNudge({ className = '' }: { className?: string }) {
+  const t = useTranslation();
+  const { isGuest, openSignIn } = useAuthPrompt();
+  const [dismissed, setDismissed] = useState(() => {
+    try {
+      return localStorage.getItem(NUDGE_DISMISSED_KEY) === '1';
+    } catch {
+      return false;
+    }
+  });
+  if (!isGuest || dismissed) return null;
+  const dismiss = () => {
+    setDismissed(true);
+    try {
+      localStorage.setItem(NUDGE_DISMISSED_KEY, '1');
+    } catch {
+      /* ignore — it just shows again next visit */
+    }
+  };
+  return (
+    <div className={`flex items-center gap-3 rounded-2xl border border-indigo-400/30 bg-indigo-500/10 p-3 ${className}`}>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-semibold">{t.authPrompt.saveNudgeTitle}</p>
+        <p className="text-xs opacity-70">{t.authPrompt.saveNudgeBody}</p>
+      </div>
+      <button
+        onClick={() => openSignIn(undefined, 'create')}
+        className="shrink-0 rounded-xl bg-indigo-600 px-3 py-2 text-xs font-semibold text-white"
+      >
+        {t.authPrompt.saveNudgeCta}
+      </button>
+      <button onClick={dismiss} aria-label={t.authPrompt.notNow} className="shrink-0 text-xs opacity-60 hover:opacity-100">
+        {t.authPrompt.notNow}
+      </button>
+    </div>
+  );
+}

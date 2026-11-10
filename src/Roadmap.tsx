@@ -13,6 +13,7 @@ import { expandSearchQuery } from './queryExpander';
 import DeepDiveChat from './DeepDiveChat';
 import HintBubble from './HintBubble';
 import { useTranslation } from './i18n/LanguageContext';
+import { GuestSaveNudge } from './AuthPrompt';
 import { format } from './i18n/format';
 import { getSharedVideoLearningSummaries } from './sharedLearningIntelligence';
 import { GlassButton, GlassPanel, ProgressRing } from './ui/kit';
@@ -421,6 +422,9 @@ export default function Roadmap({
           <p className="text-xs text-slate-400 md:text-sm">{t.roadmap.header.subtitle}</p>
         </div>
       </motion.div>
+
+      {/* Guest got a roadmap -> now (not before) offer to save it with an account */}
+      {!hasNoRoadmap && <GuestSaveNudge className="mb-4" />}
 
       {/* Goal tabs — up to MAX_ACTIVE_GOALS active goals at once */}
       <motion.div

@@ -269,6 +269,9 @@ export interface TranslationShape {
     roadmapPending: string;
     guestBadge: string;
     guestAccountNote: string;
+    saveNudgeTitle: string;
+    saveNudgeBody: string;
+    saveNudgeCta: string;
   };
   loadingScreen: { loading: string; slow: string; retry: string };
   caChip: { doneTitle: string; pendingTitle: string; streak: string; cta: string };
@@ -1988,6 +1991,9 @@ export const translations: Record<Locale, TranslationShape> = {
       roadmapPending: 'Your roadmap will be created as soon as you sign in.',
       guestBadge: 'Guest',
       guestAccountNote: "You're using Learning OS as a guest. Sign in to unlock roadmap, notes, tests, mentor and more.",
+      saveNudgeTitle: 'Save your roadmap',
+      saveNudgeBody: 'Create a free account so it stays on every device. Everything you did so far is kept.',
+      saveNudgeCta: 'Save with free account',
     },
     loadingScreen: {
       loading: 'Loading...',
@@ -4134,6 +4140,9 @@ export const translations: Record<Locale, TranslationShape> = {
       roadmapPending: 'साइन इन करते ही आपका रोडमैप बन जाएगा।',
       guestBadge: 'गेस्ट',
       guestAccountNote: 'आप Learning OS को गेस्ट के रूप में इस्तेमाल कर रहे हैं। रोडमैप, नोट्स, टेस्ट, मेंटर और बाकी सब खोलने के लिए साइन इन करें।',
+      saveNudgeTitle: 'अपना रोडमैप सेव करें',
+      saveNudgeBody: 'फ्री अकाउंट बनाएं ताकि ये हर डिवाइस पर रहे। अब तक का सब कुछ सुरक्षित रहेगा।',
+      saveNudgeCta: 'फ्री अकाउंट से सेव करें',
     },
     loadingScreen: {
       loading: 'लोड हो रहा है...',
@@ -6277,6 +6286,9 @@ export const translations: Record<Locale, TranslationShape> = {
       roadmapPending: 'Sign in karte hi tumhara roadmap ban jayega.',
       guestBadge: 'Guest',
       guestAccountNote: 'Tum Learning OS guest ke roop mein use kar rahe ho. Roadmap, notes, tests, mentor aur baaki sab kholne ke liye sign in karo.',
+      saveNudgeTitle: 'Apna roadmap save karo',
+      saveNudgeBody: 'Free account banao taaki ye har device pe rahe. Ab tak ka sab kuch safe rahega.',
+      saveNudgeCta: 'Free account se save karo',
     },
     loadingScreen: {
       loading: 'Load ho raha hai...',

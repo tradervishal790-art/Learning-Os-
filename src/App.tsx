@@ -44,7 +44,7 @@ function hasRoadmapInputs(d: UserOnboardingData): boolean {
 
 function App() {
   const t = useTranslation();
-  const { isGuest, openSignIn } = useAuthPrompt();
+  const { isGuest } = useAuthPrompt();
   const { setLanguage } = useLanguage();
   const demoSteps = t.demo.steps;
   const navigate = useNavigate();
@@ -139,11 +139,7 @@ function App() {
    * the browser console can show WHY, instead of a black-box failure.
    */
   const generateAndSaveRoadmap = async (data: UserOnboardingData, goalId?: string): Promise<boolean> => {
-    // Roadmaps need an account (server enforces it too). Ask a guest to sign in instead of failing.
-    if (isGuest) {
-      openSignIn(t.dashboard.sidebar.roadmap);
-      return false;
-    }
+    // Guests can build a roadmap too — they are asked to save it with an account AFTER they see it.
     try {
       const learningProfile = getLearningProfile();
       const personalityBrief = buildPersonalityBrief(getPersonalityProfile());
@@ -218,16 +214,6 @@ function App() {
     // subject + weekly hours, then generate.
     if (!hasRoadmapInputs(data)) {
       setPage('dashboard');
-      return;
-    }
-
-    // A guest has no account yet: park the roadmap, show the dashboard (Mind Blueprint, videos
-    // and dictionary are open to guests) and ask them to sign in — the roadmap is then built
-    // automatically (see the pending-roadmap effect below).
-    if (isGuest) {
-      localStorage.setItem(PENDING_ROADMAP_KEY, 'primary');
-      setPage('dashboard');
-      openSignIn(t.dashboard.sidebar.roadmap);
       return;
     }
 
