@@ -37,6 +37,11 @@ function loadSavedOnboardingData(): UserOnboardingData | null {
   }
 }
 
+/** Roadmap API needs a goal and weekly hours > 0 (generate-roadmap.ts rejects 0). */
+function hasRoadmapInputs(d: UserOnboardingData): boolean {
+  return !!d.goal && Number.isFinite(d.hours) && d.hours > 0;
+}
+
 function App() {
   const t = useTranslation();
   const { isGuest, openSignIn } = useAuthPrompt();
@@ -207,6 +212,15 @@ function App() {
     saveGoals([primaryGoal]);
     setActiveGoalId('primary');
 
+    // Onboarding only collects role/goal-category/language/name — NO study hours or concrete
+    // subject. The roadmap API rejects hours=0 (400), so don't call it (or ask a guest to sign
+    // in for it) yet: land on the dashboard and let the Roadmap page's own form collect the
+    // subject + weekly hours, then generate.
+    if (!hasRoadmapInputs(data)) {
+      setPage('dashboard');
+      return;
+    }
+
     // A guest has no account yet: park the roadmap, show the dashboard (Mind Blueprint, videos
     // and dictionary are open to guests) and ask them to sign in — the roadmap is then built
     // automatically (see the pending-roadmap effect below).
@@ -247,6 +261,7 @@ function App() {
     const pendingGoalId = localStorage.getItem(PENDING_ROADMAP_KEY);
     if (!pendingGoalId) return;
     localStorage.removeItem(PENDING_ROADMAP_KEY);
+    if (!hasRoadmapInputs(userData)) return; // Roadmap page form will collect the missing subject/hours
     void generateAndSaveRoadmap(userData, pendingGoalId).then((ok) => {
       if (ok) setRoadmapVersion((v) => v + 1);
     });
