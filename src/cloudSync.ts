@@ -88,7 +88,7 @@ export async function mergeGuestLocalDataToAccount(): Promise<void> {
             if (typeof record[candidate] === 'string') return `${candidate}:${record[candidate]}`;
           }
         }
-        return JSON.stringify(item);
+        return JSON.stringify(item) ?? String(item);
       };
       const merged = new Map<string, unknown>();
       // Account values are inserted first and remain authoritative on conflicts.
