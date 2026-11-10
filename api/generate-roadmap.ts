@@ -41,6 +41,8 @@ interface LearningProfileInput {
 interface UserOnboardingData {
   role: string;
   goal: string;
+  /** Concrete subject/skill selected during onboarding. */
+  subject?: string;
   language: string;
   hours: number;      // hours/week
   deadline: string;   // 'none' | '1m' | '3m' | '6m' | '1y' | free-text label
@@ -160,7 +162,7 @@ const ROADMAP_PROMPT = (data: UserOnboardingData) => {
   return `
 Create a personalized, sequential learning roadmap for a learner, based on these details:
 - Role: ${data.role}
-- Subject/Topic to learn: ${data.goal}
+- Subject/Topic to learn: ${data.subject?.trim() || data.goal.trim()}
 - Weekly hours available: ${data.hours}
 - Deadline: ${data.deadline}
 - Total study hours available (calculated): ~${totalHours} hours over this deadline
@@ -217,7 +219,9 @@ Return only JSON, in this EXACT shape, no extra text or markdown backticks:
 };
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const uid = await requireUser(req, res);
+  // Roadmap generation is the guest's first useful learning outcome; the
+  // shared auth guard still applies its tighter anonymous-user quotas.
+  const uid = await requireUser(req, res, { allowAnonymous: true });
   if (!uid) return;
 
   if (req.method !== 'POST') {
@@ -226,10 +230,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const data = (req.body ?? {}) as Partial<UserOnboardingData>;
-  if (!data.role || !data.goal || !data.language || !data.hours || !data.deadline) {
-    res.status(400).json({ error: 'Onboarding data incomplete — role, goal, language, hours, and deadline are all required' });
+  const subject = typeof data.subject === 'string' ? data.subject.trim() : '';
+  const hours = Number(data.hours);
+  if (
+    typeof data.role !== 'string' || !data.role.trim() ||
+    !subject ||
+    typeof data.language !== 'string' || !data.language.trim() ||
+    !Number.isFinite(hours) || hours <= 0 || hours > 168 ||
+    typeof data.deadline !== 'string' || !data.deadline.trim()
+  ) {
+    res.status(400).json({
+      error: 'Please provide your role, a subject to learn, language, weekly study hours (1–168), and deadline.',
+      code: 'INVALID_ROADMAP_INPUT',
+    });
     return;
   }
+  // Normalize validated input once so downstream prompt and time-budget logic
+  // can never receive an empty subject or a zero/invalid weekly-hour value.
+  data.subject = subject;
+  data.goal = subject;
+  data.hours = hours;
 
   const apiKey = process.env.VITE_GEMINI_API_KEY;
   const minimaxApiKey = process.env.MINIMAX_API_KEY;

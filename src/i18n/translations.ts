@@ -43,6 +43,10 @@ export interface TranslationShape {
     goals: Record<string, string>;
     languages: Record<string, string>;
     namePlaceholder: string;
+    subjectPlaceholder: string;
+    hoursLabel: string;
+    hoursHint: string;
+    validationMessage: string;
     back: string;
     continue: string;
     start: string;
@@ -1388,6 +1392,8 @@ export const translations: Record<Locale, TranslationShape> = {
         { title: 'Who are you?', subtitle: 'Pick one' },
         { title: 'Your goal?', subtitle: 'Pick one' },
         { title: 'Language', subtitle: 'Pick one' },
+        { title: 'What do you want to learn?', subtitle: 'Enter a subject or skill' },
+        { title: 'Your weekly study time', subtitle: 'Choose a realistic number of hours' },
         { title: 'Your name', subtitle: 'Type it' },
       ],
       roles: {
@@ -1414,6 +1420,10 @@ export const translations: Record<Locale, TranslationShape> = {
         any: 'No Preference',
       },
       namePlaceholder: 'Type your name',
+      subjectPlaceholder: 'e.g. Excel, React, spoken English, Physics',
+      hoursLabel: 'Hours per week',
+      hoursHint: 'You can change this later in your roadmap.',
+      validationMessage: 'Please complete this step before continuing.',
       back: '← Back',
       continue: 'Continue →',
       start: 'Start →',
@@ -3537,6 +3547,8 @@ export const translations: Record<Locale, TranslationShape> = {
         { title: 'आप कौन हैं?', subtitle: 'एक चुनें' },
         { title: 'आपका लक्ष्य?', subtitle: 'एक चुनें' },
         { title: 'भाषा', subtitle: 'एक चुनें' },
+        { title: 'आप क्या सीखना चाहते हैं?', subtitle: 'कोई विषय या स्किल लिखें' },
+        { title: 'हर हफ्ते पढ़ाई का समय', subtitle: 'हर हफ्ते के घंटे चुनें' },
         { title: 'आपका नाम', subtitle: 'टाइप करें' },
       ],
       roles: {
@@ -3563,6 +3575,10 @@ export const translations: Record<Locale, TranslationShape> = {
         any: 'कोई प्राथमिकता नहीं',
       },
       namePlaceholder: 'अपना नाम लिखें',
+      subjectPlaceholder: 'जैसे Excel, React, अंग्रेज़ी, Physics',
+      hoursLabel: 'हर हफ्ते कितने घंटे',
+      hoursHint: 'इसे बाद में रोडमैप में बदल सकते हैं।',
+      validationMessage: 'आगे बढ़ने से पहले यह जानकारी पूरी करें।',
       back: '← पीछे',
       continue: 'जारी रखें →',
       start: 'शुरू करें →',
@@ -5680,6 +5696,8 @@ export const translations: Record<Locale, TranslationShape> = {
         { title: 'Tum kaun ho?', subtitle: 'Ek chuno' },
         { title: 'Tumhara goal?', subtitle: 'Ek chuno' },
         { title: 'Language', subtitle: 'Ek chuno' },
+        { title: 'Kya seekhna chahte ho?', subtitle: 'Subject ya skill likho' },
+        { title: 'Har hafte padhai ka time', subtitle: 'Har hafte ke hours chuno' },
         { title: 'Tumhara naam', subtitle: 'Type karo' },
       ],
       roles: {
@@ -5706,6 +5724,10 @@ export const translations: Record<Locale, TranslationShape> = {
         any: 'Koi Preference Nahi',
       },
       namePlaceholder: 'Naam likho',
+      subjectPlaceholder: 'Jaise Excel, React, English, Physics',
+      hoursLabel: 'Har hafte kitne hours',
+      hoursHint: 'Baad mein roadmap se badal sakte ho.',
+      validationMessage: 'Aage badhne se pehle yeh step poora karo.',
       back: '← Peeche',
       continue: 'Aage Badho →',
       start: 'Shuru Karo →',

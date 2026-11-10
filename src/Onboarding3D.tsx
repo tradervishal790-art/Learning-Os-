@@ -61,13 +61,14 @@ const goalOrder = ['job', 'skill', 'research', 'startup', 'curiosity', 'mastery'
 export default function Onboarding3D({ onComplete }: Onboarding3DProps) {
   const t = useTranslation();
   const { setLanguage } = useLanguage();
-  // 4 steps: role, goal, language, name.
+  // 6 steps: role, goal category, language, concrete subject, weekly hours, name.
   const stepTitles = t.onboarding.stepTitles;
   const roles: CardOption[] = roleOrder.map((id) => ({ id, label: t.onboarding.roles[id], icon: roleIcons[id] }));
   const goals: CardOption[] = goalOrder.map((id) => ({ id, label: t.onboarding.goals[id], icon: goalIcons[id] }));
   const languages: CardOption[] = languageOrder.map((id) => ({ id, label: t.onboarding.languages[id], icon: languageFlags[id] }));
 
   const [step, setStep] = useState(0);
+  const [validationError, setValidationError] = useState('');
   // Prefill from the name entered at signup (Firebase displayName), so
   // the user isn't asked to type it twice — they can still edit it here.
   const [data, setData] = useState<UserOnboardingData>({
@@ -75,15 +76,21 @@ export default function Onboarding3D({ onComplete }: Onboarding3DProps) {
   goal: '',
   language: '',
   name: getCurrentUser()?.displayName ?? '',
-  hours: 0,
+  subject: '',
+  hours: 5,
   deadline: 'none',
 });
 
   const next = () => {
+    if (!canProceed()) {
+      setValidationError(t.onboarding.validationMessage);
+      return;
+    }
+    setValidationError('');
     if (step < stepTitles.length - 1) {
       setStep(step + 1);
     } else {
-      onComplete(data);
+      onComplete({ ...data, subject: data.subject?.trim(), hours: Number(data.hours) });
     }
   };
 
@@ -95,12 +102,58 @@ export default function Onboarding3D({ onComplete }: Onboarding3DProps) {
     if (step === 0) return data.role !== '';
     if (step === 1) return data.goal !== '';
     if (step === 2) return data.language !== '';
-    if (step === 3) return data.name.trim() !== '';
+    if (step === 3) return Boolean(data.subject?.trim());
+    if (step === 4) return Number.isFinite(Number(data.hours)) && Number(data.hours) > 0 && Number(data.hours) <= 168;
+    if (step === 5) return data.name.trim() !== '';
     return false;
   };
 
   const renderCards = () => {
     if (step === 3) {
+      return (
+        <div className="max-w-xl mx-auto">
+          <motion.input
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            type="text"
+            value={data.subject ?? ''}
+            onChange={(e) => { setData({ ...data, subject: e.target.value }); setValidationError(''); }}
+            onKeyDown={(e) => e.key === 'Enter' && next()}
+            placeholder={t.onboarding.subjectPlaceholder}
+            autoFocus
+            maxLength={120}
+            className="w-full text-center bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-lg text-white placeholder-white/30 focus:outline-none focus:border-purple-500/50"
+          />
+        </div>
+      );
+    }
+
+    if (step === 4) {
+      return (
+        <div className="max-w-sm mx-auto text-center">
+          <label htmlFor="onboarding-weekly-hours" className="block text-sm text-white/60 mb-3">{t.onboarding.hoursLabel}</label>
+          <motion.input
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            id="onboarding-weekly-hours"
+            type="number"
+            min="1"
+            max="168"
+            step="0.5"
+            inputMode="decimal"
+            value={data.hours}
+            onChange={(e) => { setData({ ...data, hours: Number(e.target.value) }); setValidationError(''); }}
+            onKeyDown={(e) => e.key === 'Enter' && next()}
+            className="w-full text-center bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-3xl text-white focus:outline-none focus:border-purple-500/50"
+          />
+          <p className="text-xs text-white/40 mt-3">{t.onboarding.hoursHint}</p>
+        </div>
+      );
+    }
+
+    if (step === 5) {
       return (
         <div className="max-w-sm mx-auto">
           <motion.input
@@ -140,6 +193,7 @@ export default function Onboarding3D({ onComplete }: Onboarding3DProps) {
               whileHover={{ scale: 1.05, y: -4 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => {
+                setValidationError('');
                 if (step === 0) setData({ ...data, role: option.id });
                 else if (step === 1) setData({ ...data, goal: option.id });
                 else if (step === 2) {
@@ -220,6 +274,7 @@ export default function Onboarding3D({ onComplete }: Onboarding3DProps) {
               </motion.div>
 
               {renderCards()}
+              {validationError && <p role="alert" className="text-center text-sm text-rose-300 mt-5">{validationError}</p>}
             </motion.div>
           </AnimatePresence>
         </div>
@@ -240,11 +295,10 @@ export default function Onboarding3D({ onComplete }: Onboarding3DProps) {
 
           <motion.button
             onClick={next}
-            disabled={!canProceed()}
             whileHover={canProceed() ? { scale: 1.05 } : {}}
             whileTap={canProceed() ? { scale: 0.95 } : {}}
             className={`px-8 py-3 rounded-full font-semibold text-sm transition-all duration-300 ${
-              canProceed() ? 'bg-white text-black' : 'bg-white/10 text-white/30 cursor-not-allowed'
+              canProceed() ? 'bg-white text-black' : 'bg-white/10 text-white/60 hover:bg-white/15'
             }`}
             style={canProceed() ? { boxShadow: '0 0 30px rgba(139, 92, 246, 0.4)' } : {}}
           >

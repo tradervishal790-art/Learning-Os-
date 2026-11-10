@@ -110,9 +110,9 @@ interface Blueprint {
   };
 }
 
-// Pages that need a real account. Guests (no sign-up yet) can use the home page,
-// the Mind Blueprint, Videos and Dictionary; everything below asks them to sign in.
-// (The server enforces the same split for AI endpoints — see api/_lib/auth.ts.)
+// Guest-accessible learning surfaces include Mission Control, Mind Blueprint,
+// Roadmap generation, Videos and Dictionary. Account-only pages still ask for
+// sign-in when opened; AI endpoints enforce the same split server-side.
 
 const roleOptions = ['student', 'developer', 'researcher', 'business', 'exam', 'creator'];
 const languageOptions = ['hindi', 'english', 'hinglish', 'any'];

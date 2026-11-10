@@ -1,7 +1,8 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { onAuthStateChanged, onIdTokenChanged, type User } from 'firebase/auth';
 import { auth } from './firebase';
+import { hydrateLocalDataFromAccount, mergeGuestLocalDataToAccount } from './cloudSync';
 import { ACCOUNT_REQUIRED_EVENT } from './apiFetch';
 import { format } from './i18n/format';
 import { useTranslation } from './i18n/LanguageContext';
@@ -11,8 +12,8 @@ import AuthForm from './AuthForm';
 // AuthPrompt.tsx
 //
 // Guest -> account, on demand. Learning OS is browsable without signing up
-// (Mind Blueprint, video analysis, video search, dictionary). Features that
-// need an account call `requireAccount('Notes')`: a guest gets the sign-in
+// (Mind Blueprint, roadmap generation, video analysis/search, dictionary).
+// Account-only actions call `requireAccount('Notes')`: a guest gets the sign-in
 // modal and `false`; an account holder gets `true` and nothing happens.
 //
 // Also: the header "Sign in" button (<SignInButton />), the in-page
@@ -62,6 +63,24 @@ export function AuthPromptProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const hasAccount = !!user && !user.isAnonymous;
+  // Remember that this browser was in guest mode. When that guest links a
+  // credential or signs into an existing account, move its local learning
+  // data into the account's cloud documents without prompting before value.
+  const previousGuestUid = useRef<string | null>(user?.isAnonymous ? user.uid : null);
+  useEffect(() => {
+    if (user?.isAnonymous) {
+      previousGuestUid.current = user.uid;
+      return;
+    }
+    if (user) {
+      const upgradingGuest = Boolean(previousGuestUid.current);
+      previousGuestUid.current = null;
+      void (async () => {
+        if (upgradingGuest) await mergeGuestLocalDataToAccount();
+        await hydrateLocalDataFromAccount();
+      })();
+    }
+  }, [user?.uid, hasAccount]);
 
   const openSignIn = useCallback((f?: string, m: 'signin' | 'create' = 'create') => {
     setFeature(f);
