@@ -10,7 +10,10 @@
 export interface UserOnboardingData {
   name: string;        // ← already added (Settings ke liye)
   role: string;
+  /** Broad intent selected during onboarding (job, skill, research, etc.). */
   goal: string;
+  /** Concrete subject/skill the learner wants a roadmap for. */
+  subject?: string;
   language: string;
   hours: number;       // ← ADD THIS LINE
   deadline: string;
