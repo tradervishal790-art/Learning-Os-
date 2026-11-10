@@ -61,7 +61,7 @@ const goalOrder = ['job', 'skill', 'research', 'startup', 'curiosity', 'mastery'
 export default function Onboarding3D({ onComplete }: Onboarding3DProps) {
   const t = useTranslation();
   const { setLanguage } = useLanguage();
-  // 4 steps: role, goal, language, name.
+  // 6 steps: role, goal category, language, concrete subject, weekly hours, name.
   const stepTitles = t.onboarding.stepTitles;
   const roles: CardOption[] = roleOrder.map((id) => ({ id, label: t.onboarding.roles[id], icon: roleIcons[id] }));
   const goals: CardOption[] = goalOrder.map((id) => ({ id, label: t.onboarding.goals[id], icon: goalIcons[id] }));
