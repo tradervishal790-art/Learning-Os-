@@ -33,8 +33,9 @@ import type { TranslationShape } from './i18n/translations';
 //
 // GUEST MODE: nobody is forced to sign up first. Opening the dashboard
 // signs the visitor in ANONYMOUSLY (a "guest"); the features that need a
-// real account (roadmap, notes, tests, mentor, research, current affairs)
-// ask them to sign in at that moment. Signing up while a guest LINKS the new
+// real account (notes, tests, mentor, research, current affairs) ask them
+// to sign in when they use those features. Roadmap generation is guest-enabled
+// under a tighter request budget. Signing up while a guest LINKS the new
 // credential to the same Firebase user — the uid never changes, so everything
 // the guest did (Mind Blueprint result, searches, goals) stays theirs.
 //
