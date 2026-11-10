@@ -503,7 +503,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
         className="fixed right-4 top-4 z-40 h-10 px-3 rounded-full border border-white/10 bg-[#111827]/85 text-white shadow-lg backdrop-blur-md flex items-center gap-2 hover:bg-white/10 transition-colors"
       >
         <SettingsIcon className="w-4 h-4" strokeWidth={1.75} />
-        <span className="text-sm">Account &amp; Settings</span>
+        <span className="hidden text-sm sm:inline">Account &amp; Settings</span>
       </button>
 
       <div className={`min-h-dvh min-w-0 ${isMissionControl ? "h-dvh overflow-hidden" : "overflow-auto"} ${isMissionControl ? "pt-16" : "pt-14"} ${isMissionControl || immersive ? "" : "pb-[calc(4rem+env(safe-area-inset-bottom))]"}`}>
