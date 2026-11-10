@@ -43,6 +43,10 @@ export interface TranslationShape {
     goals: Record<string, string>;
     languages: Record<string, string>;
     namePlaceholder: string;
+    subjectPlaceholder: string;
+    hoursLabel: string;
+    hoursHint: string;
+    validationMessage: string;
     back: string;
     continue: string;
     start: string;
