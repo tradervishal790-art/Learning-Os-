@@ -102,6 +102,12 @@ export default function MissionControl({
   const mapHeight = Math.max(660, visibleRows.length <= 1 ? 660 : 132 + (visibleRows.length - 1) * 132);
   const nextBestStepAction = getNextBestStepAction({ hasLearningProfile, revisionDue, revisionOverdue });
   const nextStepStageId = nextBestStepAction === 'profile' ? 'know' : nextBestStepAction === 'revision' ? 'retain' : 'plan';
+  // On phones, open the recommended stage automatically so the learner can reach its action in one tap.
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.matchMedia('(max-width: 1023px)').matches) {
+      setSelectedEngine((current) => current ?? nextStepStageId);
+    }
+  }, [nextStepStageId]);
   const rowY = visibleRows.map((_, index) => visibleRows.length === 1 ? mapHeight / 2 : 66 + index * ((mapHeight - 132) / (visibleRows.length - 1)));
   const open = (action: 'profile' | DashboardPageId) => action === 'profile' ? onOpenProfile() : onNavigate(action);
   const activeDays = useMemo(() => readActiveDays(), [streak]);
@@ -109,7 +115,7 @@ export default function MissionControl({
   const filteredMoreItems = moreItems.filter((item) => item.label.toLowerCase().includes(functionSearch.toLowerCase()));
 
   return (
-    <main className="mission-map relative flex h-[calc(100dvh-128px-env(safe-area-inset-bottom))] min-h-0 md:h-[calc(100dvh-64px)] w-full flex-col overflow-hidden bg-[#080d19] text-slate-100">
+    <main className="mission-map relative flex h-[calc(100dvh-64px-env(safe-area-inset-bottom))] min-h-0 md:h-[calc(100dvh-64px)] w-full flex-col overflow-hidden bg-[#080d19] text-slate-100">
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -left-40 top-[-220px] h-[520px] w-[520px] rounded-full bg-violet-600/[0.10] blur-[130px]" />
         <div className="absolute right-[-120px] top-[10%] h-[480px] w-[480px] rounded-full bg-cyan-500/[0.08] blur-[130px]" />
@@ -129,7 +135,7 @@ export default function MissionControl({
       </header>
 
       <section className="relative z-10 flex min-h-0 flex-1 flex-col overflow-y-auto px-3 pb-3 pt-3 md:px-6 md:pb-5 md:pt-4">
-        <div className="order-2 mb-3 grid shrink-0 gap-3 md:order-none lg:grid-cols-12">
+        <div className="order-1 mb-3 grid shrink-0 gap-3 md:order-none lg:grid-cols-12">
           {/* Slim Continue strip: one clear action, exactly where the learner stopped. */}
           <GlassButton onClick={onContinueLearning} accent="#a78bfa" className="border-violet-300/25 bg-gradient-to-br from-violet-500/[0.14] to-indigo-500/[0.05] hover:border-violet-200/45 lg:col-span-7">
             <span className="flex items-center gap-3 p-3 md:gap-4 md:p-4">
@@ -269,7 +275,7 @@ export default function MissionControl({
           </div>
         </div>
 
-        <div className="relative order-1 flex-none rounded-2xl border border-white/[0.07] bg-[#0b1221]/70 p-3 lg:order-none lg:hidden">
+        <div className="relative order-2 flex-none rounded-2xl border border-white/[0.07] bg-[#0b1221]/70 p-3 lg:order-none lg:hidden">
           <div className="absolute bottom-8 left-[27px] top-8 w-px bg-gradient-to-b from-violet-400 via-cyan-300 to-fuchsia-400 opacity-60" />
           <div className="relative flex flex-col gap-2.5">
             <div className="mb-1 flex items-center gap-3 rounded-xl border border-violet-300/40 bg-[#211b40] p-3">
@@ -281,13 +287,13 @@ export default function MissionControl({
               const copy = hub.engines[row.id];
               return (
                 <div key={row.id} className="relative ml-5 rounded-xl border bg-[#111d31] p-3" style={{ borderColor: `${row.color}50` }}>
-                  <button type="button" onClick={() => setSelectedEngine((current) => current === row.id ? null : row.id)} aria-expanded={selectedEngine === row.id} aria-current={nextStepStageId === row.id ? 'step' : undefined} className={`flex w-full items-center gap-3 rounded-lg text-left ${nextStepStageId === row.id ? 'ring-1 ring-cyan-300/40' : ''}`}>
+                  <button type="button" onClick={() => setSelectedEngine((current) => current === row.id ? null : row.id)} aria-expanded={selectedEngine === row.id} aria-current={nextStepStageId === row.id ? 'step' : undefined} className={`flex min-h-11 w-full items-center gap-3 rounded-lg px-1 py-1 text-left transition-colors ${nextStepStageId === row.id ? 'ring-1 ring-cyan-300/40 bg-cyan-300/[0.04]' : ''}`}>
                     <Icon className="h-5 w-5" style={{ color: row.color }} />
                     <span className="flex-1"><span className="block text-xs font-semibold text-white">{row.number} · {copy.title}</span><span className="block text-[10px] text-slate-500">{copy.subtitle}</span>{nextStepStageId === row.id && <span className="mt-1 inline-flex rounded-full bg-cyan-300/10 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wider text-cyan-200">{hub.space.yourNextStep}</span>}</span>
                     <ArrowUpRight className="h-4 w-4 text-slate-500" />
                   </button>
-                  {selectedEngine === row.id && <div className="ml-8 mt-2 flex flex-wrap gap-1.5">
-                    {row.children.map((child) => <button key={child.id} type="button" onClick={() => open(child.action)} className="rounded-lg border border-white/[0.08] bg-white/[0.035] px-2 py-1.5 text-[9px] text-slate-300">{hub.tools[child.id].label} ↗</button>)}
+                  {selectedEngine === row.id && <div className="ml-8 mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    {row.children.map((child) => <button key={child.id} type="button" onClick={() => open(child.action)} className="flex min-h-10 items-center justify-between rounded-lg border border-white/[0.09] bg-white/[0.045] px-3 py-2 text-xs font-medium text-slate-200 transition-colors active:bg-white/[0.09]"><span>{hub.tools[child.id].label}</span><ArrowUpRight className="h-3.5 w-3.5 text-slate-500" /></button>)}
                   </div>}
                 </div>
               );
