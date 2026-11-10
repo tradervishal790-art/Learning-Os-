@@ -350,7 +350,7 @@ export default function Test() {
 
   return (
     <div className="dark">
-      <div className="relative mx-auto max-w-6xl overflow-hidden rounded-none bg-[#080d19] p-4 text-slate-100 md:my-4 md:rounded-3xl md:p-8">
+      <div className="relative mx-auto max-w-6xl overflow-hidden rounded-none bg-[#080d19] px-4 pb-4 pt-2 text-slate-100 md:mb-4 md:mt-0 md:rounded-3xl md:px-8 md:pb-8 md:pt-3">
         {stageBlobs}
         <div className="relative">
           <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className={`mb-5 md:mb-8 ${stage === 'list' ? '' : 'mx-auto max-w-3xl'}`}>

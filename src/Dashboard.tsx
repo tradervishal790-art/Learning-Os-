@@ -506,7 +506,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
         <span className="text-sm">Account &amp; Settings</span>
       </button>
 
-      <div className={`min-h-dvh min-w-0 ${isMissionControl ? "h-dvh overflow-hidden" : "overflow-auto"} pt-16 md:pt-16 ${isMissionControl || immersive ? "" : "pb-[calc(4rem+env(safe-area-inset-bottom))]"}`}>
+      <div className={`min-h-dvh min-w-0 ${isMissionControl ? "h-dvh overflow-hidden" : "overflow-auto"} ${isMissionControl ? "pt-16" : "pt-14"} ${isMissionControl || immersive ? "" : "pb-[calc(4rem+env(safe-area-inset-bottom))]"}`}>
 
         <Suspense fallback={<PageLoading />}>
           <motion.div
