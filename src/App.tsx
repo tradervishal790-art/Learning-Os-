@@ -15,7 +15,7 @@ import { getGoals, getActiveGoals, addGoal, endGoal as endGoalInStore, updateGoa
 import { useTranslation, useLanguage, mapOnboardingLanguage } from './i18n/LanguageContext';
 import radheRadheLogo from './assets/brand/radhe-radhe.png';
 import { authFetch } from './apiFetch';
-import { useAuthPrompt, SignInButton } from './AuthPrompt';
+import { SignInButton } from './AuthPrompt';
 
 // Onboarding3D is its own route ("/onboarding") — no need to ship it in the
 // initial landing/dashboard bundle, so it's loaded on demand only.
@@ -24,9 +24,6 @@ const Onboarding3D = lazy(() => import('./Onboarding3D'));
 type Page = 'landing' | 'onboarding' | 'dashboard';
 
 const ONBOARDING_STORAGE_KEY = 'learning_os_onboarding_data';
-// A guest who finishes onboarding has no account yet, and roadmap generation needs one.
-// We remember which goal is waiting and build its roadmap right after they sign in.
-const PENDING_ROADMAP_KEY = 'learning_os_pending_roadmap';
 
 function loadSavedOnboardingData(): UserOnboardingData | null {
   try {
@@ -39,7 +36,6 @@ function loadSavedOnboardingData(): UserOnboardingData | null {
 
 function App() {
   const t = useTranslation();
-  const { isGuest, openSignIn } = useAuthPrompt();
   const { setLanguage } = useLanguage();
   const demoSteps = t.demo.steps;
   const navigate = useNavigate();
@@ -134,11 +130,6 @@ function App() {
    * the browser console can show WHY, instead of a black-box failure.
    */
   const generateAndSaveRoadmap = async (data: UserOnboardingData, goalId?: string): Promise<boolean> => {
-    // Roadmaps need an account (server enforces it too). Ask a guest to sign in instead of failing.
-    if (isGuest) {
-      openSignIn(t.dashboard.sidebar.roadmap);
-      return false;
-    }
     // Never treat the broad intent category (e.g. "skill" or "job") as
     // the concrete topic. A missing subject must stop here, not reach the API.
     const subject = typeof data.subject === 'string' ? data.subject.trim() : '';
@@ -222,17 +213,9 @@ function App() {
     saveGoals([primaryGoal]);
     setActiveGoalId('primary');
 
-    // A guest has no account yet: park the roadmap, show the dashboard (Mind Blueprint, videos
-    // and dictionary are open to guests) and ask them to sign in — the roadmap is then built
-    // automatically (see the pending-roadmap effect below).
-    if (isGuest) {
-      localStorage.setItem(PENDING_ROADMAP_KEY, 'primary');
-      setPage('dashboard');
-      openSignIn(t.dashboard.sidebar.roadmap);
-      return;
-    }
-
-    // If generation fails, Roadmap.tsx falls back to its default empty state —
+    // Guests receive the same first roadmap as account holders. Their data stays
+    // in localStorage until they choose to create an account or sign in.
+    // If generation fails, Roadmap.tsx shows its friendly failure state —
     // don't block the user from reaching the dashboard.
     await generateAndSaveRoadmap(data, 'primary');
 
@@ -255,18 +238,6 @@ function App() {
   // force it to re-read on its own).
   const [roadmapVersion, setRoadmapVersion] = useState(0);
 
-  // Guest finished onboarding earlier and has now signed in / created an account:
-  // build the roadmap that was waiting for them.
-  useEffect(() => {
-    if (isGuest || !userData) return;
-    const pendingGoalId = localStorage.getItem(PENDING_ROADMAP_KEY);
-    if (!pendingGoalId) return;
-    localStorage.removeItem(PENDING_ROADMAP_KEY);
-    void generateAndSaveRoadmap(userData, pendingGoalId).then((ok) => {
-      if (ok) setRoadmapVersion((v) => v + 1);
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isGuest, userData]);
   const handleRegenerateRoadmap = async (): Promise<boolean> => {
     if (!userData || !activeGoalId) return false;
     const activeGoal = goals.find((g) => g.id === activeGoalId);
