@@ -24,6 +24,8 @@ interface AuthPromptValue {
   user: User | null;
   /** True when there is no real account yet: signed out, or an anonymous guest session. */
   isGuest: boolean;
+  /** False until Firebase has restored the saved session, so a returning user never sees a flash of "Sign in". */
+  authReady: boolean;
   /** true => caller has a real account. false => the sign-in modal was opened. */
   requireAccount: (feature?: string) => boolean;
   /** Opens the sign-in modal. `mode` picks the tab shown first (default: create account). */
@@ -44,6 +46,7 @@ export function AuthPromptProvider({ children }: { children: ReactNode }) {
   // Linking a guest to an account mutates the SAME User object (isAnonymous flips
   // in place), so React would not notice — bump a counter on every auth event.
   const [, setTick] = useState(0);
+  const [authReady, setAuthReady] = useState(() => !!auth.currentUser);
   const [open, setOpen] = useState(false);
   const [feature, setFeature] = useState<string | undefined>(undefined);
   const [mode, setMode] = useState<'signin' | 'create'>('create');
@@ -59,6 +62,13 @@ export function AuthPromptProvider({ children }: { children: ReactNode }) {
       offState();
       offToken();
     };
+  }, []);
+
+  useEffect(() => {
+    let alive = true;
+    const done = () => { if (alive) setAuthReady(true); };
+    auth.authStateReady().then(done, done);
+    return () => { alive = false; };
   }, []);
 
   const hasAccount = !!user && !user.isAnonymous;
@@ -86,14 +96,21 @@ export function AuthPromptProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener(ACCOUNT_REQUIRED_EVENT, onRequired);
   }, [openSignIn]);
 
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open]);
+
   // Close the modal the moment the visitor has a real account.
   useEffect(() => {
     if (hasAccount) setOpen(false);
   }, [hasAccount]);
 
   const value = useMemo<AuthPromptValue>(
-    () => ({ user, isGuest: !hasAccount, requireAccount, openSignIn }),
-    [user, hasAccount, requireAccount, openSignIn]
+    () => ({ user, isGuest: !hasAccount, authReady, requireAccount, openSignIn }),
+    [user, hasAccount, authReady, requireAccount, openSignIn]
   );
 
   return (
@@ -101,13 +118,12 @@ export function AuthPromptProvider({ children }: { children: ReactNode }) {
       {children}
       {open && !hasAccount && (
         <div
-          className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
-          onClick={() => setOpen(false)}
+          className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4"
         >
           <div
             role="dialog"
             aria-modal="true"
-            className="w-full max-w-sm rounded-3xl bg-white dark:bg-[#0a0a0a] border border-black/10 dark:border-white/10 p-6 max-h-[92vh] overflow-auto"
+            className="w-full max-w-sm rounded-t-3xl sm:rounded-3xl bg-white dark:bg-[#0a0a0a] border border-black/10 dark:border-white/10 p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] max-h-[92dvh] overflow-auto overscroll-contain"
             onClick={(e) => e.stopPropagation()}
           >
             <h2 className="text-xl font-bold text-black dark:text-white mb-1">
@@ -131,8 +147,8 @@ export function AuthPromptProvider({ children }: { children: ReactNode }) {
 /** Header button (top-right, Adobe-style). Renders nothing once the visitor has an account. */
 export function SignInButton({ className = '' }: { className?: string }) {
   const t = useTranslation();
-  const { isGuest, openSignIn } = useAuthPrompt();
-  if (!isGuest) return null;
+  const { isGuest, authReady, openSignIn } = useAuthPrompt();
+  if (!authReady || !isGuest) return null;
   return (
     <button onClick={() => openSignIn(undefined, 'signin')} className={className}>
       {t.authPrompt.signInButton}

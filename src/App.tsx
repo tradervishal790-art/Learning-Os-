@@ -373,12 +373,18 @@ function App() {
     );
   } else {
     content = (
-      <div className="relative min-h-screen overflow-hidden bg-[#030303]">
+      <div className="relative min-h-dvh overflow-hidden bg-[#030303]">
         <Stars />
         {/* Top-right "Sign in" — optional; hidden once the visitor has an account. */}
-        <div className="absolute top-4 right-4 sm:top-6 sm:right-6" style={{ zIndex: 20 }}>
-          <SignInButton className="px-5 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white text-sm font-medium hover:bg-white/20 transition" />
-        </div>
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4, duration: 0.5 }}
+          className="fixed right-4"
+          style={{ zIndex: 20, top: 'calc(env(safe-area-inset-top) + 0.75rem)', right: 'calc(env(safe-area-inset-right) + 1rem)' }}
+        >
+          <SignInButton className="inline-flex h-11 items-center px-5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white text-sm font-medium hover:bg-white/20 active:scale-95 transition" />
+        </motion.div>
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
@@ -390,7 +396,7 @@ function App() {
           <Sphere />
         </div>
 
-        <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-6 text-center">
+        <div className="relative z-10 flex flex-col items-center justify-center min-h-dvh px-6 text-center">
           <motion.div
             initial={{ opacity: 0, y: -16, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}

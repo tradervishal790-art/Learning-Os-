@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useState, lazy, Suspense } from 'react';
+import { useCallback, useEffect, useRef, useState, lazy, Suspense } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { Settings as SettingsIcon, ArrowLeft } from 'lucide-react';
+import TopControls from './TopControls';
 import PagePlaceholder from './PagePlaceholder';
 import MissionControl from './MissionControl';
 import { getContinueLearningTarget } from './missionControlLogic';
@@ -189,6 +189,29 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
 
   const [streak, setStreak] = useState(0);
   const immersive = useImmersive(); // true while a full-attention flow (e.g. a timed test) hides the bottom bar
+  // Top controls slide away while reading down a page and return on scroll up (or on any page change).
+  const pageScrollRef = useRef<HTMLDivElement>(null);
+  const [barScrollHidden, setBarScrollHidden] = useState(false);
+  useEffect(() => {
+    setBarScrollHidden(false);
+    if (activePage === 'dashboard') return;
+    let last = window.scrollY;
+    const onScroll = (event: Event) => {
+      const target = event.target;
+      const y = target === document ? window.scrollY : target === pageScrollRef.current ? pageScrollRef.current!.scrollTop : null;
+      if (y === null || y < 0) return; // ignore inner scrollers (chat lists etc.) and iOS rubber-band
+      if (y <= 8 || y < last - 6) setBarScrollHidden(false);
+      else if (y > 80 && y > last + 6) setBarScrollHidden(true);
+      last = y;
+    };
+    window.addEventListener('scroll', onScroll, { passive: true, capture: true });
+    return () => window.removeEventListener('scroll', onScroll, true);
+  }, [activePage]);
+  // Back = the screen you came from; falls back to Home if there is nothing earlier in the app.
+  const goBack = useCallback(() => {
+    if ((window.history.state?.idx ?? 0) > 0) navigate(-1);
+    else setActivePage('dashboard');
+  }, [navigate, setActivePage]);
   const [showLearningQuiz, setShowLearningQuiz] = useState(false);
   // Alternative onboarding path — does NOT replace showLearningQuiz above,
   // both remain independently reachable from the home page.
@@ -486,29 +509,15 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   const isMissionControl = activePage === 'dashboard';
   return (
     <div className="min-h-dvh bg-[#080d19] text-white">
-      {/* Minimal floating controls: no sidebar and no full-width header strip. */}
-      {activePage !== 'dashboard' && (
-        <button
-          onClick={() => setActivePage('dashboard')}
-          aria-label="Back to Mission Control"
-          title="Back to Mission Control"
-          className="fixed left-4 top-4 z-40 h-10 w-10 rounded-full border border-white/10 bg-[#111827]/85 text-white shadow-lg backdrop-blur-md flex items-center justify-center hover:bg-white/10 transition-colors"
-        >
-          <ArrowLeft className="w-5 h-5" strokeWidth={1.9} />
-        </button>
-      )}
-      <button
-        id="onborda-settings-button"
-        onClick={() => { setShowSettings(true); setShowFullProfileReport(false); }}
-        aria-label="Account & Settings"
-        title="Account & Settings"
-        className="fixed right-4 top-4 z-40 h-10 px-3 rounded-full border border-white/10 bg-[#111827]/85 text-white shadow-lg backdrop-blur-md flex items-center gap-2 hover:bg-white/10 transition-colors"
-      >
-        <SettingsIcon className="w-4 h-4" strokeWidth={1.75} />
-        <span className="text-sm">Account &amp; Settings</span>
-      </button>
+      {/* One shared, safe-area-aware top bar for every screen. */}
+      <TopControls
+        showBack={activePage !== 'dashboard'}
+        onBack={goBack}
+        onOpenSettings={() => { setShowSettings(true); setShowFullProfileReport(false); }}
+        hidden={immersive || barScrollHidden}
+      />
 
-      <div className={`min-h-dvh min-w-0 ${isMissionControl ? "h-dvh overflow-hidden" : "overflow-auto"} ${isMissionControl ? "pt-16" : "pt-14"} ${isMissionControl || immersive ? "" : "pb-[calc(4rem+env(safe-area-inset-bottom))]"}`}>
+      <div ref={pageScrollRef} className={`min-h-dvh min-w-0 ${isMissionControl ? "h-dvh overflow-hidden" : "overflow-auto"} ${isMissionControl ? "pt-[calc(4rem+env(safe-area-inset-top))]" : "pt-[calc(4.5rem+env(safe-area-inset-top))]"} ${isMissionControl || immersive ? "" : "pb-[calc(4rem+env(safe-area-inset-bottom))]"}`}>
 
         <Suspense fallback={<PageLoading />}>
           <motion.div
@@ -607,15 +616,15 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
             onClick={() => setShowSettings(false)}
           >
             <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-white/10 rounded-3xl max-w-md w-full max-h-[85vh] overflow-auto text-black dark:text-white"
+              initial={prefersReducedMotion ? false : { y: 48, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={prefersReducedMotion ? { opacity: 0 } : { y: 48, opacity: 0 }}
+              transition={prefersReducedMotion ? { duration: 0 } : { type: 'spring', stiffness: 380, damping: 36 }}
+              className="bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-white/10 rounded-t-3xl sm:rounded-3xl max-w-md w-full max-h-[92dvh] sm:max-h-[85dvh] overflow-auto overscroll-contain text-black dark:text-white"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="p-6 border-b border-gray-200 dark:border-white/5 flex items-center justify-between">
@@ -875,7 +884,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
                 </div>
               </div>
 
-              <div className="p-6 pt-0">
+              <div className="sticky bottom-0 bg-white dark:bg-[#0a0a0a] px-6 pt-3 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
                 <button
                   onClick={handleSaveSettings}
                   disabled={!settingsName.trim()}
