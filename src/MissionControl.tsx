@@ -129,7 +129,7 @@ export default function MissionControl({
       </header>
 
       <section className="relative z-10 flex min-h-0 flex-1 flex-col overflow-y-auto px-3 pb-3 pt-3 md:px-6 md:pb-5 md:pt-4">
-        <div className="order-2 mb-3 grid shrink-0 gap-3 md:order-none lg:grid-cols-12">
+        <div className="order-1 mb-3 grid shrink-0 gap-3 md:order-none lg:grid-cols-12">
           {/* Slim Continue strip: one clear action, exactly where the learner stopped. */}
           <GlassButton onClick={onContinueLearning} accent="#a78bfa" className="border-violet-300/25 bg-gradient-to-br from-violet-500/[0.14] to-indigo-500/[0.05] hover:border-violet-200/45 lg:col-span-7">
             <span className="flex items-center gap-3 p-3 md:gap-4 md:p-4">
@@ -171,8 +171,8 @@ export default function MissionControl({
           </GlassPanel>
         </div>
 
-        {visibleRows.length === 0 && <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-center"><p className="text-sm font-medium text-white">{hub.space.emptyTitle}</p><p className="mt-1 text-xs text-slate-400">{hub.space.emptyBody}</p><button type="button" onClick={() => { mapPrefsEdited.current = true; setVisibleNodeIds(defaultNodeIds); }} className="mt-3 rounded-lg border border-cyan-300/30 px-3 py-2 text-xs text-cyan-100">{hub.space.restore}</button></div>}
-        <div className="relative order-1 hidden flex-none overflow-visible rounded-[24px] border border-white/[0.07] bg-[#0b1221]/65 lg:order-none lg:block" style={{ height: `${mapHeight}px` }}>
+        {visibleRows.length === 0 && <div className="order-2 rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-center"><p className="text-sm font-medium text-white">{hub.space.emptyTitle}</p><p className="mt-1 text-xs text-slate-400">{hub.space.emptyBody}</p><button type="button" onClick={() => { mapPrefsEdited.current = true; setVisibleNodeIds(defaultNodeIds); }} className="mt-3 rounded-lg border border-cyan-300/30 px-3 py-2 text-xs text-cyan-100">{hub.space.restore}</button></div>}
+        <div className="relative order-2 hidden flex-none overflow-visible rounded-[24px] border border-white/[0.07] bg-[#0b1221]/65 lg:order-none lg:block" style={{ height: `${mapHeight}px` }}>
           <div className="relative min-h-[660px]" style={{ height: `${mapHeight}px` }}>
           <div className="absolute inset-0 opacity-[0.16]" style={{ backgroundImage: 'radial-gradient(#7dd3fc 0.7px, transparent 0.7px)', backgroundSize: '24px 24px' }} />
           <svg className="absolute inset-0 h-full w-full" viewBox={`0 0 1200 ${mapHeight}`} preserveAspectRatio="none" fill="none" aria-hidden="true">
@@ -269,7 +269,7 @@ export default function MissionControl({
           </div>
         </div>
 
-        <div className="relative order-1 flex-none rounded-2xl border border-white/[0.07] bg-[#0b1221]/70 p-3 lg:order-none lg:hidden">
+        <div className="relative order-2 flex-none rounded-2xl border border-white/[0.07] bg-[#0b1221]/70 p-3 lg:order-none lg:hidden">
           <div className="absolute bottom-8 left-[27px] top-8 w-px bg-gradient-to-b from-violet-400 via-cyan-300 to-fuchsia-400 opacity-60" />
           <div className="relative flex flex-col gap-2.5">
             <div className="mb-1 flex items-center gap-3 rounded-xl border border-violet-300/40 bg-[#211b40] p-3">
