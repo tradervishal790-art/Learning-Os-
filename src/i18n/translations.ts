@@ -892,7 +892,7 @@ export interface TranslationShape {
   };
   progress: {
     header: { title: string; subtitle: string };
-    stats: { completion: string; streak: string; totalWatchTime: string; retention: string };
+    stats: { completion: string; streak: string; totalStudyTime: string; retention: string };
     completionBar: { topicsDone: string; inProgress: string }; // "{0}/{1}" and "{0}"
     emptyState: { title: string; body: string };
     timeTracking: { title: string; last7Days: string; minutesTitle: string }; // "{0}" = minutes
@@ -1367,7 +1367,7 @@ export const translations: Record<Locale, TranslationShape> = {
           icon: '',
           title: '8. Progress',
           description:
-            'Real numbers from your real activity — completion %, streak, watch time, retention, and a mastery heatmap that shows exactly where you\'re weak.',
+            'Real numbers from your real activity — completion %, streak, study time, retention, and a mastery heatmap that shows exactly where you\'re weak.',
         },
         {
           icon: '',
@@ -3037,8 +3037,8 @@ export const translations: Record<Locale, TranslationShape> = {
       },
     },
     progress: {
-      header: { title: 'Progress', subtitle: 'Your real stats — streak, watch time, weak spots' },
-      stats: { completion: 'Completion', streak: 'Streak', totalWatchTime: 'Total Watch Time', retention: 'Retention' },
+      header: { title: 'Progress', subtitle: 'Your real stats — streak, study time, weak spots' },
+      stats: { completion: 'Completion', streak: 'Streak', totalStudyTime: 'Total Study Time', retention: 'Retention' },
       completionBar: { topicsDone: '{0}/{1} topics done', inProgress: '{0} in progress' },
       emptyState: {
         title: 'Nothing to track yet',
@@ -3516,7 +3516,7 @@ export const translations: Record<Locale, TranslationShape> = {
           icon: '',
           title: '8. Progress',
           description:
-            'आपकी असल एक्टिविटी से असली आंकड़े — completion %, streak, watch time, retention, और एक mastery heatmap जो बिल्कुल दिखाता है कि आप कहां कमज़ोर हैं।',
+            'आपकी असल एक्टिविटी से असली आंकड़े — completion %, streak, study time, retention, और एक mastery heatmap जो बिल्कुल दिखाता है कि आप कहां कमज़ोर हैं।',
         },
         {
           icon: '',
@@ -5181,8 +5181,8 @@ export const translations: Record<Locale, TranslationShape> = {
       },
     },
     progress: {
-      header: { title: 'प्रगति', subtitle: 'आपके असली आंकड़े — स्ट्रीक, वॉच टाइम, कमजोर टॉपिक' },
-      stats: { completion: 'पूर्णता', streak: 'स्ट्रीक', totalWatchTime: 'कुल वॉच टाइम', retention: 'रिटेंशन' },
+      header: { title: 'प्रगति', subtitle: 'आपके असली आंकड़े — स्ट्रीक, पढ़ाई का समय, कमजोर टॉपिक' },
+      stats: { completion: 'पूर्णता', streak: 'स्ट्रीक', totalStudyTime: 'कुल पढ़ाई का समय', retention: 'रिटेंशन' },
       completionBar: { topicsDone: '{0}/{1} टॉपिक पूरे', inProgress: '{0} जारी हैं' },
       emptyState: {
         title: 'अभी ट्रैक करने को कुछ नहीं है',
@@ -5659,7 +5659,7 @@ export const translations: Record<Locale, TranslationShape> = {
           icon: '',
           title: '8. Progress',
           description:
-            'Tumhari asal activity se real numbers — completion %, streak, watch time, retention, aur ek mastery heatmap jo bilkul dikhata hai tum kahan weak ho.',
+            'Tumhari asal activity se real numbers — completion %, streak, study time, retention, aur ek mastery heatmap jo bilkul dikhata hai tum kahan weak ho.',
         },
         {
           icon: '',
@@ -7326,8 +7326,8 @@ export const translations: Record<Locale, TranslationShape> = {
       },
     },
     progress: {
-      header: { title: 'Progress', subtitle: 'Your real stats — streak, watch time, weak spots' },
-      stats: { completion: 'Completion', streak: 'Streak', totalWatchTime: 'Total Watch Time', retention: 'Retention' },
+      header: { title: 'Progress', subtitle: 'Your real stats — streak, study time, weak spots' },
+      stats: { completion: 'Completion', streak: 'Streak', totalStudyTime: 'Total Study Time', retention: 'Retention' },
       completionBar: { topicsDone: '{0}/{1} topics done', inProgress: '{0} in progress' },
       emptyState: {
         title: 'Abhi kuch track karne ko nahi hai',

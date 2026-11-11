@@ -21,7 +21,7 @@ import { analyzeAttempt, analyzeHistory } from './testAnalytics';
 import { getTestAttempts } from './testStore';
 import { getLearningProfile, saveLearningProfile } from './learningProfileStore';
 import { pushToCloud, pullFromCloud } from './cloudSync';
-import { ACTIVE_DAYS_STORAGE_KEY, STUDY_DAY_EVENT, readStudyDays, readStudyStreak } from './studyDay';
+import { ACTIVE_DAYS_STORAGE_KEY, STUDY_DAY_EVENT, markStudyDay, readStudyDays, readStudyStreak } from './studyDay';
 import { buildCandidatePoolForConcept } from './conceptVideoPool';
 import { selectPlaylistForConcept, analyzedVideoToVideo } from './PlaylistBuilder';
 import { expandSearchQuery } from './queryExpander';
@@ -273,6 +273,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
     setPreloadedPlaylist(payload);
     setViewingTopicId(payload.topicId);
     setActivePage('videos');
+    markStudyDay(); // going to the Videos section from the roadmap = starting a lecture
   };
 
   // "Saved video" — opens the Videos page WITHOUT a fresh search/playlist
@@ -282,6 +283,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
     setPreloadedPlaylist(null);
     setViewingTopicId(topicId);
     setActivePage('videos');
+    markStudyDay(); // same: opening a topic's saved video from the roadmap / Continue learning
   };
 
   // FIX: Pehle yahan sirf name/role/goal/language/hours bhej rahe the,

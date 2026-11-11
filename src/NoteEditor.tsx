@@ -3,6 +3,7 @@ import type { Editor } from '@tiptap/react';
 import { ArrowLeft, Check, Loader2, Save, ChevronDown, FileDown, History, Keyboard, ChevronUp, Copy, Download, Eye, EyeOff, FilePlus, HelpCircle, LayoutGrid, Maximize2, MoveHorizontal, Minimize2, PenTool, Plus, Presentation, RotateCcw, Sparkles, Star, Trash2, Video, VideoOff, X, ZoomIn, ZoomOut } from 'lucide-react';
 import { useLanguage, useTranslation } from './i18n/LanguageContext';
 import { format } from './i18n/format';
+import { markStudyDay, hasWrittenContent } from './studyDay';
 import { loadNoteContent, saveNoteContent, getIndex, type InkStroke, type NotePage, type NoteVideo, type PageAttachment } from './notebookStore';
 import { TEXT_REF_WIDTH, inLayers } from './inkEngine';
 import { useInkPrefs, type InkMode } from './inkPrefs';
@@ -164,6 +165,7 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: (untouc
     clearTimeout(timer.current);
     if (!dirty.current) return;
     dirty.current = false;
+    if (hasWrittenContent(latest.current.pages)) markStudyDay(); // the learner edited a note with real content
     // Autosave keeps a draft on THIS device (nothing is lost if the tab dies); Save sends it to the account.
     void saveNoteContent(id, latest.current.title, latest.current.pages, latest.current.video, { cloud: false });
     // Version history: at most one automatic snapshot every 10 minutes (and never when nothing changed).
@@ -213,6 +215,7 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: (untouc
       }
       if (unsavedRef.current) void saveVersion(id, { title: snap.title, pages: snap.pages, ...(snap.video ? { video: snap.video } : {}) }, 'manual').catch(() => undefined);
       baseline.current = snap;
+      if (hasWrittenContent(snap.pages)) markStudyDay();
       if (rev.current === at) {
         unsavedRef.current = false;
         setUnsaved(false);

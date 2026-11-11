@@ -48,6 +48,8 @@ function utcDayKey(value: string): string | null {
 export function summarizeEngagementTime(
   sessions: readonly TimedEngagement[],
   now = new Date(),
+  /** Extra study seconds per UTC day that are not video sessions (e.g. active Revision time). */
+  extraSecondsByDay: Readonly<Record<string, number>> = {},
 ): DailyTimeSummary {
   const valid = sessions.filter((session) =>
     Number.isFinite(session.watchedSeconds)
@@ -55,12 +57,19 @@ export function summarizeEngagementTime(
     && typeof session.sessionTimestamp === 'string'
     && utcDayKey(session.sessionTimestamp) !== null
   );
-  const totalSeconds = valid.reduce((sum, session) => sum + (session.watchedSeconds ?? 0), 0);
+  let totalSeconds = valid.reduce((sum, session) => sum + (session.watchedSeconds ?? 0), 0);
   const todayKey = Number.isFinite(now.getTime()) ? now.toISOString().slice(0, 10) : '';
   const byDay = new Map<string, number>();
   for (const session of valid) {
     const key = utcDayKey(session.sessionTimestamp!);
     if (key) byDay.set(key, (byDay.get(key) ?? 0) + (session.watchedSeconds ?? 0));
+  }
+
+  for (const [key, seconds] of Object.entries(extraSecondsByDay)) {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(key) && Number.isFinite(seconds) && seconds > 0) {
+      byDay.set(key, (byDay.get(key) ?? 0) + seconds);
+      totalSeconds += seconds;
+    }
   }
 
   const dailyMinutes: DailyTimeSummary['dailyMinutes'] = [];

@@ -7,6 +7,7 @@ import { getTestAttempts } from './testStore';
 import { combineTopicMasteryScore, getTopicTestEvidence } from './topicMastery';
 import type { TranslationShape } from './i18n/translations';
 import { calculateCurrentStreak, normalizeActiveDays, summarizeEngagementTime } from './progressMetrics';
+import { readRevisionSecondsByDay } from './revisionTimeStore';
 
 // ============================================================
 // progressData.ts
@@ -82,7 +83,7 @@ export interface TimeStats {
 
 
 export function getTimeStats(sessions: EngagementSession[] = getEngagementSessions()): TimeStats {
-  return summarizeEngagementTime(sessions);
+  return summarizeEngagementTime(sessions, new Date(), readRevisionSecondsByDay());
 }
 
 // ---------- Mastery heatmap + Weak areas (topic-level, driven by roadmap status + real watch signal) ----------
