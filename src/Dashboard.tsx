@@ -5,7 +5,7 @@ import TopControls from './TopControls';
 import PagePlaceholder from './PagePlaceholder';
 import MissionControl from './MissionControl';
 import { getContinueLearningTarget } from './missionControlLogic';
-import { useImmersive } from './immersive';
+import { useImmersive, useNoteOpen } from './immersive';
 import { getRoadmapData, getCurrentTopic, getRoadmapProgress } from './roadmapData';
 import { getRevisionStats, getRevisionDataForGoals, getDueRevisionItems } from './revisionData';
 import { getResume, pickContinueTarget } from './resumeStore';
@@ -189,6 +189,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
 
   const [streak, setStreak] = useState(0);
   const immersive = useImmersive(); // true while a full-attention flow (e.g. a timed test) hides the bottom bar
+  const noteOpen = useNoteOpen();
   // Top controls slide away while reading down a page and return on scroll up (or on any page change).
   const pageScrollRef = useRef<HTMLDivElement>(null);
   const [barScrollHidden, setBarScrollHidden] = useState(false);
@@ -517,7 +518,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
         hidden={immersive || barScrollHidden}
       />
 
-      <div ref={pageScrollRef} className={`min-h-dvh min-w-0 ${isMissionControl ? "h-dvh overflow-hidden" : "overflow-auto"} ${isMissionControl ? "pt-[calc(4rem+env(safe-area-inset-top))]" : "pt-[calc(4.5rem+env(safe-area-inset-top))]"} ${isMissionControl || immersive ? "" : "pb-[calc(4rem+env(safe-area-inset-bottom))]"}`}>
+      <div ref={pageScrollRef} className={`min-h-dvh min-w-0 ${isMissionControl ? "h-dvh overflow-hidden" : "overflow-auto"} ${isMissionControl ? "pt-[calc(4rem+env(safe-area-inset-top))]" : noteOpen && immersive ? "pt-[env(safe-area-inset-top)]" : "pt-[calc(4.5rem+env(safe-area-inset-top))]"} ${isMissionControl || immersive ? "" : "pb-[calc(4rem+env(safe-area-inset-bottom))]"}`}>
 
         <Suspense fallback={<PageLoading />}>
           <motion.div

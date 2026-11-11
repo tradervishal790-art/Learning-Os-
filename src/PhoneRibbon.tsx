@@ -65,7 +65,7 @@ export default function PhoneRibbon({
       className="fixed left-0 right-0 z-30 bg-white dark:bg-neutral-950 border-t border-gray-200 dark:border-white/10"
       style={{ bottom: inset, paddingBottom: inset ? 0 : 'env(safe-area-inset-bottom)' }}
     >
-      {open && <div className="px-2 pt-1.5 max-h-[45vh] overflow-y-auto">{children}</div>}
+      {open && <div className="px-2 pt-1.5 max-h-[30vh] overflow-y-auto">{children}</div>}
       <div role="tablist" className="flex">
         {NOTE_TABS.map((t) => {
           const on = t.id === 'ai' ? aiOpen : t.id === tab && open;

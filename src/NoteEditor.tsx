@@ -1080,10 +1080,10 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: (untouc
   const { zoom, fitWidth, zoomIn, zoomOut } = useZoom(scrollerRef);
   const scroller = useElementSize(scrollerEl);
   const [ribbonTab, setRibbonTab] = useState<NoteTabId>('home');
-  const [ribbonOpen, setRibbonOpen] = useState(true);
+  const [ribbonOpen, setRibbonOpen] = useState(isDesktop); // phone: start folded so the page gets the room; tap a tab to open tools
   const [ribbonH, setRibbonH] = useState(0);
   // desktop: page fills the screen above the app's bottom edge; phone: above the ribbon
-  useFillHeight(scrollerEl, isDesktop ? (focusMode ? 8 : 64) : ribbonH + 6);
+  useFillHeight(scrollerEl, isDesktop ? (focusMode ? 8 : 64) : ribbonH + 6, isDesktop ? 320 : 120);
 
   // While a note is open the greeting + notes tabs hide; fullscreen also hides the bottom bar. Esc exits fullscreen.
   useEffect(() => {
@@ -1172,7 +1172,7 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: (untouc
     [t]
   );
 
-  const columnW = Math.round(Math.min(Math.max(scroller.w - 24, 200), COLUMN_MAX) * zoom);
+  const columnW = Math.round(Math.min(Math.max(scroller.w - (isDesktop ? 24 : 8), 200), COLUMN_MAX) * zoom);
 
   const thumbs = (
     <PageThumbnails
@@ -1250,7 +1250,7 @@ export default function NoteEditor({ id, onBack }: { id: string; onBack: (untouc
         {/* The pages scroll inside their own box, so zooming (and scrolling sideways when zoomed in) never moves the toolbar. */}
         <div
           ref={setScroller}
-          className="flex-1 min-w-0 overflow-auto rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/[0.02]"
+          className="flex-1 min-w-0 overflow-auto md:rounded-2xl md:border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/[0.02]"
           style={{ touchAction: 'pan-x pan-y' }}
         >
           <div className="py-3" style={{ width: Math.max(scroller.w, columnW + 24) }}>
