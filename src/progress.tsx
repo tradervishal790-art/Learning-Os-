@@ -87,7 +87,7 @@ export default function Progress({ goals = [] }: ProgressProps) {
             <div className="grid min-w-0 flex-1 gap-3">
               {[
                 { label: t.progress.stats.streak, value: `${streak.currentStreak}d`, Icon: Flame, tone: 'text-amber-300' },
-                { label: t.progress.stats.totalWatchTime, value: `${time.totalHours}h`, Icon: Clock, tone: 'text-cyan-300' },
+                { label: t.progress.stats.totalStudyTime, value: `${time.totalHours}h`, Icon: Clock, tone: 'text-cyan-300' },
                 { label: t.progress.stats.retention, value: `${retention.avgRetention}%`, Icon: Brain, tone: 'text-emerald-300' },
               ].map(({ label, value, Icon, tone }) => (
                 <div key={label} title={label} aria-label={`${label}: ${value}`} className="flex min-w-0 items-center gap-3">

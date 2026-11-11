@@ -12,6 +12,7 @@ import { useTranslation } from './i18n/LanguageContext';
 import { format } from './i18n/format';
 import StudyPlan from './StudyPlan';
 import BreakFeed from './BreakFeed';
+import { startRevisionTimer } from './revisionTimeStore';
 import { loadBreakInterests } from './focusStore';
 import { studyPlanText } from './studyPlanText';
 import { useLanguage } from './i18n/LanguageContext';
@@ -76,6 +77,8 @@ export default function Revision({ goals = [] }: RevisionProps) {
   // Check-ins done in this visit; once the due queue is cleared they earn ONE short in-app break.
   const [reviewedNow, setReviewedNow] = useState(0);
   const [breakOpen, setBreakOpen] = useState(false);
+  // Active time on this screen counts as study time (see revisionTimeStore.ts).
+  useEffect(() => startRevisionTimer(), []);
 
   // ON-DEMAND CLOUD HYDRATION: only pulled down when the Revision page is
   // actually opened, not upfront on sign-in. No-op if this device already

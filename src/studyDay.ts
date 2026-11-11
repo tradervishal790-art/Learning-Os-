@@ -46,3 +46,8 @@ export function markStudyDay(now = new Date()): void {
   }
   if (typeof window !== 'undefined') window.dispatchEvent(new window.Event(STUDY_DAY_EVENT));
 }
+
+/** True when a note holds something the learner wrote or drew — an empty page is not study. */
+export function hasWrittenContent(pages: readonly { text: string; ink?: readonly unknown[]; hasInk?: boolean }[]): boolean {
+  return pages.some((page) => page.text.trim().length > 0 || (page.ink?.length ?? 0) > 0 || page.hasInk === true);
+}

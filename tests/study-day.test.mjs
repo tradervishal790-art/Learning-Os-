@@ -35,3 +35,36 @@ test('a short video glance does not count, a real watch session does', () => {
   upsertEngagementSession(session(90));
   assert.equal(readStudyDays().length, 1);
 });
+
+const { hasWrittenContent } = await loadTs('src/studyDay.ts');
+const { addRevisionSeconds, readRevisionSecondsByDay } = await loadTs('src/revisionTimeStore.ts');
+const { summarizeEngagementTime } = await loadTs('src/progressMetrics.ts');
+
+test('an empty note is not study, a written or drawn one is', () => {
+  assert.equal(hasWrittenContent([{ text: '   ' }, { text: '' }]), false);
+  assert.equal(hasWrittenContent([{ text: 'Nouns: number and kind' }]), true);
+  assert.equal(hasWrittenContent([{ text: '', ink: [{}] }]), true);
+});
+
+test('revision time adds up per day and marks the day only after a minute', () => {
+  reset();
+  const now = new Date('2026-11-06T10:00:00.000Z');
+  assert.equal(addRevisionSeconds(30, now), 30);
+  assert.deepEqual(readStudyDays(), []);
+  assert.equal(addRevisionSeconds(40, now), 70);
+  assert.deepEqual(readStudyDays(), ['2026-11-06']);
+  assert.deepEqual(readRevisionSecondsByDay(), { '2026-11-06': 70 });
+  assert.equal(addRevisionSeconds(-5, now), 0);
+});
+
+test('study time totals include revision seconds, video sessions stay counted', () => {
+  const now = new Date('2026-11-06T12:00:00.000Z');
+  const result = summarizeEngagementTime(
+    [{ watchedSeconds: 1800, sessionTimestamp: '2026-11-06T08:00:00.000Z' }],
+    now,
+    { '2026-11-06': 1800, 'bad-key': 999 },
+  );
+  assert.equal(result.totalHours, 1);
+  assert.equal(result.todayMinutes, 60);
+  assert.equal(result.sessionCount, 1);
+});
