@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import type { UserOnboardingData } from './types';
 import { getCurrentUser } from './authStore';
 import { useLanguage, useTranslation, mapOnboardingLanguage } from './i18n/LanguageContext';
@@ -15,7 +15,7 @@ interface CardOption {
 }
 
 // Helper: random starting positions (off-screen sides) for the card entrance animation
-const getStartPosition = (index: number, _total: number) => {
+const getStartPosition = (index: number, _total: number, near: boolean) => {
   const positions = [
     { x: -800, y: -400 }, // top-left
     { x: 800, y: -400 }, // top-right
@@ -26,7 +26,9 @@ const getStartPosition = (index: number, _total: number) => {
     { x: 0, y: -600 }, // top
     { x: 0, y: 600 }, // bottom
   ];
-  return positions[index % positions.length];
+  const p = positions[index % positions.length];
+  // On a phone, flying in from 800px away is a long, slow trip: start closer.
+  return near ? { x: p.x * 0.35, y: p.y * 0.35 } : p;
 };
 
 const languageFlags: Record<string, string> = {
@@ -61,6 +63,8 @@ const goalOrder = ['job', 'skill', 'research', 'startup', 'curiosity', 'mastery'
 export default function Onboarding3D({ onComplete }: Onboarding3DProps) {
   const t = useTranslation();
   const { setLanguage } = useLanguage();
+  const reduceMotion = useReducedMotion();
+  const nearStart = typeof window !== 'undefined' && window.innerWidth < 640;
   // 4 steps: role, goal, language, name.
   const stepTitles = t.onboarding.stepTitles;
   const roles: CardOption[] = roleOrder.map((id) => ({ id, label: t.onboarding.roles[id], icon: roleIcons[id] }));
@@ -125,7 +129,7 @@ export default function Onboarding3D({ onComplete }: Onboarding3DProps) {
     return (
       <div className={isGrid ? 'grid grid-cols-2 md:grid-cols-4 gap-4' : 'grid grid-cols-2 md:grid-cols-3 gap-4'}>
         {options.map((option, i) => {
-          const start = getStartPosition(i, options.length);
+          const start = getStartPosition(i, options.length, nearStart);
           const isSelected =
             (step === 0 && data.role === option.id) ||
             (step === 1 && data.goal === option.id) ||
@@ -134,9 +138,9 @@ export default function Onboarding3D({ onComplete }: Onboarding3DProps) {
           return (
             <motion.button
               key={`${step}-${option.id}`}
-              initial={{ x: start.x, y: start.y, opacity: 0, rotate: start.x > 0 ? 30 : -30, scale: 0.5 }}
+              initial={reduceMotion ? false : { x: start.x, y: start.y, opacity: 0, rotate: start.x > 0 ? 30 : -30, scale: 0.5 }}
               animate={{ x: 0, y: 0, opacity: 1, rotate: 0, scale: 1 }}
-              transition={{ delay: i * 0.08, duration: 0.8, type: 'spring', stiffness: 70, damping: 15 }}
+              transition={reduceMotion ? { duration: 0 } : { delay: i * 0.05, type: 'spring', stiffness: 110, damping: 16 }}
               whileHover={{ scale: 1.05, y: -4 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => {
@@ -150,7 +154,7 @@ export default function Onboarding3D({ onComplete }: Onboarding3DProps) {
                   setLanguage(mapOnboardingLanguage(option.id));
                 }
               }}
-              className={`relative p-6 rounded-2xl border transition-all duration-300 overflow-hidden ${
+              className={`relative p-6 rounded-2xl border transition-[background-color,border-color,box-shadow] duration-300 overflow-hidden ${
                 isSelected
                   ? 'bg-purple-500/20 border-purple-500/50'
                   : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20'
@@ -178,7 +182,7 @@ export default function Onboarding3D({ onComplete }: Onboarding3DProps) {
   };
 
   return (
-    <div className="min-h-screen bg-[#030303] flex flex-col relative overflow-hidden">
+    <div className="min-h-dvh bg-[#030303] flex flex-col relative overflow-hidden">
       <div
         className="absolute inset-0 pointer-events-none"
         style={{ background: 'radial-gradient(circle at center, rgba(139, 92, 246, 0.1) 0%, transparent 60%)' }}
@@ -225,13 +229,13 @@ export default function Onboarding3D({ onComplete }: Onboarding3DProps) {
         </div>
       </div>
 
-      <div className="relative w-full px-6 pb-8 z-10">
+      <div className="relative w-full px-6 pb-[calc(2rem+env(safe-area-inset-bottom))] z-10">
         <div className="max-w-3xl mx-auto flex justify-between items-center">
           <motion.button
             onClick={back}
             disabled={step === 0}
             whileHover={step > 0 ? { x: -4 } : {}}
-            className={`px-6 py-3 rounded-full text-sm font-medium transition-all ${
+            className={`px-6 py-3 rounded-full text-sm font-medium transition-colors ${
               step === 0 ? 'opacity-0 pointer-events-none' : 'text-white/60 hover:text-white'
             }`}
           >
@@ -243,7 +247,7 @@ export default function Onboarding3D({ onComplete }: Onboarding3DProps) {
             disabled={!canProceed()}
             whileHover={canProceed() ? { scale: 1.05 } : {}}
             whileTap={canProceed() ? { scale: 0.95 } : {}}
-            className={`px-8 py-3 rounded-full font-semibold text-sm transition-all duration-300 ${
+            className={`px-8 py-3 rounded-full font-semibold text-sm transition-[background-color,color,box-shadow] duration-300 ${
               canProceed() ? 'bg-white text-black' : 'bg-white/10 text-white/30 cursor-not-allowed'
             }`}
             style={canProceed() ? { boxShadow: '0 0 30px rgba(139, 92, 246, 0.4)' } : {}}

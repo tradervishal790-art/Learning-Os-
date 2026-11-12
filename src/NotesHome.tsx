@@ -35,11 +35,11 @@ export default function NotesHome() {
   // the ink layer reads the app theme directly.
   return (
     <div className={noteOpen ? '' : 'dark'}>
-      <div className={noteOpen ? '' : 'relative min-h-[calc(100dvh-64px)] overflow-hidden bg-[#080d19] text-slate-100'}>
+      <div className={noteOpen ? '' : 'relative min-h-[calc(100dvh-64px)] overflow-hidden bg-transparent md:bg-[#080d19] text-slate-100'}>
         {!noteOpen && (
           <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
-            <div className="absolute -left-32 -top-40 h-[420px] w-[420px] rounded-full bg-violet-600/[0.12] blur-[120px]" />
-            <div className="absolute -right-24 top-1/3 h-[380px] w-[380px] rounded-full bg-cyan-500/[0.08] blur-[120px]" />
+            <div className="hidden md:block absolute -left-32 -top-40 h-[420px] w-[420px] rounded-full bg-violet-600/[0.12] blur-[120px]" />
+            <div className="hidden md:block absolute -right-24 top-1/3 h-[380px] w-[380px] rounded-full bg-cyan-500/[0.08] blur-[120px]" />
           </div>
         )}
         <div className="relative">

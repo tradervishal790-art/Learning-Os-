@@ -407,10 +407,10 @@ export default function Roadmap({
 
   return (
     <div className="dark">
-    <div className="relative mx-auto max-w-6xl overflow-hidden rounded-none bg-[#080d19] px-4 pb-4 pt-2 text-slate-100 md:mb-4 md:mt-0 md:rounded-3xl md:px-8 md:pb-8 md:pt-3">
+    <div className="relative mx-auto max-w-6xl overflow-hidden rounded-none bg-transparent md:bg-[#080d19] px-4 pb-4 pt-2 text-slate-100 md:mb-4 md:mt-0 md:rounded-3xl md:px-8 md:pb-8 md:pt-3">
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -left-32 -top-40 h-[420px] w-[420px] rounded-full bg-violet-600/[0.12] blur-[120px]" />
-        <div className="absolute -right-24 top-1/3 h-[380px] w-[380px] rounded-full bg-cyan-500/[0.08] blur-[120px]" />
+        <div className="hidden md:block absolute -left-32 -top-40 h-[420px] w-[420px] rounded-full bg-violet-600/[0.12] blur-[120px]" />
+        <div className="hidden md:block absolute -right-24 top-1/3 h-[380px] w-[380px] rounded-full bg-cyan-500/[0.08] blur-[120px]" />
       </div>
       <div className="relative">
       {/* Header */}
@@ -634,7 +634,7 @@ export default function Roadmap({
                 onKeyDown={(e) => e.key === 'Enter' && handleGenerateClick()}
                 placeholder={t.roadmap.generateForm.placeholder}
                 autoFocus
-                className="flex-1 px-4 py-2.5 rounded-lg text-sm border border-gray-200 dark:border-white/10 bg-white dark:bg-black/30 focus:outline-none focus:border-black dark:focus:border-white"
+                className="flex-1 px-4 py-2.5 rounded-lg text-base md:text-sm border border-gray-200 dark:border-white/10 bg-white dark:bg-black/30 focus:outline-none focus:border-black dark:focus:border-white"
               />
               <button
                 onClick={handleGenerateClick}
@@ -656,7 +656,7 @@ export default function Roadmap({
                 value={examTypeInput}
                 onChange={(e) => setExamTypeInput(e.target.value)}
                 placeholder={t.roadmap.generateForm.examPlaceholder}
-                className="w-full px-4 py-2.5 rounded-lg text-sm border border-gray-200 dark:border-white/10 bg-white dark:bg-black/30 focus:outline-none focus:border-black dark:focus:border-white"
+                className="w-full px-4 py-2.5 rounded-lg text-base md:text-sm border border-gray-200 dark:border-white/10 bg-white dark:bg-black/30 focus:outline-none focus:border-black dark:focus:border-white"
               />
               <p className="text-[11px] text-gray-400 dark:text-white/40 mt-1.5">
                 {t.roadmap.generateForm.examHint}
@@ -991,7 +991,7 @@ export default function Roadmap({
                         key={item.label}
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: i * 0.1 }}
+                        transition={{ delay: Math.min(i, 8) * 0.1 }}
                         className="p-4 rounded-xl border border-gray-200 dark:border-white/10"
                       >
                         <div className="flex items-center gap-2 mb-2">

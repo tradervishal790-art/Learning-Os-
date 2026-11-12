@@ -293,8 +293,8 @@ export default function Test() {
 
   const stageBlobs = (
     <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
-      <div className="absolute -left-32 -top-40 h-[420px] w-[420px] rounded-full bg-cyan-500/[0.09] blur-[120px]" />
-      <div className="absolute -right-24 top-1/3 h-[380px] w-[380px] rounded-full bg-violet-600/[0.10] blur-[120px]" />
+      <div className="hidden md:block absolute -left-32 -top-40 h-[420px] w-[420px] rounded-full bg-cyan-500/[0.09] blur-[120px]" />
+      <div className="hidden md:block absolute -right-24 top-1/3 h-[380px] w-[380px] rounded-full bg-violet-600/[0.10] blur-[120px]" />
     </div>
   );
 
@@ -350,7 +350,7 @@ export default function Test() {
 
   return (
     <div className="dark">
-      <div className="relative mx-auto max-w-6xl overflow-hidden rounded-none bg-[#080d19] px-4 pb-4 pt-2 text-slate-100 md:mb-4 md:mt-0 md:rounded-3xl md:px-8 md:pb-8 md:pt-3">
+      <div className="relative mx-auto max-w-6xl overflow-hidden rounded-none bg-transparent md:bg-[#080d19] px-4 pb-4 pt-2 text-slate-100 md:mb-4 md:mt-0 md:rounded-3xl md:px-8 md:pb-8 md:pt-3">
         {stageBlobs}
         <div className="relative">
           <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className={`mb-5 md:mb-8 ${stage === 'list' ? '' : 'mx-auto max-w-3xl'}`}>
@@ -665,10 +665,10 @@ export function TakingScreen({
 
   return (
     <div className="dark">
-      <div className="relative mx-auto max-w-6xl overflow-hidden rounded-3xl bg-[#080d19] p-3 text-slate-100 md:p-5">
+      <div className="relative mx-auto max-w-6xl overflow-hidden rounded-3xl bg-transparent md:bg-[#080d19] p-3 text-slate-100 md:p-5">
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
-          <div className="absolute -left-32 -top-40 h-[420px] w-[420px] rounded-full bg-cyan-500/[0.09] blur-[120px]" />
-          <div className="absolute -right-24 top-1/3 h-[380px] w-[380px] rounded-full bg-violet-600/[0.10] blur-[120px]" />
+          <div className="hidden md:block absolute -left-32 -top-40 h-[420px] w-[420px] rounded-full bg-cyan-500/[0.09] blur-[120px]" />
+          <div className="hidden md:block absolute -right-24 top-1/3 h-[380px] w-[380px] rounded-full bg-violet-600/[0.10] blur-[120px]" />
         </div>
         <div className="relative">
           <div className="mb-3 overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.035]">

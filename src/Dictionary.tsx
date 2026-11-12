@@ -162,11 +162,11 @@ export default function Dictionary() {
 
   return (
     <div className="dark">
-      <div className="relative min-h-dvh overflow-hidden bg-[#080d19] p-4 text-slate-100 md:p-8">
+      <div className="relative min-h-dvh overflow-hidden bg-transparent md:bg-[#080d19] p-4 text-slate-100 md:p-8">
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
-          <div className="absolute -left-32 -top-40 h-[420px] w-[420px] rounded-full bg-violet-600/[0.14] blur-[120px]" />
-          <div className="absolute -right-24 top-1/3 h-[380px] w-[380px] rounded-full bg-cyan-500/[0.08] blur-[120px]" />
-          <div className="absolute -bottom-40 left-1/4 h-[340px] w-[340px] rounded-full bg-fuchsia-600/[0.07] blur-[120px]" />
+          <div className="hidden md:block absolute -left-32 -top-40 h-[420px] w-[420px] rounded-full bg-violet-600/[0.14] blur-[120px]" />
+          <div className="hidden md:block absolute -right-24 top-1/3 h-[380px] w-[380px] rounded-full bg-cyan-500/[0.08] blur-[120px]" />
+          <div className="hidden md:block absolute -bottom-40 left-1/4 h-[340px] w-[340px] rounded-full bg-fuchsia-600/[0.07] blur-[120px]" />
         </div>
 
         <div className="relative mx-auto w-full min-w-0 max-w-5xl break-words [overflow-wrap:anywhere]">

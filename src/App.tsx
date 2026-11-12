@@ -351,7 +351,7 @@ function App() {
 
   if (page === 'onboarding') {
     content = (
-      <Suspense fallback={<div className="min-h-screen bg-[#030303]" />}>
+      <Suspense fallback={<div className="min-h-dvh bg-[#030303]" />}>
         <Onboarding3D onComplete={handleOnboardingComplete} />
       </Suspense>
     );

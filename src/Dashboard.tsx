@@ -523,7 +523,17 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   const config = pageConfigs[activePage];
   const isMissionControl = activePage === 'dashboard';
   return (
-    <div className="min-h-dvh bg-[#080d19] text-white">
+    <div className="relative isolate min-h-dvh bg-[#080d19] text-white">
+      {/* Phone glow: one cheap full-screen gradient. Replaces the big blurred orbs each page draws on
+          desktop, which are costly on phone GPUs and showed a hard edge where a short page ended. */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none fixed inset-0 -z-10 md:hidden"
+        style={{
+          background:
+            'radial-gradient(420px circle at 0% 0%, rgba(124,58,237,0.16), transparent 70%), radial-gradient(380px circle at 100% 45%, rgba(6,182,212,0.09), transparent 70%), radial-gradient(420px circle at 35% 100%, rgba(37,99,235,0.07), transparent 70%)',
+        }}
+      />
       {/* One shared, safe-area-aware top bar for every screen. */}
       <TopControls
         showBack={activePage !== 'dashboard'}
@@ -594,7 +604,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
         )}
         {activePage === 'revision' && <Revision goals={goals} />}
         {activePage === 'videos' && (
-          <div className="relative">
+          <div className="dark relative">
             <VideoIntel
               initialPlaylist={preloadedPlaylist}
               activeGoalId={activeGoalId}

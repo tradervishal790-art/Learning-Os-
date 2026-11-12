@@ -11,13 +11,23 @@ export default function Sphere() {
     const width = mount.clientWidth;
     const height = mount.clientHeight;
 
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const finePointer = window.matchMedia('(pointer: fine)').matches;
+
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
-    camera.position.z = 5;
+    // The sphere is 4 units wide. On a tall, narrow phone screen the default distance (5) is too
+    // close and crops its sides, so pull the camera back until the whole sphere fits across.
+    const fitCamera = (aspect: number) => {
+      const halfFov = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+      camera.position.z = Math.max(5, 4.6 / (2 * halfFov * aspect));
+    };
+    fitCamera(width / height);
 
     const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
     renderer.setSize(width, height);
-    renderer.setPixelRatio(window.devicePixelRatio);
+    // 3x phone screens would render 9 pixels per CSS pixel for a thin wireframe: cap at 2x.
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     mount.appendChild(renderer.domElement);
 
     // Sphere
@@ -48,39 +58,58 @@ export default function Sphere() {
       mouseX = (e.clientX / window.innerWidth) * 2 - 1;
       mouseY = -(e.clientY / window.innerHeight) * 2 + 1;
     };
-    window.addEventListener('mousemove', handleMouseMove);
+    // Touch screens have no hover pointer, so the cursor-follow tilt only exists with a mouse.
+    if (finePointer) window.addEventListener('mousemove', handleMouseMove);
 
     // Track the frame id so we can cancel it on unmount — without this the
     // render loop keeps running (and burning CPU) even after the component
     // is gone, e.g. when the user navigates from landing -> onboarding.
-    let frameId: number;
+    let frameId = 0;
+    const renderFrame = () => {
+      points.rotation.x = sphere.rotation.x;
+      points.rotation.y = sphere.rotation.y;
+      renderer.render(scene, camera);
+    };
     const animate = () => {
       frameId = requestAnimationFrame(animate);
       sphere.rotation.x += 0.002;
       sphere.rotation.y += 0.003;
-      points.rotation.x = sphere.rotation.x;
-      points.rotation.y = sphere.rotation.y;
 
       sphere.rotation.y += mouseX * 0.001;
       sphere.rotation.x += mouseY * 0.001;
 
-      renderer.render(scene, camera);
+      renderFrame();
     };
-    animate();
+    const start = () => {
+      if (reduceMotion || frameId) return;
+      frameId = requestAnimationFrame(animate);
+    };
+    const stop = () => {
+      cancelAnimationFrame(frameId);
+      frameId = 0;
+    };
+    // Reduced motion: a single still frame. Otherwise spin, but pause while the tab is hidden.
+    renderFrame();
+    start();
 
     const handleResize = () => {
       const w = mount.clientWidth;
       const h = mount.clientHeight;
       camera.aspect = w / h;
+      fitCamera(w / h);
       camera.updateProjectionMatrix();
       renderer.setSize(w, h);
+      if (!frameId) renderFrame();
     };
+    const handleVisibility = () => (document.hidden ? stop() : start());
     window.addEventListener('resize', handleResize);
+    document.addEventListener('visibilitychange', handleVisibility);
 
     return () => {
-      cancelAnimationFrame(frameId);
+      stop();
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('resize', handleResize);
+      document.removeEventListener('visibilitychange', handleVisibility);
       mount.removeChild(renderer.domElement);
       geometry.dispose();
       material.dispose();

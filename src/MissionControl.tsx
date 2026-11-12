@@ -109,11 +109,11 @@ export default function MissionControl({
   const filteredMoreItems = moreItems.filter((item) => item.label.toLowerCase().includes(functionSearch.toLowerCase()));
 
   return (
-    <main className="mission-map relative flex h-[calc(100dvh-128px-env(safe-area-inset-top)-env(safe-area-inset-bottom))] min-h-0 md:h-[calc(100dvh-64px-env(safe-area-inset-top))] w-full flex-col overflow-hidden bg-[#080d19] text-slate-100">
+    <main className="mission-map relative flex h-[calc(100dvh-128px-env(safe-area-inset-top)-env(safe-area-inset-bottom))] min-h-0 md:h-[calc(100dvh-64px-env(safe-area-inset-top))] w-full flex-col overflow-hidden bg-transparent md:bg-[#080d19] text-slate-100">
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -left-40 top-[-220px] h-[520px] w-[520px] rounded-full bg-violet-600/[0.10] blur-[130px]" />
-        <div className="absolute right-[-120px] top-[10%] h-[480px] w-[480px] rounded-full bg-cyan-500/[0.08] blur-[130px]" />
-        <div className="absolute bottom-[-260px] left-[35%] h-[500px] w-[500px] rounded-full bg-blue-600/[0.06] blur-[130px]" />
+        <div className="hidden md:block absolute -left-40 top-[-220px] h-[520px] w-[520px] rounded-full bg-violet-600/[0.10] blur-[130px]" />
+        <div className="hidden md:block absolute right-[-120px] top-[10%] h-[480px] w-[480px] rounded-full bg-cyan-500/[0.08] blur-[130px]" />
+        <div className="hidden md:block absolute bottom-[-260px] left-[35%] h-[500px] w-[500px] rounded-full bg-blue-600/[0.06] blur-[130px]" />
       </div>
 
       <header className="relative z-10 flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-white/[0.07] px-5 py-3 md:px-8">
@@ -128,7 +128,7 @@ export default function MissionControl({
         </div>
       </header>
 
-      <section className="relative z-10 flex min-h-0 flex-1 flex-col overflow-y-auto px-3 pb-3 pt-3 md:px-6 md:pb-5 md:pt-4">
+      <section className="relative z-10 flex min-h-0 flex-1 flex-col overflow-y-auto px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 md:px-6 md:pb-5 md:pt-4">
         <div className="order-2 mb-3 grid shrink-0 gap-3 md:order-none lg:grid-cols-12">
           {/* Slim Continue strip: one clear action, exactly where the learner stopped. */}
           <GlassButton onClick={onContinueLearning} accent="#a78bfa" className="border-violet-300/25 bg-gradient-to-br from-violet-500/[0.14] to-indigo-500/[0.05] hover:border-violet-200/45 lg:col-span-7">
@@ -140,7 +140,7 @@ export default function MissionControl({
                 <span className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-violet-200/80">
                   {resume ? (resume.kind === 'video' ? hub.resumeVideo : resume.kind === 'revision' ? hub.resumeRevision : resume.kind === 'note' ? hub.resumeNote : hub.resumeTest) : hub.continueEyebrow}
                 </span>
-                <span className="mt-0.5 block truncate text-base font-semibold text-white md:text-lg">
+                <span className="mt-0.5 block line-clamp-2 break-words text-base font-semibold leading-snug text-white md:truncate md:text-lg">
                   {resume?.title || nextTopic || hub.continueTitle}
                 </span>
                 <span className="mt-0.5 block truncate text-xs text-slate-400">
@@ -150,8 +150,8 @@ export default function MissionControl({
                     : nextTopic ? nextTopicDetail : goalTitle ? format(hub.continueWithGoal, goalTitle) : hub.continueEmpty}
                 </span>
               </span>
-              <span className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-violet-300/20 px-3 py-2 text-xs font-semibold text-violet-50">
-                {resume ? hub.resumeCta : hub.continueTitle} <ArrowUpRight className="h-4 w-4" />
+              <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center gap-1.5 rounded-xl bg-violet-300/20 text-xs font-semibold text-violet-50 sm:h-auto sm:w-auto sm:px-3 sm:py-2">
+                <span className="sr-only sm:not-sr-only">{resume ? hub.resumeCta : hub.continueTitle}</span> <ArrowUpRight className="h-4 w-4" />
               </span>
             </span>
           </GlassButton>
@@ -297,7 +297,7 @@ export default function MissionControl({
 
         <div className="relative order-4 mt-2 flex shrink-0 flex-wrap items-center justify-between gap-2 px-1 text-[9px] text-slate-500 md:order-none md:px-3">
           <div className="relative">
-            <button type="button" onClick={() => setMoreOpen((value) => !value)} aria-expanded={moreOpen} className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-medium text-slate-200 transition hover:border-cyan-300/40 hover:bg-white/[0.07]">
+            <button type="button" onClick={() => setMoreOpen((value) => !value)} aria-expanded={moreOpen} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-medium text-slate-200 transition hover:border-cyan-300/40 hover:bg-white/[0.07]">
               <MoreHorizontal className="h-4 w-4 text-cyan-300" /> {hub.moreMenu.button} <ChevronDown className={`h-3.5 w-3.5 transition-transform ${moreOpen ? 'rotate-180' : ''}`} />
             </button>
             {moreOpen && <div className="absolute bottom-full left-0 z-30 mb-2 w-[min(16rem,calc(100vw-2rem))] max-h-[min(70vh,520px)] overflow-y-auto rounded-xl border border-white/10 bg-[#111d31] p-1.5 shadow-2xl">
@@ -313,7 +313,7 @@ export default function MissionControl({
               })}
             </div>}
           </div>
-          <button type="button" onClick={() => { setCustomizeOpen(true); setMoreOpen(false); }} className="inline-flex items-center gap-2 rounded-xl border border-cyan-300/20 bg-cyan-300/[0.06] px-3 py-2 text-xs font-medium text-cyan-100 transition hover:border-cyan-300/40 hover:bg-cyan-300/10">{hub.customize.button}</button>
+          <button type="button" onClick={() => { setCustomizeOpen(true); setMoreOpen(false); }} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-cyan-300/20 bg-cyan-300/[0.06] px-3 py-2 text-xs font-medium text-cyan-100 transition hover:border-cyan-300/40 hover:bg-cyan-300/10">{hub.customize.button}</button>
           <span className="shrink-0">{format(activeGoals === 1 ? hub.footer.goalOne : hub.footer.goalMany, activeGoals)} · {hasLearningProfile ? hub.footer.profileReady : hub.footer.profileMissing}</span>
         </div>
         {customizeOpen && <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="map-customize-title">

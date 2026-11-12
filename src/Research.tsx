@@ -281,7 +281,7 @@ export default function Research({ embedded = false, onClose }: ResearchProps) {
           onMouseLeave={() => setActiveIdx(null)}
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: i * 0.03 }}
+          transition={{ delay: Math.min(i, 10) * 0.03 }}
           className={`rounded-2xl border p-4 transition ${
             activeIdx === i
               ? 'border-violet-400/60 bg-violet-500/[0.08] shadow-[0_0_26px_rgba(139,92,246,.2)]'
@@ -333,10 +333,10 @@ export default function Research({ embedded = false, onClose }: ResearchProps) {
 
   return (
     <div className="dark">
-      <div className="relative min-h-dvh overflow-hidden bg-[#080d19] p-4 text-slate-100 md:p-8">
+      <div className="relative min-h-dvh overflow-hidden bg-transparent md:bg-[#080d19] p-4 text-slate-100 md:p-8">
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
-          <div className="absolute -left-32 -top-40 h-[420px] w-[420px] rounded-full bg-cyan-500/[0.09] blur-[120px]" />
-          <div className="absolute -right-24 top-1/3 h-[380px] w-[380px] rounded-full bg-violet-600/[0.13] blur-[120px]" />
+          <div className="hidden md:block absolute -left-32 -top-40 h-[420px] w-[420px] rounded-full bg-cyan-500/[0.09] blur-[120px]" />
+          <div className="hidden md:block absolute -right-24 top-1/3 h-[380px] w-[380px] rounded-full bg-violet-600/[0.13] blur-[120px]" />
         </div>
         <div className="relative mx-auto w-full max-w-5xl">
           <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-5 flex items-center gap-3 md:mb-8">

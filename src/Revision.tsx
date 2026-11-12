@@ -169,10 +169,10 @@ export default function Revision({ goals = [] }: RevisionProps) {
 
   return (
     <div className="dark">
-    <div className="relative mx-auto max-w-6xl overflow-hidden rounded-none bg-[#080d19] px-4 pb-4 pt-2 text-slate-100 md:mb-4 md:mt-0 md:rounded-3xl md:px-8 md:pb-8 md:pt-3">
+    <div className="relative mx-auto max-w-6xl overflow-hidden rounded-none bg-transparent md:bg-[#080d19] px-4 pb-4 pt-2 text-slate-100 md:mb-4 md:mt-0 md:rounded-3xl md:px-8 md:pb-8 md:pt-3">
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -left-32 -top-40 h-[420px] w-[420px] rounded-full bg-emerald-500/[0.08] blur-[120px]" />
-        <div className="absolute -right-24 top-1/3 h-[380px] w-[380px] rounded-full bg-violet-600/[0.12] blur-[120px]" />
+        <div className="hidden md:block absolute -left-32 -top-40 h-[420px] w-[420px] rounded-full bg-emerald-500/[0.08] blur-[120px]" />
+        <div className="hidden md:block absolute -right-24 top-1/3 h-[380px] w-[380px] rounded-full bg-violet-600/[0.12] blur-[120px]" />
       </div>
       <div className="relative">
       {/* Header */}
@@ -355,8 +355,8 @@ export default function Revision({ goals = [] }: RevisionProps) {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 20 }}
-                transition={{ delay: i * 0.05, duration: 0.3 }}
-                className={`p-4 md:p-5 rounded-2xl border card transition-all ${
+                transition={{ delay: Math.min(i, 8) * 0.05, duration: 0.3 }}
+                className={`p-4 md:p-5 rounded-2xl border card transition-[border-color,box-shadow] ${
                   isReviewing ? 'border-violet-400/60 shadow-[0_0_28px_rgba(139,92,246,.2)]' : 'border-transparent hover:shadow-[0_0_24px_rgba(139,92,246,.14)]'
                 }`}
               >

@@ -50,8 +50,8 @@ export default function CurrentAffairs() {
     <div className="dark">
     <div className="ca-theme relative mx-auto max-w-3xl overflow-hidden px-4 py-5 md:px-8 md:py-8">
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -left-32 -top-40 h-[380px] w-[380px] rounded-full bg-violet-600/[0.13] blur-[120px]" />
-        <div className="absolute -right-24 top-1/2 h-[340px] w-[340px] rounded-full bg-cyan-500/[0.08] blur-[120px]" />
+        <div className="hidden md:block absolute -left-32 -top-40 h-[380px] w-[380px] rounded-full bg-violet-600/[0.13] blur-[120px]" />
+        <div className="hidden md:block absolute -right-24 top-1/2 h-[340px] w-[340px] rounded-full bg-cyan-500/[0.08] blur-[120px]" />
       </div>
       <div className="relative">
       <div className="flex gap-1 rounded-full border border-white/10 bg-white/[0.04] p-1">

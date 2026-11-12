@@ -14,8 +14,6 @@ import Notes from './Notes';
 import Research from './Research';
 import HintBubble from './HintBubble';
 import { getCachedConnectorFacts } from './conceptVideoPool';
-import { useOnborda } from './OnbordaContext';
-import { hasSeenTour, markTourSeen } from './tourStore';
 import { useTranslation } from './i18n/LanguageContext';
 import { format } from './i18n/format';
 import { authFetch } from './apiFetch';
@@ -255,7 +253,6 @@ interface VideoIntelProps {
 
 export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicId, allGoalIds }: VideoIntelProps = {}) {
   const t = useTranslation();
-  const { startOnborda } = useOnborda();
   // Every active goal, active-tab first (checked first so ties resolve in
   // the learner's favor) — deduped in case activeGoalId is also in the list.
   const goalIdsToCheck = Array.from(
@@ -482,17 +479,6 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
     setSelectedVideo(initialPlaylist.primary);
     void verifyBridgeForVideo(initialPlaylist.primary);
 
-    // First time a learner ever gets a 3-video (primary + fallbacks) picker,
-    // explain that all 3 teach the SAME concept in different styles — pick
-    // one, not all three — before it reads as a bug ("why 3 of the same
-    // thing?"). See personalityEngine.ts for why there are always 3.
-    if (initialPlaylist.fallbacks.length > 0 && !hasSeenTour('video-picker-intro')) {
-      const timer = setTimeout(() => {
-        startOnborda('video-picker-intro');
-        markTourSeen('video-picker-intro');
-      }, 500);
-      return () => clearTimeout(timer);
-    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialPlaylist?.primary.id]);
 

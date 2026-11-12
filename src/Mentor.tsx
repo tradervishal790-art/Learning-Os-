@@ -262,11 +262,11 @@ export default function Mentor() {
 
   return (
     <div className="dark">
-      <div className="relative isolate flex h-[calc(100dvh-4rem)] min-h-[520px] w-full overflow-hidden bg-[#080d19] text-slate-100">
+      <div className="relative isolate flex h-[calc(100dvh-4rem)] min-h-[520px] w-full overflow-hidden bg-transparent md:bg-[#080d19] text-slate-100">
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-0 overflow-hidden">
-          <div className="absolute -left-40 -top-40 h-[460px] w-[460px] rounded-full bg-violet-600/[0.15] blur-[130px]" />
-          <div className="absolute right-[-10%] top-[35%] h-[420px] w-[420px] rounded-full bg-cyan-500/[0.09] blur-[130px]" />
-          <div className="absolute bottom-[-35%] left-[30%] h-[460px] w-[460px] rounded-full bg-fuchsia-600/[0.08] blur-[130px]" />
+          <div className="hidden md:block absolute -left-40 -top-40 h-[460px] w-[460px] rounded-full bg-violet-600/[0.15] blur-[130px]" />
+          <div className="hidden md:block absolute right-[-10%] top-[35%] h-[420px] w-[420px] rounded-full bg-cyan-500/[0.09] blur-[130px]" />
+          <div className="hidden md:block absolute bottom-[-35%] left-[30%] h-[460px] w-[460px] rounded-full bg-fuchsia-600/[0.08] blur-[130px]" />
         </div>
 
         <main className="relative z-10 flex min-w-0 flex-1 flex-col">
@@ -362,7 +362,7 @@ export default function Mentor() {
                   {t.mentor.suggestedPrompts.slice(3).map((p, i) => {
                     const PromptIcon = PROMPT_ICONS[i + 3] ?? CircleHelp;
                     return (
-                      <button key={p.label} onClick={() => sendMessage(p.prompt, PROMPT_UI[i + 3] === true)} disabled={loading} className="inline-flex h-8 items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.035] px-3 text-[11px] text-slate-400 transition hover:border-violet-300/30 hover:text-violet-200 disabled:opacity-40">
+                      <button key={p.label} onClick={() => sendMessage(p.prompt, PROMPT_UI[i + 3] === true)} disabled={loading} className="inline-flex h-10 items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.035] px-3 text-[11px] text-slate-400 transition hover:border-violet-300/30 hover:text-violet-200 disabled:opacity-40">
                         <PromptIcon className="h-3.5 w-3.5" />{p.label}
                       </button>
                     );
@@ -380,7 +380,7 @@ export default function Mentor() {
                   onBlur={() => setImmersive(false)}
                   placeholder={t.mentor.inputPlaceholder}
                   disabled={loading}
-                  className="max-h-36 min-h-[48px] flex-1 resize-none bg-transparent px-3 py-3 text-sm text-slate-100 outline-none placeholder:text-slate-500 disabled:opacity-50"
+                  className="max-h-36 min-h-[48px] flex-1 resize-none bg-transparent px-3 py-3 text-base text-slate-100 outline-none md:text-sm placeholder:text-slate-500 disabled:opacity-50"
                 />
                 <button onMouseDown={(e) => e.preventDefault()} onClick={() => sendMessage(input)} disabled={loading || !input.trim()} aria-label={t.mentor.sendCta} title={t.mentor.sendCta} className="mb-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 text-white shadow-[0_0_18px_rgba(139,92,246,.32)] transition hover:brightness-110 disabled:opacity-35 disabled:shadow-none">
                   <SendHorizontal className="h-4 w-4" />

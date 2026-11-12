@@ -17,16 +17,26 @@ export default function Stars() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // Draw in CSS pixels, back the canvas with device pixels (capped at 2x) so stars stay
+    // sharp on phones without paying for a 3x canvas.
+    let cssW = 0;
+    let cssH = 0;
     const resize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      cssW = canvas.clientWidth || window.innerWidth;
+      cssH = canvas.clientHeight || window.innerHeight;
+      canvas.width = Math.round(cssW * dpr);
+      canvas.height = Math.round(cssH * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     };
     resize();
-    window.addEventListener('resize', resize);
 
-    const maxRadius = () => Math.hypot(canvas.width, canvas.height) / 2;
+    const maxRadius = () => Math.hypot(cssW, cssH) / 2;
 
-    const stars: Star[] = Array.from({ length: 300 }, () => {
+    // Phones get fewer stars: same look, far less per-frame work.
+    const count = cssW < 640 ? 140 : 300;
+    const stars: Star[] = Array.from({ length: count }, () => {
       const radius = Math.random() * maxRadius();
       return {
         angle: Math.random() * Math.PI * 2,
@@ -40,17 +50,16 @@ export default function Stars() {
     });
 
     let time = 0;
-    let frameId: number;
-    const animate = () => {
-      frameId = requestAnimationFrame(animate);
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      time += 0.01;
+    let frameId = 0;
+    const draw = (advance: boolean) => {
+      ctx.clearRect(0, 0, cssW, cssH);
+      if (advance) time += 0.01;
 
-      const centerX = canvas.width / 2;
-      const centerY = canvas.height / 2;
+      const centerX = cssW / 2;
+      const centerY = cssH / 2;
 
       stars.forEach((star) => {
-        star.angle += star.orbitSpeed;
+        if (advance) star.angle += star.orbitSpeed;
 
         const x = centerX + Math.cos(star.angle) * star.radius;
         const y = centerY + Math.sin(star.angle) * star.radius;
@@ -63,11 +72,36 @@ export default function Stars() {
         ctx.fill();
       });
     };
-    animate();
+
+    const loop = () => {
+      frameId = requestAnimationFrame(loop);
+      draw(true);
+    };
+    const start = () => {
+      if (reduceMotion || frameId) return;
+      frameId = requestAnimationFrame(loop);
+    };
+    const stop = () => {
+      cancelAnimationFrame(frameId);
+      frameId = 0;
+    };
+
+    // Reduced motion: one still frame. Otherwise animate, but not while the tab is in the background.
+    draw(false);
+    start();
+
+    const onResize = () => {
+      resize();
+      if (reduceMotion || !frameId) draw(false);
+    };
+    const onVisibility = () => (document.hidden ? stop() : start());
+    window.addEventListener('resize', onResize);
+    document.addEventListener('visibilitychange', onVisibility);
 
     return () => {
-      cancelAnimationFrame(frameId);
-      window.removeEventListener('resize', resize);
+      stop();
+      window.removeEventListener('resize', onResize);
+      document.removeEventListener('visibilitychange', onVisibility);
     };
   }, []);
 

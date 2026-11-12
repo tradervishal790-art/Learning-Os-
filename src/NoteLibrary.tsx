@@ -537,7 +537,7 @@ export default function NoteLibrary() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={t.searchPlaceholder}
-            className="w-full pl-9 pr-8 py-2.5 rounded-xl card border-0 bg-white dark:bg-white/[0.04] text-sm focus:outline-none focus:ring-2 focus:ring-violet-400"
+            className="w-full pl-9 pr-8 py-2.5 rounded-xl card border-0 bg-white dark:bg-white/[0.04] text-base md:text-sm focus:outline-none focus:ring-2 focus:ring-violet-400"
           />
           {query && (
             <button onClick={() => setQuery('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 dark:text-white/40" aria-label="Clear">
@@ -602,7 +602,7 @@ export default function NoteLibrary() {
       <div className="flex flex-col md:flex-row gap-6">
         {/* sidebar */}
         <aside className="md:w-60 shrink-0">
-          <button className={`${btnGhost} md:hidden mb-2`} onClick={() => setShowFolders((s) => !s)}>
+          <button className={`${btnGhost} md:hidden mb-2 min-h-10`} aria-expanded={showFolders} onClick={() => setShowFolders((s) => !s)}>
             <FolderIcon size={14} className="inline mr-1 -mt-0.5" /> {t.folders}
           </button>
           <div className={`${showFolders ? 'block' : 'hidden'} md:block space-y-1`}>
@@ -678,7 +678,7 @@ export default function NoteLibrary() {
             <select
               value={sort}
               onChange={(e) => setSort(e.target.value as Sort)}
-              className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/[0.04] text-xs"
+              className="min-h-10 md:min-h-0 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/[0.04] text-base md:text-xs"
             >
               <option value="recent">{t.sortRecent}</option>
               <option value="created">{t.sortCreated}</option>
@@ -689,7 +689,7 @@ export default function NoteLibrary() {
               aria-label={t.study.statusLabel}
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-              className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/[0.04] text-xs"
+              className="min-h-10 md:min-h-0 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/[0.04] text-base md:text-xs"
             >
               <option value="all">{t.study.filterAll}</option>
               <option value="exam-soon">{t.study.filterExamSoon}</option>
@@ -701,7 +701,7 @@ export default function NoteLibrary() {
               <select
                 value={tag}
                 onChange={(e) => setTag(e.target.value)}
-                className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/[0.04] text-xs"
+                className="min-h-10 md:min-h-0 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/[0.04] text-base md:text-xs"
               >
                 <option value="">{t.allTags}</option>
                 {allTags.map((x) => (
