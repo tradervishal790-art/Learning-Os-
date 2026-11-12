@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useRef, useState, lazy, Suspense } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, lazy, Suspense } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import TopControls from './TopControls';
+import { preloadAllPagesWhenIdle } from './pagePreload';
 import PagePlaceholder from './PagePlaceholder';
 import MissionControl from './MissionControl';
 import { getContinueLearningTarget } from './missionControlLogic';
@@ -55,9 +56,14 @@ const Test = lazy(() => import('./Test'));
 // Small, centered loading indicator shown while a lazy page's chunk is
 // still downloading — kept intentionally minimal (no new deps).
 function PageLoading() {
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    const id = window.setTimeout(() => setShow(true), 180);
+    return () => window.clearTimeout(id);
+  }, []);
   return (
-    <div className="flex items-center justify-center py-24 text-gray-400 dark:text-white/40 text-sm">
-      Loading…
+    <div role="status" aria-live="polite" className="flex min-h-[60dvh] items-center justify-center">
+      {show && <span aria-label="Loading" className="h-6 w-6 animate-spin rounded-full border-2 border-white/15 border-t-white/70 motion-reduce:animate-none" />}
     </div>
   );
 }
@@ -208,6 +214,12 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
     window.addEventListener('scroll', onScroll, { passive: true, capture: true });
     return () => window.removeEventListener('scroll', onScroll, true);
   }, [activePage]);
+  // A new screen always opens at its top (the old screen's scroll position used to carry over).
+  useLayoutEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    pageScrollRef.current?.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  }, [activePage]);
+  useEffect(() => preloadAllPagesWhenIdle(), []);
   // Back = the screen you came from; falls back to Home if there is nothing earlier in the app.
   const goBack = useCallback(() => {
     if ((window.history.state?.idx ?? 0) > 0) navigate(-1);
@@ -491,9 +503,11 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   }
 
   const displayName = userData?.name?.trim() || t.dashboard.home.learnerFallback;
-  const currentTopic = getCurrentTopic(getRoadmapData(activeGoalId));
-  const roadmapProgress = getRoadmapProgress(getRoadmapData(activeGoalId));
-  const revisionItems = getRevisionDataForGoals(t.revisionTasks, goals);
+  const onHome = activePage === 'dashboard';
+  const homeRoadmap = getRoadmapData(onHome ? activeGoalId : null); // null = built-in fallback, no storage read
+  const currentTopic = getCurrentTopic(homeRoadmap);
+  const roadmapProgress = getRoadmapProgress(homeRoadmap);
+  const revisionItems = onHome ? getRevisionDataForGoals(t.revisionTasks, goals) : [];
   const revisionStats = getRevisionStats(revisionItems);
   // Where the learner really stopped (video second / revision card / unfinished test); only needed on Home.
   const continueTarget = activePage === 'dashboard'
