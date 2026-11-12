@@ -109,7 +109,7 @@ export default function MissionControl({
   const filteredMoreItems = moreItems.filter((item) => item.label.toLowerCase().includes(functionSearch.toLowerCase()));
 
   return (
-    <main className="mission-map relative flex h-[calc(100dvh-128px-env(safe-area-inset-top)-env(safe-area-inset-bottom))] min-h-0 md:h-[calc(100dvh-64px-env(safe-area-inset-top))] w-full flex-col overflow-hidden bg-transparent md:bg-[#080d19] text-slate-100">
+    <main className="mission-map relative flex h-[calc(100dvh-64px-env(safe-area-inset-top))] min-h-0 w-full flex-col overflow-hidden bg-transparent md:bg-[#080d19] text-slate-100">
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="hidden md:block absolute -left-40 top-[-220px] h-[520px] w-[520px] rounded-full bg-violet-600/[0.10] blur-[130px]" />
         <div className="hidden md:block absolute right-[-120px] top-[10%] h-[480px] w-[480px] rounded-full bg-cyan-500/[0.08] blur-[130px]" />
