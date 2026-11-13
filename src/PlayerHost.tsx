@@ -40,7 +40,7 @@ function loadPos(): Pos {
 
 const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
 
-export default function PlayerHost({ onExpand }: { onExpand: () => void }) {
+export default function PlayerHost({ onExpand, onBack }: { onExpand: () => void; onBack: () => void }) {
   const dock = useDock();
   const immersive = useImmersive();
   const hasVideo = dock.video !== null;
@@ -54,6 +54,27 @@ export default function PlayerHost({ onExpand }: { onExpand: () => void }) {
   const geoRef = useRef({ xMin: 0, xMax: 0, yMin: 0, yMax: 0, x: 0, y: 0 });
   const dragRef = useRef<{ startX: number; startY: number; x: number; y: number; moved: boolean } | null>(null);
   const lastTapRef = useRef(0);
+  const centerTapRef = useRef<number | null>(null);
+  const playingRef = useRef(false);
+  useEffect(() => {
+    playingRef.current = dock.playing;
+  });
+
+  // Centre of the inline video: single click = play/pause, double click = back to the previous page.
+  // (Top and bottom strips stay free so YouTube's seek bar and buttons keep working.)
+  const onCenterClick = () => {
+    if (centerTapRef.current !== null) {
+      window.clearTimeout(centerTapRef.current);
+      centerTapRef.current = null;
+      onBack();
+      return;
+    }
+    centerTapRef.current = window.setTimeout(() => {
+      centerTapRef.current = null;
+      if (playingRef.current) dockPause();
+      else dockPlay();
+    }, 260);
+  };
   const liveRef = useRef({ immersive, dismissed: dock.dismissed });
   useEffect(() => {
     liveRef.current = { immersive, dismissed: dock.dismissed };
@@ -225,6 +246,15 @@ export default function PlayerHost({ onExpand }: { onExpand: () => void }) {
       >
         {/* The YouTube iframe is portaled in here by the Videos page. */}
         <div ref={boxRef} className="w-full bg-black" />
+
+        {mode === 'inline' && (
+          <div
+            className="absolute inset-x-0"
+            style={{ top: '18%', bottom: '24%' }}
+            onClick={onCenterClick}
+            aria-hidden
+          />
+        )}
 
         {mode === 'mini' && dock.video && (
           <>

@@ -631,6 +631,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
       </div>
 
       <PlayerHost
+        onBack={goBack}
         onExpand={() => {
           if (activePage === 'videos') getDockSlot()?.scrollIntoView({ behavior: 'smooth', block: 'center' });
           else setActivePage('videos');
