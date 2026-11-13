@@ -408,7 +408,7 @@ function PaperRow({ p, children }: { p: TestPaper; children: ReactNode }) {
             {p.topic} · {format(count === 1 ? tt.list.questionsOne : tt.list.questionsMany, count)} · {p.durationMinutes > 0 ? format(tt.list.minutes, p.durationMinutes) : tt.list.noTimer}
           </p>
         </div>
-        <div className="flex flex-shrink-0 items-center justify-end gap-1.5 md:gap-2">{children}</div>
+        <div className="flex flex-shrink-0 items-center justify-start gap-1.5 md:justify-end md:gap-2">{children}</div>
       </div>
     </GlassPanel>
   );
@@ -444,8 +444,8 @@ function TestList({
     </button>
   );
   const takeButton = (p: TestPaper) => (
-    <button onClick={() => onTake(p)} className="flex h-11 min-w-11 items-center justify-center gap-1.5 rounded-full bg-cyan-300 text-sm font-semibold text-slate-900 shadow-[0_0_18px_rgba(103,232,249,.35)] transition hover:bg-cyan-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white md:h-auto md:rounded-lg md:px-4 md:py-2" title={tt.list.takeTest} aria-label={tt.list.takeTest}>
-      <Play className="h-4 w-4" fill="currentColor" /><span className="hidden md:inline">{tt.list.takeTest}</span>
+    <button onClick={() => onTake(p)} className="ml-auto flex h-11 min-w-11 items-center justify-center gap-1.5 rounded-full bg-cyan-300 px-4 md:ml-0 text-sm font-semibold text-slate-900 shadow-[0_0_18px_rgba(103,232,249,.35)] transition hover:bg-cyan-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white md:h-auto md:rounded-lg md:px-4 md:py-2" title={tt.list.takeTest} aria-label={tt.list.takeTest}>
+      <Play className="h-4 w-4" fill="currentColor" /><span>{tt.list.takeTest}</span>
     </button>
   );
   return (
@@ -670,7 +670,7 @@ export function TakingScreen({
           <div className="hidden md:block absolute -left-32 -top-40 h-[420px] w-[420px] rounded-full bg-cyan-500/[0.09] blur-[120px]" />
           <div className="hidden md:block absolute -right-24 top-1/3 h-[380px] w-[380px] rounded-full bg-violet-600/[0.10] blur-[120px]" />
         </div>
-        <div className="relative">
+        <div className="relative pb-24 md:pb-0">
           <div className="mb-3 overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.035]">
             <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
               <div className="min-w-0">
@@ -681,7 +681,7 @@ export function TakingScreen({
                 <span className={`inline-flex items-center gap-2 rounded-xl px-3 py-1.5 font-mono text-lg font-semibold tabular-nums ${lowTime ? 'animate-pulse bg-red-500/15 text-red-300 motion-reduce:animate-none' : 'bg-cyan-300/10 text-cyan-200'}`}>
                   <Clock className="h-4 w-4" /> {timeLeft !== null ? formatClock(timeLeft) : formatClock(secondsElapsed)}
                 </span>
-                <button onClick={onSubmit} className="rounded-xl bg-rose-500 px-4 py-2 text-sm font-semibold text-white shadow-[0_0_18px_rgba(244,63,94,.35)] transition hover:bg-rose-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-200">
+                <button onClick={onSubmit} className="rounded-xl border border-rose-400/50 bg-rose-500/10 px-4 py-2 text-sm font-semibold text-rose-200 md:border-transparent md:bg-rose-500 md:text-white md:shadow-[0_0_18px_rgba(244,63,94,.35)] transition hover:bg-rose-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-200">
                   {tt.taking.submit}
                 </button>
               </div>
@@ -691,7 +691,7 @@ export function TakingScreen({
                 <div className={`h-full transition-[width] duration-1000 ease-linear motion-reduce:transition-none ${lowTime ? 'bg-red-400' : 'bg-cyan-300'}`} style={{ width: `${timeFraction * 100}%` }} />
               </div>
             )}
-            <div className="grid grid-cols-4 divide-x divide-white/[0.07] border-t border-white/[0.07] text-center">
+            <div className="hidden md:grid grid-cols-4 divide-x divide-white/[0.07] border-t border-white/[0.07] text-center">
               {stats.map((stat) => (
                 <div key={stat.label} className="min-w-0 px-2 py-2">
                   <p className="truncate text-[10px] uppercase tracking-wider text-slate-500">{stat.label}</p>
@@ -780,21 +780,31 @@ export function TakingScreen({
                       className="w-full resize-none rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-slate-100 placeholder:text-slate-500 focus:border-cyan-300/60 focus:outline-none"
                     />
                   )}
+                  <button type="button" onClick={onClearResponse} className="mt-4 text-sm text-slate-400 underline underline-offset-4 md:hidden">
+                    {tt.taking.clear}
+                  </button>
                 </motion.div>
               </AnimatePresence>
 
-              <div className="mt-4 flex flex-wrap items-center gap-3">
-                <button onClick={() => onGoToStep(step - 1)} disabled={step === 0} className="inline-flex items-center gap-1 rounded-xl border border-white/15 px-4 py-2.5 text-sm font-medium text-slate-200 transition hover:bg-white/10 disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300">
-                  <ChevronLeft className="h-4 w-4" /> {tt.taking.previous}
+              <div className="fixed inset-x-0 bottom-0 z-30 flex items-center gap-2 border-t border-white/[0.08] bg-[#080d19]/95 px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 backdrop-blur md:static md:z-auto md:mt-4 md:flex-wrap md:gap-3 md:border-0 md:bg-transparent md:p-0 md:backdrop-blur-none">
+                <button onClick={() => onGoToStep(step - 1)} disabled={step === 0} className="inline-flex h-11 w-11 items-center justify-center gap-1 rounded-xl border border-white/15 px-0 text-sm font-medium md:h-auto md:w-auto md:px-4 md:py-2.5 text-slate-200 transition hover:bg-white/10 disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300">
+                  <ChevronLeft className="h-4 w-4" /> <span className="sr-only md:not-sr-only">{tt.taking.previous}</span>
                 </button>
-                <button onClick={onClearResponse} className="rounded-xl border border-white/15 px-4 py-2.5 text-sm font-medium text-slate-200 transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300">
+                <button onClick={onClearResponse} className="hidden md:block rounded-xl border border-white/15 px-4 py-2.5 text-sm font-medium text-slate-200 transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300">
                   {tt.taking.clear}
                 </button>
-                <button onClick={onMarkForReview} className="flex items-center gap-1.5 rounded-xl border border-violet-400/40 px-4 py-2.5 text-sm font-medium text-violet-200 transition hover:bg-violet-400/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300">
-                  <Flag className="h-4 w-4" /> {tt.taking.markNext}
+                <button onClick={onMarkForReview} className="flex h-11 w-11 items-center justify-center gap-1.5 rounded-xl border border-violet-400/40 px-0 text-sm font-medium md:h-auto md:w-auto md:px-4 md:py-2.5 text-violet-200 transition hover:bg-violet-400/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300">
+                  <Flag className="h-4 w-4" /> <span className="sr-only md:not-sr-only">{tt.taking.markNext}</span>
                 </button>
-                <button onClick={onSaveAndNext} disabled={isLast} className="ml-auto rounded-xl bg-cyan-300 px-5 py-2.5 text-sm font-semibold text-slate-900 shadow-[0_0_18px_rgba(103,232,249,.3)] transition hover:bg-cyan-200 disabled:opacity-30 disabled:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">
+                <button onClick={onSaveAndNext} disabled={isLast} className="ml-auto hidden rounded-xl md:block bg-cyan-300 px-5 py-2.5 text-sm font-semibold text-slate-900 shadow-[0_0_18px_rgba(103,232,249,.3)] transition hover:bg-cyan-200 disabled:opacity-30 disabled:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">
                   {tt.taking.saveNext}
+                </button>
+                <button
+                  type="button"
+                  onClick={isLast ? onSubmit : onSaveAndNext}
+                  className="h-11 flex-1 rounded-xl bg-cyan-300 text-base font-semibold text-slate-900 shadow-[0_0_18px_rgba(103,232,249,.3)] transition hover:bg-cyan-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 md:hidden"
+                >
+                  {isLast ? tt.taking.submit : tt.taking.saveNext}
                 </button>
               </div>
             </div>
