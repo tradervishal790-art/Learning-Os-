@@ -16,26 +16,26 @@ import { useDock, setDockHost, getDockSlot, dockPlay, dockPause, dockNext, dockP
 type Mode = 'inline' | 'mini' | 'landscape';
 
 const POS_KEY = 'los_mini_player_pos';
-const TOP_CLEAR = 72; // keep clear of the top controls
-const NAV_CLEAR = 76; // bottom nav (4rem) + gap
+const NAV_CLEAR = 76; // default resting spot sits above the bottom nav (dragging is NOT limited by it)
 const FOOTER_H = 56;
 const EDGE = 12;
 
 interface Pos {
   xr: number; // 0..1 across the allowed area
   yr: number;
+  custom: boolean; // false until the learner drags it: rests bottom-right above the nav
 }
 
 function loadPos(): Pos {
   try {
     const p = JSON.parse(localStorage.getItem(POS_KEY) ?? 'null') as Pos | null;
     if (p && Number.isFinite(p.xr) && Number.isFinite(p.yr)) {
-      return { xr: Math.min(1, Math.max(0, p.xr)), yr: Math.min(1, Math.max(0, p.yr)) };
+      return { xr: Math.min(1, Math.max(0, p.xr)), yr: Math.min(1, Math.max(0, p.yr)), custom: p.custom === true };
     }
   } catch {
     /* ignore */
   }
-  return { xr: 1, yr: 1 }; // bottom-right, like YouTube
+  return { xr: 1, yr: 1, custom: false }; // bottom-right, like YouTube
 }
 
 const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
@@ -51,7 +51,7 @@ export default function PlayerHost({ onExpand }: { onExpand: () => void }) {
   const [mode, setMode] = useState<Mode>('mini');
 
   const posRef = useRef<Pos>(loadPos());
-  const geoRef = useRef({ xMin: 0, xMax: 0, yMin: 0, yMax: 0 });
+  const geoRef = useRef({ xMin: 0, xMax: 0, yMin: 0, yMax: 0, x: 0, y: 0 });
   const dragRef = useRef<{ startX: number; startY: number; x: number; y: number } | null>(null);
   const liveRef = useRef({ immersive, dismissed: dock.dismissed });
   useEffect(() => {
@@ -124,11 +124,13 @@ export default function PlayerHost({ onExpand }: { onExpand: () => void }) {
         const bottomClear = liveRef.current.immersive ? EDGE : NAV_CLEAR + safeBottom;
         const xMin = EDGE;
         const xMax = Math.max(xMin, vw - w - EDGE);
-        const yMin = TOP_CLEAR;
-        const yMax = Math.max(yMin, vh - h - bottomClear);
-        geoRef.current = { xMin, xMax, yMin, yMax };
-        x = xMin + posRef.current.xr * (xMax - xMin);
-        y = yMin + posRef.current.yr * (yMax - yMin);
+        const yMin = EDGE;
+        const yMax = Math.max(yMin, vh - h - EDGE); // full screen: top to bottom
+        const rest = Math.max(yMin, vh - h - bottomClear);
+        const pos = posRef.current;
+        x = xMin + pos.xr * (xMax - xMin);
+        y = pos.custom ? yMin + pos.yr * (yMax - yMin) : rest;
+        geoRef.current = { xMin, xMax, yMin, yMax, x, y };
         radius = 14; z = 45;
       }
 
@@ -162,14 +164,9 @@ export default function PlayerHost({ onExpand }: { onExpand: () => void }) {
 
   const onDragStart = (e: ReactPointerEvent<HTMLDivElement>) => {
     if ((e.target as HTMLElement).closest('button')) return;
-    const { xMin, xMax, yMin, yMax } = geoRef.current;
+    const g = geoRef.current;
     e.currentTarget.setPointerCapture(e.pointerId);
-    dragRef.current = {
-      startX: e.clientX,
-      startY: e.clientY,
-      x: xMin + posRef.current.xr * (xMax - xMin),
-      y: yMin + posRef.current.yr * (yMax - yMin),
-    };
+    dragRef.current = { startX: e.clientX, startY: e.clientY, x: g.x, y: g.y };
   };
 
   const onDragMove = (e: ReactPointerEvent<HTMLDivElement>) => {
@@ -181,6 +178,7 @@ export default function PlayerHost({ onExpand }: { onExpand: () => void }) {
     posRef.current = {
       xr: xMax > xMin ? clamp01((x - xMin) / (xMax - xMin)) : 1,
       yr: yMax > yMin ? clamp01((y - yMin) / (yMax - yMin)) : 1,
+      custom: true,
     };
   };
 
