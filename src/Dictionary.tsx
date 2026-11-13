@@ -207,7 +207,13 @@ export default function Dictionary() {
                 aria-label={t.dictionary.searchAria}
                 maxLength={80}
                 disabled={searchDisabled}
-                autoFocus
+                // Phones: don't pop the keyboard over the "Discover a word" cards; a dictionary lookup must not be
+                // auto-capitalised or auto-corrected either (rare words get "fixed" into other words).
+                autoFocus={typeof window !== 'undefined' && window.matchMedia('(pointer: fine)').matches}
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                enterKeyHint="search"
                 className="min-h-14 min-w-0 flex-1 bg-transparent text-lg text-slate-100 placeholder-slate-500 focus:outline-none disabled:cursor-not-allowed"
               />
               <button
