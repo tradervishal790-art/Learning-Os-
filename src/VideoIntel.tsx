@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Play, CheckCircle, ThumbsUp, ThumbsDown, SkipForward, MessageCircle, Link2, X as CloseIcon } from 'lucide-react';
 import type { Video, VideoWatchData, WatchHistoryEntry, EngagementSession, FeedbackValue, Topic, TopicBridge } from './types';
@@ -12,7 +13,6 @@ import { useNavigate } from 'react-router-dom';
 import { MENTOR_PREFILL_KEY } from './mentorPrefill';
 import Notes from './Notes';
 import Research from './Research';
-import HintBubble from './HintBubble';
 import { getCachedConnectorFacts } from './conceptVideoPool';
 import { useTranslation } from './i18n/LanguageContext';
 import { format } from './i18n/format';
@@ -20,6 +20,7 @@ import { authFetch } from './apiFetch';
 import { pullSharedSearch, pushSharedSearch } from './sharedVideoCache';
 import { contributeSharedVideoSignal, getSharedVideoLearningSummary, type SharedVideoLearningSummary } from './sharedLearningIntelligence';
 import { saveVideoPosition, getVideoSeekSeconds, clearResume } from './resumeStore';
+import { useDock, setDockSlot, mountDockPlayer, setDockPlaying } from './miniPlayer';
 
 declare global {
   interface Window {
@@ -282,7 +283,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
   // dismissible, and NOT re-shown for fallback/"Next" videos within the same
   // topic — it's a topic-to-topic bridge, not a per-video one.
   const [activeBridge, setActiveBridge] = useState<TopicBridge | null>(null);
-  const [watchStats, setWatchStats] = useState({
+  const [, setWatchStats] = useState({
     watchedDuration: 0,
     totalDuration: 0,
     watchPercentage: 0,
@@ -323,6 +324,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
   const sessionRef = useRef<EngagementSession | null>(null);
   const playStartTimeRef = useRef<number | null>(null);
   const hasEndedRef = useRef(false);
+  const advancingRef = useRef(false);
   const hasSavedProgressRef = useRef<string | null>(null);
   const lastTimeRef = useRef(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -475,12 +477,12 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
   useEffect(() => {
     if (!initialPlaylist?.primary) return;
     finalizeAndSaveSession();
-    setVideos([initialPlaylist.primary, ...initialPlaylist.fallbacks]);
+    setVideos([initialPlaylist.primary, ...(initialPlaylist.fallbacks ?? [])]);
     setSelectedVideo(initialPlaylist.primary);
     void verifyBridgeForVideo(initialPlaylist.primary);
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialPlaylist?.primary.id]);
+  }, [initialPlaylist?.primary?.id]);
 
   const finalizeAndSaveSession = () => {
     if (!sessionRef.current) return;
@@ -631,8 +633,12 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
       // button (moves within the current batch, or fetches a fresh batch
       // once it's exhausted). If nothing's left, handleNextVideo just
       // surfaces the "no more videos" error and stays on this one.
-      // Recall check first (skippable) — it calls handleNextVideo when done.
-      setRecallFor(selectedVideo?.id ?? null);
+      // Auto-play the next video straight away (like YouTube) — also works while the
+      // learner is in the floating mini player on another screen.
+      if (!advancingRef.current) {
+        advancingRef.current = true;
+        void handleNextVideo().finally(() => { advancingRef.current = false; });
+      }
     }
   };
 
@@ -646,6 +652,15 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
       sessionRef.current.feedback = value;
       upsertEngagementSession(withComputedSignal(sessionRef.current));
     }
+  };
+
+  const handlePrevVideo = () => {
+    if (!selectedVideo) return;
+    const i = videos.findIndex((v) => v.id === selectedVideo.id);
+    if (i <= 0) return;
+    finalizeAndSaveSession();
+    setActiveBridge(null);
+    setSelectedVideo(videos[i - 1]);
   };
 
   const handleNextVideo = async () => {
@@ -824,13 +839,6 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
     }
   };
 
-  const formatTime = (s: number) => {
-    if (!s || Number.isNaN(s)) return '0:00';
-    const m = Math.floor(s / 60);
-    const sec = Math.floor(s % 60);
-    return `${m}:${sec.toString().padStart(2, '0')}`;
-  };
-
   // Pulled from the learner's own roadmap topics instead of a fixed generic
   // list — so suggestions are always relevant to what they're actually
   // learning, whatever subject that is. Must scope to the currently active
@@ -859,7 +867,6 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
         <div className="p-4 md:p-8">
           <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-5 md:mb-8">
             <h1 className="text-2xl md:text-4xl font-bold mb-1 md:mb-2">{t.videos.header.title}</h1>
-            <p className="text-sm md:text-base text-gray-500 dark:text-white/60">{t.videos.header.subtitle}</p>
           </motion.div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -914,9 +921,6 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                 ))}
               </div>
 
-              {videos.length > 1 && (
-                <HintBubble id="video-picker" text="3 styles, same topic — pick the one that clicks, you don't need all 3." />
-              )}
               <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
                 {videos.length === 0 ? (
                   <div className="text-center py-8 md:py-12 text-gray-400 dark:text-white/60">
@@ -1007,7 +1011,10 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                   )}
                   <div className="bg-black rounded-2xl overflow-hidden border border-gray-200 dark:border-white/10">
                     <YouTubePlayer
-                      videoId={selectedVideo.id}
+                      video={selectedVideo}
+                      canPrev={videos.findIndex((v) => v.id === selectedVideo.id) > 0}
+                      onNext={handleNextVideo}
+                      onPrev={handlePrevVideo}
                       playerRef={playerRef}
                       onReady={onPlayerReady}
                       onStateChange={onPlayerStateChange}
@@ -1026,11 +1033,6 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                   )}
 
                   <div className="card rounded-xl p-4 sm:p-6">
-                    <div className="mb-4">
-                      <h2 className="text-xl sm:text-2xl font-bold mb-1 leading-snug">{selectedVideo.title}</h2>
-                      <p className="text-gray-500 dark:text-white/60">{selectedVideo.channel}</p>
-                    </div>
-
                     {sharedLearningSummary && (
                       <div className="rounded-xl border border-indigo-200/60 dark:border-indigo-400/20 bg-indigo-50/50 dark:bg-indigo-400/5 p-3 mb-4">
                         <p className="text-xs font-semibold text-indigo-700 dark:text-indigo-300 mb-1">
@@ -1098,40 +1100,6 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                       )}
                     </div>
 
-                    <div className="border border-gray-200 dark:border-white/10 rounded-lg p-4 mb-4">
-                      <h3 className="font-semibold mb-3">{t.videos.watchProgress.title}</h3>
-                      <div className="flex justify-between text-sm mb-2">
-                        <span>{t.videos.watchProgress.watched}</span>
-                        <span className="text-gray-500 dark:text-white/60">
-                          {formatTime(watchStats.watchedDuration)} / {formatTime(watchStats.totalDuration)}
-                        </span>
-                      </div>
-                      <div className="w-full bg-gray-100 dark:bg-white/10 rounded-full h-2 mb-4">
-                        <div
-                          className="h-full bg-black dark:bg-white rounded-full transition-all"
-                          style={{ width: `${watchStats.watchPercentage}%` }}
-                        />
-                      </div>
-                      <div className="grid grid-cols-2 gap-2 text-sm">
-                        <div className="flex justify-between">
-                          <span>{t.videos.watchProgress.pauses}</span>
-                          <span className="text-gray-500 dark:text-white/60">{watchStats.pauseCount}x</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>{t.videos.watchProgress.rewinds}</span>
-                          <span className="text-gray-500 dark:text-white/60">{watchStats.rewindCount}x</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>{t.videos.watchProgress.speed}</span>
-                          <span className="text-gray-500 dark:text-white/60">{watchStats.playbackSpeed}x</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>{t.videos.watchProgress.complete}</span>
-                          <span className="text-gray-500 dark:text-white/60">{Math.round(watchStats.watchPercentage)}%</span>
-                        </div>
-                      </div>
-                    </div>
-
                     <div className="flex gap-2">
                       <button
                         onClick={() => setShowDeepNotes(true)}
@@ -1173,58 +1141,122 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
 }
 
 function YouTubePlayer({
-  videoId,
+  video,
+  canPrev,
+  onNext,
+  onPrev,
   playerRef,
   onReady,
   onStateChange,
   onPlaybackRateChange,
 }: {
-  videoId: string;
+  video: Video;
+  canPrev: boolean;
+  onNext: () => void;
+  onPrev: () => void;
   playerRef: React.MutableRefObject<any>;
   onReady: (e: any) => void;
   onStateChange: (e: any) => void;
   onPlaybackRateChange: (e: any) => void;
 }) {
+  // The page only owns an empty "slot"; the real iframe lives in the global PlayerHost
+  // (see PlayerHost.tsx) so it keeps playing, as a floating mini player, when the learner
+  // leaves this page.
+  const slotRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const elementId = `yt-player-${videoId}`;
+  const { host } = useDock();
+  const videoId = video.id;
+
+  const handlers = useRef({ onReady, onStateChange, onPlaybackRateChange, onNext, onPrev });
+  handlers.current = { onReady, onStateChange, onPlaybackRateChange, onNext, onPrev };
+
+  useLayoutEffect(() => {
+    setDockSlot(slotRef.current);
+    return () => setDockSlot(null);
+  }, []);
+
+  useEffect(
+    () =>
+      mountDockPlayer(
+        { id: video.id, title: video.title, channel: video.channel, canPrev },
+        {
+          play: () => playerRef.current?.playVideo?.(),
+          pause: () => playerRef.current?.pauseVideo?.(),
+          next: () => handlers.current.onNext(),
+          prev: () => handlers.current.onPrev(),
+        },
+      ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [video.id, video.title, video.channel, canPrev],
+  );
 
   useEffect(() => {
+    const container = containerRef.current;
+    if (!host || !container) return undefined;
     let cancelled = false;
+    const previousReady = window.onYouTubeIframeAPIReady;
 
     const createPlayer = () => {
       if (cancelled || !containerRef.current) return;
-
-      if (playerRef.current?.destroy) {
-        playerRef.current.destroy();
+      try {
+        playerRef.current?.destroy?.();
+      } catch {
+        /* already gone */
       }
-      containerRef.current.innerHTML = '';
+      container.innerHTML = '';
       const div = document.createElement('div');
-      div.id = elementId;
-      containerRef.current.appendChild(div);
+      container.appendChild(div);
 
-      playerRef.current = new window.YT.Player(elementId, {
-        height: '400',
+      playerRef.current = new window.YT.Player(div, {
+        height: '100%',
         width: '100%',
         videoId,
-        playerVars: { autoplay: 1, controls: 1, modestbranding: 1, rel: 0 },
-        events: { onReady, onStateChange, onPlaybackRateChange },
+        // playsinline: stay inside the page on iPhones (no forced native fullscreen),
+        // so the same iframe can shrink into the mini player.
+        playerVars: { autoplay: 1, controls: 1, modestbranding: 1, rel: 0, playsinline: 1, fs: 1 },
+        events: {
+          onReady: (e: any) => handlers.current.onReady(e),
+          onStateChange: (e: any) => {
+            setDockPlaying(e.data === 1 || e.data === 3);
+            handlers.current.onStateChange(e);
+          },
+          onPlaybackRateChange: (e: any) => handlers.current.onPlaybackRateChange(e),
+        },
       });
     };
 
     if (window.YT && window.YT.Player) {
       createPlayer();
     } else {
-      window.onYouTubeIframeAPIReady = createPlayer;
+      window.onYouTubeIframeAPIReady = () => {
+        try {
+          previousReady?.();
+        } catch {
+          /* not ours */
+        }
+        createPlayer();
+      };
     }
 
     return () => {
       cancelled = true;
-      if (playerRef.current?.destroy) {
-        playerRef.current.destroy();
-        playerRef.current = null;
+      try {
+        playerRef.current?.destroy?.();
+      } catch {
+        /* already gone */
+      }
+      playerRef.current = null;
+      if (window.onYouTubeIframeAPIReady !== previousReady && !(window.YT && window.YT.Player)) {
+        window.onYouTubeIframeAPIReady = previousReady;
       }
     };
-  }, [videoId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [videoId, host]);
 
-  return <div ref={containerRef} className="w-full" />;
+  return (
+    <>
+      <div ref={slotRef} className="aspect-video w-full" />
+      {host && createPortal(<div ref={containerRef} className="h-full w-full" />, host)}
+    </>
+  );
 }

@@ -11,6 +11,14 @@ export interface DailyTimeSummary {
   sessionCount: number;
 }
 
+/** YYYY-MM-DD for the learner's own calendar day (device time zone), so the day changes at local midnight. */
+export function localDayKey(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
 export function isValidUtcDayKey(value: unknown): value is string {
   if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
   const parsed = new Date(`${value}T00:00:00.000Z`);
@@ -27,21 +35,21 @@ export function normalizeActiveDays(value: unknown): string[] {
 export function calculateCurrentStreak(activeDays: readonly string[], now = new Date()): number {
   const active = new Set(normalizeActiveDays(activeDays));
   if (!Number.isFinite(now.getTime())) return 0;
-  const cursor = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-  let key = cursor.toISOString().slice(0, 10);
-  if (!active.has(key)) cursor.setUTCDate(cursor.getUTCDate() - 1);
+  const cursor = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12);
+  const key = localDayKey(cursor);
+  if (!active.has(key)) cursor.setDate(cursor.getDate() - 1);
 
   let streak = 0;
-  while (active.has(cursor.toISOString().slice(0, 10))) {
+  while (active.has(localDayKey(cursor))) {
     streak += 1;
-    cursor.setUTCDate(cursor.getUTCDate() - 1);
+    cursor.setDate(cursor.getDate() - 1);
   }
   return streak;
 }
 
 function utcDayKey(value: string): string | null {
   const timestamp = Date.parse(value);
-  return Number.isFinite(timestamp) ? new Date(timestamp).toISOString().slice(0, 10) : null;
+  return Number.isFinite(timestamp) ? localDayKey(new Date(timestamp)) : null;
 }
 
 /** Ignore corrupt, negative or non-finite sessions before computing learner-facing metrics. */
@@ -58,7 +66,7 @@ export function summarizeEngagementTime(
     && utcDayKey(session.sessionTimestamp) !== null
   );
   let totalSeconds = valid.reduce((sum, session) => sum + (session.watchedSeconds ?? 0), 0);
-  const todayKey = Number.isFinite(now.getTime()) ? now.toISOString().slice(0, 10) : '';
+  const todayKey = Number.isFinite(now.getTime()) ? localDayKey(now) : '';
   const byDay = new Map<string, number>();
   for (const session of valid) {
     const key = utcDayKey(session.sessionTimestamp!);
@@ -75,14 +83,12 @@ export function summarizeEngagementTime(
   const dailyMinutes: DailyTimeSummary['dailyMinutes'] = [];
   let last7DaysSeconds = 0;
   for (let offset = 6; offset >= 0; offset -= 1) {
-    const day = new Date(now);
-    day.setUTCHours(0, 0, 0, 0);
-    day.setUTCDate(day.getUTCDate() - offset);
-    const key = day.toISOString().slice(0, 10);
+    const day = new Date(now.getFullYear(), now.getMonth(), now.getDate() - offset, 12);
+    const key = localDayKey(day);
     const seconds = byDay.get(key) ?? 0;
     last7DaysSeconds += seconds;
     dailyMinutes.push({
-      label: day.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' }),
+      label: day.toLocaleDateString('en-US', { weekday: 'short' }),
       minutes: Math.round(seconds / 60),
     });
   }

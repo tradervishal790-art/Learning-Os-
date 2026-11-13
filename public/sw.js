@@ -5,7 +5,7 @@
  *  - /api/* and everything cross-origin (Firebase, YouTube, Gemini proxy): never touched.
  * The dictionary uses its own cache ('learning-os-data-v1', see dictionaryStore.ts);
  * this file only manages caches prefixed "los-". */
-const VERSION = 'v3';
+const VERSION = 'v4';
 const ASSETS = 'los-assets-' + VERSION;
 const PAGES = 'los-pages-' + VERSION;
 const MAX_ASSETS = 600;

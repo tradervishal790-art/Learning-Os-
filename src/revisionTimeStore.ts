@@ -1,4 +1,5 @@
 import { MIN_WATCH_SECONDS, markStudyDay } from './studyDay';
+import { localDayKey } from './progressMetrics';
 
 // ============================================================
 // revisionTimeStore.ts — time spent actively in the Revision screen counts as
@@ -14,7 +15,7 @@ const IDLE_MS = 60_000;
 const FLUSH_EVERY_SECONDS = 15;
 const KEEP_DAYS = 400;
 
-const dayKey = (date: Date) => date.toISOString().slice(0, 10);
+const dayKey = localDayKey;
 
 export function readRevisionSecondsByDay(): Record<string, number> {
   try {

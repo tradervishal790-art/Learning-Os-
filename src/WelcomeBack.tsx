@@ -8,9 +8,10 @@ import { getDaysAway } from './behaviourStats';
 import { getRevisionDataForGoals } from './revisionData';
 import { useTranslation } from './i18n/LanguageContext';
 import { format } from './i18n/format';
+import { localDayKey } from './progressMetrics';
 
 const DISMISS_KEY = 'learning_os_welcome_back_dismissed';
-const todayKey = () => new Date().toISOString().slice(0, 10);
+const todayKey = () => localDayKey(new Date());
 
 interface Props {
   goals: Goal[];

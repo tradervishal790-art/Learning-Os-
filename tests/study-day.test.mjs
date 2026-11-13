@@ -68,3 +68,17 @@ test('study time totals include revision seconds, video sessions stay counted', 
   assert.equal(result.todayMinutes, 60);
   assert.equal(result.sessionCount, 1);
 });
+
+test('a study day follows the learner\'s local calendar day, not UTC', () => {
+  reset();
+  // 23:30 local on 6 Nov: in UTC+5:30 this is still 6 Nov locally but 18:00 UTC;
+  // built from local parts so the assertion holds in any time zone.
+  const lateEvening = new Date(2026, 10, 6, 23, 30);
+  markStudyDay(lateEvening);
+  assert.deepEqual(readStudyDays(), ['2026-11-06']);
+  // 00:30 local the next day is a NEW day, even if UTC has not rolled over yet.
+  const justAfterMidnight = new Date(2026, 10, 7, 0, 30);
+  markStudyDay(justAfterMidnight);
+  assert.deepEqual(readStudyDays(), ['2026-11-06', '2026-11-07']);
+  assert.equal(readStudyStreak(justAfterMidnight), 2);
+});

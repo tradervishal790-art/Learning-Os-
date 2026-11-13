@@ -1,4 +1,4 @@
-import { calculateCurrentStreak, normalizeActiveDays } from './progressMetrics';
+import { calculateCurrentStreak, localDayKey, normalizeActiveDays } from './progressMetrics';
 
 // ============================================================
 // studyDay.ts — the ONE place that decides what counts as a "study day".
@@ -18,7 +18,7 @@ export const STUDY_DAY_EVENT = 'learning-os-study-day';
 /** A video session shorter than this is a glance, not studying. */
 export const MIN_WATCH_SECONDS = 60;
 
-const utcDayKey = (date: Date) => date.toISOString().slice(0, 10);
+const utcDayKey = localDayKey; // the learner's own calendar day, not UTC
 
 export function readStudyDays(): string[] {
   try {

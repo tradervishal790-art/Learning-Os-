@@ -7,6 +7,8 @@ import PagePlaceholder from './PagePlaceholder';
 import MissionControl from './MissionControl';
 import { getContinueLearningTarget } from './missionControlLogic';
 import { useImmersive, useNoteOpen } from './immersive';
+import PlayerHost from './PlayerHost';
+import { useDockAlive, getDockSlot } from './miniPlayer';
 import { getRoadmapData, getCurrentTopic, getRoadmapProgress } from './roadmapData';
 import { getRevisionStats, getRevisionDataForGoals, getDueRevisionItems } from './revisionData';
 import { getResume, pickContinueTarget } from './resumeStore';
@@ -22,7 +24,7 @@ import { analyzeAttempt, analyzeHistory } from './testAnalytics';
 import { getTestAttempts } from './testStore';
 import { getLearningProfile, saveLearningProfile } from './learningProfileStore';
 import { pushToCloud, pullFromCloud } from './cloudSync';
-import { ACTIVE_DAYS_STORAGE_KEY, STUDY_DAY_EVENT, markStudyDay, readStudyDays, readStudyStreak } from './studyDay';
+import { ACTIVE_DAYS_STORAGE_KEY, STUDY_DAY_EVENT, readStudyDays, readStudyStreak } from './studyDay';
 import { buildCandidatePoolForConcept } from './conceptVideoPool';
 import { selectPlaylistForConcept, analyzedVideoToVideo } from './PlaylistBuilder';
 import { expandSearchQuery } from './queryExpander';
@@ -194,6 +196,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   }, [activePage, location.state, navigate]);
 
   const [streak, setStreak] = useState(0);
+  const videoAlive = useDockAlive(); // a video is playing/paused in the background -> keep the Videos screen mounted
   const immersive = useImmersive(); // true while a full-attention flow (e.g. a timed test) hides the bottom bar
   const noteOpen = useNoteOpen();
   // Top controls slide away while reading down a page and return on scroll up (or on any page change).
@@ -309,7 +312,6 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
     setPreloadedPlaylist(payload);
     setViewingTopicId(payload.topicId);
     setActivePage('videos');
-    markStudyDay(); // going to the Videos section from the roadmap = starting a lecture
   };
 
   // "Saved video" — opens the Videos page WITHOUT a fresh search/playlist
@@ -319,7 +321,6 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
     setPreloadedPlaylist(null);
     setViewingTopicId(topicId);
     setActivePage('videos');
-    markStudyDay(); // same: opening a topic's saved video from the roadmap / Continue learning
   };
 
   // FIX: Pehle yahan sirf name/role/goal/language/hours bhej rahe the,
@@ -603,16 +604,6 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
           />
         )}
         {activePage === 'revision' && <Revision goals={goals} />}
-        {activePage === 'videos' && (
-          <div className="dark relative">
-            <VideoIntel
-              initialPlaylist={preloadedPlaylist}
-              activeGoalId={activeGoalId}
-              activeTopicId={viewingTopicId}
-              allGoalIds={goals.filter((g) => g.status === 'active').map((g) => g.id)}
-            />
-          </div>
-        )}
         {activePage === 'mentor' && <Mentor />}
         {activePage === 'notes' && <Notes />}
         {activePage === 'test' && <Test />}
@@ -632,7 +623,29 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
         )}
           </motion.div>
         </Suspense>
+
+        {/* Videos stays mounted (hidden) while a video plays in the floating mini player,
+            so watch-tracking continues and coming back restores the exact screen. */}
+        {(activePage === 'videos' || videoAlive) && (
+          <div className={activePage === 'videos' ? 'dark relative min-w-0' : 'hidden'} aria-hidden={activePage !== 'videos'}>
+            <Suspense fallback={activePage === 'videos' ? <PageLoading /> : null}>
+              <VideoIntel
+                initialPlaylist={preloadedPlaylist}
+                activeGoalId={activeGoalId}
+                activeTopicId={viewingTopicId}
+                allGoalIds={goals.filter((g) => g.status === 'active').map((g) => g.id)}
+              />
+            </Suspense>
+          </div>
+        )}
       </div>
+
+      <PlayerHost
+        onExpand={() => {
+          if (activePage === 'videos') getDockSlot()?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          else setActivePage('videos');
+        }}
+      />
 
       {/* === Settings Modal === */}
       <AnimatePresence>
