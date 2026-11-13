@@ -7,6 +7,8 @@ import PagePlaceholder from './PagePlaceholder';
 import MissionControl from './MissionControl';
 import { getContinueLearningTarget } from './missionControlLogic';
 import { useImmersive, useNoteOpen } from './immersive';
+import PlayerHost from './PlayerHost';
+import { useDockAlive, getDockSlot } from './miniPlayer';
 import { getRoadmapData, getCurrentTopic, getRoadmapProgress } from './roadmapData';
 import { getRevisionStats, getRevisionDataForGoals, getDueRevisionItems } from './revisionData';
 import { getResume, pickContinueTarget } from './resumeStore';
@@ -194,6 +196,7 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   }, [activePage, location.state, navigate]);
 
   const [streak, setStreak] = useState(0);
+  const videoAlive = useDockAlive(); // a video is playing/paused in the background -> keep the Videos screen mounted
   const immersive = useImmersive(); // true while a full-attention flow (e.g. a timed test) hides the bottom bar
   const noteOpen = useNoteOpen();
   // Top controls slide away while reading down a page and return on scroll up (or on any page change).
@@ -591,16 +594,6 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
           />
         )}
         {activePage === 'revision' && <Revision goals={goals} />}
-        {activePage === 'videos' && (
-          <div className="relative">
-            <VideoIntel
-              initialPlaylist={preloadedPlaylist}
-              activeGoalId={activeGoalId}
-              activeTopicId={viewingTopicId}
-              allGoalIds={goals.filter((g) => g.status === 'active').map((g) => g.id)}
-            />
-          </div>
-        )}
         {activePage === 'mentor' && <Mentor />}
         {activePage === 'notes' && <Notes />}
         {activePage === 'test' && <Test />}
@@ -620,7 +613,29 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
         )}
           </motion.div>
         </Suspense>
+
+        {/* Videos stays mounted (hidden) while a video plays in the floating mini player,
+            so watch-tracking continues and coming back restores the exact screen. */}
+        {(activePage === 'videos' || videoAlive) && (
+          <div className={activePage === 'videos' ? 'relative min-w-0' : 'hidden'} aria-hidden={activePage !== 'videos'}>
+            <Suspense fallback={activePage === 'videos' ? <PageLoading /> : null}>
+              <VideoIntel
+                initialPlaylist={preloadedPlaylist}
+                activeGoalId={activeGoalId}
+                activeTopicId={viewingTopicId}
+                allGoalIds={goals.filter((g) => g.status === 'active').map((g) => g.id)}
+              />
+            </Suspense>
+          </div>
+        )}
       </div>
+
+      <PlayerHost
+        onExpand={() => {
+          if (activePage === 'videos') getDockSlot()?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          else setActivePage('videos');
+        }}
+      />
 
       {/* === Settings Modal === */}
       <AnimatePresence>

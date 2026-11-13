@@ -1,0 +1,248 @@
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import type { PointerEvent as ReactPointerEvent } from 'react';
+import { Play, Pause, Maximize2, X as CloseIcon } from 'lucide-react';
+import { useImmersive } from './immersive';
+import { useDock, setDockHost, getDockSlot, dockPlay, dockPause, dockClose, dockUndismiss, resetDock } from './miniPlayer';
+
+/**
+ * The one element the YouTube iframe lives in. Mounted once, above every page, so the video keeps
+ * playing when the learner switches screens.
+ *
+ *  - inline    : laid exactly over the Videos page's player slot (follows it while scrolling)
+ *  - mini      : floating, draggable card (video + title + play/pause, open, close)
+ *  - landscape : phone turned sideways on the Videos page -> the player fills the whole screen
+ */
+
+type Mode = 'inline' | 'mini' | 'landscape';
+
+const POS_KEY = 'los_mini_player_pos';
+const TOP_CLEAR = 72; // keep clear of the top controls
+const NAV_CLEAR = 76; // bottom nav (4rem) + gap
+const FOOTER_H = 56;
+const EDGE = 12;
+
+interface Pos {
+  xr: number; // 0..1 across the allowed area
+  yr: number;
+}
+
+function loadPos(): Pos {
+  try {
+    const p = JSON.parse(localStorage.getItem(POS_KEY) ?? 'null') as Pos | null;
+    if (p && Number.isFinite(p.xr) && Number.isFinite(p.yr)) {
+      return { xr: Math.min(1, Math.max(0, p.xr)), yr: Math.min(1, Math.max(0, p.yr)) };
+    }
+  } catch {
+    /* ignore */
+  }
+  return { xr: 1, yr: 1 }; // bottom-right, like YouTube
+}
+
+const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
+
+export default function PlayerHost({ onExpand }: { onExpand: () => void }) {
+  const dock = useDock();
+  const immersive = useImmersive();
+  const hasVideo = dock.video !== null;
+
+  const frameRef = useRef<HTMLDivElement>(null);
+  const boxRef = useRef<HTMLDivElement>(null);
+  const probeRef = useRef<HTMLDivElement>(null);
+  const [mode, setMode] = useState<Mode>('mini');
+
+  const posRef = useRef<Pos>(loadPos());
+  const geoRef = useRef({ xMin: 0, xMax: 0, yMin: 0, yMax: 0 });
+  const dragRef = useRef<{ startX: number; startY: number; x: number; y: number } | null>(null);
+  const liveRef = useRef({ immersive, dismissed: dock.dismissed });
+  useEffect(() => {
+    liveRef.current = { immersive, dismissed: dock.dismissed };
+  });
+
+  // Publish the iframe's home so the page's player can portal into it.
+  useLayoutEffect(() => {
+    setDockHost(boxRef.current);
+    return () => {
+      setDockHost(null);
+      resetDock();
+    };
+  }, []);
+
+  // A timed test takes the whole screen: stop the audio, hide the card.
+  useEffect(() => {
+    if (immersive) dockPause();
+  }, [immersive]);
+
+  // Place the frame every animation frame (cheap: one rect read + a transform write).
+  useLayoutEffect(() => {
+    if (!hasVideo) return undefined;
+    const frame = frameRef.current;
+    const box = boxRef.current;
+    const probe = probeRef.current;
+    if (!frame || !box) return undefined;
+
+    const sideways = window.matchMedia('(orientation: landscape) and (max-height: 520px) and (pointer: coarse)');
+    let raf = 0;
+    let last: Mode | '' = '';
+    let animUntil = 0;
+    let sig = '';
+    let boxPointer = '';
+
+    const tick = () => {
+      raf = requestAnimationFrame(tick);
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const rect = getDockSlot()?.getBoundingClientRect();
+      const hasSlot = !!rect && rect.width > 0 && rect.height > 0;
+      const shown = hasSlot ? (Math.min(rect.bottom, vh) - Math.max(rect.top, 0)) / rect.height : 0;
+      const wasInline = last === 'inline' || last === 'landscape';
+
+      let m: Mode;
+      if (hasSlot && sideways.matches) m = 'landscape';
+      else if (hasSlot && shown > (wasInline ? 0.15 : 0.5)) m = 'inline';
+      else m = 'mini';
+
+      if (m === 'inline' && liveRef.current.dismissed) dockUndismiss();
+
+      const now = performance.now();
+      if (m !== last) {
+        if (last !== '') animUntil = now + 260;
+        last = m;
+        setMode(m);
+      }
+      const animating = !dragRef.current && now < animUntil;
+
+      let x: number, y: number, w: number, h: number, boxH: number, radius: number, z: number;
+      if (m === 'landscape') {
+        x = 0; y = 0; w = vw; h = vh; boxH = vh; radius = 0; z = 70;
+      } else if (m === 'inline' && rect) {
+        x = rect.left; y = rect.top; w = rect.width; h = rect.height; boxH = rect.height; radius = 16; z = 20;
+      } else {
+        w = vw < 480 ? Math.min(vw - EDGE * 2, 300) : 320;
+        boxH = Math.round((w * 9) / 16);
+        h = boxH + FOOTER_H;
+        const safeBottom = probe ? probe.offsetHeight : 0;
+        const bottomClear = liveRef.current.immersive ? EDGE : NAV_CLEAR + safeBottom;
+        const xMin = EDGE;
+        const xMax = Math.max(xMin, vw - w - EDGE);
+        const yMin = TOP_CLEAR;
+        const yMax = Math.max(yMin, vh - h - bottomClear);
+        geoRef.current = { xMin, xMax, yMin, yMax };
+        x = xMin + posRef.current.xr * (xMax - xMin);
+        y = yMin + posRef.current.yr * (yMax - yMin);
+        radius = 14; z = 45;
+      }
+
+      const next = [x, y, w, h, boxH].map(Math.round).join('|') + `|${radius}|${z}|${animating ? 1 : 0}`;
+      if (next !== sig) {
+        sig = next;
+        frame.style.transition = animating
+          ? 'transform .24s ease, width .24s ease, height .24s ease, border-radius .24s ease'
+          : 'none';
+        frame.style.transform = `translate3d(${Math.round(x)}px, ${Math.round(y)}px, 0)`;
+        frame.style.width = `${Math.round(w)}px`;
+        frame.style.height = `${Math.round(h)}px`;
+        frame.style.borderRadius = `${radius}px`;
+        frame.style.zIndex = String(z);
+        frame.style.boxShadow = m === 'mini' ? '0 12px 32px rgba(0,0,0,.5)' : 'none';
+        box.style.height = `${Math.round(boxH)}px`;
+      }
+      frame.style.visibility = m === 'mini' && liveRef.current.dismissed ? 'hidden' : 'visible';
+
+      // While dragging, the iframe must not swallow the pointer.
+      const wantPointer = dragRef.current ? 'none' : '';
+      if (wantPointer !== boxPointer) {
+        boxPointer = wantPointer;
+        box.style.pointerEvents = wantPointer;
+      }
+    };
+
+    tick(); // place before first paint
+    return () => cancelAnimationFrame(raf);
+  }, [hasVideo]);
+
+  const onDragStart = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if ((e.target as HTMLElement).closest('button')) return;
+    const { xMin, xMax, yMin, yMax } = geoRef.current;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    dragRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      x: xMin + posRef.current.xr * (xMax - xMin),
+      y: yMin + posRef.current.yr * (yMax - yMin),
+    };
+  };
+
+  const onDragMove = (e: ReactPointerEvent<HTMLDivElement>) => {
+    const d = dragRef.current;
+    if (!d) return;
+    const { xMin, xMax, yMin, yMax } = geoRef.current;
+    const x = Math.min(xMax, Math.max(xMin, d.x + e.clientX - d.startX));
+    const y = Math.min(yMax, Math.max(yMin, d.y + e.clientY - d.startY));
+    posRef.current = {
+      xr: xMax > xMin ? clamp01((x - xMin) / (xMax - xMin)) : 1,
+      yr: yMax > yMin ? clamp01((y - yMin) / (yMax - yMin)) : 1,
+    };
+  };
+
+  const onDragEnd = () => {
+    if (!dragRef.current) return;
+    dragRef.current = null;
+    try {
+      localStorage.setItem(POS_KEY, JSON.stringify(posRef.current));
+    } catch {
+      /* best effort */
+    }
+  };
+
+  const iconBtn = 'flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white/90 transition hover:bg-white/10 active:bg-white/20';
+
+  return (
+    <>
+      <div
+        ref={probeRef}
+        aria-hidden
+        className="pointer-events-none invisible fixed bottom-0 left-0 w-0"
+        style={{ height: 'env(safe-area-inset-bottom, 0px)' }}
+      />
+      <div
+        ref={frameRef}
+        role="region"
+        aria-label="Video player"
+        className="fixed left-0 top-0 overflow-hidden bg-black will-change-transform"
+        style={{ display: hasVideo && !immersive ? 'block' : 'none', visibility: 'hidden' }}
+      >
+        {/* The YouTube iframe is portaled in here by the Videos page. */}
+        <div ref={boxRef} className="w-full bg-black" />
+
+        {mode === 'mini' && dock.video && (
+          <div
+            className="flex h-14 cursor-grab touch-none select-none items-center gap-0.5 bg-[#0f1420] pl-3 pr-1 text-white active:cursor-grabbing"
+            onPointerDown={onDragStart}
+            onPointerMove={onDragMove}
+            onPointerUp={onDragEnd}
+            onPointerCancel={onDragEnd}
+          >
+            <div className="min-w-0 flex-1" title={dock.video.title}>
+              <p className="truncate text-[13px] font-semibold leading-tight">{dock.video.title}</p>
+              <p className="truncate text-[11px] text-white/60">{dock.video.channel}</p>
+            </div>
+            <button
+              type="button"
+              className={iconBtn}
+              aria-label={dock.playing ? 'Pause' : 'Play'}
+              onClick={() => (dock.playing ? dockPause() : dockPlay())}
+            >
+              {dock.playing ? <Pause className="h-5 w-5" fill="currentColor" /> : <Play className="h-5 w-5" fill="currentColor" />}
+            </button>
+            <button type="button" className={iconBtn} aria-label="Open in Videos" onClick={onExpand}>
+              <Maximize2 className="h-[18px] w-[18px]" />
+            </button>
+            <button type="button" className={iconBtn} aria-label="Close player" onClick={dockClose}>
+              <CloseIcon className="h-5 w-5" />
+            </button>
+          </div>
+        )}
+      </div>
+    </>
+  );
+}

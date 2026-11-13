@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Play, CheckCircle, ThumbsUp, ThumbsDown, SkipForward, MessageCircle, Link2, X as CloseIcon } from 'lucide-react';
 import type { Video, VideoWatchData, WatchHistoryEntry, EngagementSession, FeedbackValue, Topic, TopicBridge } from './types';
@@ -19,6 +20,7 @@ import { authFetch } from './apiFetch';
 import { pullSharedSearch, pushSharedSearch } from './sharedVideoCache';
 import { contributeSharedVideoSignal, getSharedVideoLearningSummary, type SharedVideoLearningSummary } from './sharedLearningIntelligence';
 import { saveVideoPosition, getVideoSeekSeconds, clearResume } from './resumeStore';
+import { useDock, setDockSlot, mountDockPlayer, setDockPlaying } from './miniPlayer';
 
 declare global {
   interface Window {
@@ -995,7 +997,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                   )}
                   <div className="bg-black rounded-2xl overflow-hidden border border-gray-200 dark:border-white/10">
                     <YouTubePlayer
-                      videoId={selectedVideo.id}
+                      video={selectedVideo}
                       playerRef={playerRef}
                       onReady={onPlayerReady}
                       onStateChange={onPlayerStateChange}
@@ -1122,58 +1124,114 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
 }
 
 function YouTubePlayer({
-  videoId,
+  video,
   playerRef,
   onReady,
   onStateChange,
   onPlaybackRateChange,
 }: {
-  videoId: string;
+  video: Video;
   playerRef: React.MutableRefObject<any>;
   onReady: (e: any) => void;
   onStateChange: (e: any) => void;
   onPlaybackRateChange: (e: any) => void;
 }) {
+  // The page only owns an empty "slot"; the real iframe lives in the global PlayerHost
+  // (see PlayerHost.tsx) so it keeps playing, as a floating mini player, when the learner
+  // leaves this page.
+  const slotRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const elementId = `yt-player-${videoId}`;
+  const { host } = useDock();
+  const videoId = video.id;
+
+  const handlers = useRef({ onReady, onStateChange, onPlaybackRateChange });
+  handlers.current = { onReady, onStateChange, onPlaybackRateChange };
+
+  useLayoutEffect(() => {
+    setDockSlot(slotRef.current);
+    return () => setDockSlot(null);
+  }, []);
+
+  useEffect(
+    () =>
+      mountDockPlayer(
+        { id: video.id, title: video.title, channel: video.channel },
+        {
+          play: () => playerRef.current?.playVideo?.(),
+          pause: () => playerRef.current?.pauseVideo?.(),
+        },
+      ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [video.id, video.title, video.channel],
+  );
 
   useEffect(() => {
+    const container = containerRef.current;
+    if (!host || !container) return undefined;
     let cancelled = false;
+    const previousReady = window.onYouTubeIframeAPIReady;
 
     const createPlayer = () => {
       if (cancelled || !containerRef.current) return;
-
-      if (playerRef.current?.destroy) {
-        playerRef.current.destroy();
+      try {
+        playerRef.current?.destroy?.();
+      } catch {
+        /* already gone */
       }
-      containerRef.current.innerHTML = '';
+      container.innerHTML = '';
       const div = document.createElement('div');
-      div.id = elementId;
-      containerRef.current.appendChild(div);
+      container.appendChild(div);
 
-      playerRef.current = new window.YT.Player(elementId, {
-        height: '400',
+      playerRef.current = new window.YT.Player(div, {
+        height: '100%',
         width: '100%',
         videoId,
-        playerVars: { autoplay: 1, controls: 1, modestbranding: 1, rel: 0 },
-        events: { onReady, onStateChange, onPlaybackRateChange },
+        // playsinline: stay inside the page on iPhones (no forced native fullscreen),
+        // so the same iframe can shrink into the mini player.
+        playerVars: { autoplay: 1, controls: 1, modestbranding: 1, rel: 0, playsinline: 1, fs: 1 },
+        events: {
+          onReady: (e: any) => handlers.current.onReady(e),
+          onStateChange: (e: any) => {
+            setDockPlaying(e.data === 1 || e.data === 3);
+            handlers.current.onStateChange(e);
+          },
+          onPlaybackRateChange: (e: any) => handlers.current.onPlaybackRateChange(e),
+        },
       });
     };
 
     if (window.YT && window.YT.Player) {
       createPlayer();
     } else {
-      window.onYouTubeIframeAPIReady = createPlayer;
+      window.onYouTubeIframeAPIReady = () => {
+        try {
+          previousReady?.();
+        } catch {
+          /* not ours */
+        }
+        createPlayer();
+      };
     }
 
     return () => {
       cancelled = true;
-      if (playerRef.current?.destroy) {
-        playerRef.current.destroy();
-        playerRef.current = null;
+      try {
+        playerRef.current?.destroy?.();
+      } catch {
+        /* already gone */
+      }
+      playerRef.current = null;
+      if (window.onYouTubeIframeAPIReady !== previousReady && !(window.YT && window.YT.Player)) {
+        window.onYouTubeIframeAPIReady = previousReady;
       }
     };
-  }, [videoId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [videoId, host]);
 
-  return <div ref={containerRef} className="w-full" />;
+  return (
+    <>
+      <div ref={slotRef} className="aspect-video w-full" />
+      {host && createPortal(<div ref={containerRef} className="h-full w-full" />, host)}
+    </>
+  );
 }
