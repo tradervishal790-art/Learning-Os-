@@ -232,6 +232,7 @@ export default function Research({ embedded = false, onClose }: ResearchProps) {
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && void handleSearch()}
           placeholder={t.research.searchPlaceholder}
+          enterKeyHint="search"
           maxLength={200}
           autoFocus={embedded}
           className="w-full rounded-xl border border-gray-200 bg-gray-50 py-3 pl-10 pr-4 placeholder-gray-400 transition focus:border-violet-400 focus:shadow-[0_0_18px_rgba(139,92,246,.25)] focus:outline-none dark:border-white/10 dark:bg-white/5 dark:placeholder-white/40"
@@ -370,7 +371,7 @@ export default function Research({ embedded = false, onClose }: ResearchProps) {
           </div>
 
           {result && result.results.length > 0 && (
-            <div className="mb-6 rounded-2xl border border-white/[0.08] bg-white/[0.035] p-2 md:p-4">
+            <div className="mb-6 hidden rounded-2xl border border-white/[0.08] bg-white/[0.035] p-2 md:block md:p-4">
               <ResultMap query={result.query} results={result.results} activeIdx={activeIdx} onActive={setActiveIdx} onPick={pickResult} ariaLabel={t.research.mapAria} />
             </div>
           )}
