@@ -271,6 +271,8 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
   const [loadingMore, setLoadingMore] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [miniOffset, setMiniOffset] = useState({ x: 0, y: 0 });
+  const miniDragRef = useRef<{ pointerId: number; startX: number; startY: number; originX: number; originY: number } | null>(null);
   const [watchHistory, setWatchHistory] = useState<WatchHistoryEntry[]>([]);
   const [errorMessage, setErrorMessage] = useState('');
   const [showDeepNotes, setShowDeepNotes] = useState(false);
@@ -569,6 +571,29 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
       }
     };
   }, [selectedVideo]);
+
+  const startMiniDrag = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (event.button !== 0) return;
+    miniDragRef.current = { pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, originX: miniOffset.x, originY: miniOffset.y };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const moveMiniDrag = (event: React.PointerEvent<HTMLDivElement>) => {
+    const drag = miniDragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    const maxX = Math.max(0, window.innerWidth - 120);
+    const maxY = Math.max(0, window.innerHeight - 120);
+    setMiniOffset({
+      x: Math.max(-maxX, Math.min(maxX, drag.originX + event.clientX - drag.startX)),
+      y: Math.max(-maxY, Math.min(maxY, drag.originY + event.clientY - drag.startY)),
+    });
+  };
+
+  const stopMiniDrag = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (miniDragRef.current?.pointerId !== event.pointerId) return;
+    miniDragRef.current = null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+  };
 
   const onPlayerReady = (event: any) => {
     if (!selectedVideo) return;
@@ -1009,7 +1034,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                       </button>
                     </div>
                   )}
-                  <div className="video-mini-player relative bg-black rounded-2xl overflow-hidden border border-gray-200 dark:border-white/10">
+                  <div className="video-mini-player relative bg-black rounded-2xl overflow-hidden border border-gray-200 dark:border-white/10" style={!isPageActive ? { transform: `translate(${miniOffset.x}px, ${miniOffset.y}px)` } : undefined}>
                     <YouTubePlayer
                       videoId={selectedVideo.id}
                       playerRef={playerRef}
@@ -1019,7 +1044,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                     />
                     {!isPageActive && (
                       <div className="absolute inset-x-0 bottom-0 z-10 flex items-center justify-between gap-2 bg-gradient-to-t from-black/90 via-black/55 to-transparent px-3 pb-3 pt-8 text-white">
-                        <div className="min-w-0 flex-1">
+                        <div className="min-w-0 flex-1 cursor-grab touch-none active:cursor-grabbing" onPointerDown={startMiniDrag} onPointerMove={moveMiniDrag} onPointerUp={stopMiniDrag} onPointerCancel={stopMiniDrag}>
                           <p className="truncate text-xs font-semibold">{selectedVideo.title}</p>
                           <p className="truncate text-[10px] text-white/65">{selectedVideo.channel}</p>
                         </div>
