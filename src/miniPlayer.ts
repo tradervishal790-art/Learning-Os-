@@ -13,11 +13,14 @@ export interface DockVideo {
   id: string;
   title: string;
   channel: string;
+  canPrev: boolean;
 }
 
 export interface DockControls {
   play(): void;
   pause(): void;
+  next(): void;
+  prev(): void;
 }
 
 interface DockState {
@@ -104,6 +107,22 @@ export function dockPause() {
     controls?.pause();
   } catch {
     /* player not ready */
+  }
+}
+
+export function dockNext() {
+  try {
+    controls?.next();
+  } catch {
+    /* ignore */
+  }
+}
+
+export function dockPrev() {
+  try {
+    controls?.prev();
+  } catch {
+    /* ignore */
   }
 }
 

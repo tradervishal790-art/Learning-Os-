@@ -1,8 +1,8 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
-import { Play, Pause, Maximize2, X as CloseIcon } from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward } from 'lucide-react';
 import { useImmersive } from './immersive';
-import { useDock, setDockHost, getDockSlot, dockPlay, dockPause, dockClose, dockUndismiss, resetDock } from './miniPlayer';
+import { useDock, setDockHost, getDockSlot, dockPlay, dockPause, dockNext, dockPrev, dockUndismiss, resetDock } from './miniPlayer';
 
 /**
  * The one element the YouTube iframe lives in. Mounted once, above every page, so the video keeps
@@ -215,32 +215,43 @@ export default function PlayerHost({ onExpand }: { onExpand: () => void }) {
         <div ref={boxRef} className="w-full bg-black" />
 
         {mode === 'mini' && dock.video && (
-          <div
-            className="flex h-14 cursor-grab touch-none select-none items-center gap-0.5 bg-[#0f1420] pl-3 pr-1 text-white active:cursor-grabbing"
-            onPointerDown={onDragStart}
-            onPointerMove={onDragMove}
-            onPointerUp={onDragEnd}
-            onPointerCancel={onDragEnd}
-          >
-            <div className="min-w-0 flex-1" title={dock.video.title}>
-              <p className="truncate text-[13px] font-semibold leading-tight">{dock.video.title}</p>
-              <p className="truncate text-[11px] text-white/60">{dock.video.channel}</p>
-            </div>
-            <button
-              type="button"
-              className={iconBtn}
-              aria-label={dock.playing ? 'Pause' : 'Play'}
-              onClick={() => (dock.playing ? dockPause() : dockPlay())}
+          <>
+            {/* Shield: YouTube's own overlay (title, share, CC, settings…) never gets a hover/tap.
+                While not playing, a plain thumbnail covers the paused/ended YouTube screen. */}
+            <div
+              className="absolute inset-x-0 top-0 aspect-video"
+              style={{
+                background: dock.playing ? 'transparent' : `#000 url(https://i.ytimg.com/vi/${dock.video.id}/hqdefault.jpg) center / cover no-repeat`,
+              }}
+            />
+            <div
+              className="flex h-14 cursor-grab touch-none select-none items-center gap-0.5 bg-[#0f1420] pl-3 pr-1 text-white active:cursor-grabbing"
+              onPointerDown={onDragStart}
+              onPointerMove={onDragMove}
+              onPointerUp={onDragEnd}
+              onPointerCancel={onDragEnd}
             >
-              {dock.playing ? <Pause className="h-5 w-5" fill="currentColor" /> : <Play className="h-5 w-5" fill="currentColor" />}
-            </button>
-            <button type="button" className={iconBtn} aria-label="Open in Videos" onClick={onExpand}>
-              <Maximize2 className="h-[18px] w-[18px]" />
-            </button>
-            <button type="button" className={iconBtn} aria-label="Close player" onClick={dockClose}>
-              <CloseIcon className="h-5 w-5" />
-            </button>
-          </div>
+              <button
+                type="button"
+                className="min-w-0 flex-1 text-left"
+                title={dock.video.title}
+                aria-label="Open in Videos"
+                onClick={onExpand}
+              >
+                <p className="truncate text-[13px] font-semibold leading-tight">{dock.video.title}</p>
+                <p className="truncate text-[11px] text-white/60">{dock.video.channel}</p>
+              </button>
+              <button type="button" className={`${iconBtn} disabled:opacity-30`} aria-label="Previous video" disabled={!dock.video.canPrev} onClick={dockPrev}>
+                <SkipBack className="h-5 w-5" fill="currentColor" />
+              </button>
+              <button type="button" className={iconBtn} aria-label={dock.playing ? 'Pause' : 'Play'} onClick={() => (dock.playing ? dockPause() : dockPlay())}>
+                {dock.playing ? <Pause className="h-5 w-5" fill="currentColor" /> : <Play className="h-5 w-5" fill="currentColor" />}
+              </button>
+              <button type="button" className={iconBtn} aria-label="Next video" onClick={dockNext}>
+                <SkipForward className="h-5 w-5" fill="currentColor" />
+              </button>
+            </div>
+          </>
         )}
       </div>
     </>

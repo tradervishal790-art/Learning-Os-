@@ -324,6 +324,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
   const sessionRef = useRef<EngagementSession | null>(null);
   const playStartTimeRef = useRef<number | null>(null);
   const hasEndedRef = useRef(false);
+  const advancingRef = useRef(false);
   const hasSavedProgressRef = useRef<string | null>(null);
   const lastTimeRef = useRef(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -632,8 +633,12 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
       // button (moves within the current batch, or fetches a fresh batch
       // once it's exhausted). If nothing's left, handleNextVideo just
       // surfaces the "no more videos" error and stays on this one.
-      // Recall check first (skippable) — it calls handleNextVideo when done.
-      setRecallFor(selectedVideo?.id ?? null);
+      // Auto-play the next video straight away (like YouTube) — also works while the
+      // learner is in the floating mini player on another screen.
+      if (!advancingRef.current) {
+        advancingRef.current = true;
+        void handleNextVideo().finally(() => { advancingRef.current = false; });
+      }
     }
   };
 
@@ -647,6 +652,15 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
       sessionRef.current.feedback = value;
       upsertEngagementSession(withComputedSignal(sessionRef.current));
     }
+  };
+
+  const handlePrevVideo = () => {
+    if (!selectedVideo) return;
+    const i = videos.findIndex((v) => v.id === selectedVideo.id);
+    if (i <= 0) return;
+    finalizeAndSaveSession();
+    setActiveBridge(null);
+    setSelectedVideo(videos[i - 1]);
   };
 
   const handleNextVideo = async () => {
@@ -998,6 +1012,9 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                   <div className="bg-black rounded-2xl overflow-hidden border border-gray-200 dark:border-white/10">
                     <YouTubePlayer
                       video={selectedVideo}
+                      canPrev={videos.findIndex((v) => v.id === selectedVideo.id) > 0}
+                      onNext={handleNextVideo}
+                      onPrev={handlePrevVideo}
                       playerRef={playerRef}
                       onReady={onPlayerReady}
                       onStateChange={onPlayerStateChange}
@@ -1125,12 +1142,18 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
 
 function YouTubePlayer({
   video,
+  canPrev,
+  onNext,
+  onPrev,
   playerRef,
   onReady,
   onStateChange,
   onPlaybackRateChange,
 }: {
   video: Video;
+  canPrev: boolean;
+  onNext: () => void;
+  onPrev: () => void;
   playerRef: React.MutableRefObject<any>;
   onReady: (e: any) => void;
   onStateChange: (e: any) => void;
@@ -1144,8 +1167,8 @@ function YouTubePlayer({
   const { host } = useDock();
   const videoId = video.id;
 
-  const handlers = useRef({ onReady, onStateChange, onPlaybackRateChange });
-  handlers.current = { onReady, onStateChange, onPlaybackRateChange };
+  const handlers = useRef({ onReady, onStateChange, onPlaybackRateChange, onNext, onPrev });
+  handlers.current = { onReady, onStateChange, onPlaybackRateChange, onNext, onPrev };
 
   useLayoutEffect(() => {
     setDockSlot(slotRef.current);
@@ -1155,14 +1178,16 @@ function YouTubePlayer({
   useEffect(
     () =>
       mountDockPlayer(
-        { id: video.id, title: video.title, channel: video.channel },
+        { id: video.id, title: video.title, channel: video.channel, canPrev },
         {
           play: () => playerRef.current?.playVideo?.(),
           pause: () => playerRef.current?.pauseVideo?.(),
+          next: () => handlers.current.onNext(),
+          prev: () => handlers.current.onPrev(),
         },
       ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [video.id, video.title, video.channel],
+    [video.id, video.title, video.channel, canPrev],
   );
 
   useEffect(() => {
