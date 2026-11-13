@@ -12,7 +12,6 @@ import { useNavigate } from 'react-router-dom';
 import { MENTOR_PREFILL_KEY } from './mentorPrefill';
 import Notes from './Notes';
 import Research from './Research';
-import HintBubble from './HintBubble';
 import { getCachedConnectorFacts } from './conceptVideoPool';
 import { useTranslation } from './i18n/LanguageContext';
 import { format } from './i18n/format';
@@ -282,7 +281,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
   // dismissible, and NOT re-shown for fallback/"Next" videos within the same
   // topic — it's a topic-to-topic bridge, not a per-video one.
   const [activeBridge, setActiveBridge] = useState<TopicBridge | null>(null);
-  const [watchStats, setWatchStats] = useState({
+  const [, setWatchStats] = useState({
     watchedDuration: 0,
     totalDuration: 0,
     watchPercentage: 0,
@@ -824,13 +823,6 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
     }
   };
 
-  const formatTime = (s: number) => {
-    if (!s || Number.isNaN(s)) return '0:00';
-    const m = Math.floor(s / 60);
-    const sec = Math.floor(s % 60);
-    return `${m}:${sec.toString().padStart(2, '0')}`;
-  };
-
   // Pulled from the learner's own roadmap topics instead of a fixed generic
   // list — so suggestions are always relevant to what they're actually
   // learning, whatever subject that is. Must scope to the currently active
@@ -859,7 +851,6 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
         <div className="p-4 md:p-8">
           <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-5 md:mb-8">
             <h1 className="text-2xl md:text-4xl font-bold mb-1 md:mb-2">{t.videos.header.title}</h1>
-            <p className="text-sm md:text-base text-gray-500 dark:text-white/60">{t.videos.header.subtitle}</p>
           </motion.div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -914,9 +905,6 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                 ))}
               </div>
 
-              {videos.length > 1 && (
-                <HintBubble id="video-picker" text="3 styles, same topic — pick the one that clicks, you don't need all 3." />
-              )}
               <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
                 {videos.length === 0 ? (
                   <div className="text-center py-8 md:py-12 text-gray-400 dark:text-white/60">
@@ -1026,11 +1014,6 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                   )}
 
                   <div className="card rounded-xl p-4 sm:p-6">
-                    <div className="mb-4">
-                      <h2 className="text-xl sm:text-2xl font-bold mb-1 leading-snug">{selectedVideo.title}</h2>
-                      <p className="text-gray-500 dark:text-white/60">{selectedVideo.channel}</p>
-                    </div>
-
                     {sharedLearningSummary && (
                       <div className="rounded-xl border border-indigo-200/60 dark:border-indigo-400/20 bg-indigo-50/50 dark:bg-indigo-400/5 p-3 mb-4">
                         <p className="text-xs font-semibold text-indigo-700 dark:text-indigo-300 mb-1">
@@ -1096,40 +1079,6 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                           {loadingMore ? t.videos.loadingNextCta : t.videos.nextCta} <SkipForward className="w-4 h-4" />
                         </button>
                       )}
-                    </div>
-
-                    <div className="border border-gray-200 dark:border-white/10 rounded-lg p-4 mb-4">
-                      <h3 className="font-semibold mb-3">{t.videos.watchProgress.title}</h3>
-                      <div className="flex justify-between text-sm mb-2">
-                        <span>{t.videos.watchProgress.watched}</span>
-                        <span className="text-gray-500 dark:text-white/60">
-                          {formatTime(watchStats.watchedDuration)} / {formatTime(watchStats.totalDuration)}
-                        </span>
-                      </div>
-                      <div className="w-full bg-gray-100 dark:bg-white/10 rounded-full h-2 mb-4">
-                        <div
-                          className="h-full bg-black dark:bg-white rounded-full transition-all"
-                          style={{ width: `${watchStats.watchPercentage}%` }}
-                        />
-                      </div>
-                      <div className="grid grid-cols-2 gap-2 text-sm">
-                        <div className="flex justify-between">
-                          <span>{t.videos.watchProgress.pauses}</span>
-                          <span className="text-gray-500 dark:text-white/60">{watchStats.pauseCount}x</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>{t.videos.watchProgress.rewinds}</span>
-                          <span className="text-gray-500 dark:text-white/60">{watchStats.rewindCount}x</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>{t.videos.watchProgress.speed}</span>
-                          <span className="text-gray-500 dark:text-white/60">{watchStats.playbackSpeed}x</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>{t.videos.watchProgress.complete}</span>
-                          <span className="text-gray-500 dark:text-white/60">{Math.round(watchStats.watchPercentage)}%</span>
-                        </div>
-                      </div>
                     </div>
 
                     <div className="flex gap-2">
