@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { ChartNoAxesColumn, Flame, Clock, Brain, Sprout, Target, Star, Check } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { Goal } from './types';
@@ -36,6 +37,7 @@ const statusIcon: Record<string, ReactNode> = {
 export default function Progress({ goals = [] }: ProgressProps) {
   const t = useTranslation();
   const hub = t.dashboard.home.hub;
+  const navigate = useNavigate();
   const [, setAttemptHydrationVersion] = useState(0);
   useEffect(() => {
     let active = true;
@@ -81,7 +83,7 @@ export default function Progress({ goals = [] }: ProgressProps) {
             <div role="img" aria-label={`${t.progress.stats.completion}: ${completion.percent}%`}>
               <ProgressRing value={completion.percent} size={132} stroke={10} color="#a78bfa">
                 <span className="text-3xl font-semibold tabular-nums text-white">{completion.percent}%</span>
-                <span className="mt-0.5 text-[9px] uppercase tracking-[0.14em] text-slate-500">{t.progress.stats.completion}</span>
+                <span className="mt-0.5 text-[10px] uppercase tracking-[0.14em] text-slate-500">{t.progress.stats.completion}</span>
               </ProgressRing>
             </div>
             <div className="grid min-w-0 flex-1 gap-3">
@@ -93,7 +95,7 @@ export default function Progress({ goals = [] }: ProgressProps) {
                 <div key={label} title={label} aria-label={`${label}: ${value}`} className="flex min-w-0 items-center gap-3">
                   <Icon className={`h-5 w-5 flex-shrink-0 ${tone}`} strokeWidth={1.75} />
                   <span className="text-lg font-semibold tabular-nums md:text-xl">{value}</span>
-                  <span className="hidden truncate text-xs uppercase tracking-wider text-slate-500 md:inline">{label}</span>
+                  <span className="truncate text-xs text-slate-400 md:uppercase md:tracking-wider md:text-slate-500">{label}</span>
                 </div>
               ))}
             </div>
@@ -114,7 +116,7 @@ export default function Progress({ goals = [] }: ProgressProps) {
           </div>
         </GlassPanel>
 
-        <GlassPanel accent="#6ee7b7" className="lg:col-span-5">
+        <GlassPanel accent="#6ee7b7" className={`lg:col-span-5 ${hasAnyTopics || activeDays.length > 0 ? '' : 'hidden md:block'}`}>
           <div className="flex h-full flex-col justify-between gap-3 p-4 md:p-5">
             <div className="flex items-end justify-between gap-3">
               <div className="min-w-0">
@@ -137,6 +139,13 @@ export default function Progress({ goals = [] }: ProgressProps) {
           <Sprout className="mx-auto mb-4 h-12 w-12 text-slate-500" strokeWidth={1.5} />
           <h3 className="mb-2 text-xl font-semibold">{t.progress.emptyState.title}</h3>
           <p className="text-slate-400">{t.progress.emptyState.body}</p>
+          <button
+            type="button"
+            onClick={() => navigate('/dashboard/roadmap', { state: { missionControlNavigation: true } })}
+            className="mt-5 inline-flex min-h-12 items-center justify-center rounded-xl bg-violet-500 px-6 text-base font-semibold text-white shadow-[0_0_18px_rgba(139,92,246,.4)] transition hover:bg-violet-400 md:min-h-11 md:text-sm"
+          >
+            {t.dashboard.home.statsCards.openRoadmap}
+          </button>
         </motion.div>
       ) : (
         <>
