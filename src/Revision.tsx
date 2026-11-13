@@ -200,7 +200,7 @@ export default function Revision({ goals = [] }: RevisionProps) {
             }`}
           >
             <Icon className="h-5 w-5" strokeWidth={mode === id ? 2.2 : 1.75} />
-            <span className="hidden md:inline text-sm font-medium">{text}</span>
+            <span className="text-sm font-medium">{text}</span>
           </button>
         ))}
       </div>
@@ -243,8 +243,10 @@ export default function Revision({ goals = [] }: RevisionProps) {
       ) : (
         <>
       <NotesToRevise />
+      {/* Phones: the list of things to review comes before the stats/trend (order-*); md+ keeps the original order. */}
+      <div className="flex flex-col md:block">
       {/* Top stats — one surface, icon-first on phones */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.5 }} className="rounded-2xl card overflow-hidden grid grid-cols-2 sm:grid-cols-4 divide-x divide-y sm:divide-y-0 divide-gray-200 dark:divide-white/10 mb-5 md:mb-8">
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.5 }} className="order-3 md:order-none rounded-2xl card overflow-hidden grid grid-cols-4 divide-x divide-gray-200 dark:divide-white/10 mb-5 md:mb-8">
         {[
           { label: t.revision.stats.dueToday, value: String(stats.dueToday), Icon: Flame, tone: 'text-amber-300' },
           { label: t.revision.stats.overdue, value: String(stats.overdue), Icon: TriangleAlert, tone: 'text-red-300' },
@@ -255,12 +257,13 @@ export default function Revision({ goals = [] }: RevisionProps) {
             <Icon className="md:hidden w-5 h-5 mx-auto mb-1 text-gray-500 dark:text-white/50" strokeWidth={1.75} />
             <div className="hidden md:block text-xs text-gray-400 dark:text-white/40 uppercase tracking-wider mb-1">{label}</div>
             <div className={`text-xl md:text-3xl font-semibold tabular-nums ${tone}`}>{value}</div>
+            <div className="md:hidden mt-0.5 line-clamp-2 text-[10px] leading-tight text-white/50">{label}</div>
           </div>
         ))}
       </motion.div>
 
       {earnedBreak && (
-        <section className="mx-auto mb-5 rounded-2xl border border-emerald-300/25 bg-gradient-to-br from-emerald-500/[0.12] to-transparent p-4 md:p-5" aria-label={t.revision.emptyState.earnedBreakTitle}>
+        <section className="order-1 md:order-none mx-auto mb-5 rounded-2xl border border-emerald-300/25 bg-gradient-to-br from-emerald-500/[0.12] to-transparent p-4 md:p-5" aria-label={t.revision.emptyState.earnedBreakTitle}>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
               <h2 className="text-sm font-semibold">{t.revision.emptyState.earnedBreakTitle}</h2>
@@ -282,10 +285,10 @@ export default function Revision({ goals = [] }: RevisionProps) {
         />
       )}
 
-      <SharedLearningInsights kind="revision" />
+      <div className="order-3 md:order-none"><SharedLearningInsights kind="revision" /></div>
 
       {/* Observed recall trend — blank days are intentionally not treated as failures. */}
-      <section className="rounded-2xl card border border-gray-200 dark:border-white/10 p-4 mb-5 md:mb-6" aria-label={t.revision.recall.trendTitle}>
+      <section className="order-3 md:order-none rounded-2xl card border border-gray-200 dark:border-white/10 p-4 mb-5 md:mb-6" aria-label={t.revision.recall.trendTitle}>
         <div className="flex items-center justify-between gap-3 mb-3">
           <h2 className="text-sm font-semibold">{t.revision.recall.trendTitle}</h2>
           <span className="text-xs text-gray-400 dark:text-white/50">{t.revision.recall.trendHint}</span>
@@ -308,7 +311,7 @@ export default function Revision({ goals = [] }: RevisionProps) {
       </section>
 
       {/* Filter tabs */}
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2, duration: 0.5 }} className="flex gap-2 mb-4 md:mb-6 overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2, duration: 0.5 }} className="order-2 md:order-none flex gap-2 mb-4 md:mb-6 overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {(
           [
             { id: 'due', label: t.revision.filters.needsReview, count: stats.dueToday + stats.overdue },
@@ -333,7 +336,7 @@ export default function Revision({ goals = [] }: RevisionProps) {
             }`}
           >
             <FilterIcon className="w-4 h-4" strokeWidth={1.75} />
-            <span className="hidden md:inline">{tab.label}</span>
+            <span className={`${filter === tab.id ? '' : 'hidden'} md:inline`}>{tab.label}</span>
             <span className="opacity-60 tabular-nums">{tab.count}</span>
           </button>
           );
@@ -341,7 +344,7 @@ export default function Revision({ goals = [] }: RevisionProps) {
       </motion.div>
 
       {/* Revision cards */}
-      <div className="space-y-3">
+      <div className="order-2 md:order-none space-y-3">
         <AnimatePresence>
           {filteredItems.map((item, i) => {
             const statusIcon = statusIcons[item.status];
@@ -369,7 +372,7 @@ export default function Revision({ goals = [] }: RevisionProps) {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full border border-gray-200 dark:border-white/10 text-gray-600 dark:text-white/70" title={statusLabel} aria-label={statusLabel}>
-                        {statusIcon}<span className="hidden md:inline">{statusLabel}</span>
+                        {statusIcon}<span>{statusLabel}</span>
                       </span>
                       <span className="text-[10px] text-gray-400 dark:text-white/40 uppercase tracking-wider">• {item.category}</span>
                       {item.goalTitle && (
@@ -457,19 +460,20 @@ export default function Revision({ goals = [] }: RevisionProps) {
       </div>
 
       {filteredItems.length === 0 && items.length === 0 && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-8 md:p-12 text-center">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="order-2 md:order-none p-8 md:p-12 text-center">
           <Sprout className="w-12 h-12 mx-auto mb-4 text-gray-400 dark:text-white/40" strokeWidth={1.5} />
           <h3 className="text-xl font-semibold mb-2">{t.revision.emptyState.noRevisionTitle}</h3>
           <p className="text-gray-400 dark:text-white/60">{t.revision.emptyState.noRevisionBody}</p>
         </motion.div>
       )}
       {filteredItems.length === 0 && items.length > 0 && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-8 md:p-12 text-center">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="order-2 md:order-none p-8 md:p-12 text-center">
           <PartyPopper className="w-12 h-12 mx-auto mb-4 text-gray-400 dark:text-white/40" strokeWidth={1.5} />
           <h3 className="text-xl font-semibold mb-2">{t.revision.emptyState.allCaughtUpTitle}</h3>
           <p className="text-gray-400 dark:text-white/60">{t.revision.emptyState.allCaughtUpBody}</p>
         </motion.div>
       )}
+      </div>
         </>
       )}
       </div>
