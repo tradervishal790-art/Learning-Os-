@@ -2,6 +2,7 @@
 //
 // Non-test behaviour the growth-edge rules can confirm a personality bucket with.
 // Reads the SAME on-device stores the Progress page uses — no new storage, no AI.
+import { localDayKey } from './progressMetrics';
 import type { Goal } from './types';
 import type { TranslationShape } from './i18n/translations';
 import { getStreakStats, getTimeStats, getCompletionStats } from './progressData';
@@ -25,7 +26,7 @@ export function getDaysAway(): number {
   } catch {
     days = [];
   }
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localDayKey(new Date());
   const prev = days.filter((d) => d < today).sort().pop();
   if (!prev) return 0;
   return Math.max(0, Math.round((Date.parse(today) - Date.parse(prev)) / 86400000) - 1);

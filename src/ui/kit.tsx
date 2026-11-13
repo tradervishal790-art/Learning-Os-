@@ -1,6 +1,7 @@
 // Shared building blocks for the dark, glowing "mission" look.
 // RULE: nothing in this file contains a user-facing word. Every label comes from
 // the caller (i18n strings or the student's own data).
+import { localDayKey } from '../progressMetrics';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent, ReactNode } from 'react';
 import { useReducedMotion } from 'framer-motion';
@@ -115,12 +116,12 @@ export function Heatmap({ days, weeks = 12, color = '#6ee7b7', compact = false }
     const runLength = (from: Date) => {
       let n = 0;
       const probe = new Date(from);
-      while (active.has(probe.toISOString().slice(0, 10))) { n += 1; probe.setDate(probe.getDate() - 1); }
+      while (active.has(localDayKey(probe))) { n += 1; probe.setDate(probe.getDate() - 1); }
       return n;
     };
-    const todayKey = today.toISOString().slice(0, 10);
+    const todayKey = localDayKey(today);
     while (cursor <= today) {
-      const key = cursor.toISOString().slice(0, 10);
+      const key = localDayKey(cursor);
       const run = active.has(key) ? runLength(cursor) : 0;
       list.push({
         key,
