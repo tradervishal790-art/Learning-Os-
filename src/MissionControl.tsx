@@ -129,9 +129,9 @@ export default function MissionControl({
       </header>
 
       <section className="relative z-10 flex min-h-0 flex-1 flex-col overflow-y-auto px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 md:px-6 md:pb-5 md:pt-4">
-        <div className="order-2 mb-3 grid shrink-0 gap-3 md:order-none lg:grid-cols-12">
+        <div className="contents lg:mb-3 lg:grid lg:shrink-0 lg:grid-cols-12 lg:gap-3">
           {/* Slim Continue strip: one clear action, exactly where the learner stopped. */}
-          <GlassButton onClick={onContinueLearning} accent="#a78bfa" className="border-violet-300/25 bg-gradient-to-br from-violet-500/[0.14] to-indigo-500/[0.05] hover:border-violet-200/45 lg:col-span-7">
+          <GlassButton onClick={onContinueLearning} accent="#a78bfa" className="order-first mb-3 shrink-0 border-violet-300/25 bg-gradient-to-br from-violet-500/[0.14] to-indigo-500/[0.05] hover:border-violet-200/45 lg:order-none lg:mb-0 lg:col-span-7">
             <span className="flex items-center gap-3 p-3 md:gap-4 md:p-4">
               <ProgressRing value={progressPercent} color="#a78bfa" size={64} stroke={6}>
                 <span className="text-sm font-semibold tabular-nums text-white">{progressPercent}%</span>
@@ -156,7 +156,7 @@ export default function MissionControl({
             </span>
           </GlassButton>
 
-          <GlassPanel accent="#6ee7b7" className="lg:col-span-5">
+          <GlassPanel accent="#6ee7b7" className="order-3 mt-3 shrink-0 lg:order-none lg:mt-0 lg:col-span-5">
             <div className="flex items-center justify-between gap-3 p-3 md:p-4">
               <div className="min-w-0">
                 <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-200/80">{hub.consistencyTitle}</div>
@@ -269,25 +269,25 @@ export default function MissionControl({
           </div>
         </div>
 
-        <div className="relative order-1 flex-none rounded-2xl border border-white/[0.07] bg-[#0b1221]/70 p-3 lg:order-none lg:hidden">
-          <div className="absolute bottom-8 left-[27px] top-8 w-px bg-gradient-to-b from-violet-400 via-cyan-300 to-fuchsia-400 opacity-60" />
+        <div className="relative order-1 flex-none lg:order-none lg:hidden">
+          <div className="absolute bottom-10 left-[19px] top-8 w-px bg-gradient-to-b from-violet-400 via-cyan-300 to-fuchsia-400 opacity-50" />
           <div className="relative flex flex-col gap-2.5">
-            <div className="mb-1 flex items-center gap-3 rounded-xl border border-violet-300/40 bg-[#211b40] p-3">
-              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-400/15 text-violet-200"><Users className="h-4 w-4" /></span>
-              <span><span className="block text-xs font-semibold text-white">{name}</span><span className="block text-[10px] text-violet-200/60">{goalTitle || hub.startsWithCuriosity}</span></span>
+            <div className="flex items-center gap-3 px-1 py-1">
+              <span className="relative z-10 flex h-9 w-9 items-center justify-center rounded-full bg-[#211b40] text-violet-200 ring-1 ring-violet-300/40"><Users className="h-4 w-4" /></span>
+              <span><span className="block text-sm font-semibold text-white">{name}</span><span className="block text-xs text-violet-200/60">{goalTitle || hub.startsWithCuriosity}</span></span>
             </div>
             {visibleRows.map((row) => {
               const Icon = row.icon;
               const copy = hub.engines[row.id];
               return (
-                <div key={row.id} className="relative ml-5 rounded-xl border bg-[#111d31] p-3" style={{ borderColor: `${row.color}50` }}>
-                  <button type="button" onClick={() => setSelectedEngine((current) => current === row.id ? null : row.id)} aria-expanded={selectedEngine === row.id} aria-current={nextStepStageId === row.id ? 'step' : undefined} className={`flex w-full items-center gap-3 rounded-lg text-left ${nextStepStageId === row.id ? 'ring-1 ring-cyan-300/40' : ''}`}>
+                <div key={row.id} className="relative ml-7 rounded-xl border bg-[#111d31]" style={{ borderColor: nextStepStageId === row.id ? `${row.color}99` : `${row.color}40` }}>
+                  <button type="button" onClick={() => setSelectedEngine((current) => current === row.id ? null : row.id)} aria-expanded={selectedEngine === row.id} aria-current={nextStepStageId === row.id ? 'step' : undefined} className="flex min-h-14 w-full items-center gap-3 rounded-xl p-3 text-left">
                     <Icon className="h-5 w-5" style={{ color: row.color }} />
-                    <span className="flex-1"><span className="block text-xs font-semibold text-white">{row.number} · {copy.title}</span><span className="block text-[10px] text-slate-500">{copy.subtitle}</span>{nextStepStageId === row.id && <span className="mt-1 inline-flex rounded-full bg-cyan-300/10 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wider text-cyan-200">{hub.space.yourNextStep}</span>}</span>
+                    <span className="flex-1"><span className="block text-sm font-semibold text-white">{row.number} · {copy.title}</span><span className="block text-xs text-slate-400">{copy.subtitle}</span>{nextStepStageId === row.id && <span className="mt-1 inline-flex rounded-full bg-cyan-300/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-cyan-200">{hub.space.yourNextStep}</span>}</span>
                     <ArrowUpRight className="h-4 w-4 text-slate-500" />
                   </button>
-                  {selectedEngine === row.id && <div className="ml-8 mt-2 flex flex-wrap gap-1.5">
-                    {row.children.map((child) => <button key={child.id} type="button" onClick={() => open(child.action)} className="rounded-lg border border-white/[0.08] bg-white/[0.035] px-2 py-1.5 text-[9px] text-slate-300">{hub.tools[child.id].label} ↗</button>)}
+                  {selectedEngine === row.id && <div className="flex flex-wrap gap-2 px-3 pb-3 pl-11">
+                    {row.children.map((child) => <button key={child.id} type="button" onClick={() => open(child.action)} className="min-h-9 rounded-lg border border-white/[0.08] bg-white/[0.035] px-3 py-1.5 text-xs text-slate-200">{hub.tools[child.id].label} ↗</button>)}
                   </div>}
                 </div>
               );
