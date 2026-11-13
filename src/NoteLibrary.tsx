@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Archive, ArchiveRestore, Check, ChevronRight, Copy, FileText, GraduationCap, Folder as FolderIcon, FolderInput,
-  Download, FolderPlus, ListChecks, MoreVertical, Pencil, Pin, PinOff, Plus, RotateCcw, Search, Star, Tag, Trash2, TriangleAlert, Upload, X,
+  Download, FolderPlus, ListChecks, MoreVertical, Pencil, Pin, PinOff, Plus, RotateCcw, Search, SlidersHorizontal, Star, Tag, Trash2, TriangleAlert, Upload, X,
 } from 'lucide-react';
 import { useLanguage, useTranslation } from './i18n/LanguageContext';
 import { format } from './i18n/format';
@@ -141,6 +141,8 @@ export default function NoteLibrary() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [moveIds, setMoveIds] = useState<string[] | null>(null);
   const [showFolders, setShowFolders] = useState(false);
+  // Phones: sort / status / tag / folders / backup live behind one Filters button so the notes start near the top.
+  const [showOptions, setShowOptions] = useState(false);
   const [toast, setToast] = useState<{ message: string; undo: IndexUndo<NoteMeta, NoteFolder> | null } | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
@@ -184,6 +186,7 @@ export default function NoteLibrary() {
     if (view.startsWith('folder:') && !idx.folders.some((f) => `folder:${f.id}` === view)) setView('all');
   }, [idx.folders, view]);
 
+  const filtersActive = statusFilter !== 'all' || tag !== '' || sort !== 'recent';
   const flatFolders = useMemo(() => flattenFolders(idx.folders), [idx.folders]);
   const folderName = (id: string | null) => idx.folders.find((f) => f.id === id)?.name ?? '';
 
@@ -512,18 +515,18 @@ export default function NoteLibrary() {
         </div>
       )}
       {/* quick counts — each one jumps to that view */}
-      <div className="mb-4 grid grid-cols-3 gap-3">
+      <div className="mb-3 grid grid-cols-3 gap-2 md:mb-4 md:gap-3">
         {([
           { v: 'all' as View, label: t.viewAll, value: counts.all, Icon: FileText, tone: 'text-violet-300', accent: '#a78bfa' },
           { v: 'favorites' as View, label: t.viewFavorites, value: counts.favorites, Icon: Star, tone: 'text-amber-300', accent: '#fbbf24' },
           { v: 'archive' as View, label: t.viewArchive, value: counts.archive, Icon: Archive, tone: 'text-cyan-300', accent: '#67e8f9' },
         ]).map(({ v, label, value, Icon, tone, accent }) => (
           <GlassButton key={v} accent={accent} onClick={() => { setView(v); setShowFolders(false); exitSelect(); }} className={view === v ? 'border-white/25' : ''}>
-            <span className="flex items-center gap-3 px-3 py-3 md:px-4">
-              <Icon size={18} className={`shrink-0 ${tone}`} />
-              <span className="min-w-0">
-                <span className="block text-xl font-semibold tabular-nums leading-none">{value}</span>
-                <span className="mt-1 block truncate text-[11px] text-gray-500 dark:text-white/50">{label}</span>
+            <span className="flex items-center justify-center gap-3 px-2 py-2.5 md:justify-start md:px-4 md:py-3">
+              <Icon size={18} className={`hidden shrink-0 md:block ${tone}`} />
+              <span className="flex min-w-0 items-baseline gap-1.5 md:block">
+                <span className="block text-base font-semibold tabular-nums leading-none md:text-xl">{value}</span>
+                <span className="block truncate text-xs text-gray-500 dark:text-white/50 md:mt-1 md:text-[11px]">{label}</span>
               </span>
             </span>
           </GlassButton>
@@ -546,7 +549,18 @@ export default function NoteLibrary() {
           )}
         </div>
         <button
-          className={`${btnGhost} !px-0 md:!px-3 w-10 md:w-auto h-10 md:h-auto inline-flex items-center justify-center`}
+          type="button"
+          onClick={() => setShowOptions((v) => !v)}
+          aria-expanded={showOptions}
+          aria-label={t.filters}
+          title={t.filters}
+          className={`${btnGhost} relative !px-0 h-10 w-10 inline-flex md:hidden items-center justify-center ${showOptions ? '!border-violet-400/50 !text-violet-200' : ''}`}
+        >
+          <SlidersHorizontal size={16} />
+          {filtersActive && !showOptions && <span aria-hidden="true" className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-violet-400" />}
+        </button>
+        <button
+          className={`${btnGhost} !px-0 md:!px-3 w-10 md:w-auto h-10 md:h-auto ${showOptions ? 'inline-flex' : 'hidden'} md:inline-flex items-center justify-center`}
           onClick={() => addFolder(currentFolder?.id ?? null)}
           aria-label={currentFolder ? t.newSubfolder : t.newFolder}
           title={currentFolder ? t.newSubfolder : t.newFolder}
@@ -555,7 +569,7 @@ export default function NoteLibrary() {
           <span className="hidden md:inline">{currentFolder ? t.newSubfolder : t.newFolder}</span>
         </button>
         <button
-          className={`${btnGhost} !px-0 w-10 h-10 inline-flex items-center justify-center`}
+          className={`${btnGhost} !px-0 w-10 h-10 ${showOptions ? 'inline-flex' : 'hidden'} md:inline-flex items-center justify-center`}
           onClick={() => void backupAll()}
           disabled={safetyBusy}
           aria-label={safety.backupTitle}
@@ -564,7 +578,7 @@ export default function NoteLibrary() {
           <Download size={16} />
         </button>
         <button
-          className={`${btnGhost} !px-0 w-10 h-10 inline-flex items-center justify-center`}
+          className={`${btnGhost} !px-0 w-10 h-10 ${showOptions ? 'inline-flex' : 'hidden'} md:inline-flex items-center justify-center`}
           onClick={() => importInput.current?.click()}
           disabled={safetyBusy}
           aria-label={safety.importTitle}
@@ -599,10 +613,10 @@ export default function NoteLibrary() {
         </button>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-6">
+      <div className="flex flex-col md:flex-row gap-2 md:gap-6">
         {/* sidebar */}
         <aside className="md:w-60 shrink-0">
-          <button className={`${btnGhost} md:hidden mb-2 min-h-10`} aria-expanded={showFolders} onClick={() => setShowFolders((s) => !s)}>
+          <button className={`${btnGhost} ${showOptions ? '' : 'hidden'} md:hidden mb-2 min-h-10`} aria-expanded={showFolders} onClick={() => setShowFolders((s) => !s)}>
             <FolderIcon size={14} className="inline mr-1 -mt-0.5" /> {t.folders}
           </button>
           <div className={`${showFolders ? 'block' : 'hidden'} md:block space-y-1`}>
@@ -674,7 +688,7 @@ export default function NoteLibrary() {
 
         {/* main list */}
         <main className="flex-1 min-w-0">
-          <div className="flex flex-wrap items-center gap-2 mb-3">
+          <div className={`${showOptions || selectMode ? 'flex' : 'hidden'} md:flex flex-wrap items-center gap-2 mb-3`}>
             <select
               value={sort}
               onChange={(e) => setSort(e.target.value as Sort)}

@@ -509,6 +509,7 @@ export interface TranslationShape {
     newFolder: string;
     untitled: string;
     folders: string;
+    filters: string;
     viewAll: string;
     viewFavorites: string;
     viewArchive: string;
@@ -2643,6 +2644,7 @@ export const translations: Record<Locale, TranslationShape> = {
       newFolder: "New folder",
       untitled: "Untitled note",
       folders: "Folders",
+      filters: "Filters",
       viewAll: "All notes",
       viewFavorites: "Favorites",
       viewArchive: "Archive",
@@ -4788,6 +4790,7 @@ export const translations: Record<Locale, TranslationShape> = {
       newFolder: "New folder",
       untitled: "Untitled note",
       folders: "Folders",
+      filters: "फ़िल्टर",
       viewAll: "All notes",
       viewFavorites: "Favorites",
       viewArchive: "Archive",
@@ -6932,6 +6935,7 @@ export const translations: Record<Locale, TranslationShape> = {
       newFolder: "New folder",
       untitled: "Untitled note",
       folders: "Folders",
+      filters: "Filters",
       viewAll: "All notes",
       viewFavorites: "Favorites",
       viewArchive: "Archive",
