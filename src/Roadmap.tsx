@@ -118,8 +118,10 @@ export default function Roadmap({
   const [topicHours, setTopicHours] = useState(0);
   const [topicDeadline, setTopicDeadline] = useState('');
   const [showDeepDive, setShowDeepDive] = useState(false);
-  const [subjectInput, setSubjectInput] = useState('');
-  const [examTypeInput, setExamTypeInput] = useState('');
+  // The goal already carries the subject/exam the learner gave in onboarding or when adding the goal:
+  // start the form from it so the first screen is one tap ("Generate"), not retyping.
+  const [subjectInput, setSubjectInput] = useState(() => goals.find((g) => g.id === activeGoalId)?.title ?? '');
+  const [examTypeInput, setExamTypeInput] = useState(() => goals.find((g) => g.id === activeGoalId)?.examType ?? '');
   const [hoursInput, setHoursInput] = useState(10);
   const [deadlineUnit, setDeadlineUnit] = useState<'day' | 'week' | 'month'>('week');
   const [deadlineValue, setDeadlineValue] = useState(4); // matches 'week' default range below
@@ -143,6 +145,14 @@ export default function Roadmap({
 
   const activeGoals = goals.filter((g) => g.status === 'active');
   const canAddGoal = activeGoals.length < MAX_ACTIVE_GOALS;
+
+  // Switching goal tabs reloads that goal's own subject/exam into the form.
+  useEffect(() => {
+    const goal = goals.find((g) => g.id === activeGoalId);
+    setSubjectInput(goal?.title ?? '');
+    setExamTypeInput(goal?.examType ?? '');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeGoalId]);
 
   const roadmap = getRoadmapData(activeGoalId);
   const { total: totalTopics, completed: completedTopics, learning: learningTopics, percent: progressPercent } =
@@ -514,37 +524,6 @@ export default function Roadmap({
         )}
       </AnimatePresence>
 
-      {/* Hero: progress ring + the goal's own title/description + three stats */}
-      {!hasNoRoadmap && (
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.5 }} className="mb-4">
-          <GlassPanel accent="#a78bfa" className="border-violet-300/20 bg-gradient-to-br from-violet-500/[0.10] to-transparent">
-            <div className="flex flex-col gap-5 p-4 sm:flex-row sm:items-center md:p-6">
-              <ProgressRing value={progressPercent} size={124} stroke={10} color="#a78bfa">
-                <span className="text-3xl font-semibold tabular-nums text-white">{progressPercent}%</span>
-                <span className="mt-0.5 text-[9px] uppercase tracking-[0.16em] text-slate-500">{t.roadmap.stats.progress}</span>
-              </ProgressRing>
-              <div className="min-w-0 flex-1">
-                <h2 className="text-lg font-semibold leading-snug text-white md:text-2xl">{roadmap.title}</h2>
-                <p className="mt-1 line-clamp-3 text-sm text-slate-400">{roadmap.description}</p>
-                <span className="mt-3 inline-block rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs text-slate-300">{roadmap.difficulty}</span>
-              </div>
-            </div>
-            <div className="grid grid-cols-3 divide-x divide-white/[0.07] border-t border-white/[0.07]">
-              {[
-                { label: t.roadmap.stats.done, value: `${completedTopics}/${totalTopics}`, Icon: CircleCheck, tone: 'text-emerald-300' },
-                { label: t.roadmap.stats.inProgress, value: String(learningTopics), Icon: Flame, tone: 'text-amber-300' },
-                { label: t.roadmap.stats.estTime, value: String(roadmap.estimatedTime), Icon: Clock, tone: 'text-cyan-300' },
-              ].map(({ label, value, Icon, tone }) => (
-                <div key={label} aria-label={`${label}: ${value}`} className="min-w-0 px-3 py-3 md:px-5 md:py-4">
-                  <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-slate-500"><Icon className={`h-3.5 w-3.5 shrink-0 ${tone}`} strokeWidth={1.75} /><span className="truncate">{label}</span></div>
-                  <div className="mt-1 truncate text-base font-semibold tabular-nums text-white md:text-xl">{value}</div>
-                </div>
-              ))}
-            </div>
-          </GlassPanel>
-        </motion.div>
-      )}
-
       {completionFeedback && (
         <motion.div
           initial={{ opacity: 0, y: 8 }}
@@ -573,13 +552,46 @@ export default function Roadmap({
         </motion.div>
       )}
 
+      {/* Phones: the next step comes before the progress summary (one obvious action first); md+ keeps the original order. */}
+      <div className="flex flex-col md:block">
+      {/* Hero: progress ring + the goal's own title/description + three stats */}
+      {!hasNoRoadmap && (
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.5 }} className="order-2 mb-4 md:order-none">
+          <GlassPanel accent="#a78bfa" className="border-violet-300/20 bg-gradient-to-br from-violet-500/[0.10] to-transparent">
+            <div className="flex items-center gap-4 p-4 sm:gap-5 md:p-6">
+              <ProgressRing value={progressPercent} size={124} stroke={10} color="#a78bfa">
+                <span className="text-3xl font-semibold tabular-nums text-white">{progressPercent}%</span>
+                <span className="mt-0.5 text-[9px] uppercase tracking-[0.16em] text-slate-500">{t.roadmap.stats.progress}</span>
+              </ProgressRing>
+              <div className="min-w-0 flex-1">
+                <h2 className="text-lg font-semibold leading-snug text-white md:text-2xl">{roadmap.title}</h2>
+                <p className="mt-1 line-clamp-3 text-sm text-slate-400">{roadmap.description}</p>
+                <span className="mt-3 inline-block rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs text-slate-300">{roadmap.difficulty}</span>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 divide-x divide-white/[0.07] border-t border-white/[0.07]">
+              {[
+                { label: t.roadmap.stats.done, value: `${completedTopics}/${totalTopics}`, Icon: CircleCheck, tone: 'text-emerald-300' },
+                { label: t.roadmap.stats.inProgress, value: String(learningTopics), Icon: Flame, tone: 'text-amber-300' },
+                { label: t.roadmap.stats.estTime, value: String(roadmap.estimatedTime), Icon: Clock, tone: 'text-cyan-300' },
+              ].map(({ label, value, Icon, tone }) => (
+                <div key={label} aria-label={`${label}: ${value}`} className="min-w-0 px-3 py-3 md:px-5 md:py-4">
+                  <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-slate-500"><Icon className={`h-3.5 w-3.5 shrink-0 ${tone}`} strokeWidth={1.75} /><span className="truncate">{label}</span></div>
+                  <div className="mt-1 truncate text-base font-semibold tabular-nums text-white md:text-xl">{value}</div>
+                </div>
+              ))}
+            </div>
+          </GlassPanel>
+        </motion.div>
+      )}
+
       {currentTopic && (
         <motion.section
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.12, duration: 0.35 }}
           aria-labelledby="roadmap-next-step-title"
-          className="mb-6"
+          className="order-1 mb-4 md:order-none md:mb-6"
         >
           <GlassPanel accent="#a78bfa" className="border-violet-300/30 bg-violet-500/[0.08]">
             <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between md:p-5">
@@ -604,6 +616,8 @@ export default function Roadmap({
           </GlassPanel>
         </motion.section>
       )}
+
+      </div>
 
       {/* No roadmap yet: the goal's placeholder title + the generate form */}
       {hasNoRoadmap && (
@@ -633,13 +647,13 @@ export default function Roadmap({
                 onChange={(e) => setSubjectInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleGenerateClick()}
                 placeholder={t.roadmap.generateForm.placeholder}
-                autoFocus
+                autoFocus={!subjectInput}
                 className="flex-1 px-4 py-2.5 rounded-lg text-base md:text-sm border border-gray-200 dark:border-white/10 bg-white dark:bg-black/30 focus:outline-none focus:border-black dark:focus:border-white"
               />
               <button
                 onClick={handleGenerateClick}
                 disabled={generating || !subjectInput.trim()}
-                className="px-5 py-2.5 rounded-lg text-sm font-medium bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white hover:opacity-80 transition disabled:opacity-40 flex-shrink-0"
+                className="min-h-12 md:min-h-0 px-5 py-2.5 rounded-lg text-base md:text-sm font-semibold md:font-medium bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white hover:opacity-80 transition disabled:opacity-40 flex-shrink-0"
               >
                 {generating ? t.roadmap.generateForm.generatingCta : t.roadmap.generateForm.generateCta}
               </button>
