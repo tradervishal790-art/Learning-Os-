@@ -293,17 +293,17 @@ export default function Mentor() {
 
           <div className="flex min-h-0 flex-1 flex-col">
             {showWelcome ? (
-              <div className="flex min-h-0 flex-1 flex-col items-center justify-center overflow-y-auto px-4 pb-5 pt-8 text-center md:px-8">
-                <motion.div initial={{ opacity: 0, scale: 0.8, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 0.55, ease: 'easeOut' }} className="mb-6 flex h-[76px] w-[76px] items-center justify-center rounded-full border border-violet-200/20 bg-[radial-gradient(circle_at_35%_30%,rgba(255,255,255,.95),rgba(196,181,253,.9)_12%,rgba(139,92,246,.8)_34%,rgba(49,46,129,.9)_68%,rgba(8,13,25,1)_100%)] shadow-[0_0_35px_rgba(139,92,246,.4),inset_0_0_18px_rgba(255,255,255,.18)]">
+              <div className="flex min-h-0 flex-1 flex-col items-center justify-start overflow-y-auto px-4 pb-4 pt-5 text-center sm:justify-center sm:pb-5 sm:pt-8 md:px-8">
+                <motion.div initial={{ opacity: 0, scale: 0.8, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 0.55, ease: 'easeOut' }} className="mb-4 flex h-14 w-14 shrink-0 sm:mb-6 sm:h-[76px] sm:w-[76px] items-center justify-center rounded-full border border-violet-200/20 bg-[radial-gradient(circle_at_35%_30%,rgba(255,255,255,.95),rgba(196,181,253,.9)_12%,rgba(139,92,246,.8)_34%,rgba(49,46,129,.9)_68%,rgba(8,13,25,1)_100%)] shadow-[0_0_35px_rgba(139,92,246,.4),inset_0_0_18px_rgba(255,255,255,.18)]">
                   <Sparkles className="h-7 w-7 text-white drop-shadow-[0_0_8px_rgba(255,255,255,.8)]" />
                 </motion.div>
-                <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12, duration: 0.45 }} className="max-w-2xl">
-                  <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.28em] text-violet-300/80">LEARNING OS · AI MENTOR</p>
+                <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12, duration: 0.45 }} className="max-w-2xl shrink-0">
+                  <p className="mb-3 hidden text-[10px] font-semibold uppercase tracking-[0.28em] text-violet-300/80 sm:block">LEARNING OS · AI MENTOR</p>
                   <h2 className="text-balance text-2xl font-semibold tracking-tight text-white sm:text-3xl md:text-[38px]">What would you like to learn today?</h2>
                   <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-slate-400 md:text-[15px]">{t.mentor.header.subtitle}</p>
                 </motion.div>
 
-                <div className="mt-8 grid w-full max-w-[850px] grid-cols-1 gap-3 sm:grid-cols-3">
+                <div className="mt-5 grid w-full max-w-[850px] shrink-0 grid-cols-1 gap-2.5 sm:mt-8 sm:grid-cols-3 sm:gap-3">
                   {t.mentor.suggestedPrompts.slice(0, 3).map((p, i) => {
                     const PromptIcon = PROMPT_ICONS[i] ?? Lightbulb;
                     return (
@@ -314,14 +314,16 @@ export default function Mentor() {
                         transition={{ delay: 0.18 + i * 0.08, duration: 0.35 }}
                         onClick={() => sendMessage(p.prompt, PROMPT_UI[i] === true)}
                         disabled={loading}
-                        className="group min-h-[112px] rounded-2xl border border-white/[0.09] bg-white/[0.045] p-4 text-left transition hover:-translate-y-1 hover:border-violet-300/30 hover:bg-violet-500/[0.09] hover:shadow-[0_16px_38px_rgba(0,0,0,.2)] disabled:opacity-40"
+                        className="group flex min-h-14 items-center gap-3 rounded-2xl border border-white/[0.09] bg-white/[0.045] p-3 text-left transition sm:block sm:min-h-[112px] sm:p-4 hover:-translate-y-1 hover:border-violet-300/30 hover:bg-violet-500/[0.09] hover:shadow-[0_16px_38px_rgba(0,0,0,.2)] disabled:opacity-40"
                       >
-                        <div className="mb-3 flex items-center justify-between">
-                          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-500/15 text-violet-300"><PromptIcon className="h-4 w-4" /></span>
-                          <ChevronRight className="h-4 w-4 text-slate-600 transition group-hover:translate-x-1 group-hover:text-violet-200" />
+                        <div className="contents sm:mb-3 sm:flex sm:items-center sm:justify-between">
+                          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-violet-500/15 text-violet-300 sm:h-8 sm:w-8"><PromptIcon className="h-4 w-4" /></span>
+                          <ChevronRight className="order-3 h-4 w-4 shrink-0 text-slate-600 transition group-hover:translate-x-1 group-hover:text-violet-200 sm:order-none" />
                         </div>
-                        <span className="block text-sm font-semibold text-slate-100">{p.label}</span>
-                        <span className="mt-1 block line-clamp-2 text-xs leading-relaxed text-slate-400">{p.prompt}</span>
+                        <span className="min-w-0 flex-1 sm:block">
+                          <span className="block text-sm font-semibold text-slate-100">{p.label}</span>
+                          <span className="mt-0.5 block line-clamp-1 text-xs leading-relaxed text-slate-400 sm:mt-1 sm:line-clamp-2">{p.prompt}</span>
+                        </span>
                       </motion.button>
                     );
                   })}
