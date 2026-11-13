@@ -486,7 +486,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
     void verifyBridgeForVideo(initialPlaylist.primary);
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialPlaylist]);
+  }, [initialPlaylist?.primary?.id]);
 
   const finalizeAndSaveSession = () => {
     if (!sessionRef.current) return;
