@@ -52,7 +52,8 @@ export default function PlayerHost({ onExpand }: { onExpand: () => void }) {
 
   const posRef = useRef<Pos>(loadPos());
   const geoRef = useRef({ xMin: 0, xMax: 0, yMin: 0, yMax: 0, x: 0, y: 0 });
-  const dragRef = useRef<{ startX: number; startY: number; x: number; y: number } | null>(null);
+  const dragRef = useRef<{ startX: number; startY: number; x: number; y: number; moved: boolean } | null>(null);
+  const lastTapRef = useRef(0);
   const liveRef = useRef({ immersive, dismissed: dock.dismissed });
   useEffect(() => {
     liveRef.current = { immersive, dismissed: dock.dismissed };
@@ -166,12 +167,13 @@ export default function PlayerHost({ onExpand }: { onExpand: () => void }) {
     if ((e.target as HTMLElement).closest('button')) return;
     const g = geoRef.current;
     e.currentTarget.setPointerCapture(e.pointerId);
-    dragRef.current = { startX: e.clientX, startY: e.clientY, x: g.x, y: g.y };
+    dragRef.current = { startX: e.clientX, startY: e.clientY, x: g.x, y: g.y, moved: false };
   };
 
   const onDragMove = (e: ReactPointerEvent<HTMLDivElement>) => {
     const d = dragRef.current;
     if (!d) return;
+    if (Math.abs(e.clientX - d.startX) + Math.abs(e.clientY - d.startY) > 6) d.moved = true;
     const { xMin, xMax, yMin, yMax } = geoRef.current;
     const x = Math.min(xMax, Math.max(xMin, d.x + e.clientX - d.startX));
     const y = Math.min(yMax, Math.max(yMin, d.y + e.clientY - d.startY));
@@ -183,8 +185,20 @@ export default function PlayerHost({ onExpand }: { onExpand: () => void }) {
   };
 
   const onDragEnd = () => {
-    if (!dragRef.current) return;
+    const d = dragRef.current;
+    if (!d) return;
     dragRef.current = null;
+    // Double-tap / double-click anywhere on the card (not on a button) -> back to the Videos page.
+    if (!d.moved) {
+      const now = performance.now();
+      if (now - lastTapRef.current < 350) {
+        lastTapRef.current = 0;
+        onExpand();
+        return;
+      }
+      lastTapRef.current = now;
+      return;
+    }
     try {
       localStorage.setItem(POS_KEY, JSON.stringify(posRef.current));
     } catch {
@@ -217,7 +231,11 @@ export default function PlayerHost({ onExpand }: { onExpand: () => void }) {
             {/* Shield: YouTube's own overlay (title, share, CC, settings…) never gets a hover/tap.
                 While not playing, a plain thumbnail covers the paused/ended YouTube screen. */}
             <div
-              className="absolute inset-x-0 top-0 aspect-video"
+              className="absolute inset-x-0 top-0 aspect-video cursor-grab touch-none active:cursor-grabbing"
+              onPointerDown={onDragStart}
+              onPointerMove={onDragMove}
+              onPointerUp={onDragEnd}
+              onPointerCancel={onDragEnd}
               style={{
                 background: dock.playing ? 'transparent' : `#000 url(https://i.ytimg.com/vi/${dock.video.id}/hqdefault.jpg) center / cover no-repeat`,
               }}
@@ -229,16 +247,10 @@ export default function PlayerHost({ onExpand }: { onExpand: () => void }) {
               onPointerUp={onDragEnd}
               onPointerCancel={onDragEnd}
             >
-              <button
-                type="button"
-                className="min-w-0 flex-1 text-left"
-                title={dock.video.title}
-                aria-label="Open in Videos"
-                onClick={onExpand}
-              >
+              <div className="min-w-0 flex-1 text-left" title={`${dock.video.title} — double-click to open`}>
                 <p className="truncate text-[13px] font-semibold leading-tight">{dock.video.title}</p>
                 <p className="truncate text-[11px] text-white/60">{dock.video.channel}</p>
-              </button>
+              </div>
               <button type="button" className={`${iconBtn} disabled:opacity-30`} aria-label="Previous video" disabled={!dock.video.canPrev} onClick={dockPrev}>
                 <SkipBack className="h-5 w-5" fill="currentColor" />
               </button>
