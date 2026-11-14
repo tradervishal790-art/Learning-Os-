@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
-import { Play, Pause, SkipBack, SkipForward } from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward, RotateCw, Minimize2 } from 'lucide-react';
 import { useImmersive } from './immersive';
 import { useDock, setDockHost, getDockSlot, dockPlay, dockPause, dockSeekBy, dockNext, dockPrev, dockUndismiss, resetDock } from './miniPlayer';
 
@@ -11,9 +11,12 @@ import { useDock, setDockHost, getDockSlot, dockPlay, dockPause, dockSeekBy, doc
  *  - inline    : laid exactly over the Videos page's player slot (follows it while scrolling)
  *  - mini      : floating, draggable card (video + title + play/pause, open, close)
  *  - landscape : phone turned sideways on the Videos page -> the player fills the whole screen
+ *  - rotated   : learner tapped the landscape button on a phone held upright and the browser can't lock
+ *                orientation (iPhone) -> the frame is turned 90deg so the video still fills the screen
  */
 
-type Mode = 'inline' | 'mini' | 'landscape';
+type Mode = 'inline' | 'mini' | 'landscape' | 'rotated';
+type Forced = 'off' | 'native' | 'rotated';
 
 const POS_KEY = 'los_mini_player_pos';
 const NAV_CLEAR = 76; // default resting spot sits above the bottom nav (dragging is NOT limited by it)
@@ -112,6 +115,62 @@ export default function PlayerHost({ onExpand, onBack }: { onExpand: () => void;
     liveRef.current = { immersive, dismissed: dock.dismissed };
   });
 
+  // Tap-to-landscape (phone held upright): native fullscreen + orientation lock where supported
+  // (Android Chrome), otherwise rotate the frame with CSS (iPhone).
+  const [forced, setForcedState] = useState<Forced>('off');
+  const forcedRef = useRef<Forced>('off');
+  const setForced = (v: Forced) => {
+    forcedRef.current = v;
+    setForcedState(v);
+  };
+  const [coarse] = useState(() => typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches);
+
+  const enterLandscape = async () => {
+    const frame = frameRef.current;
+    if (!frame) return;
+    try {
+      if (!frame.requestFullscreen) throw new Error('no fullscreen');
+      await frame.requestFullscreen();
+      const orientation = screen.orientation as unknown as { lock?: (o: string) => Promise<void> };
+      if (!orientation?.lock) throw new Error('no orientation lock');
+      await orientation.lock('landscape');
+      setForced('native');
+    } catch {
+      if (document.fullscreenElement) {
+        try {
+          await document.exitFullscreen();
+        } catch {
+          /* ignore */
+        }
+      }
+      setForced('rotated');
+    }
+  };
+
+  const exitLandscape = () => {
+    const was = forcedRef.current;
+    setForced('off');
+    if (was === 'native') {
+      try {
+        (screen.orientation as unknown as { unlock?: () => void })?.unlock?.();
+      } catch {
+        /* ignore */
+      }
+      if (document.fullscreenElement) document.exitFullscreen().catch(() => undefined);
+    }
+  };
+  const exitRef = useRef(exitLandscape);
+  useEffect(() => {
+    exitRef.current = exitLandscape;
+  });
+  useEffect(() => {
+    const onFs = () => {
+      if (!document.fullscreenElement && forcedRef.current === 'native') exitRef.current();
+    };
+    document.addEventListener('fullscreenchange', onFs);
+    return () => document.removeEventListener('fullscreenchange', onFs);
+  }, []);
+
   // Publish the iframe's home so the page's player can portal into it.
   useLayoutEffect(() => {
     setDockHost(boxRef.current);
@@ -150,8 +209,14 @@ export default function PlayerHost({ onExpand, onBack }: { onExpand: () => void;
       const shown = hasSlot ? (Math.min(rect.bottom, vh) - Math.max(rect.top, 0)) / rect.height : 0;
       const wasInline = last === 'inline' || last === 'landscape';
 
+      if (forcedRef.current !== 'off' && (!hasSlot || (forcedRef.current === 'rotated' && sideways.matches))) {
+        exitRef.current(); // left the Videos page, or the phone was really turned sideways
+      }
+      const forcedNow = forcedRef.current;
+
       let m: Mode;
-      if (hasSlot && sideways.matches) m = 'landscape';
+      if (hasSlot && forcedNow === 'rotated') m = 'rotated';
+      else if (hasSlot && (sideways.matches || forcedNow === 'native')) m = 'landscape';
       else if (hasSlot && shown > (wasInline ? 0.15 : 0.5)) m = 'inline';
       else m = 'mini';
 
@@ -166,7 +231,9 @@ export default function PlayerHost({ onExpand, onBack }: { onExpand: () => void;
       const animating = !dragRef.current && now < animUntil;
 
       let x: number, y: number, w: number, h: number, boxH: number, radius: number, z: number;
-      if (m === 'landscape') {
+      if (m === 'rotated') {
+        x = vw; y = 0; w = vh; h = vw; boxH = vw; radius = 0; z = 70;
+      } else if (m === 'landscape') {
         x = 0; y = 0; w = vw; h = vh; boxH = vh; radius = 0; z = 70;
       } else if (m === 'inline' && rect) {
         x = rect.left; y = rect.top; w = rect.width; h = rect.height; boxH = rect.height; radius = 16; z = 20;
@@ -188,13 +255,14 @@ export default function PlayerHost({ onExpand, onBack }: { onExpand: () => void;
         radius = 14; z = 45;
       }
 
-      const next = [x, y, w, h, boxH].map(Math.round).join('|') + `|${radius}|${z}|${animating ? 1 : 0}`;
+      const next = [x, y, w, h, boxH].map(Math.round).join('|') + `|${radius}|${z}|${m}|${animating ? 1 : 0}`;
       if (next !== sig) {
         sig = next;
         frame.style.transition = animating
           ? 'transform .24s ease, width .24s ease, height .24s ease, border-radius .24s ease'
           : 'none';
-        frame.style.transform = `translate3d(${Math.round(x)}px, ${Math.round(y)}px, 0)`;
+        frame.style.transformOrigin = '0 0';
+        frame.style.transform = `translate3d(${Math.round(x)}px, ${Math.round(y)}px, 0)${m === 'rotated' ? ' rotate(90deg)' : ''}`;
         frame.style.width = `${Math.round(w)}px`;
         frame.style.height = `${Math.round(h)}px`;
         frame.style.borderRadius = `${radius}px`;
@@ -279,7 +347,7 @@ export default function PlayerHost({ onExpand, onBack }: { onExpand: () => void;
         {/* The YouTube iframe is portaled in here by the Videos page. */}
         <div ref={boxRef} className="w-full bg-black" />
 
-        {(mode === 'inline' || mode === 'landscape') && (
+        {(mode === 'inline' || mode === 'landscape' || mode === 'rotated') && (
           <div className="absolute inset-x-0 flex" style={{ top: '18%', bottom: '24%' }} aria-hidden>
             {(['left', 'center', 'right'] as const).map((zone) => (
               <div
@@ -296,6 +364,22 @@ export default function PlayerHost({ onExpand, onBack }: { onExpand: () => void;
               </div>
             ))}
           </div>
+        )}
+
+        {(forced !== 'off' || (coarse && mode === 'inline')) && (
+          <button
+            type="button"
+            className="absolute right-2.5 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-sm active:bg-black/75"
+            style={{ bottom: '25%' }}
+            aria-label={forced === 'off' ? 'Watch in landscape' : 'Exit landscape'}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (forced === 'off') void enterLandscape();
+              else exitLandscape();
+            }}
+          >
+            {forced === 'off' ? <RotateCw className="h-[18px] w-[18px]" /> : <Minimize2 className="h-[18px] w-[18px]" />}
+          </button>
         )}
 
         {mode === 'mini' && dock.video && (
