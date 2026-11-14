@@ -62,13 +62,14 @@ export default function CurrentAffairs() {
             aria-label={label}
             title={label}
             aria-pressed={view === v}
-            className={`flex h-10 flex-1 items-center justify-center rounded-full transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300 ${
+            className={`flex h-10 flex-1 items-center justify-center gap-2 rounded-full text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300 ${
               view === v
                 ? 'bg-violet-500 text-white shadow-[0_0_18px_rgba(139,92,246,.45)]'
                 : 'text-slate-300 hover:bg-white/10 hover:text-white'
             }`}
           >
             <Icon className="h-5 w-5" strokeWidth={view === v ? 2.2 : 1.75} />
+            <span className="truncate">{label}</span>
           </button>
         ))}
       </div>
@@ -134,7 +135,7 @@ function NewspaperCurrentAffairs() {
   }, [day]);
 
   return (
-    <div className="mt-6">
+    <div className="mt-4 md:mt-6">
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
           <h1 className="flex items-center gap-3 text-xl font-semibold tracking-tight md:text-2xl">
@@ -161,7 +162,7 @@ function NewspaperCurrentAffairs() {
 
       {/* Day picker: today + last few days (only days someone already opened are available) */}
       {!showSaved && (
-      <div className={`mt-4 ${SWIPE_ROW}`}>
+      <div className={`mt-3 md:mt-4 ${SWIPE_ROW}`}>
         {Array.from({ length: PREVIOUS_DAYS + 1 }, (_, i) => istDateKey(i)).map((d) => (
           <button
             key={d}
@@ -218,7 +219,7 @@ function NewspaperCurrentAffairs() {
 
       {!showSaved && !loading && day && (
         <>
-          <div className={`mt-5 ${SWIPE_ROW}`}>
+          <div className={`mt-3 md:mt-5 ${SWIPE_ROW}`}>
             {presentTabs.map((x) => {
               const TabIcon = TAB_ICONS[x];
               return (
