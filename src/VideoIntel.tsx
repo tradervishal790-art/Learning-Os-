@@ -254,6 +254,17 @@ interface VideoIntelProps {
 
 export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicId, allGoalIds }: VideoIntelProps = {}) {
   const t = useTranslation();
+  // On a phone the player sits ABOVE the result list, so picking a result has to scroll back up to it
+  // or it looks like nothing happened.
+  const playerColRef = useRef<HTMLDivElement>(null);
+  const revealPlayer = () => {
+    if (!window.matchMedia('(max-width: 1023px)').matches) return;
+    requestAnimationFrame(() => {
+      const el = playerColRef.current;
+      // Only scroll when the player is actually off-screen; if it is already in view, leave the page alone.
+      if (el && el.getBoundingClientRect().top < 72) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  };
   // Every active goal, active-tab first (checked first so ties resolve in
   // the learner's favor) — deduped in case activeGoalId is also in the list.
   const goalIdsToCheck = Array.from(
@@ -872,11 +883,12 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* LEFT: SEARCH */}
             <div className={`order-2 lg:order-1 lg:col-span-1 ${selectedVideo ? 'mt-4 lg:mt-0' : ''}`}>
-              <div className="flex flex-col gap-2 mb-4 sm:flex-row">
+              <div className="flex gap-2 mb-4">
                 <div className="flex-1 relative">
                   <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400 dark:text-white/40" />
                   <input
                     type="text"
+                    enterKeyHint="search"
                     placeholder={t.videos.searchPlaceholder}
                     value={searchQuery}
                     onChange={(e) => {
@@ -890,7 +902,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                 <button
                   onClick={searchVideos}
                   disabled={loading}
-                  className="min-h-11 w-full px-5 py-2.5 bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white disabled:opacity-40 rounded-lg font-semibold transition sm:w-auto"
+                  className="min-h-11 shrink-0 px-4 sm:px-5 py-2.5 bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white disabled:opacity-40 rounded-lg font-semibold transition"
                 >
                   {loading ? '...' : t.videos.searchCta}
                 </button>
@@ -921,7 +933,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                 ))}
               </div>
 
-              <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
+              <div className="space-y-3 lg:max-h-[600px] lg:overflow-y-auto lg:pr-2">
                 {videos.length === 0 ? (
                   <div className="text-center py-8 md:py-12 text-gray-400 dark:text-white/60">
                     <Play className="w-12 h-12 mx-auto mb-3 opacity-30" />
@@ -942,6 +954,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                         onClick={() => {
                           finalizeAndSaveSession();
                           setSelectedVideo(video);
+                          revealPlayer();
                           // Verify against WHICHEVER video the learner actually
                           // picked — primary or fallback — not always primary.
                           void verifyBridgeForVideo(video);
@@ -973,7 +986,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
             </div>
 
             {/* RIGHT: PLAYER */}
-            <div className={`order-1 lg:order-2 lg:col-span-2 ${selectedVideo ? '' : 'hidden lg:block'}`}>
+            <div ref={playerColRef} className={`order-1 lg:order-2 lg:col-span-2 scroll-mt-16 ${selectedVideo ? '' : 'hidden lg:block'}`}>
               {selectedVideo ? (
                 <motion.div key={selectedVideo.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
                   {/* verified === false means Gemini actually checked the two videos'
@@ -1055,23 +1068,23 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                     <div className="flex flex-wrap items-center gap-2 mb-4">
                       <button
                         onClick={() => handleFeedback('like')}
-                        className={`inline-flex min-h-11 items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition border ${
+                        className={`inline-flex min-h-11 min-w-11 items-center justify-center gap-2 px-0 sm:px-3 py-2 rounded-lg text-sm font-medium transition border ${
                           feedbackGiven === 'like'
                             ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white border-transparent'
                             : 'border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10'
                         }`}
                       >
-                        <ThumbsUp className="w-4 h-4" /> {t.videos.helpfulCta}
+                        <ThumbsUp className="w-4 h-4" /> <span className="sr-only sm:not-sr-only">{t.videos.helpfulCta}</span>
                       </button>
                       <button
                         onClick={() => handleFeedback('dislike')}
-                        className={`inline-flex min-h-11 items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition border ${
+                        className={`inline-flex min-h-11 min-w-11 items-center justify-center gap-2 px-0 sm:px-3 py-2 rounded-lg text-sm font-medium transition border ${
                           feedbackGiven === 'dislike'
                             ? 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white border-transparent'
                             : 'border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10'
                         }`}
                       >
-                        <ThumbsDown className="w-4 h-4" /> {t.videos.notForMeCta}
+                        <ThumbsDown className="w-4 h-4" /> <span className="sr-only sm:not-sr-only">{t.videos.notForMeCta}</span>
                       </button>
 
                       <button
@@ -1084,9 +1097,9 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                           }
                           navigate('/dashboard/mentor');
                         }}
-                        className="inline-flex min-h-11 items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10"
+                        className="inline-flex min-h-11 min-w-11 items-center justify-center gap-2 px-0 sm:px-3 py-2 rounded-lg text-sm font-medium transition border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10"
                       >
-                        <MessageCircle className="w-4 h-4" /> Ask Mentor
+                        <MessageCircle className="w-4 h-4" /> <span className="sr-only sm:not-sr-only">Ask Mentor</span>
                       </button>
 
                       {hasNextVideo && (
