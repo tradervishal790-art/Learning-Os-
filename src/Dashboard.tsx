@@ -178,8 +178,12 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
   // location.pathname looks like "/dashboard" or "/dashboard/roadmap" — the
   // segment right after "/dashboard/" (if any) is the active page.
   const activePage = (location.pathname.replace(/^\/dashboard\/?/, '').split('/')[0] || 'dashboard') as DashboardPageId;
+  // Keep VideoIntel mounted after its first use so its single YouTube iframe,
+  // watch session, and engagement tracker survive route-level page changes.
+  const [hasOpenedVideos, setHasOpenedVideos] = useState(activePage === 'videos');
   const setActivePage = useCallback(
     (page: DashboardPageId) => {
+      if (page === 'videos') setHasOpenedVideos(true);
       navigate(page === 'dashboard' ? '/dashboard' : `/dashboard/${page}`, {
         state: { missionControlNavigation: true },
       });
@@ -534,6 +538,23 @@ function DashboardInner({ userData, onUpdateUserData, onRegenerateRoadmap, onGen
       />
 
       <div ref={pageScrollRef} className={`min-h-dvh min-w-0 ${isMissionControl ? "h-dvh overflow-hidden" : "overflow-auto"} ${isMissionControl ? "pt-[calc(4rem+env(safe-area-inset-top))]" : noteOpen && immersive ? "pt-[env(safe-area-inset-top)]" : "pt-[calc(4.5rem+env(safe-area-inset-top))]"} ${isMissionControl || immersive ? "" : "pb-[calc(4rem+env(safe-area-inset-bottom))]"}`}>
+
+        {hasOpenedVideos && (
+          <div className="page-content-transition min-w-0">
+            <div className="relative">
+              <Suspense fallback={<PageLoading />}>
+                <VideoIntel
+                  initialPlaylist={preloadedPlaylist}
+                  activeGoalId={activeGoalId}
+                  activeTopicId={viewingTopicId}
+                  allGoalIds={goals.filter((g) => g.status === 'active').map((g) => g.id)}
+                  isPageActive={activePage === 'videos'}
+                  onNavigateToVideos={() => setActivePage('videos')}
+                />
+              </Suspense>
+            </div>
+          </div>
+        )}
 
         <Suspense fallback={<PageLoading />}>
           <motion.div

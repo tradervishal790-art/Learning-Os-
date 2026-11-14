@@ -250,9 +250,13 @@ interface VideoIntelProps {
    *  progress is attributed correctly even if the learner watches a video
    *  for Goal B while Goal A's tab is still the one selected on Roadmap. */
   allGoalIds?: string[];
+  /** Keeps the same YouTube iframe mounted while other dashboard pages are open. */
+  isPageActive?: boolean;
+  /** Returns the learner to the full Videos workspace. */
+  onNavigateToVideos?: () => void;
 }
 
-export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicId, allGoalIds }: VideoIntelProps = {}) {
+export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicId, allGoalIds, isPageActive = true, onNavigateToVideos }: VideoIntelProps = {}) {
   const t = useTranslation();
   // Every active goal, active-tab first (checked first so ties resolve in
   // the learner's favor) — deduped in case activeGoalId is also in the list.
@@ -268,6 +272,9 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [miniOffset, setMiniOffset] = useState({ x: 0, y: 0 });
+  const miniDragRef = useRef<{ pointerId: number; startX: number; startY: number; originX: number; originY: number } | null>(null);
   const [watchHistory, setWatchHistory] = useState<WatchHistoryEntry[]>([]);
   const [errorMessage, setErrorMessage] = useState('');
   const [showDeepNotes, setShowDeepNotes] = useState(false);
@@ -568,8 +575,32 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
     };
   }, [selectedVideo]);
 
+  const startMiniDrag = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (event.button !== 0) return;
+    miniDragRef.current = { pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, originX: miniOffset.x, originY: miniOffset.y };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const moveMiniDrag = (event: React.PointerEvent<HTMLDivElement>) => {
+    const drag = miniDragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    const maxX = Math.max(0, window.innerWidth - 120);
+    const maxY = Math.max(0, window.innerHeight - 120);
+    setMiniOffset({
+      x: Math.max(-maxX, Math.min(maxX, drag.originX + event.clientX - drag.startX)),
+      y: Math.max(-maxY, Math.min(maxY, drag.originY + event.clientY - drag.startY)),
+    });
+  };
+
+  const stopMiniDrag = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (miniDragRef.current?.pointerId !== event.pointerId) return;
+    miniDragRef.current = null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+  };
+
   const onPlayerReady = (event: any) => {
     if (!selectedVideo) return;
+    setIsPlaying(event.target.getPlayerState?.() === window.YT.PlayerState.PLAYING);
     watchDataRef.current = {
       videoId: selectedVideo.id,
       title: selectedVideo.title,
@@ -595,6 +626,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
   };
 
   const onPlayerStateChange = (event: any) => {
+    setIsPlaying(event.data === window.YT.PlayerState.PLAYING);
     const session = sessionRef.current;
 
     if (event.data === window.YT.PlayerState.PLAYING) {
@@ -852,7 +884,18 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
   const hasNextVideo = !!selectedVideo;
 
   return (
-    <div className="min-h-dvh text-black dark:text-white">
+    <div className={`video-intel-root min-h-dvh text-black dark:text-white ${isPageActive ? '' : 'video-intel-mini'}`}>
+      {!isPageActive && (
+        <style>{`
+          .video-intel-mini { min-height: 0 !important; height: 0 !important; }
+          .video-intel-mini *:not(.video-mini-player):not(.video-mini-player *):not(:has(.video-mini-player)) { display: none !important; }
+          .video-intel-mini *:has(.video-mini-player):not(.video-mini-player) { position: static !important; width: auto !important; max-width: none !important; min-height: 0 !important; height: auto !important; margin: 0 !important; padding: 0 !important; border: 0 !important; background: transparent !important; box-shadow: none !important; overflow: visible !important; }
+          .video-intel-mini .video-mini-player > div { height: 100% !important; }
+          .video-intel-mini .video-mini-player iframe { width: 100% !important; height: 100% !important; }
+          .video-intel-mini .video-mini-player { position: fixed !important; right: 16px !important; bottom: calc(16px + env(safe-area-inset-bottom)) !important; width: min(360px, calc(100vw - 32px)) !important; aspect-ratio: 16 / 9 !important; z-index: 100 !important; border-radius: 16px !important; overflow: hidden !important; box-shadow: 0 16px 48px rgba(0,0,0,.45) !important; }
+          @media (max-width: 640px) { .video-intel-mini .video-mini-player { right: 12px !important; bottom: calc(12px + env(safe-area-inset-bottom)) !important; width: min(320px, calc(100vw - 24px)) !important; } }
+        `}</style>
+      )}
       {showDeepNotes && selectedVideo ? (
         <div className="p-4 md:p-8">
           <button
@@ -1009,7 +1052,7 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                       </button>
                     </div>
                   )}
-                  <div className="bg-black rounded-2xl overflow-hidden border border-gray-200 dark:border-white/10">
+                  <div className="video-mini-player relative bg-black rounded-2xl overflow-hidden border border-gray-200 dark:border-white/10" style={!isPageActive ? { transform: `translate(${miniOffset.x}px, ${miniOffset.y}px)` } : undefined}>
                     <YouTubePlayer
                       video={selectedVideo}
                       canPrev={videos.findIndex((v) => v.id === selectedVideo.id) > 0}
@@ -1020,6 +1063,19 @@ export default function VideoIntel({ initialPlaylist, activeGoalId, activeTopicI
                       onStateChange={onPlayerStateChange}
                       onPlaybackRateChange={onPlaybackRateChange}
                     />
+                    {!isPageActive && (
+                      <div className="absolute inset-x-0 bottom-0 z-10 flex items-center justify-between gap-2 bg-gradient-to-t from-black/90 via-black/55 to-transparent px-3 pb-3 pt-8 text-white">
+                        <div className="min-w-0 flex-1 cursor-grab touch-none active:cursor-grabbing" onPointerDown={startMiniDrag} onPointerMove={moveMiniDrag} onPointerUp={stopMiniDrag} onPointerCancel={stopMiniDrag}>
+                          <p className="truncate text-xs font-semibold">{selectedVideo.title}</p>
+                          <p className="truncate text-[10px] text-white/65">{selectedVideo.channel}</p>
+                        </div>
+                        <button type="button" onClick={() => { if (isPlaying) playerRef.current?.pauseVideo?.(); else playerRef.current?.playVideo?.(); }} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/15 hover:bg-white/25" aria-label={isPlaying ? 'Pause video' : 'Play video'}>
+                          {isPlaying ? 'Ⅱ' : '▶'}
+                        </button>
+                        <button type="button" onClick={() => onNavigateToVideos?.()} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/15 hover:bg-white/25" aria-label="Open full video player">↗</button>
+                        <button type="button" onClick={() => { finalizeAndSaveSession(); playerRef.current?.pauseVideo?.(); setSelectedVideo(null); }} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/15 hover:bg-white/25" aria-label="Close mini player">×</button>
+                      </div>
+                    )}
                   </div>
 
                   {recallFor === selectedVideo.id && (
