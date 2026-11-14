@@ -21,6 +21,7 @@ export interface DockControls {
   pause(): void;
   next(): void;
   prev(): void;
+  seekBy(seconds: number): void;
 }
 
 interface DockState {
@@ -107,6 +108,14 @@ export function dockPause() {
     controls?.pause();
   } catch {
     /* player not ready */
+  }
+}
+
+export function dockSeekBy(seconds: number) {
+  try {
+    controls?.seekBy(seconds);
+  } catch {
+    /* ignore */
   }
 }
 

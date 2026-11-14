@@ -1182,6 +1182,12 @@ function YouTubePlayer({
         {
           play: () => playerRef.current?.playVideo?.(),
           pause: () => playerRef.current?.pauseVideo?.(),
+          seekBy: (d: number) => {
+            const p = playerRef.current;
+            if (!p?.getCurrentTime) return;
+            const dur = p.getDuration?.() || Infinity;
+            p.seekTo(Math.min(Math.max(0, p.getCurrentTime() + d), dur), true);
+          },
           next: () => handlers.current.onNext(),
           prev: () => handlers.current.onPrev(),
         },

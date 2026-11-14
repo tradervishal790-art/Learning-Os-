@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
 import { Play, Pause, SkipBack, SkipForward } from 'lucide-react';
 import { useImmersive } from './immersive';
-import { useDock, setDockHost, getDockSlot, dockPlay, dockPause, dockNext, dockPrev, dockUndismiss, resetDock } from './miniPlayer';
+import { useDock, setDockHost, getDockSlot, dockPlay, dockPause, dockSeekBy, dockNext, dockPrev, dockUndismiss, resetDock } from './miniPlayer';
 
 /**
  * The one element the YouTube iframe lives in. Mounted once, above every page, so the video keeps
@@ -54,27 +54,59 @@ export default function PlayerHost({ onExpand, onBack }: { onExpand: () => void;
   const geoRef = useRef({ xMin: 0, xMax: 0, yMin: 0, yMax: 0, x: 0, y: 0 });
   const dragRef = useRef<{ startX: number; startY: number; x: number; y: number; moved: boolean } | null>(null);
   const lastTapRef = useRef(0);
-  const centerTapRef = useRef<number | null>(null);
+  // Touch zones over the middle of the video (top/bottom strips stay free so YouTube's seek bar
+  // and buttons keep working):
+  //   left  : double-tap = -10s   (keep tapping to keep seeking)
+  //   right : double-tap = +10s
+  //   centre: single = play/pause, double = back to the previous page
+  type Zone = 'left' | 'center' | 'right';
+  const tapRef = useRef<{ zone: Zone; timer: number } | null>(null);
+  const seekRef = useRef<{ zone: Zone; total: number; timer: number } | null>(null);
+  const [seekFlash, setSeekFlash] = useState<{ zone: Zone; total: number } | null>(null);
   const playingRef = useRef(false);
   useEffect(() => {
     playingRef.current = dock.playing;
   });
 
-  // Centre of the inline video: single click = play/pause, double click = back to the previous page.
-  // (Top and bottom strips stay free so YouTube's seek bar and buttons keep working.)
-  const onCenterClick = () => {
-    if (centerTapRef.current !== null) {
-      window.clearTimeout(centerTapRef.current);
-      centerTapRef.current = null;
-      onBack();
+  const doSeek = (zone: 'left' | 'right') => {
+    const prev = seekRef.current;
+    if (prev) window.clearTimeout(prev.timer);
+    const total = (prev && prev.zone === zone ? prev.total : 0) + 10;
+    dockSeekBy(zone === 'left' ? -10 : 10);
+    const timer = window.setTimeout(() => {
+      seekRef.current = null;
+      setSeekFlash(null);
+    }, 700);
+    seekRef.current = { zone, total, timer };
+    setSeekFlash({ zone, total });
+  };
+
+  const onZoneClick = (zone: Zone) => {
+    // Already seeking on this side: every further tap adds another 10s.
+    if (seekRef.current && seekRef.current.zone === zone && zone !== 'center') {
+      doSeek(zone);
       return;
     }
-    centerTapRef.current = window.setTimeout(() => {
-      centerTapRef.current = null;
+    const pending = tapRef.current;
+    if (pending && pending.zone === zone) {
+      window.clearTimeout(pending.timer);
+      tapRef.current = null;
+      if (zone === 'center') {
+        if (mode === 'inline') onBack();
+      } else {
+        doSeek(zone);
+      }
+      return;
+    }
+    if (pending) window.clearTimeout(pending.timer);
+    const timer = window.setTimeout(() => {
+      tapRef.current = null;
       if (playingRef.current) dockPause();
       else dockPlay();
     }, 260);
+    tapRef.current = { zone, timer };
   };
+
   const liveRef = useRef({ immersive, dismissed: dock.dismissed });
   useEffect(() => {
     liveRef.current = { immersive, dismissed: dock.dismissed };
@@ -247,13 +279,23 @@ export default function PlayerHost({ onExpand, onBack }: { onExpand: () => void;
         {/* The YouTube iframe is portaled in here by the Videos page. */}
         <div ref={boxRef} className="w-full bg-black" />
 
-        {mode === 'inline' && (
-          <div
-            className="absolute inset-x-0"
-            style={{ top: '18%', bottom: '24%' }}
-            onClick={onCenterClick}
-            aria-hidden
-          />
+        {(mode === 'inline' || mode === 'landscape') && (
+          <div className="absolute inset-x-0 flex" style={{ top: '18%', bottom: '24%' }} aria-hidden>
+            {(['left', 'center', 'right'] as const).map((zone) => (
+              <div
+                key={zone}
+                className="relative h-full"
+                style={{ width: zone === 'center' ? '30%' : '35%' }}
+                onClick={() => onZoneClick(zone)}
+              >
+                {seekFlash?.zone === zone && (
+                  <span className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-black/60 px-4 py-2 text-sm font-semibold text-white">
+                    {zone === 'left' ? '\u23EA' : '\u23E9'} {zone === 'left' ? '-' : '+'}{seekFlash.total}s
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
         )}
 
         {mode === 'mini' && dock.video && (
