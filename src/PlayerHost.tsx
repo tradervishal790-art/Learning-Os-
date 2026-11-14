@@ -171,6 +171,27 @@ export default function PlayerHost({ onExpand, onBack }: { onExpand: () => void;
     return () => document.removeEventListener('fullscreenchange', onFs);
   }, []);
 
+  // YouTube's own fullscreen button (inside the video) is the way to go landscape on a phone.
+  // Make sure it really turns the screen sideways, and turns it back on exit.
+  useEffect(() => {
+    if (!window.matchMedia('(pointer: coarse)').matches) return undefined;
+    const orientation = screen.orientation as unknown as { lock?: (o: string) => Promise<void>; unlock?: () => void };
+    const onFs = () => {
+      const fs = document.fullscreenElement;
+      if (fs && frameRef.current?.contains(fs)) {
+        orientation.lock?.('landscape').catch(() => undefined);
+      } else {
+        try {
+          orientation.unlock?.();
+        } catch {
+          /* ignore */
+        }
+      }
+    };
+    document.addEventListener('fullscreenchange', onFs);
+    return () => document.removeEventListener('fullscreenchange', onFs);
+  }, []);
+
   // Publish the iframe's home so the page's player can portal into it.
   useLayoutEffect(() => {
     setDockHost(boxRef.current);

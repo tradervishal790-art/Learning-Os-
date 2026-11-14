@@ -1221,7 +1221,17 @@ function YouTubePlayer({
         // so the same iframe can shrink into the mini player.
         playerVars: { autoplay: 1, controls: 1, modestbranding: 1, rel: 0, playsinline: 1, fs: 1 },
         events: {
-          onReady: (e: any) => handlers.current.onReady(e),
+          onReady: (e: any) => {
+            try {
+              // Make sure YouTube's own fullscreen button is allowed to work inside our page.
+              const f = e.target.getIframe();
+              f.setAttribute('allowfullscreen', '');
+              f.setAttribute('allow', 'autoplay; fullscreen; encrypted-media; picture-in-picture; accelerometer; gyroscope');
+            } catch {
+              /* ignore */
+            }
+            handlers.current.onReady(e);
+          },
           onStateChange: (e: any) => {
             setDockPlaying(e.data === 1 || e.data === 3);
             handlers.current.onStateChange(e);
